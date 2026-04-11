@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.geometry.Insets?>
+<?import org.kordamp.ikonli.javafx.FontIcon?>
+<?import java.net.URL?>
+
+<ScrollPane xmlns="http://javafx.com/javafx/21"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.studyflow.controllers.RevisionsController"
+            fitToWidth="true"
+            style="-fx-background-color:#020617;-fx-background:#020617;">
+    <stylesheets>
+        <URL value="@../styles/dark-form.css"/>
+    </stylesheets>
+
+    <VBox spacing="0" style="-fx-background-color:#020617;-fx-padding:32;">
+
+        <!-- Breadcrumb -->
+        <HBox alignment="CENTER_LEFT" spacing="10" style="-fx-padding:0 0 24 0;">
+            <Button onAction="#handleCancel"
+                    style="-fx-background-color:#1E293B;-fx-background-radius:10;
+                           -fx-cursor:hand;-fx-padding:10 14;-fx-border-color:#334155;
+                           -fx-border-radius:10;-fx-border-width:1;">
+                <graphic><FontIcon iconLiteral="fth-arrow-left" iconSize="14" iconColor="#94A3B8"/></graphic>
+            </Button>
+            <Label text="Flashcards" style="-fx-text-fill:#475569;-fx-font-size:13px;-fx-cursor:hand;"
+                   onMouseClicked="#handleCancel"/>
+            <Label text="›" style="-fx-text-fill:#334155;-fx-font-size:14px;"/>
+            <Label fx:id="formTitle" text="New Deck"
+                   style="-fx-text-fill:#F8FAFC;-fx-font-size:13px;-fx-font-weight:700;"/>
+        </HBox>
+
+        <!-- Card -->
+        <VBox style="-fx-background-color:#0F172A;-fx-background-radius:16;
+                     -fx-border-color:#1E293B;-fx-border-radius:16;-fx-border-width:1;
+                     -fx-effect:dropshadow(gaussian,rgba(0,0,0,0.4),20,0,0,6);">
+
+            <!-- Header -->
+            <HBox alignment="CENTER_LEFT" spacing="14"
+                  style="-fx-padding:22 28 22 28;-fx-border-color:#1E293B;-fx-border-width:0 0 1 0;">
+                <StackPane prefWidth="44" prefHeight="44"
+                           style="-fx-background-color:linear-gradient(to bottom right,#7C3AED,#8B5CF6);
+                                  -fx-background-radius:12;">
+                    <FontIcon iconLiteral="fth-layers" iconSize="20" iconColor="white"/>
+                </StackPane>
+                <VBox spacing="3" HBox.hgrow="ALWAYS">
+                    <Label text="Deck Information"
+                           style="-fx-text-fill:#F8FAFC;-fx-font-size:15px;-fx-font-weight:700;"/>
+                    <Label text="Les champs marqués * sont obligatoires"
+                           style="-fx-text-fill:#FB7185;-fx-font-size:12px;-fx-font-weight:600;"/>
+                </VBox>
+            </HBox>
+
+            <!-- Fields -->
+            <VBox spacing="20" style="-fx-padding:28 32 24 32;">
+
+                <!-- ═══ TITLE ═══ -->
+                <VBox spacing="6">
+                    <HBox alignment="CENTER_LEFT" spacing="6">
+                        <FontIcon iconLiteral="fth-tag" iconSize="13" iconColor="#A78BFA"/>
+                        <Label text="Title" style="-fx-text-fill:#CBD5E1;-fx-font-size:13px;-fx-font-weight:600;"/>
+                        <Label text=" *" style="-fx-text-fill:#FB7185;-fx-font-size:14px;-fx-font-weight:700;"/>
+                    </HBox>
+                    <Label text="💡 Minimum 3 caractères. Choisissez un nom clair et descriptif."
+                           style="-fx-text-fill:#64748B;-fx-font-size:11px;-fx-font-style:italic;"/>
+                    <TextField fx:id="fieldTitre"
+                               promptText="ex: Algorithmes, Réseaux…"
+                               onKeyReleased="#validateTitreInline"
+                               style="-fx-background-color:#1E293B;-fx-text-fill:#F8FAFC;
+                                      -fx-prompt-text-fill:#475569;
+                                      -fx-border-color:#FB7185;-fx-border-width:2;
+                                      -fx-border-radius:10;-fx-background-radius:10;
+                                      -fx-padding:12 16;-fx-font-size:13px;"/>
+                    <Label fx:id="errTitre"
+                           text="⚠  Le titre est obligatoire (minimum 3 caractères)."
+                           style="-fx-text-fill:#FB7185;-fx-font-size:11px;-fx-font-weight:600;"
+                           visible="true" managed="true"/>
+                </VBox>
+
+                <!-- ═══ SUBJECT + LEVEL ═══ -->
+                <HBox spacing="20">
+                    <!-- Subject -->
+                    <VBox spacing="6" HBox.hgrow="ALWAYS">
+                        <HBox alignment="CENTER_LEFT" spacing="6">
+                            <FontIcon iconLiteral="fth-book" iconSize="13" iconColor="#34D399"/>
+                            <Label text="Subject" style="-fx-text-fill:#CBD5E1;-fx-font-size:13px;-fx-font-weight:600;"/>
+                            <Label text=" *" style="-fx-text-fill:#FB7185;-fx-font-size:14px;-fx-font-weight:700;"/>
+                        </HBox>
+                        <Label text="💡 La matière concernée (ex: Maths, Biologie)."
+                               style="-fx-text-fill:#64748B;-fx-font-size:11px;-fx-font-style:italic;"/>
+                        <TextField fx:id="fieldMatiere"
+                                   promptText="ex: Math, Physique…"
+                                   onKeyReleased="#validateMatiereInline"
+                                   style="-fx-background-color:#1E293B;-fx-text-fill:#F8FAFC;
+                                          -fx-prompt-text-fill:#475569;
+                                          -fx-border-color:#FB7185;-fx-border-width:2;
+                                          -fx-border-radius:10;-fx-background-radius:10;
+                                          -fx-padding:12 16;-fx-font-size:13px;"/>
+                        <Label fx:id="errMatiere"
+                               text="⚠  La matière est obligatoire (minimum 3 caractères)."
+                               style="-fx-text-fill:#FB7185;-fx-font-size:11px;-fx-font-weight:600;"
+                               visible="true" managed="true"/>
+                    </VBox>
+
+                    <!-- Level -->
+                    <VBox spacing="6" HBox.hgrow="ALWAYS">
+                        <HBox alignment="CENTER_LEFT" spacing="6">
+                            <FontIcon iconLiteral="fth-bar-chart-2" iconSize="13" iconColor="#FBBF24"/>
+                            <Label text="Level" style="-fx-text-fill:#CBD5E1;-fx-font-size:13px;-fx-font-weight:600;"/>
+                            <Label text=" *" style="-fx-text-fill:#FB7185;-fx-font-size:14px;-fx-font-weight:700;"/>
+                        </HBox>
+                        <Label text="💡 Choisissez : Beginner, Intermediate ou Advanced."
+                               style="-fx-text-fill:#64748B;-fx-font-size:11px;-fx-font-style:italic;"/>
+                        <ComboBox fx:id="combNiveau"
+                                  promptText="Select level…"
+                                  maxWidth="Infinity" prefHeight="44"
+                                  onAction="#validateNiveauInline"
+                                  style="-fx-background-color:#1E293B;
+                                         -fx-border-color:#FB7185;-fx-border-width:2;
+                                         -fx-border-radius:10;-fx-background-radius:10;
+                                         -fx-font-size:13px;"/>
+                        <Label fx:id="errNiveau"
+                               text="⚠  Veuillez sélectionner un niveau."
+                               style="-fx-text-fill:#FB7185;-fx-font-size:11px;-fx-font-weight:600;"
+                               visible="true" managed="true"/>
+                    </VBox>
+                </HBox>
+
+                <!-- ═══ DESCRIPTION ═══ -->
+                <VBox spacing="6">
+                    <HBox alignment="CENTER_LEFT" spacing="6">
+                        <FontIcon iconLiteral="fth-align-left" iconSize="13" iconColor="#FB923C"/>
+                        <Label text="Description" style="-fx-text-fill:#CBD5E1;-fx-font-size:13px;-fx-font-weight:600;"/>
+                        <Label text=" (optionnel)" style="-fx-text-fill:#475569;-fx-font-size:11px;"/>
+                    </HBox>
+                    <Label text="💡 Un résumé court vous aide à retrouver ce deck plus tard."
+                           style="-fx-text-fill:#64748B;-fx-font-size:11px;-fx-font-style:italic;"/>
+                    <TextArea fx:id="fieldDescription"
+                              promptText="Décrivez le contenu de ce deck…"
+                              prefRowCount="4" prefHeight="110"
+                              wrapText="true"
+                              style="-fx-control-inner-background:#1E293B;-fx-background-color:#1E293B;
+                                     -fx-text-fill:#F8FAFC;-fx-prompt-text-fill:#475569;
+                                     -fx-border-color:#334155;-fx-border-width:2;
+                                     -fx-border-radius:10;-fx-background-radius:10;-fx-font-size:13px;"/>
+                </VBox>
+
+                <!-- ═══ COVER IMAGE ═══ -->
+                <VBox spacing="6">
+                    <HBox alignment="CENTER_LEFT" spacing="6">
+                        <FontIcon iconLiteral="fth-image" iconSize="13" iconColor="#38BDF8"/>
+                        <Label text="Cover Image" style="-fx-text-fill:#CBD5E1;-fx-font-size:13px;-fx-font-weight:600;"/>
+                        <Label text=" (optionnel)" style="-fx-text-fill:#475569;-fx-font-size:11px;"/>
+                    </HBox>
+                    <Label text="💡 Formats acceptés : PNG, JPG, GIF, WEBP. Taille max recommandée : 2 Mo."
+                           style="-fx-text-fill:#64748B;-fx-font-size:11px;-fx-font-style:italic;"/>
+                    <HBox spacing="10" alignment="CENTER_LEFT">
+                        <TextField fx:id="fieldImage" promptText="Aucune image sélectionnée…"
+                                   HBox.hgrow="ALWAYS" editable="false"
+                                   style="-fx-background-color:#1E293B;-fx-text-fill:#94A3B8;
+                                          -fx-prompt-text-fill:#475569;-fx-border-color:#334155;
+                                          -fx-border-width:2;-fx-border-radius:10;
+                                          -fx-background-radius:10;-fx-padding:12 16;-fx-font-size:12px;"/>
+                        <Button text=" Browse…" onAction="#pickImage" prefHeight="44"
+                                style="-fx-background-color:rgba(56,189,248,0.1);
+                                       -fx-text-fill:#38BDF8;-fx-font-size:12px;-fx-font-weight:600;
+                                       -fx-background-radius:10;-fx-cursor:hand;-fx-padding:12 20;
+                                       -fx-border-color:#38BDF8;-fx-border-radius:10;-fx-border-width:1;">
+                            <graphic><FontIcon iconLiteral="fth-upload" iconSize="13" iconColor="#38BDF8"/></graphic>
+                        </Button>
+                    </HBox>
+                    <Label fx:id="imagePreviewLabel" text=""
+                           style="-fx-text-fill:#34D399;-fx-font-size:11px;"
+                           visible="false" managed="false"/>
+                </VBox>
+
+                <!-- ═══ PDF DOCUMENT ═══ -->
+                <VBox spacing="6">
+                    <HBox alignment="CENTER_LEFT" spacing="6">
+                        <FontIcon iconLiteral="fth-file-text" iconSize="13" iconColor="#F472B6"/>
+                        <Label text="PDF Document" style="-fx-text-fill:#CBD5E1;-fx-font-size:13px;-fx-font-weight:600;"/>
+                        <Label text=" (optionnel)" style="-fx-text-fill:#475569;-fx-font-size:11px;"/>
+                    </HBox>
+                    <Label text="💡 Joignez un PDF de référence à votre deck (cours, résumé, exercices…)."
+                           style="-fx-text-fill:#64748B;-fx-font-size:11px;-fx-font-style:italic;"/>
+                    <HBox spacing="10" alignment="CENTER_LEFT">
+                        <TextField fx:id="fieldPdf" promptText="Aucun PDF sélectionné…"
+                                   HBox.hgrow="ALWAYS" editable="false"
+                                   style="-fx-background-color:#1E293B;-fx-text-fill:#94A3B8;
+                                          -fx-prompt-text-fill:#475569;-fx-border-color:#334155;
+                                          -fx-border-width:2;-fx-border-radius:10;
+                                          -fx-background-radius:10;-fx-padding:12 16;-fx-font-size:12px;"/>
+                        <Button text=" Browse…" onAction="#pickPdf" prefHeight="44"
+                                style="-fx-background-color:rgba(244,114,182,0.1);
+                                       -fx-text-fill:#F472B6;-fx-font-size:12px;-fx-font-weight:600;
+                                       -fx-background-radius:10;-fx-cursor:hand;-fx-padding:12 20;
+                                       -fx-border-color:#F472B6;-fx-border-radius:10;-fx-border-width:1;">
+                            <graphic><FontIcon iconLiteral="fth-upload" iconSize="13" iconColor="#F472B6"/></graphic>
+                        </Button>
+                    </HBox>
+                    <Label fx:id="pdfPreviewLabel" text=""
+                           style="-fx-text-fill:#34D399;-fx-font-size:11px;"
+                           visible="false" managed="false"/>
+                </VBox>
+
+            </VBox>
+
+            <!-- Footer -->
+            <HBox spacing="12" alignment="CENTER_RIGHT"
+                  style="-fx-padding:18 32 22 32;-fx-border-color:#1E293B;-fx-border-width:1 0 0 0;">
+                <Button text="Cancel" onAction="#handleCancel" prefHeight="44"
+                        style="-fx-background-color:#1E293B;-fx-text-fill:#94A3B8;
+                               -fx-font-size:13px;-fx-font-weight:600;-fx-background-radius:10;
+                               -fx-cursor:hand;-fx-padding:11 28;-fx-border-color:#334155;
+                               -fx-border-radius:10;-fx-border-width:1;"/>
+                <Button text="💾  Save Deck" onAction="#handleSave" prefHeight="44"
+                        style="-fx-background-color:linear-gradient(to right,#7C3AED,#6D28D9);
+                               -fx-text-fill:white;-fx-font-size:13px;-fx-font-weight:700;
+                               -fx-background-radius:10;-fx-cursor:hand;-fx-padding:11 32;
+                               -fx-effect:dropshadow(gaussian,rgba(124,58,237,0.6),16,0,0,4);"/>
+            </HBox>
+        </VBox>
+    </VBox>
+</ScrollPane>
