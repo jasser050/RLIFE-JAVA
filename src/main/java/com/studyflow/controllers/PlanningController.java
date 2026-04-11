@@ -41,6 +41,14 @@ public class PlanningController implements Initializable {
         loadUpcomingEvents();
     }
 
+    @FXML
+    private void handleViewSessions() {
+        MainController mainController = MainController.getInstance();
+        if (mainController != null) {
+            mainController.showSessions();
+        }
+    }
+
     private void loadEvents() {
         eventsByDay = new HashMap<>();
 

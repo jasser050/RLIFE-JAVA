@@ -32,6 +32,11 @@
             </graphic>
         </Button>
         <Region HBox.hgrow="ALWAYS"/>
+        <Button text="View Sessions" styleClass="btn-secondary" onAction="#handleViewSessions">
+            <graphic>
+                <FontIcon iconLiteral="fth-list" iconSize="16"/>
+            </graphic>
+        </Button>
         <Button text="Add Event" styleClass="btn-primary">
             <graphic>
                 <FontIcon iconLiteral="fth-plus" iconSize="16" iconColor="white"/>
