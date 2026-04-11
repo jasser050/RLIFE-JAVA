@@ -3098,3 +3098,48 @@
     -fx-text-fill: #475569;
 }
 
+/* ── Pie Chart styling ─────────────────────────────────────────── */
+.chart-pie-label {
+    -fx-fill: #CBD5E1;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+}
+.chart-pie-label-line {
+    -fx-stroke: #475569;
+    -fx-stroke-width: 1;
+}
+.default-color0.chart-pie { -fx-pie-color: #6366F1; }
+.default-color1.chart-pie { -fx-pie-color: #EC4899; }
+.default-color2.chart-pie { -fx-pie-color: #F59E0B; }
+.chart-legend {
+    -fx-background-color: transparent;
+    -fx-padding: 8 16;
+}
+.chart-legend-item {
+    -fx-text-fill: #94A3B8;
+    -fx-font-size: 12px;
+}
+.default-color0.chart-legend-item-symbol { -fx-background-color: #6366F1; }
+.default-color1.chart-legend-item-symbol { -fx-background-color: #EC4899; }
+.default-color2.chart-legend-item-symbol { -fx-background-color: #F59E0B; }
+
+/* ── MenuButton styling for admin ──────────────────────────────── */
+.btn-primary.menu-button {
+    -fx-background-color: linear-gradient(to right, #7C3AED, #6366F1);
+    -fx-text-fill: white;
+    -fx-background-radius: 10;
+    -fx-padding: 8 16;
+    -fx-cursor: hand;
+    -fx-font-weight: 600;
+    -fx-effect: dropshadow(gaussian, rgba(124,58,237,0.4), 10, 0, 0, 2);
+}
+.btn-primary.menu-button:hover {
+    -fx-background-color: linear-gradient(to right, #6D28D9, #4F46E5);
+}
+.btn-primary.menu-button > .arrow-button {
+    -fx-background-color: transparent;
+}
+.btn-primary.menu-button > .arrow-button > .arrow {
+    -fx-background-color: white;
+}
+

@@ -12,12 +12,29 @@
       spacing="24" style="-fx-background-color: #020617;">
     <padding><Insets top="0" right="0" bottom="24" left="0"/></padding>
 
-    <!-- Header -->
+    <!-- Header with PDF export -->
     <HBox alignment="CENTER_LEFT" spacing="16">
         <VBox spacing="4" HBox.hgrow="ALWAYS">
             <Label text="Admin Dashboard" styleClass="text-heading"/>
             <Label text="Overview of your platform and user activity" styleClass="text-muted"/>
         </VBox>
+
+        <!-- PDF Export dropdown -->
+        <MenuButton text="Export PDF" styleClass="btn-primary" style="-fx-font-size: 13px;">
+            <graphic><FontIcon iconLiteral="fth-download" iconSize="14" iconColor="white"/></graphic>
+            <items>
+                <MenuItem text="User List" onAction="#exportUserListPdf">
+                    <graphic><FontIcon iconLiteral="fth-users" iconSize="14"/></graphic>
+                </MenuItem>
+                <MenuItem text="Banned Users" onAction="#exportBannedPdf">
+                    <graphic><FontIcon iconLiteral="fth-user-x" iconSize="14"/></graphic>
+                </MenuItem>
+                <MenuItem text="Audit Log" onAction="#exportAuditPdf">
+                    <graphic><FontIcon iconLiteral="fth-file-text" iconSize="14"/></graphic>
+                </MenuItem>
+            </items>
+        </MenuButton>
+
         <HBox styleClass="card" alignment="CENTER_LEFT" spacing="12" style="-fx-padding: 12 16;">
             <StackPane styleClass="stat-icon-box, danger" prefWidth="40" prefHeight="40">
                 <FontIcon iconLiteral="fth-shield" iconSize="18"/>
@@ -31,7 +48,6 @@
 
     <!-- Stats Cards Row -->
     <HBox spacing="16">
-        <!-- Total Users -->
         <VBox styleClass="stat-card" spacing="16" HBox.hgrow="ALWAYS">
             <HBox alignment="CENTER_LEFT">
                 <StackPane styleClass="stat-icon-box, primary" prefWidth="44" prefHeight="44">
@@ -46,7 +62,6 @@
             </VBox>
         </VBox>
 
-        <!-- Active Users -->
         <VBox styleClass="stat-card" spacing="16" HBox.hgrow="ALWAYS">
             <HBox alignment="CENTER_LEFT">
                 <StackPane styleClass="stat-icon-box, success" prefWidth="44" prefHeight="44">
@@ -61,7 +76,6 @@
             </VBox>
         </VBox>
 
-        <!-- Banned Users -->
         <VBox styleClass="stat-card" spacing="16" HBox.hgrow="ALWAYS">
             <HBox alignment="CENTER_LEFT">
                 <StackPane styleClass="stat-icon-box, danger" prefWidth="44" prefHeight="44">
@@ -76,7 +90,6 @@
             </VBox>
         </VBox>
 
-        <!-- New This Month -->
         <VBox styleClass="stat-card" spacing="16" HBox.hgrow="ALWAYS">
             <HBox alignment="CENTER_LEFT">
                 <StackPane styleClass="stat-icon-box, warning" prefWidth="44" prefHeight="44">
@@ -92,7 +105,7 @@
 
     <!-- Charts Row -->
     <HBox spacing="16">
-        <!-- User Registrations Chart -->
+        <!-- User Registrations Bar Chart -->
         <VBox styleClass="card" HBox.hgrow="ALWAYS">
             <HBox styleClass="card-header" alignment="CENTER_LEFT" spacing="12">
                 <StackPane styleClass="stat-icon-box, primary" prefWidth="36" prefHeight="36">
@@ -105,26 +118,70 @@
             </HBox>
             <VBox styleClass="card-body" VBox.vgrow="ALWAYS">
                 <BarChart fx:id="registrationsChart" legendVisible="false"
-                          prefHeight="250" barGap="4" categoryGap="30">
+                          prefHeight="280" barGap="4" categoryGap="30">
+                    <xAxis><CategoryAxis side="BOTTOM"/></xAxis>
+                    <yAxis><NumberAxis side="LEFT" autoRanging="true"/></yAxis>
+                </BarChart>
+            </VBox>
+        </VBox>
+    </HBox>
+
+    <!-- Gender Distribution — dedicated full-width card with big pie chart -->
+    <VBox styleClass="card">
+        <HBox styleClass="card-header" alignment="CENTER_LEFT" spacing="12">
+            <StackPane styleClass="stat-icon-box, accent" prefWidth="36" prefHeight="36">
+                <FontIcon iconLiteral="fth-pie-chart" iconSize="16"/>
+            </StackPane>
+            <VBox spacing="2" HBox.hgrow="ALWAYS">
+                <Label text="Gender Distribution" styleClass="card-title"/>
+                <Label text="Platform user demographics breakdown" styleClass="text-small"/>
+            </VBox>
+        </HBox>
+        <VBox styleClass="card-body" alignment="CENTER">
+            <PieChart fx:id="genderChart" legendVisible="true"
+                      prefHeight="380" minHeight="350"
+                      labelsVisible="true" labelLineLength="25"
+                      clockwise="true" startAngle="90"/>
+        </VBox>
+    </VBox>
+
+    <!-- Activity Breakdown — Active vs Banned bar + Growth area chart -->
+    <HBox spacing="16">
+        <VBox styleClass="card" HBox.hgrow="ALWAYS">
+            <HBox styleClass="card-header" alignment="CENTER_LEFT" spacing="12">
+                <StackPane styleClass="stat-icon-box, success" prefWidth="36" prefHeight="36">
+                    <FontIcon iconLiteral="fth-activity" iconSize="16"/>
+                </StackPane>
+                <VBox spacing="2" HBox.hgrow="ALWAYS">
+                    <Label text="User Status" styleClass="card-title"/>
+                    <Label text="Active vs Banned breakdown" styleClass="text-small"/>
+                </VBox>
+            </HBox>
+            <VBox styleClass="card-body" VBox.vgrow="ALWAYS">
+                <BarChart fx:id="activityChart" legendVisible="true"
+                          prefHeight="220" barGap="4" categoryGap="30">
                     <xAxis><CategoryAxis side="BOTTOM"/></xAxis>
                     <yAxis><NumberAxis side="LEFT" autoRanging="true"/></yAxis>
                 </BarChart>
             </VBox>
         </VBox>
 
-        <!-- Gender Distribution -->
-        <VBox styleClass="card" prefWidth="340" minWidth="300">
+        <VBox styleClass="card" HBox.hgrow="ALWAYS">
             <HBox styleClass="card-header" alignment="CENTER_LEFT" spacing="12">
-                <StackPane styleClass="stat-icon-box, accent" prefWidth="36" prefHeight="36">
-                    <FontIcon iconLiteral="fth-pie-chart" iconSize="16"/>
+                <StackPane styleClass="stat-icon-box, warning" prefWidth="36" prefHeight="36">
+                    <FontIcon iconLiteral="fth-trending-up" iconSize="16"/>
                 </StackPane>
                 <VBox spacing="2" HBox.hgrow="ALWAYS">
-                    <Label text="Gender Split" styleClass="card-title"/>
-                    <Label text="Male vs Female users" styleClass="text-small"/>
+                    <Label text="Growth Trend" styleClass="card-title"/>
+                    <Label text="Cumulative user registrations" styleClass="text-small"/>
                 </VBox>
             </HBox>
             <VBox styleClass="card-body" VBox.vgrow="ALWAYS">
-                <PieChart fx:id="genderChart" legendVisible="true" prefHeight="250"/>
+                <AreaChart fx:id="growthChart" legendVisible="false"
+                           prefHeight="220" createSymbols="true">
+                    <xAxis><CategoryAxis side="BOTTOM"/></xAxis>
+                    <yAxis><NumberAxis side="LEFT" autoRanging="true"/></yAxis>
+                </AreaChart>
             </VBox>
         </VBox>
     </HBox>

@@ -25,10 +25,8 @@ public class AdminController implements Initializable {
     @FXML private FontIcon maximizeIcon;
 
     @FXML private Button btnAdminDash;
-    @FXML private Button btnAdminStats;
     @FXML private Button btnAdminUsers;
     @FXML private Button btnAdminAudit;
-    @FXML private Button btnAdminPdf;
 
     private Button activeButton;
     private double xOffset = 0, yOffset = 0;
@@ -61,10 +59,8 @@ public class AdminController implements Initializable {
     }
 
     @FXML private void showDashboard()  { setActiveButton(btnAdminDash);  loadContent("views/admin/AdminDashboard.fxml"); }
-    @FXML private void showStatistics() { setActiveButton(btnAdminStats); loadContent("views/admin/AdminStatistics.fxml"); }
     @FXML private void showUsers()      { setActiveButton(btnAdminUsers); loadContent("views/admin/AdminUsers.fxml"); }
     @FXML private void showAuditLog()   { setActiveButton(btnAdminAudit); loadContent("views/admin/AdminAuditLog.fxml"); }
-    @FXML private void showPdfExport()  { setActiveButton(btnAdminPdf);   loadContent("views/admin/AdminPdfExport.fxml"); }
 
     @FXML
     private void handleLogout() {

@@ -9,6 +9,8 @@ module com.studyflow {
     requires javafx.web;
     requires jdk.httpserver;
     requires jgltf.model;
+    requires org.apache.pdfbox;
+    requires java.desktop;
 
     opens com.studyflow to javafx.fxml;
     opens com.studyflow.controllers to javafx.fxml;
