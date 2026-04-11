@@ -3,8 +3,11 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.text.*?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.image.Image?>
 <?import javafx.geometry.Insets?>
 <?import org.kordamp.ikonli.javafx.FontIcon?>
+<?import javafx.scene.SubScene?>
 
 <VBox xmlns="http://javafx.com/javafx/21"
       xmlns:fx="http://javafx.com/fxml/1"
@@ -27,80 +30,100 @@
             </HBox>
 
             <!-- ══════════════════════════════════════
-                 HERO CARD — Gradient profile banner
+                 HERO BANNER — Vivid gradient (matches Symfony)
                  ══════════════════════════════════════ -->
-            <StackPane styleClass="profile-hero-banner">
+            <StackPane styleClass="profile-hero-banner" minHeight="290">
 
-                <!-- Gradient bg layer -->
+                <!-- Full gradient background -->
                 <VBox styleClass="profile-hero-bg" maxWidth="999999" maxHeight="999999"/>
 
                 <!-- Glow orb top-right -->
                 <StackPane styleClass="profile-glow-orb" StackPane.alignment="TOP_RIGHT"
-                           translateX="-40" translateY="30" pickOnBounds="false"/>
+                           pickOnBounds="false"/>
 
-                <!-- Content -->
-                <HBox spacing="32" alignment="CENTER_LEFT" pickOnBounds="false">
-                    <padding><Insets top="36" right="36" bottom="36" left="36"/></padding>
+                <!-- Subtle glow bottom-left (no green, no blue interference) -->
+                <StackPane styleClass="profile-glow-orb-purple" StackPane.alignment="BOTTOM_LEFT"
+                           pickOnBounds="false"/>
 
-                    <!-- Avatar column -->
-                    <VBox spacing="12" alignment="CENTER">
-                        <!-- Avatar ring + circle -->
-                        <StackPane styleClass="profile-avatar-ring" alignment="CENTER">
+                <!-- Main content — bottom aligned -->
+                <VBox alignment="BOTTOM_LEFT" pickOnBounds="false" maxWidth="999999" maxHeight="999999">
+                    <padding><Insets left="36" right="36" bottom="28"/></padding>
+
+                    <HBox spacing="24" alignment="BOTTOM_LEFT">
+
+                        <!-- ── Avatar circle — 3D GLB model or initials fallback ── -->
+                        <StackPane fx:id="avatarContainer" styleClass="profile-avatar-ring" alignment="CENTER">
                             <StackPane styleClass="profile-avatar-inner" alignment="CENTER">
                                 <Label fx:id="avatarInitials" text="??" styleClass="profile-avatar-text"/>
                             </StackPane>
                         </StackPane>
-                        <!-- Online status -->
-                        <HBox alignment="CENTER" spacing="6">
-                            <StackPane styleClass="profile-online-dot"/>
-                            <Label text="Active" styleClass="profile-online-label"/>
-                        </HBox>
-                    </VBox>
 
-                    <!-- User info -->
-                    <VBox spacing="8" HBox.hgrow="ALWAYS">
-                        <Label fx:id="profileName" text="Loading..." styleClass="profile-hero-name"/>
-                        <HBox spacing="12" alignment="CENTER_LEFT">
-                            <Label fx:id="profileEmail" text="" styleClass="profile-hero-email"/>
-                            <Label text="·" style="-fx-text-fill: #475569;"/>
-                            <Label fx:id="profileUsername" text="" styleClass="profile-hero-username"/>
-                        </HBox>
+                        <!-- ── User info ── -->
+                        <VBox spacing="10" HBox.hgrow="ALWAYS" alignment="BOTTOM_LEFT">
+                            <Label fx:id="profileName" text="Loading..." styleClass="profile-hero-name"/>
 
-                        <!-- Stats chips -->
-                        <HBox spacing="14" style="-fx-padding: 10 0 0 0;">
-                            <VBox styleClass="profile-stat-chip" alignment="CENTER" spacing="3">
-                                <StackPane styleClass="profile-chip-icon-purple" alignment="CENTER">
-                                    <FontIcon iconLiteral="fth-layers" iconSize="13" iconColor="#A78BFA"/>
-                                </StackPane>
-                                <Label fx:id="coinsLabel" text="0" styleClass="profile-stat-chip-value"/>
-                                <Label text="Coins" styleClass="profile-stat-chip-label"/>
-                            </VBox>
-                            <VBox styleClass="profile-stat-chip" alignment="CENTER" spacing="3">
-                                <StackPane styleClass="profile-chip-icon-blue" alignment="CENTER">
-                                    <FontIcon iconLiteral="fth-book-open" iconSize="13" iconColor="#60A5FA"/>
-                                </StackPane>
-                                <Label text="8" styleClass="profile-stat-chip-value"/>
-                                <Label text="Courses" styleClass="profile-stat-chip-label"/>
-                            </VBox>
-                            <VBox styleClass="profile-stat-chip" alignment="CENTER" spacing="3">
-                                <StackPane styleClass="profile-chip-icon-green" alignment="CENTER">
-                                    <FontIcon iconLiteral="fth-users" iconSize="13" iconColor="#34D399"/>
-                                </StackPane>
-                                <Label text="5" styleClass="profile-stat-chip-value"/>
-                                <Label text="Projects" styleClass="profile-stat-chip-label"/>
-                            </VBox>
-                            <VBox styleClass="profile-stat-chip" alignment="CENTER" spacing="3">
-                                <StackPane styleClass="profile-chip-icon-yellow" alignment="CENTER">
-                                    <FontIcon iconLiteral="fth-layers" iconSize="13" iconColor="#FBBF24"/>
-                                </StackPane>
-                                <Label text="12" styleClass="profile-stat-chip-value"/>
-                                <Label text="Decks" styleClass="profile-stat-chip-label"/>
-                            </VBox>
-                        </HBox>
-                    </VBox>
-
-                </HBox>
+                            <!-- Username + email pills -->
+                            <HBox spacing="8" alignment="CENTER_LEFT">
+                                <HBox styleClass="profile-info-pill, profile-pill-dark" spacing="6" alignment="CENTER_LEFT">
+                                    <FontIcon iconLiteral="fth-at-sign" iconSize="12" iconColor="#CBD5E1"/>
+                                    <Label fx:id="profileUsername" text="" styleClass="profile-pill-text"/>
+                                </HBox>
+                                <HBox styleClass="profile-info-pill, profile-pill-purple" spacing="6" alignment="CENTER_LEFT">
+                                    <FontIcon iconLiteral="fth-mail" iconSize="12" iconColor="#DDD6FE"/>
+                                    <Label fx:id="profileEmail" text="" styleClass="profile-pill-text-purple"/>
+                                </HBox>
+                            </HBox>
+                        </VBox>
+                    </HBox>
+                </VBox>
             </StackPane>
+
+            <!-- ══════════════════════════════════════
+                 STAT CARDS ROW — Full gradient like Symfony
+                 ══════════════════════════════════════ -->
+            <HBox spacing="18">
+                <!-- Projects -->
+                <VBox styleClass="profile-grad-card, profile-grad-purple" HBox.hgrow="ALWAYS" spacing="0">
+                    <padding><Insets top="22" right="22" bottom="22" left="22"/></padding>
+                    <HBox alignment="CENTER_LEFT">
+                        <VBox spacing="5" HBox.hgrow="ALWAYS">
+                            <Label fx:id="coinsLabel" text="0" styleClass="profile-grad-value"/>
+                            <Label text="Coins" styleClass="profile-grad-label"/>
+                        </VBox>
+                        <StackPane styleClass="profile-grad-icon" alignment="CENTER">
+                            <FontIcon iconLiteral="fth-star" iconSize="22" iconColor="white"/>
+                        </StackPane>
+                    </HBox>
+                </VBox>
+
+                <!-- Courses -->
+                <VBox styleClass="profile-grad-card, profile-grad-pink" HBox.hgrow="ALWAYS" spacing="0">
+                    <padding><Insets top="22" right="22" bottom="22" left="22"/></padding>
+                    <HBox alignment="CENTER_LEFT">
+                        <VBox spacing="5" HBox.hgrow="ALWAYS">
+                            <Label text="8" styleClass="profile-grad-value"/>
+                            <Label text="Courses" styleClass="profile-grad-label"/>
+                        </VBox>
+                        <StackPane styleClass="profile-grad-icon" alignment="CENTER">
+                            <FontIcon iconLiteral="fth-book-open" iconSize="22" iconColor="white"/>
+                        </StackPane>
+                    </HBox>
+                </VBox>
+
+                <!-- Decks -->
+                <VBox styleClass="profile-grad-card, profile-grad-violet" HBox.hgrow="ALWAYS" spacing="0">
+                    <padding><Insets top="22" right="22" bottom="22" left="22"/></padding>
+                    <HBox alignment="CENTER_LEFT">
+                        <VBox spacing="5" HBox.hgrow="ALWAYS">
+                            <Label text="12" styleClass="profile-grad-value"/>
+                            <Label text="Flashcard Decks" styleClass="profile-grad-label"/>
+                        </VBox>
+                        <StackPane styleClass="profile-grad-icon" alignment="CENTER">
+                            <FontIcon iconLiteral="fth-layers" iconSize="22" iconColor="white"/>
+                        </StackPane>
+                    </HBox>
+                </VBox>
+            </HBox>
 
             <!-- ══════════════════════════════════════
                  PERSONAL INFORMATION
@@ -219,6 +242,10 @@
                  ACTION BUTTONS
                  ══════════════════════════════════════ -->
             <HBox spacing="14" alignment="CENTER_RIGHT">
+                <Button text="Delete Account" styleClass="btn-danger-outline" onAction="#handleDeleteAccount">
+                    <graphic><FontIcon iconLiteral="fth-trash-2" iconSize="15"/></graphic>
+                </Button>
+                <Region HBox.hgrow="ALWAYS"/>
                 <Button text="Sign Out" styleClass="btn-danger" onAction="#handleLogout">
                     <graphic><FontIcon iconLiteral="fth-log-out" iconSize="15"/></graphic>
                 </Button>

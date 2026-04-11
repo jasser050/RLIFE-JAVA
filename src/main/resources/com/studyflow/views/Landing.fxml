@@ -2,6 +2,8 @@
 
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.control.*?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.image.Image?>
 <?import javafx.geometry.Insets?>
 <?import org.kordamp.ikonli.javafx.FontIcon?>
 
@@ -15,9 +17,9 @@
           onMousePressed="#onDragStart" onMouseDragged="#onDragged">
         <HBox alignment="CENTER_LEFT" spacing="10" HBox.hgrow="ALWAYS">
             <padding><Insets left="16"/></padding>
-            <StackPane styleClass="title-bar-logo">
-                <FontIcon iconLiteral="fth-layers" iconSize="14" iconColor="white"/>
-            </StackPane>
+            <ImageView fitWidth="28" fitHeight="28" preserveRatio="true">
+                <image><Image url="@../images/logo.png"/></image>
+            </ImageView>
             <Label text="RLife" styleClass="title-bar-title"/>
             <Label text="—" style="-fx-text-fill: #475569;"/>
             <Label text="Student Platform" styleClass="title-bar-subtitle"/>
@@ -384,9 +386,9 @@
 
                 <!-- Footer -->
                 <HBox alignment="CENTER" spacing="6">
-                    <StackPane styleClass="title-bar-logo">
-                        <FontIcon iconLiteral="fth-layers" iconSize="12" iconColor="white"/>
-                    </StackPane>
+                    <ImageView fitWidth="22" fitHeight="22" preserveRatio="true">
+                        <image><Image url="@../images/logo.png"/></image>
+                    </ImageView>
                     <Label text="RLife" style="-fx-text-fill: #475569; -fx-font-size: 13px; -fx-font-weight: bold;"/>
                     <Label text="— Built for students, by students."
                            style="-fx-text-fill: #334155; -fx-font-size: 12px;"/>

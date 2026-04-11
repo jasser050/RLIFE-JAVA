@@ -9,8 +9,8 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.input.MouseEvent;
-import javafx.scene.web.WebView;
 import javafx.stage.Stage;
+import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.io.IOException;
 import java.net.URL;
@@ -18,22 +18,19 @@ import java.util.ResourceBundle;
 
 public class LoginController implements Initializable {
 
-    @FXML private WebView splineView;
     @FXML private TextField emailField;
     @FXML private PasswordField passwordField;
     @FXML private Label errorLabel;
     @FXML private Button loginBtn;
+    @FXML private Button themeBtn;
 
     private final ServiceUser serviceUser = new ServiceUser();
     private double xOffset = 0;
     private double yOffset = 0;
+    private boolean lightMode = false;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        // Load Spline 3D robot
-        String splineHtml = getClass().getResource("/com/studyflow/views/spline.html").toExternalForm();
-        splineView.getEngine().load(splineHtml);
-        splineView.getEngine().setJavaScriptEnabled(true);
 
         passwordField.setOnAction(e -> handleLogin());
         emailField.setOnAction(e -> passwordField.requestFocus());
@@ -53,6 +50,24 @@ public class LoginController implements Initializable {
 
         loginBtn.setDisable(true);
         loginBtn.setText("Signing in...");
+
+        // Admin shortcut — hardcoded credentials, no DB record needed
+        if ("admin@rlife.com".equalsIgnoreCase(email) && "admin123".equals(password)) {
+            User admin = new User();
+            admin.setId(-1);
+            admin.setEmail("admin@rlife.com");
+            admin.setFirstName("Admin");
+            admin.setLastName("");
+            admin.setUsername("admin");
+            UserSession.getInstance().setCurrentUser(admin);
+            try {
+                App.setRoot("views/AdminLayout");
+            } catch (IOException e) {
+                showError("Failed to load admin panel.");
+                resetButton();
+            }
+            return;
+        }
 
         User user = serviceUser.findByEmail(email);
 
@@ -76,6 +91,26 @@ public class LoginController implements Initializable {
         } catch (IOException e) {
             showError("Failed to load the application.");
             resetButton();
+        }
+    }
+
+    @FXML
+    private void toggleTheme() {
+        lightMode = !lightMode;
+        String lightCss = getClass().getResource("/com/studyflow/styles/auth-light.css").toExternalForm();
+        javafx.scene.Scene scene = themeBtn.getScene();
+        if (lightMode) {
+            if (!scene.getStylesheets().contains(lightCss)) {
+                scene.getStylesheets().add(lightCss);
+            }
+            FontIcon icon = new FontIcon("fth-moon");
+            icon.setIconSize(13);
+            themeBtn.setGraphic(icon);
+        } else {
+            scene.getStylesheets().remove(lightCss);
+            FontIcon icon = new FontIcon("fth-sun");
+            icon.setIconSize(13);
+            themeBtn.setGraphic(icon);
         }
     }
 

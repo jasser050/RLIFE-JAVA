@@ -22,6 +22,7 @@ public class App extends Application {
     @Override
     public void start(Stage stage) throws IOException {
         primaryStage = stage;
+        LocalServer.start();
 
         // Load the main layout
         Parent root = loadFXML("views/Landing");
@@ -74,6 +75,9 @@ public class App extends Application {
     }
 
     public static void main(String[] args) {
+        // Enable hardware acceleration and WebGL for WebView (Spline + Three.js)
+        System.setProperty("prism.forceGPU", "true");
+        System.setProperty("prism.vsync", "false");
         launch(args);
     }
 }

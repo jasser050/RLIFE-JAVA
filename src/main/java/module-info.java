@@ -5,7 +5,10 @@ module com.studyflow {
     requires org.kordamp.ikonli.javafx;
     requires org.kordamp.ikonli.feather;
     requires java.sql;
+    requires mysql.connector.j;
     requires javafx.web;
+    requires jdk.httpserver;
+    requires jgltf.model;
 
     opens com.studyflow to javafx.fxml;
     opens com.studyflow.controllers to javafx.fxml;

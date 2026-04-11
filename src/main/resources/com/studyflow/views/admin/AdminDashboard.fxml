@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.chart.*?>
+<?import javafx.geometry.Insets?>
+<?import org.kordamp.ikonli.javafx.FontIcon?>
+
+<VBox xmlns="http://javafx.com/javafx/21"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.studyflow.controllers.AdminDashboardController"
+      spacing="24" style="-fx-background-color: #020617;">
+    <padding><Insets top="0" right="0" bottom="24" left="0"/></padding>
+
+    <!-- Header -->
+    <HBox alignment="CENTER_LEFT" spacing="16">
+        <VBox spacing="4" HBox.hgrow="ALWAYS">
+            <Label text="Admin Dashboard" styleClass="text-heading"/>
+            <Label text="Overview of your platform and user activity" styleClass="text-muted"/>
+        </VBox>
+        <HBox styleClass="card" alignment="CENTER_LEFT" spacing="12" style="-fx-padding: 12 16;">
+            <StackPane styleClass="stat-icon-box, danger" prefWidth="40" prefHeight="40">
+                <FontIcon iconLiteral="fth-shield" iconSize="18"/>
+            </StackPane>
+            <VBox spacing="2">
+                <Label text="Admin" styleClass="stat-value" style="-fx-font-size: 18px;"/>
+                <Label text="Full Access" styleClass="text-small"/>
+            </VBox>
+        </HBox>
+    </HBox>
+
+    <!-- Stats Cards Row -->
+    <HBox spacing="16">
+        <!-- Total Users -->
+        <VBox styleClass="stat-card" spacing="16" HBox.hgrow="ALWAYS">
+            <HBox alignment="CENTER_LEFT">
+                <StackPane styleClass="stat-icon-box, primary" prefWidth="44" prefHeight="44">
+                    <FontIcon iconLiteral="fth-users" iconSize="20"/>
+                </StackPane>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Label text="Total" styleClass="badge, primary"/>
+            </HBox>
+            <VBox spacing="4">
+                <Label fx:id="totalUsersLabel" text="0" styleClass="stat-value"/>
+                <Label text="Registered Users" styleClass="stat-label"/>
+            </VBox>
+        </VBox>
+
+        <!-- Active Users -->
+        <VBox styleClass="stat-card" spacing="16" HBox.hgrow="ALWAYS">
+            <HBox alignment="CENTER_LEFT">
+                <StackPane styleClass="stat-icon-box, success" prefWidth="44" prefHeight="44">
+                    <FontIcon iconLiteral="fth-user-check" iconSize="20"/>
+                </StackPane>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Label text="Active" styleClass="badge, success"/>
+            </HBox>
+            <VBox spacing="4">
+                <Label fx:id="activeUsersLabel" text="0" styleClass="stat-value"/>
+                <Label text="Active Users" styleClass="stat-label"/>
+            </VBox>
+        </VBox>
+
+        <!-- Banned Users -->
+        <VBox styleClass="stat-card" spacing="16" HBox.hgrow="ALWAYS">
+            <HBox alignment="CENTER_LEFT">
+                <StackPane styleClass="stat-icon-box, danger" prefWidth="44" prefHeight="44">
+                    <FontIcon iconLiteral="fth-user-x" iconSize="20"/>
+                </StackPane>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Label text="Banned" styleClass="badge, danger"/>
+            </HBox>
+            <VBox spacing="4">
+                <Label fx:id="bannedUsersLabel" text="0" styleClass="stat-value"/>
+                <Label text="Banned Users" styleClass="stat-label"/>
+            </VBox>
+        </VBox>
+
+        <!-- New This Month -->
+        <VBox styleClass="stat-card" spacing="16" HBox.hgrow="ALWAYS">
+            <HBox alignment="CENTER_LEFT">
+                <StackPane styleClass="stat-icon-box, warning" prefWidth="44" prefHeight="44">
+                    <FontIcon iconLiteral="fth-user-plus" iconSize="20"/>
+                </StackPane>
+            </HBox>
+            <VBox spacing="4">
+                <Label fx:id="newUsersLabel" text="0" styleClass="stat-value"/>
+                <Label text="New This Month" styleClass="stat-label"/>
+            </VBox>
+        </VBox>
+    </HBox>
+
+    <!-- Charts Row -->
+    <HBox spacing="16">
+        <!-- User Registrations Chart -->
+        <VBox styleClass="card" HBox.hgrow="ALWAYS">
+            <HBox styleClass="card-header" alignment="CENTER_LEFT" spacing="12">
+                <StackPane styleClass="stat-icon-box, primary" prefWidth="36" prefHeight="36">
+                    <FontIcon iconLiteral="fth-trending-up" iconSize="16"/>
+                </StackPane>
+                <VBox spacing="2" HBox.hgrow="ALWAYS">
+                    <Label text="User Registrations" styleClass="card-title"/>
+                    <Label text="Monthly sign-ups over time" styleClass="text-small"/>
+                </VBox>
+            </HBox>
+            <VBox styleClass="card-body" VBox.vgrow="ALWAYS">
+                <BarChart fx:id="registrationsChart" legendVisible="false"
+                          prefHeight="250" barGap="4" categoryGap="30">
+                    <xAxis><CategoryAxis side="BOTTOM"/></xAxis>
+                    <yAxis><NumberAxis side="LEFT" autoRanging="true"/></yAxis>
+                </BarChart>
+            </VBox>
+        </VBox>
+
+        <!-- Gender Distribution -->
+        <VBox styleClass="card" prefWidth="340" minWidth="300">
+            <HBox styleClass="card-header" alignment="CENTER_LEFT" spacing="12">
+                <StackPane styleClass="stat-icon-box, accent" prefWidth="36" prefHeight="36">
+                    <FontIcon iconLiteral="fth-pie-chart" iconSize="16"/>
+                </StackPane>
+                <VBox spacing="2" HBox.hgrow="ALWAYS">
+                    <Label text="Gender Split" styleClass="card-title"/>
+                    <Label text="Male vs Female users" styleClass="text-small"/>
+                </VBox>
+            </HBox>
+            <VBox styleClass="card-body" VBox.vgrow="ALWAYS">
+                <PieChart fx:id="genderChart" legendVisible="true" prefHeight="250"/>
+            </VBox>
+        </VBox>
+    </HBox>
+
+    <!-- Recent Users Table -->
+    <VBox styleClass="card">
+        <HBox styleClass="card-header" alignment="CENTER_LEFT" spacing="12">
+            <StackPane styleClass="stat-icon-box, primary" prefWidth="36" prefHeight="36">
+                <FontIcon iconLiteral="fth-users" iconSize="16"/>
+            </StackPane>
+            <VBox spacing="2" HBox.hgrow="ALWAYS">
+                <Label text="Recent Users" styleClass="card-title"/>
+                <Label text="Latest registered accounts" styleClass="text-small"/>
+            </VBox>
+        </HBox>
+        <VBox styleClass="card-body">
+            <TableView fx:id="recentUsersTable" prefHeight="200" styleClass="admin-table">
+                <columns>
+                    <TableColumn fx:id="colId" text="ID" prefWidth="50"/>
+                    <TableColumn fx:id="colName" text="Name" prefWidth="160"/>
+                    <TableColumn fx:id="colEmail" text="Email" prefWidth="220"/>
+                    <TableColumn fx:id="colGender" text="Gender" prefWidth="80"/>
+                    <TableColumn fx:id="colStatus" text="Status" prefWidth="100"/>
+                    <TableColumn fx:id="colDate" text="Joined" prefWidth="150"/>
+                </columns>
+            </TableView>
+        </VBox>
+    </VBox>
+</VBox>
