@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 100vw; height: 100vh;
+    background: linear-gradient(135deg, #06041A 0%, #130B35 50%, #0B1632 100%);
+    overflow: hidden;
+  }
+  spline-viewer {
+    width: 100% !important;
+    height: 100% !important;
+    display: block;
+    position: absolute; inset: 0;
+  }
+  #cursor-glow {
+    position: fixed;
+    width: 280px; height: 280px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(139,92,246,0.16) 0%, transparent 70%);
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    z-index: 2;
+    transition: left 0.06s ease, top 0.06s ease;
+  }
+  #loading {
+    position: fixed; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 14px; z-index: 1; pointer-events: none;
+    transition: opacity 0.8s;
+  }
+  #loading.hidden { opacity: 0; }
+  .ring {
+    width: 48px; height: 48px;
+    border: 3px solid rgba(139,92,246,0.18);
+    border-top-color: #8B5CF6;
+    border-radius: 50%;
+    animation: spin 0.85s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .ring-text {
+    font-family: "Segoe UI", system-ui, sans-serif;
+    font-size: 13px; color: #7C3AED; letter-spacing: 0.02em;
+  }
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <div class="ring"></div>
+  <div class="ring-text">Loading 3D scene…</div>
+</div>
+
+<div id="cursor-glow"></div>
+
+<script type="module" src="https://unpkg.com/@splinetool/viewer@1.12.81/build/spline-viewer.js"></script>
+
+<spline-viewer
+  url="https://prod.spline.design/asWma1t7sm8BCESL/scene.splinecode"
+  loading-anim-type="spinner-small-dark"
+  events-target="global">
+</spline-viewer>
+
+<script>
+  var loading = document.getElementById('loading');
+
+  // Hide loading once the viewer fires its ready/load event
+  document.addEventListener('DOMContentLoaded', function() {
+    var viewer = document.querySelector('spline-viewer');
+    if (viewer) {
+      viewer.addEventListener('load', function() {
+        loading.classList.add('hidden');
+      });
+    }
+  });
+
+  // Fallback: hide loader after 10 seconds regardless
+  setTimeout(function() { loading.classList.add('hidden'); }, 10000);
+
+  // Cursor glow
+  var glow = document.getElementById('cursor-glow');
+  document.addEventListener('mousemove', function(e) {
+    glow.style.left = e.clientX + 'px';
+    glow.style.top  = e.clientY + 'px';
+  });
+</script>
+</body>
+</html>
