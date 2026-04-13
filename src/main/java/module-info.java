@@ -11,6 +11,9 @@ module com.studyflow {
     requires jgltf.model;
     requires org.apache.pdfbox;
     requires java.desktop;
+    requires jakarta.mail;
+    requires com.google.zxing;
+    requires com.google.zxing.javase;
 
     opens com.studyflow to javafx.fxml;
     opens com.studyflow.controllers to javafx.fxml;

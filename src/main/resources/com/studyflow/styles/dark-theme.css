@@ -199,7 +199,7 @@
     -fx-background-radius: 10;
     -fx-text-fill: #F1F5F9;
     -fx-prompt-text-fill: #64748B;
-    -fx-padding: 10 14 10 40;
+    -fx-padding: 10 14;
     -fx-pref-width: 320;
     -fx-font-size: 14px;
 }
@@ -596,18 +596,23 @@
 
 /* Bar Chart */
 .default-color0.chart-bar {
-    -fx-bar-fill: #8B5CF6;
-    -fx-background-radius: 4 4 0 0;
+    -fx-bar-fill: linear-gradient(to top, #6D28D9, #A78BFA);
+    -fx-background-radius: 6 6 0 0;
+    -fx-border-color: transparent;
+    -fx-effect: dropshadow(gaussian, rgba(139, 92, 246, 0.25), 6, 0, 0, 2);
 }
 
 .default-color1.chart-bar {
-    -fx-bar-fill: #10B981;
-    -fx-background-radius: 4 4 0 0;
+    -fx-bar-fill: linear-gradient(to top, #059669, #34D399);
+    -fx-background-radius: 6 6 0 0;
+    -fx-border-color: transparent;
+    -fx-effect: dropshadow(gaussian, rgba(16, 185, 129, 0.25), 6, 0, 0, 2);
 }
 
 .default-color2.chart-bar {
-    -fx-bar-fill: #F59E0B;
-    -fx-background-radius: 4 4 0 0;
+    -fx-bar-fill: linear-gradient(to top, #D97706, #FCD34D);
+    -fx-background-radius: 6 6 0 0;
+    -fx-border-color: transparent;
 }
 
 /* Area Chart */

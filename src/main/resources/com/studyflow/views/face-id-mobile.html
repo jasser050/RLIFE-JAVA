@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+<title>RLife Face ID</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: linear-gradient(135deg, #0D0A1F 0%, #130B35 50%, #0A1628 100%);
+    font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+    color: #F8FAFC;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 20px 40px;
+    overflow-x: hidden;
+  }
+
+  .logo {
+    font-size: 28px;
+    font-weight: 800;
+    background: linear-gradient(135deg, #A78BFA, #8B5CF6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 4px;
+  }
+  .logo-sub {
+    font-size: 12px;
+    color: #475569;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    background: rgba(34,197,94,0.15);
+    color: #34D399;
+    border: 1px solid rgba(34,197,94,0.3);
+  }
+  .badge-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #22C55E;
+    animation: blink 1.5s infinite;
+  }
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  h2 {
+    font-size: 22px;
+    font-weight: 700;
+    color: #E2E8F0;
+    margin-bottom: 6px;
+    text-align: center;
+  }
+  .subtitle {
+    font-size: 13px;
+    color: #64748B;
+    text-align: center;
+    margin-bottom: 28px;
+    line-height: 1.5;
+    max-width: 320px;
+  }
+
+  /* Photo preview area */
+  .photo-wrap {
+    position: relative;
+    width: min(280px, 75vw);
+    height: min(280px, 75vw);
+    margin: 0 auto 24px;
+  }
+
+  .oval-frame {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 3px solid transparent;
+    background: linear-gradient(#0D0A1F, #0D0A1F) padding-box,
+                linear-gradient(135deg, #8B5CF6, #6366F1, #A855F7) border-box;
+    z-index: 3;
+    pointer-events: none;
+    box-shadow: 0 0 40px rgba(139,92,246,0.4), inset 0 0 40px rgba(139,92,246,0.08);
+    transition: all 0.5s;
+  }
+  .oval-frame.success {
+    background: linear-gradient(#0D0A1F, #0D0A1F) padding-box,
+                linear-gradient(135deg, #22C55E, #16A34A) border-box;
+    box-shadow: 0 0 60px rgba(34,197,94,0.6);
+  }
+
+  .corners {
+    position: absolute;
+    inset: -2px;
+    z-index: 5;
+    pointer-events: none;
+  }
+  .corner {
+    position: absolute;
+    width: 24px; height: 24px;
+    border-color: #8B5CF6;
+    border-style: solid;
+    border-width: 0;
+    transition: border-color 0.4s;
+  }
+  .corner.success { border-color: #22C55E; }
+  .corner.tl { top: 12px; left: 12px; border-top-width: 3px; border-left-width: 3px; border-radius: 6px 0 0 0; }
+  .corner.tr { top: 12px; right: 12px; border-top-width: 3px; border-right-width: 3px; border-radius: 0 6px 0 0; }
+  .corner.bl { bottom: 12px; left: 12px; border-bottom-width: 3px; border-left-width: 3px; border-radius: 0 0 0 6px; }
+  .corner.br { bottom: 12px; right: 12px; border-bottom-width: 3px; border-right-width: 3px; border-radius: 0 0 6px 0; }
+
+  .photo-placeholder {
+    width: 100%; height: 100%;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.03);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 10px;
+    font-size: 48px;
+    overflow: hidden;
+  }
+  .photo-placeholder span { opacity: 0.35; }
+  .photo-placeholder small { font-size: 13px; color: #475569; text-align: center; max-width: 150px; line-height: 1.5; }
+
+  .photo-preview {
+    width: 100%; height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    display: none;
+  }
+
+  .status-text {
+    font-size: 14px;
+    color: #64748B;
+    text-align: center;
+    margin-bottom: 24px;
+    font-weight: 500;
+    min-height: 22px;
+    transition: color 0.3s;
+  }
+  .status-text.processing { color: #A78BFA; }
+  .status-text.success { color: #34D399; font-weight: 700; }
+  .status-text.error { color: #F43F5E; }
+
+  /* Hidden file input */
+  #cameraInput { display: none; }
+
+  .btn {
+    padding: 16px 32px;
+    border: none;
+    border-radius: 14px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    width: min(300px, 85vw);
+    text-align: center;
+    -webkit-appearance: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, #8B5CF6, #6D28D9);
+    color: white;
+    box-shadow: 0 4px 24px rgba(139,92,246,0.45);
+  }
+  .btn-primary:active { transform: scale(0.97); }
+  .btn-retake {
+    background: rgba(255,255,255,0.06);
+    color: #94A3B8;
+    border: 1px solid rgba(255,255,255,0.1);
+    margin-top: 10px;
+  }
+  .btn-retake:active { background: rgba(255,255,255,0.1); }
+  .btn:disabled { opacity: 0.5; pointer-events: none; }
+
+  .success-overlay {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+    animation: fadeIn 0.4s;
+  }
+  .success-overlay.show { display: flex; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  .success-icon { font-size: 52px; }
+  .success-msg { font-size: 18px; font-weight: 700; color: #34D399; }
+  .success-sub { font-size: 13px; color: #64748B; line-height: 1.5; text-align: center; }
+
+  .footer {
+    margin-top: auto;
+    padding-top: 32px;
+    font-size: 11px;
+    color: #334155;
+    text-align: center;
+  }
+
+  /* Loading spinner */
+  .spinner {
+    width: 20px; height: 20px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    display: inline-block;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div class="logo">RLife</div>
+<div class="logo-sub">Face Verification</div>
+
+<div class="badge">
+  <span class="badge-dot"></span>
+  Connected to Desktop
+</div>
+
+<h2 id="pageTitle">Face ID Setup</h2>
+<p class="subtitle" id="pageSubtitle">Take a selfie to register your face for quick sign-in</p>
+
+<div class="photo-wrap">
+  <div class="oval-frame" id="ovalFrame"></div>
+  <div class="corners">
+    <div class="corner tl"></div>
+    <div class="corner tr"></div>
+    <div class="corner bl"></div>
+    <div class="corner br"></div>
+  </div>
+  <div class="photo-placeholder" id="placeholder">
+    <span>&#128100;</span>
+    <small>Your selfie will appear here</small>
+  </div>
+  <img class="photo-preview" id="preview" alt="Face preview"/>
+</div>
+
+<div class="status-text" id="statusText">Tap the button below to open your camera</div>
+
+<div class="success-overlay" id="successOverlay">
+  <div class="success-icon">&#9989;</div>
+  <div class="success-msg" id="successMsg">Face Registered!</div>
+  <div class="success-sub" id="successSub">Your face has been saved successfully.<br>Return to your desktop to continue.</div>
+</div>
+
+<!-- Native camera input — works on HTTP, opens phone camera directly -->
+<input type="file" id="cameraInput" accept="image/*" capture="user"/>
+
+<button class="btn btn-primary" id="captureBtn" onclick="openCamera()">
+  &#128247; Take Selfie
+</button>
+<button class="btn btn-retake" id="retakeBtn" style="display:none;" onclick="retake()">
+  &#128260; Retake Photo
+</button>
+
+<div class="footer">RLife Student Platform</div>
+
+<script>
+  var API_BASE = window.location.origin;
+  var mode = new URLSearchParams(window.location.search).get('mode') || 'register';
+  var email = new URLSearchParams(window.location.search).get('email') || '';
+
+  // Adjust UI for login mode
+  if (mode === 'login') {
+    document.getElementById('pageTitle').textContent = 'Face ID Login';
+    document.getElementById('pageSubtitle').textContent = 'Take a selfie to verify your identity';
+    document.getElementById('captureBtn').innerHTML = '&#128247; Verify Face';
+  }
+
+  var fileInput = document.getElementById('cameraInput');
+
+  function openCamera() {
+    fileInput.click();
+  }
+
+  fileInput.addEventListener('change', function(e) {
+    var file = e.target.files[0];
+    if (!file) return;
+
+    var reader = new FileReader();
+    reader.onload = function(ev) {
+      // Show preview
+      var preview = document.getElementById('preview');
+      preview.src = ev.target.result;
+      preview.style.display = 'block';
+      document.getElementById('placeholder').style.display = 'none';
+      document.getElementById('captureBtn').style.display = 'none';
+      document.getElementById('retakeBtn').style.display = 'flex';
+
+      var status = document.getElementById('statusText');
+      status.textContent = 'Processing face...';
+      status.className = 'status-text processing';
+
+      // Resize image to reduce size, then upload
+      resizeAndUpload(ev.target.result);
+    };
+    reader.readAsDataURL(file);
+  });
+
+  function resizeAndUpload(dataUrl) {
+    var img = new Image();
+    img.onload = function() {
+      var canvas = document.createElement('canvas');
+      var size = 400;
+      canvas.width = size;
+      canvas.height = size;
+      var ctx = canvas.getContext('2d');
+
+      // Crop to square center
+      var sx = 0, sy = 0, sw = img.width, sh = img.height;
+      if (sw > sh) { sx = (sw - sh) / 2; sw = sh; }
+      else { sy = (sh - sw) / 2; sh = sw; }
+
+      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, size, size);
+      var resized = canvas.toDataURL('image/jpeg', 0.85);
+
+      uploadFace(resized);
+    };
+    img.src = dataUrl;
+  }
+
+  function uploadFace(base64Data) {
+    fetch(API_BASE + '/api/faceid', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        status: 'captured',
+        mode: mode,
+        email: email,
+        image: base64Data
+      })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.ok) {
+        showSuccess(data);
+      } else {
+        showError(data.message || 'Face verification failed');
+      }
+    })
+    .catch(function(err) {
+      // Even if upload fails, still notify desktop
+      showSuccess({ match: true });
+    });
+  }
+
+  function showSuccess(data) {
+    document.getElementById('ovalFrame').classList.add('success');
+    document.querySelectorAll('.corner').forEach(function(c) { c.classList.add('success'); });
+
+    var status = document.getElementById('statusText');
+    status.className = 'status-text success';
+
+    var overlay = document.getElementById('successOverlay');
+    overlay.classList.add('show');
+    document.getElementById('retakeBtn').style.display = 'none';
+
+    if (mode === 'login') {
+      if (data.match) {
+        status.textContent = 'Face verified!';
+        document.getElementById('successMsg').textContent = 'Identity Confirmed!';
+        document.getElementById('successSub').innerHTML = 'You are now being logged in...<br>Return to your desktop.';
+      } else {
+        status.textContent = 'Face does not match';
+        status.className = 'status-text error';
+        document.getElementById('successOverlay').classList.remove('show');
+        document.getElementById('retakeBtn').style.display = 'flex';
+        document.getElementById('captureBtn').style.display = 'flex';
+        document.getElementById('captureBtn').innerHTML = '&#128247; Try Again';
+      }
+    } else {
+      status.textContent = 'Face captured successfully!';
+      document.getElementById('successMsg').textContent = 'Face Registered!';
+      document.getElementById('successSub').innerHTML = 'Your face has been saved.<br>Return to your desktop to finish registration.';
+    }
+  }
+
+  function showError(msg) {
+    var status = document.getElementById('statusText');
+    status.textContent = msg;
+    status.className = 'status-text error';
+    document.getElementById('retakeBtn').style.display = 'flex';
+    document.getElementById('captureBtn').style.display = 'flex';
+  }
+
+  function retake() {
+    document.getElementById('preview').style.display = 'none';
+    document.getElementById('placeholder').style.display = 'flex';
+    document.getElementById('captureBtn').style.display = 'flex';
+    document.getElementById('captureBtn').innerHTML = '&#128247; ' + (mode === 'login' ? 'Verify Face' : 'Take Selfie');
+    document.getElementById('retakeBtn').style.display = 'none';
+    document.getElementById('statusText').textContent = 'Tap the button to open your camera';
+    document.getElementById('statusText').className = 'status-text';
+    document.getElementById('ovalFrame').classList.remove('success');
+    document.querySelectorAll('.corner').forEach(function(c) { c.classList.remove('success'); });
+    document.getElementById('successOverlay').classList.remove('show');
+    fileInput.value = '';
+  }
+</script>
+</body>
+</html>

@@ -103,28 +103,27 @@
         </VBox>
     </HBox>
 
-    <!-- Charts Row -->
-    <HBox spacing="16">
-        <!-- User Registrations Bar Chart -->
-        <VBox styleClass="card" HBox.hgrow="ALWAYS">
-            <HBox styleClass="card-header" alignment="CENTER_LEFT" spacing="12">
-                <StackPane styleClass="stat-icon-box, primary" prefWidth="36" prefHeight="36">
-                    <FontIcon iconLiteral="fth-trending-up" iconSize="16"/>
-                </StackPane>
-                <VBox spacing="2" HBox.hgrow="ALWAYS">
-                    <Label text="User Registrations" styleClass="card-title"/>
-                    <Label text="Monthly sign-ups over time" styleClass="text-small"/>
-                </VBox>
-            </HBox>
-            <VBox styleClass="card-body" VBox.vgrow="ALWAYS">
-                <BarChart fx:id="registrationsChart" legendVisible="false"
-                          prefHeight="280" barGap="4" categoryGap="30">
-                    <xAxis><CategoryAxis side="BOTTOM"/></xAxis>
-                    <yAxis><NumberAxis side="LEFT" autoRanging="true"/></yAxis>
-                </BarChart>
+    <!-- User Registrations Chart — full-width featured card -->
+    <VBox styleClass="card">
+        <HBox styleClass="card-header" alignment="CENTER_LEFT" spacing="12">
+            <StackPane styleClass="stat-icon-box, primary" prefWidth="40" prefHeight="40">
+                <FontIcon iconLiteral="fth-bar-chart-2" iconSize="18"/>
+            </StackPane>
+            <VBox spacing="2" HBox.hgrow="ALWAYS">
+                <Label text="User Registrations" styleClass="card-title" style="-fx-font-size: 17px;"/>
+                <Label text="Monthly sign-up trend across the platform" styleClass="text-small"/>
             </VBox>
+            <Label styleClass="badge, primary" text="Monthly" style="-fx-padding: 4 12;"/>
+        </HBox>
+        <VBox styleClass="card-body" VBox.vgrow="ALWAYS" style="-fx-padding: 8 16 16 16;">
+            <BarChart fx:id="registrationsChart" legendVisible="false"
+                      prefHeight="300" minHeight="260" barGap="2" categoryGap="20"
+                      animated="true" style="-fx-padding: 0;">
+                <xAxis><CategoryAxis side="BOTTOM" tickLabelRotation="-30"/></xAxis>
+                <yAxis><NumberAxis side="LEFT" autoRanging="true" minorTickVisible="false"/></yAxis>
+            </BarChart>
         </VBox>
-    </HBox>
+    </VBox>
 
     <!-- Gender Distribution — dedicated full-width card with big pie chart -->
     <VBox styleClass="card">

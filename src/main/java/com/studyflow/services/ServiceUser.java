@@ -153,6 +153,18 @@ public class ServiceUser implements IService<User> {
         return users;
     }
 
+    public void updatePassword(String email, String newPassword) {
+        String req = "UPDATE `user` SET `password`=?, `updated_at`=NOW() WHERE `email`=?";
+        try {
+            PreparedStatement pstm = cnx.prepareStatement(req);
+            pstm.setString(1, newPassword);
+            pstm.setString(2, email);
+            pstm.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to update password: " + e.getMessage(), e);
+        }
+    }
+
     // ── Admin methods ────────────────────────────────────────────────
 
     public int countUsers() {

@@ -104,14 +104,11 @@
             <VBox styleClass="main-content">
                 <!-- Top Bar -->
                 <HBox styleClass="topbar" alignment="CENTER_LEFT">
-                    <HBox alignment="CENTER_LEFT" spacing="16" HBox.hgrow="ALWAYS">
-                        <StackPane>
-                            <TextField fx:id="searchField" styleClass="search-field"
-                                       promptText="Search users, logs..."/>
-                            <FontIcon iconLiteral="fth-search" iconSize="18"
-                                      style="-fx-icon-color: #64748B;"
-                                      StackPane.alignment="CENTER_LEFT" translateX="12"/>
-                        </StackPane>
+                    <HBox alignment="CENTER_LEFT" spacing="12" HBox.hgrow="ALWAYS">
+                        <FontIcon iconLiteral="fth-search" iconSize="16"
+                                  style="-fx-icon-color: #64748B;"/>
+                        <TextField fx:id="searchField" styleClass="search-field"
+                                   promptText="Search registered users..."/>
                     </HBox>
                     <HBox alignment="CENTER_RIGHT" spacing="8">
                         <Label text="ADMIN MODE" styleClass="badge, danger"
