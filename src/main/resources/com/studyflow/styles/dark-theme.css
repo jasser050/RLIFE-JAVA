@@ -1924,7 +1924,8 @@
     -fx-text-fill: #CBD5E1;
     -fx-font-size: 14px;
 }
-.sidebar-user-row:hover { -fx-background-color: #1E293B; -fx-cursor: hand; }
+.sidebar-user-row { -fx-cursor: hand; }
+.sidebar-user-row:hover { -fx-background-color: #1E293B; }
 .btn-danger {
     -fx-background-color: rgba(244,63,94,0.12);
     -fx-border-color: rgba(244,63,94,0.3);
@@ -2638,6 +2639,281 @@
     -fx-background-radius: 14;
     -fx-pref-width: 54; -fx-pref-height: 54;
     -fx-min-width: 54;  -fx-min-height: 54;
+}
+
+/* ============================================
+   THEME BUTTONS (Accessibility)
+   ============================================ */
+
+.theme-btn {
+    -fx-padding: 18 12;
+    -fx-background-radius: 14;
+    -fx-border-radius: 14;
+    -fx-background-color: #0F172A;
+    -fx-border-color: #1E293B;
+    -fx-border-width: 2;
+    -fx-text-fill: transparent;
+    -fx-font-size: 0;
+    -fx-cursor: hand;
+    -fx-content-display: graphic-only;
+}
+.theme-btn:hover {
+    -fx-background-color: #1E293B;
+    -fx-border-color: #334155;
+}
+.theme-btn.active {
+    -fx-background-color: rgba(139,92,246,0.12);
+    -fx-border-color: #8B5CF6;
+}
+.theme-icon-circle {
+    -fx-background-color: #1E293B;
+    -fx-background-radius: 100;
+    -fx-pref-width: 44;
+    -fx-pref-height: 44;
+    -fx-min-width: 44;
+    -fx-min-height: 44;
+    -fx-alignment: center;
+}
+.theme-btn.active .theme-icon-circle {
+    -fx-background-color: #8B5CF6;
+}
+.theme-btn .ikonli-font-icon {
+    -fx-icon-color: #64748B;
+}
+.theme-btn.active .ikonli-font-icon {
+    -fx-icon-color: white;
+}
+.theme-btn-label {
+    -fx-text-fill: #94A3B8;
+    -fx-font-size: 12px;
+    -fx-font-weight: 600;
+}
+.theme-btn.active .theme-btn-label {
+    -fx-text-fill: #A78BFA;
+}
+
+/* Font Size Preview */
+.font-size-preview {
+    -fx-font-size: 12px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #8B5CF6;
+    -fx-padding: 4 12;
+    -fx-background-radius: 8;
+    -fx-background-color: rgba(139,92,246,0.15);
+}
+
+/* Font Size Slider */
+.font-size-slider .track {
+    -fx-background-color: rgba(139,92,246,0.2);
+    -fx-background-radius: 6;
+    -fx-pref-height: 6;
+}
+.font-size-slider .thumb {
+    -fx-background-color: #8B5CF6;
+    -fx-background-radius: 100;
+    -fx-pref-width: 20;
+    -fx-pref-height: 20;
+    -fx-effect: dropshadow(gaussian, rgba(139,92,246,0.5), 8, 0, 0, 2);
+    -fx-cursor: hand;
+}
+.font-size-slider .thumb:hover {
+    -fx-background-color: #A78BFA;
+    -fx-effect: dropshadow(gaussian, rgba(139,92,246,0.7), 12, 0, 0, 2);
+}
+
+/* Font Size Tick Labels */
+.font-size-tick-label {
+    -fx-font-weight: 600;
+    -fx-text-fill: #475569;
+}
+
+/* Accent Color Picker */
+.accent-color-picker {
+    -fx-pref-width: 42;
+    -fx-pref-height: 42;
+    -fx-background-radius: 10;
+}
+.accent-color-btn {
+    -fx-background-radius: 10;
+    -fx-border-radius: 10;
+    -fx-border-width: 3;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 4, 0, 0, 2);
+}
+.accent-color-btn:hover {
+    -fx-opacity: 0.85;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.5), 8, 0, 0, 2);
+}
+.accent-color-btn.accent-active {
+    -fx-border-color: white !important;
+    -fx-effect: dropshadow(gaussian, rgba(255,255,255,0.3), 10, 0, 0, 0);
+    -fx-scale-x: 1.1;
+    -fx-scale-y: 1.1;
+}
+
+/* Toggle Cards */
+.toggle-card {
+    -fx-background-color: #0F172A;
+    -fx-border-color: #1E293B;
+    -fx-border-width: 1;
+    -fx-border-radius: 14;
+    -fx-background-radius: 14;
+    -fx-padding: 18;
+}
+.toggle-card:hover {
+    -fx-border-color: #334155;
+}
+.toggle-icon {
+    -fx-background-color: linear-gradient(to bottom right, #A855F7, #EC4899);
+    -fx-background-radius: 10;
+    -fx-pref-width: 38;
+    -fx-pref-height: 38;
+    -fx-min-width: 38;
+    -fx-min-height: 38;
+}
+.toggle-icon-contrast {
+    -fx-background-color: linear-gradient(to bottom right, #3B82F6, #06B6D4);
+    -fx-background-radius: 10;
+    -fx-pref-width: 38;
+    -fx-pref-height: 38;
+    -fx-min-width: 38;
+    -fx-min-height: 38;
+}
+.toggle-title {
+    -fx-font-size: 14px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #F8FAFC;
+}
+.toggle-subtitle {
+    -fx-font-size: 12px;
+    -fx-text-fill: #64748B;
+}
+
+/* Toggle Switch (CheckBox styled) */
+.toggle-switch {
+    -fx-font-size: 14px;
+}
+.toggle-switch .box {
+    -fx-background-color: #334155;
+    -fx-border-color: #475569;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-padding: 4;
+    -fx-pref-width: 20;
+    -fx-pref-height: 20;
+}
+.toggle-switch:selected .box {
+    -fx-background-color: #8B5CF6;
+    -fx-border-color: #A78BFA;
+}
+.toggle-switch .mark {
+    -fx-background-color: white;
+}
+
+/* Gender Cards */
+.gender-card {
+    -fx-background-color: #0F172A;
+    -fx-border-color: #1E293B;
+    -fx-border-width: 2;
+    -fx-border-radius: 14;
+    -fx-background-radius: 14;
+    -fx-padding: 16 20;
+    -fx-cursor: hand;
+    -fx-content-display: graphic-only;
+}
+.gender-card:hover {
+    -fx-background-color: #1E293B;
+    -fx-border-color: #334155;
+}
+.gender-card:selected {
+    -fx-background-color: rgba(139,92,246,0.12);
+    -fx-border-color: #8B5CF6;
+}
+.gender-icon-box {
+    -fx-background-radius: 10;
+    -fx-pref-width: 36;
+    -fx-pref-height: 36;
+    -fx-min-width: 36;
+    -fx-min-height: 36;
+    -fx-alignment: center;
+}
+.gender-male-icon {
+    -fx-background-color: linear-gradient(to bottom right, #6366F1, #3B82F6);
+}
+.gender-female-icon {
+    -fx-background-color: linear-gradient(to bottom right, #EC4899, #F472B6);
+}
+.gender-card-title {
+    -fx-font-size: 14px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #E2E8F0;
+}
+.gender-card-sub {
+    -fx-font-size: 11px;
+    -fx-text-fill: #64748B;
+}
+.gender-card:selected .gender-card-title {
+    -fx-text-fill: #A78BFA;
+}
+
+/* Bio TextArea */
+.bio-textarea {
+    -fx-background-color: #0F172A;
+    -fx-border-color: #1E293B;
+    -fx-border-width: 2;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+    -fx-text-fill: #E2E8F0;
+    -fx-font-size: 14px;
+    -fx-padding: 14;
+    -fx-prompt-text-fill: #475569;
+}
+.bio-textarea:focused {
+    -fx-border-color: #8B5CF6;
+    -fx-background-color: #0F172A;
+}
+.bio-textarea .content {
+    -fx-background-color: transparent;
+}
+.bio-char-count {
+    -fx-font-size: 11px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #64748B;
+}
+
+/* Font Family Buttons */
+.font-family-btn {
+    -fx-background-color: #0F172A;
+    -fx-border-color: #1E293B;
+    -fx-border-width: 2;
+    -fx-border-radius: 14;
+    -fx-background-radius: 14;
+    -fx-padding: 14 8;
+    -fx-cursor: hand;
+    -fx-content-display: graphic-only;
+}
+.font-family-btn:hover {
+    -fx-background-color: #1E293B;
+    -fx-border-color: #334155;
+}
+.font-family-btn.font-active {
+    -fx-background-color: rgba(139,92,246,0.12);
+    -fx-border-color: #8B5CF6;
+}
+.font-family-name {
+    -fx-font-size: 11px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #64748B;
+}
+.font-family-btn.font-active .font-family-name {
+    -fx-text-fill: #A78BFA;
+}
+
+/* Accent Default Reset Button */
+.accent-default-btn {
+    -fx-background-color: #1E293B;
+    -fx-border-color: #334155;
+    -fx-border-style: dashed;
 }
 
 /* Auth logo image effect */

@@ -165,13 +165,12 @@
                 </ScrollPane>
 
                 <!-- User Section at Bottom -->
-                <HBox styleClass="sidebar-header sidebar-user-row" alignment="CENTER_LEFT" spacing="12"
-                      onMouseClicked="#showProfile" style="-fx-cursor: hand;">
+                <HBox fx:id="userProfileRow" styleClass="sidebar-header sidebar-user-row" alignment="CENTER_LEFT" spacing="12">
                     <StackPane styleClass="avatar">
                         <Label fx:id="sidebarAvatar" text="??" styleClass="avatar-text"/>
                     </StackPane>
-                    <VBox spacing="2" HBox.hgrow="ALWAYS">
-                        <Label fx:id="sidebarUserName" text="Guest" styleClass="sidebar-title" style="-fx-font-size: 14px;"/>
+                    <VBox fx:id="userInfoBox" spacing="2" HBox.hgrow="ALWAYS" onMouseClicked="#showProfile">
+                        <Label fx:id="sidebarUserName" text="Guest" styleClass="sidebar-title" style="-fx-font-size: 14px; -fx-cursor: hand;"/>
                         <Label fx:id="sidebarUserSub" text="" styleClass="sidebar-subtitle"/>
                     </VBox>
                     <Button styleClass="btn-ghost" style="-fx-padding: 8;" onAction="#handleLogout">

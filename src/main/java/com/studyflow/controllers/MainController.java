@@ -16,6 +16,7 @@ import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import org.kordamp.ikonli.javafx.FontIcon;
 
@@ -38,6 +39,9 @@ public class MainController implements Initializable {
     @FXML private Label sidebarUserSub;
     @FXML private Label sidebarAvatar;
     @FXML private ImageView sidebarLogo;
+
+    @FXML private HBox userProfileRow;
+    @FXML private VBox userInfoBox;
 
     @FXML private Button btnDashboard;
     @FXML private Button btnCourses;
@@ -74,6 +78,10 @@ public class MainController implements Initializable {
                     ? user.getUniversity() : user.getEmail());
             sidebarAvatar.setText(user.getInitials().isEmpty() ? "??" : user.getInitials());
         }
+        
+        // Add click handler for user profile row
+        userProfileRow.setOnMouseClicked(event -> showProfile());
+        userInfoBox.setOnMouseClicked(event -> showProfile());
     }
 
     // ============================================
