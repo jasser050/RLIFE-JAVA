@@ -4,6 +4,7 @@ import com.studyflow.App;
 import com.studyflow.LocalServer;
 import com.studyflow.models.User;
 import com.studyflow.services.ServiceUser;
+
 import com.studyflow.utils.UserSession;
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.EncodeHintType;
@@ -20,7 +21,9 @@ import javafx.scene.image.ImageView;
 import javafx.scene.image.PixelWriter;
 import javafx.scene.image.WritableImage;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.web.WebView;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import org.kordamp.ikonli.javafx.FontIcon;
@@ -37,6 +40,8 @@ public class LoginController implements Initializable {
     @FXML private Label errorLabel;
     @FXML private Button loginBtn;
     @FXML private Button themeBtn;
+    @FXML private StackPane robotContainer;
+    @FXML private WebView splineWebView;
 
     private final ServiceUser serviceUser = new ServiceUser();
     private double xOffset = 0;
@@ -48,6 +53,14 @@ public class LoginController implements Initializable {
 
         passwordField.setOnAction(e -> handleLogin());
         emailField.setOnAction(e -> passwordField.requestFocus());
+
+        // Load marketing page with 3D robot in the right panel using WebView
+        String htmlPath = getClass().getResource("/com/studyflow/views/spline.html").toExternalForm();
+        splineWebView.getEngine().load(htmlPath);
+        
+        // Make WebView fill the container
+        splineWebView.prefWidthProperty().bind(robotContainer.widthProperty());
+        splineWebView.prefHeightProperty().bind(robotContainer.heightProperty());
     }
 
     @FXML

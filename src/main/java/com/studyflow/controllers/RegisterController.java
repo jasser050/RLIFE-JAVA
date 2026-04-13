@@ -22,6 +22,7 @@ import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.web.WebView;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import org.kordamp.ikonli.javafx.FontIcon;
@@ -79,6 +80,10 @@ public class RegisterController implements Initializable {
     @FXML private FontIcon qrStatusIcon;
     @FXML private HBox qrStatusBox;
 
+    // Right panel — 3D robot
+    @FXML private StackPane robotContainer;
+    @FXML private WebView splineWebView;
+
     // Shared
     @FXML private Label errorLabel;
     @FXML private Button registerBtn;
@@ -131,6 +136,14 @@ public class RegisterController implements Initializable {
 
         // Generate QR code for Face ID (phone scan)
         generateQrCode();
+
+        // Load marketing page with 3D robot in the right panel
+        String htmlPath = getClass().getResource("/com/studyflow/views/spline.html").toExternalForm();
+        splineWebView.getEngine().load(htmlPath);
+        
+        // Make WebView fill the container
+        splineWebView.prefWidthProperty().bind(robotContainer.widthProperty());
+        splineWebView.prefHeightProperty().bind(robotContainer.heightProperty());
 
         showStep(1);
     }

@@ -2,11 +2,11 @@
 
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.control.*?>
-<?import javafx.scene.SubScene?>
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.image.Image?>
 <?import javafx.geometry.Insets?>
 <?import org.kordamp.ikonli.javafx.FontIcon?>
+<?import javafx.scene.web.WebView?>
 
 <VBox xmlns="http://javafx.com/javafx/21"
       xmlns:fx="http://javafx.com/fxml/1"
@@ -270,99 +270,9 @@
             </ScrollPane>
         </VBox>
 
-        <!-- ─── RIGHT: Marketing Panel ─── -->
-        <StackPane styleClass="auth-right-panel" HBox.hgrow="ALWAYS">
-
-            <!-- Background glows -->
-            <StackPane styleClass="auth-right-glow" mouseTransparent="true"/>
-            <StackPane styleClass="mrkt-orb-tr" mouseTransparent="true" StackPane.alignment="TOP_RIGHT"/>
-            <StackPane styleClass="mrkt-orb-bl" mouseTransparent="true" StackPane.alignment="BOTTOM_LEFT"/>
-
-            <!-- Marketing content -->
-            <VBox alignment="CENTER" spacing="0" maxWidth="360">
-                <padding><Insets top="32" right="40" bottom="32" left="40"/></padding>
-
-                <!-- Badge -->
-                <HBox alignment="CENTER">
-                    <Label text="✦  Free Forever — No Credit Card Needed" styleClass="mrkt-pill mrkt-pill-green"/>
-                </HBox>
-                <VBox.margin><Insets bottom="24"/></VBox.margin>
-
-                <!-- Headline -->
-                <Label text="Your Success" styleClass="mrkt-h1" maxWidth="Infinity" alignment="CENTER"/>
-                <VBox.margin><Insets bottom="2"/></VBox.margin>
-                <Label text="Starts Here." styleClass="mrkt-h1 mrkt-h1-purple" maxWidth="Infinity" alignment="CENTER"/>
-                <VBox.margin><Insets bottom="14"/></VBox.margin>
-
-                <!-- Subtitle -->
-                <Label styleClass="mrkt-sub" wrapText="true" textAlignment="CENTER" maxWidth="300"
-                       text="Create your free account and unlock everything you need to excel academically."/>
-                <VBox.margin><Insets bottom="30"/></VBox.margin>
-
-                <!-- Feature cards -->
-                <VBox spacing="10">
-                    <HBox styleClass="mrkt-card" spacing="14" alignment="CENTER_LEFT">
-                        <StackPane styleClass="mrkt-ic mrkt-ic-purple" prefWidth="42" prefHeight="42" minWidth="42" minHeight="42" maxWidth="42" maxHeight="42">
-                            <FontIcon iconLiteral="fth-book-open" iconSize="17" styleClass="mrkt-ico"/>
-                        </StackPane>
-                        <VBox spacing="2" HBox.hgrow="ALWAYS">
-                            <Label text="AI-Powered Notes" styleClass="mrkt-card-title"/>
-                            <Label text="Capture and organize content intelligently" styleClass="mrkt-card-sub"/>
-                        </VBox>
-                    </HBox>
-                    <HBox styleClass="mrkt-card" spacing="14" alignment="CENTER_LEFT">
-                        <StackPane styleClass="mrkt-ic mrkt-ic-blue" prefWidth="42" prefHeight="42" minWidth="42" minHeight="42" maxWidth="42" maxHeight="42">
-                            <FontIcon iconLiteral="fth-calendar" iconSize="17" styleClass="mrkt-ico"/>
-                        </StackPane>
-                        <VBox spacing="2" HBox.hgrow="ALWAYS">
-                            <Label text="Smart Scheduling" styleClass="mrkt-card-title"/>
-                            <Label text="Never miss a deadline or exam again" styleClass="mrkt-card-sub"/>
-                        </VBox>
-                    </HBox>
-                    <HBox styleClass="mrkt-card" spacing="14" alignment="CENTER_LEFT">
-                        <StackPane styleClass="mrkt-ic mrkt-ic-pink" prefWidth="42" prefHeight="42" minWidth="42" minHeight="42" maxWidth="42" maxHeight="42">
-                            <FontIcon iconLiteral="fth-trending-up" iconSize="17" styleClass="mrkt-ico"/>
-                        </StackPane>
-                        <VBox spacing="2" HBox.hgrow="ALWAYS">
-                            <Label text="Progress Analytics" styleClass="mrkt-card-title"/>
-                            <Label text="Visual insights to maximize performance" styleClass="mrkt-card-sub"/>
-                        </VBox>
-                    </HBox>
-                    <HBox styleClass="mrkt-card" spacing="14" alignment="CENTER_LEFT">
-                        <StackPane styleClass="mrkt-ic mrkt-ic-teal" prefWidth="42" prefHeight="42" minWidth="42" minHeight="42" maxWidth="42" maxHeight="42">
-                            <FontIcon iconLiteral="fth-users" iconSize="17" styleClass="mrkt-ico"/>
-                        </StackPane>
-                        <VBox spacing="2" HBox.hgrow="ALWAYS">
-                            <Label text="Collaborate &amp; Connect" styleClass="mrkt-card-title"/>
-                            <Label text="Study groups and shared resources" styleClass="mrkt-card-sub"/>
-                        </VBox>
-                    </HBox>
-                </VBox>
-                <VBox.margin><Insets bottom="26"/></VBox.margin>
-
-                <!-- Divider -->
-                <StackPane styleClass="mrkt-rule" maxWidth="Infinity" minHeight="1" maxHeight="1"/>
-                <VBox.margin><Insets bottom="22"/></VBox.margin>
-
-                <!-- Stats -->
-                <HBox alignment="CENTER" spacing="0">
-                    <VBox alignment="CENTER" spacing="3" HBox.hgrow="ALWAYS">
-                        <Label text="Free" styleClass="mrkt-sn"/>
-                        <Label text="Forever" styleClass="mrkt-sl"/>
-                    </VBox>
-                    <StackPane styleClass="mrkt-sep" minWidth="1" maxWidth="1" minHeight="40" maxHeight="40"/>
-                    <VBox alignment="CENTER" spacing="3" HBox.hgrow="ALWAYS">
-                        <Label text="5 min" styleClass="mrkt-sn"/>
-                        <Label text="Quick Setup" styleClass="mrkt-sl"/>
-                    </VBox>
-                    <StackPane styleClass="mrkt-sep" minWidth="1" maxWidth="1" minHeight="40" maxHeight="40"/>
-                    <VBox alignment="CENTER" spacing="3" HBox.hgrow="ALWAYS">
-                        <Label text="AI" styleClass="mrkt-sn"/>
-                        <Label text="Powered" styleClass="mrkt-sl"/>
-                    </VBox>
-                </HBox>
-
-            </VBox>
+        <!-- ─── RIGHT: 3D Robot Panel ─── -->
+        <StackPane fx:id="robotContainer" styleClass="auth-right-panel" HBox.hgrow="ALWAYS">
+            <WebView fx:id="splineWebView"/>
         </StackPane>
     </HBox>
 </VBox>

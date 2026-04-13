@@ -9,7 +9,9 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.web.WebView;
 import javafx.stage.Stage;
 
 import java.io.IOException;
@@ -30,6 +32,8 @@ public class ForgotPasswordController implements Initializable {
     @FXML private VBox emailPane;
     @FXML private VBox codePane;
     @FXML private VBox passwordPane;
+    @FXML private StackPane robotContainer;
+    @FXML private WebView splineWebView;
 
     private final ServiceUser serviceUser = new ServiceUser();
     private String currentResetCode;
@@ -42,6 +46,12 @@ public class ForgotPasswordController implements Initializable {
         emailField.setOnAction(e -> handleSendCode());
         codeField.setOnAction(e -> handleVerifyCode());
         confirmPasswordField.setOnAction(e -> handleResetPassword());
+
+        // Load marketing panel with logo in the right panel
+        String htmlPath = getClass().getResource("/com/studyflow/views/spline.html").toExternalForm();
+        splineWebView.getEngine().load(htmlPath);
+        splineWebView.prefWidthProperty().bind(robotContainer.widthProperty());
+        splineWebView.prefHeightProperty().bind(robotContainer.heightProperty());
     }
 
     @FXML
