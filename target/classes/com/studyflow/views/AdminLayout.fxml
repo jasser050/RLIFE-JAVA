@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.geometry.Insets?>
+<?import org.kordamp.ikonli.javafx.FontIcon?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.image.Image?>
+
+<VBox xmlns="http://javafx.com/javafx/21"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.studyflow.controllers.AdminController"
+      styleClass="app-container">
+
+    <!-- Custom Title Bar -->
+    <HBox fx:id="titleBar" styleClass="title-bar" alignment="CENTER_LEFT" spacing="0"
+          onMousePressed="#onTitleBarPressed" onMouseDragged="#onTitleBarDragged">
+        <HBox alignment="CENTER_LEFT" spacing="10" HBox.hgrow="ALWAYS">
+            <padding><Insets left="16"/></padding>
+            <ImageView fitWidth="28" fitHeight="28" preserveRatio="true">
+                <image><Image url="@../images/logo.png"/></image>
+            </ImageView>
+            <Label text="RLife" styleClass="title-bar-title"/>
+            <Label text="—" style="-fx-text-fill: #475569;"/>
+            <Label text="Admin Panel" styleClass="title-bar-subtitle" style="-fx-text-fill: #F43F5E;"/>
+        </HBox>
+        <HBox alignment="CENTER_RIGHT" spacing="0" styleClass="window-controls">
+            <Button styleClass="window-btn, minimize-btn" onAction="#minimizeWindow">
+                <graphic><FontIcon iconLiteral="fth-minus" iconSize="14"/></graphic>
+            </Button>
+            <Button styleClass="window-btn, maximize-btn" onAction="#maximizeWindow">
+                <graphic><FontIcon fx:id="maximizeIcon" iconLiteral="fth-square" iconSize="12"/></graphic>
+            </Button>
+            <Button styleClass="window-btn, close-btn" onAction="#closeWindow">
+                <graphic><FontIcon iconLiteral="fth-x" iconSize="14"/></graphic>
+            </Button>
+        </HBox>
+    </HBox>
+
+    <!-- Main App Content -->
+    <BorderPane VBox.vgrow="ALWAYS" styleClass="root">
+        <!-- Admin Sidebar -->
+        <left>
+            <VBox styleClass="sidebar" spacing="0" style="-fx-border-color: transparent #1E293B transparent transparent; -fx-border-width: 0 1 0 0;">
+
+                <!-- Logo Section -->
+                <HBox styleClass="sidebar-header" alignment="CENTER_LEFT" spacing="12">
+                    <StackPane styleClass="sidebar-logo" style="-fx-background-color: linear-gradient(to bottom right, #DC2626, #9333EA);">
+                        <FontIcon iconLiteral="fth-shield" iconSize="20" iconColor="white"/>
+                    </StackPane>
+                    <VBox spacing="2">
+                        <Label text="RLife Admin" styleClass="sidebar-title"/>
+                        <Label text="Back Office" styleClass="sidebar-subtitle"/>
+                    </VBox>
+                </HBox>
+
+                <!-- Navigation -->
+                <ScrollPane fitToWidth="true" hbarPolicy="NEVER" VBox.vgrow="ALWAYS" styleClass="nav-scroll">
+                    <VBox styleClass="sidebar-nav" spacing="4">
+                        <Label text="OVERVIEW" styleClass="nav-section-title"/>
+
+                        <Button fx:id="btnAdminDash" styleClass="nav-button, active"
+                                onAction="#showDashboard" maxWidth="Infinity">
+                            <graphic><FontIcon iconLiteral="fth-home" iconSize="18"/></graphic>
+                            <text>Dashboard</text>
+                        </Button>
+
+                        <Label text="MANAGEMENT" styleClass="nav-section-title">
+                            <VBox.margin><Insets top="16"/></VBox.margin>
+                        </Label>
+
+                        <Button fx:id="btnAdminUsers" styleClass="nav-button"
+                                onAction="#showUsers" maxWidth="Infinity">
+                            <graphic><FontIcon iconLiteral="fth-users" iconSize="18"/></graphic>
+                            <text>Users</text>
+                        </Button>
+
+                        <Button fx:id="btnAdminAudit" styleClass="nav-button"
+                                onAction="#showAuditLog" maxWidth="Infinity">
+                            <graphic><FontIcon iconLiteral="fth-file-text" iconSize="18"/></graphic>
+                            <text>Audit Log</text>
+                        </Button>
+                    </VBox>
+                </ScrollPane>
+
+                <!-- Admin user section at bottom -->
+                <HBox styleClass="sidebar-header sidebar-user-row" alignment="CENTER_LEFT" spacing="12">
+                    <StackPane styleClass="avatar" style="-fx-background-color: linear-gradient(to bottom right, #DC2626, #9333EA);">
+                        <Label text="AD" styleClass="avatar-text"/>
+                    </StackPane>
+                    <VBox spacing="2" HBox.hgrow="ALWAYS">
+                        <Label text="Administrator" styleClass="sidebar-title" style="-fx-font-size: 14px;"/>
+                        <Label text="admin@rlife.com" styleClass="sidebar-subtitle"/>
+                    </VBox>
+                    <Button styleClass="btn-ghost" style="-fx-padding: 8;" onAction="#handleLogout">
+                        <graphic><FontIcon iconLiteral="fth-log-out" iconSize="18"/></graphic>
+                    </Button>
+                </HBox>
+            </VBox>
+        </left>
+
+        <!-- Main Content Area -->
+        <center>
+            <VBox styleClass="main-content">
+                <!-- Top Bar -->
+                <HBox styleClass="topbar" alignment="CENTER_LEFT">
+                    <HBox alignment="CENTER_LEFT" spacing="12" HBox.hgrow="ALWAYS">
+                        <FontIcon iconLiteral="fth-search" iconSize="16"
+                                  style="-fx-icon-color: #64748B;"/>
+                        <TextField fx:id="searchField" styleClass="search-field"
+                                   promptText="Search registered users..."/>
+                    </HBox>
+                    <HBox alignment="CENTER_RIGHT" spacing="8">
+                        <Label text="ADMIN MODE" styleClass="badge, danger"
+                               style="-fx-padding: 6 14; -fx-font-size: 11px;"/>
+                    </HBox>
+                </HBox>
+
+                <!-- Content Container -->
+                <ScrollPane fx:id="contentScroll" fitToWidth="true" fitToHeight="true"
+                            hbarPolicy="NEVER" VBox.vgrow="ALWAYS">
+                    <StackPane fx:id="contentArea" styleClass="content-area"/>
+                </ScrollPane>
+            </VBox>
+        </center>
+    </BorderPane>
+</VBox>

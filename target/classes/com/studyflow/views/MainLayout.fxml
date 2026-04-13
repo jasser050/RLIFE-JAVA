@@ -3,6 +3,8 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.text.*?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.image.Image?>
 <?import javafx.geometry.Insets?>
 <?import org.kordamp.ikonli.javafx.FontIcon?>
 
@@ -20,10 +22,10 @@
             <padding>
                 <Insets left="16"/>
             </padding>
-            <StackPane styleClass="title-bar-logo">
-                <FontIcon iconLiteral="fth-layers" iconSize="14" iconColor="white"/>
-            </StackPane>
-            <Label text="StudyFlow" styleClass="title-bar-title"/>
+            <ImageView fitWidth="28" fitHeight="28" preserveRatio="true">
+                <image><Image url="@../images/logo.png"/></image>
+            </ImageView>
+            <Label text="RLife" styleClass="title-bar-title"/>
             <Label text="—" style="-fx-text-fill: #475569;"/>
             <Label text="Student Dashboard" styleClass="title-bar-subtitle"/>
         </HBox>
@@ -60,11 +62,9 @@
             <VBox styleClass="sidebar" spacing="0">
                 <!-- Logo Section -->
                 <HBox styleClass="sidebar-header" alignment="CENTER_LEFT" spacing="12">
-                    <StackPane styleClass="sidebar-logo">
-                        <FontIcon iconLiteral="fth-layers" iconSize="20" iconColor="white"/>
-                    </StackPane>
+                    <ImageView fx:id="sidebarLogo" fitHeight="44" fitWidth="44" preserveRatio="true" styleClass="sidebar-logo-img"/>
                     <VBox spacing="2">
-                        <Label text="StudyFlow" styleClass="sidebar-title"/>
+                        <Label text="RLIFE" styleClass="sidebar-title"/>
                         <Label text="Student Dashboard" styleClass="sidebar-subtitle"/>
                     </VBox>
                 </HBox>
@@ -165,13 +165,12 @@
                 </ScrollPane>
 
                 <!-- User Section at Bottom -->
-                <HBox styleClass="sidebar-header sidebar-user-row" alignment="CENTER_LEFT" spacing="12"
-                      onMouseClicked="#showProfile" style="-fx-cursor: hand;">
+                <HBox fx:id="userProfileRow" styleClass="sidebar-header sidebar-user-row" alignment="CENTER_LEFT" spacing="12">
                     <StackPane styleClass="avatar">
                         <Label fx:id="sidebarAvatar" text="??" styleClass="avatar-text"/>
                     </StackPane>
-                    <VBox spacing="2" HBox.hgrow="ALWAYS">
-                        <Label fx:id="sidebarUserName" text="Guest" styleClass="sidebar-title" style="-fx-font-size: 14px;"/>
+                    <VBox fx:id="userInfoBox" spacing="2" HBox.hgrow="ALWAYS" onMouseClicked="#showProfile">
+                        <Label fx:id="sidebarUserName" text="Guest" styleClass="sidebar-title" style="-fx-font-size: 14px; -fx-cursor: hand;"/>
                         <Label fx:id="sidebarUserSub" text="" styleClass="sidebar-subtitle"/>
                     </VBox>
                     <Button styleClass="btn-ghost" style="-fx-padding: 8;" onAction="#handleLogout">
