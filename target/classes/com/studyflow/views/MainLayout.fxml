@@ -196,7 +196,7 @@
                         <StackPane>
                             <TextField fx:id="searchField" styleClass="search-field"
                                        promptText="Search courses, assignments..."/>
-                            <FontIcon iconLiteral="fth-search" iconSize="18"
+                            <FontIcon iconLiteral="fth-search" iconSize="18" mouseTransparent="true"
                                       style="-fx-icon-color: #64748B;"
                                       StackPane.alignment="CENTER_LEFT"
                                       translateX="12"/>

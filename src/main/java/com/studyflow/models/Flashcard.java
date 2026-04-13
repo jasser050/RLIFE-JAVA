@@ -4,6 +4,20 @@ import java.time.LocalDateTime;
 
 public class Flashcard {
 
+    // ── Validation constants ───────────────────────────────────────────────
+    public static final int    TITRE_MIN         = 3;
+    public static final int    TITRE_MAX         = 80;
+    public static final int    QUESTION_MIN      = 3;
+    public static final int    QUESTION_MAX      = 500;
+    public static final int    REPONSE_MIN       = 3;
+    public static final int    REPONSE_MAX       = 500;
+    public static final int    DESCRIPTION_MAX   = 300;
+    public static final long   FILE_MAX_BYTES    = 10L * 1024 * 1024; // 10 Mo
+    public static final String FILE_MAX_LABEL    = "10 Mo";
+    public static final java.util.List<String> IMAGE_EXTENSIONS =
+            java.util.List.of("png", "jpg", "jpeg", "gif", "webp");
+
+    // ── Fields ────────────────────────────────────────────────────────────
     private int idFlashcard;
     private int idDeck;
     private String titre;
@@ -16,8 +30,9 @@ public class Flashcard {
     private String pdf;
     private LocalDateTime dateCreation;
     private LocalDateTime dateModification;
-    private Integer createdBy;      // user_id
+    private Integer createdBy;
 
+    // ── Constructors ──────────────────────────────────────────────────────
     public Flashcard() {
         this.etat = "new";
         this.niveauDifficulte = 1;
@@ -37,7 +52,6 @@ public class Flashcard {
     }
 
     // ── Getters / Setters ─────────────────────────────────────────────────
-
     public int getIdFlashcard()                       { return idFlashcard; }
     public void setIdFlashcard(int idFlashcard)       { this.idFlashcard = idFlashcard; }
 
@@ -77,7 +91,6 @@ public class Flashcard {
     public Integer getCreatedBy()                     { return createdBy; }
     public void setCreatedBy(Integer createdBy)       { this.createdBy = createdBy; }
 
-    /** Label court pour l'affichage */
     public String getDifficultyLabel() {
         return switch (niveauDifficulte) {
             case 1  -> "Easy";

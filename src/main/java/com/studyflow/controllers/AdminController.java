@@ -63,6 +63,9 @@ public class AdminController implements Initializable {
             sidebarUserSub.setText("Administrator");
             sidebarAvatar.setText(user.getInitials().isEmpty() ? "AD" : user.getInitials());
         }
+        if (searchField != null && searchField.getParent() != null) {
+            searchField.getParent().setOnMouseClicked(event -> searchField.requestFocus());
+        }
     }
 
     // ====================== WINDOW CONTROLS ======================

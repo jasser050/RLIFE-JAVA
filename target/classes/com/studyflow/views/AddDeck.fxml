@@ -63,20 +63,20 @@
                         <Label text="Title" style="-fx-text-fill:#CBD5E1;-fx-font-size:13px;-fx-font-weight:600;"/>
                         <Label text=" *" style="-fx-text-fill:#FB7185;-fx-font-size:14px;-fx-font-weight:700;"/>
                     </HBox>
-                    <Label text="💡 Minimum 3 caractères. Choisissez un nom clair et descriptif."
-                           style="-fx-text-fill:#64748B;-fx-font-size:11px;-fx-font-style:italic;"/>
+                    <Label fx:id="tipTitre" text="💡 Minimum 3 caractères. Choisissez un nom clair et descriptif."
+                           style="-fx-text-fill:#64748B;-fx-font-size:11px;-fx-font-style:italic;"
+                           visible="true" managed="true"/>
                     <TextField fx:id="fieldTitre"
                                promptText="ex: Algorithmes, Réseaux…"
-                               onKeyReleased="#validateTitreInline"
                                style="-fx-background-color:#1E293B;-fx-text-fill:#F8FAFC;
                                       -fx-prompt-text-fill:#475569;
-                                      -fx-border-color:#FB7185;-fx-border-width:2;
+                                      -fx-border-color:#334155;-fx-border-width:2;
                                       -fx-border-radius:10;-fx-background-radius:10;
                                       -fx-padding:12 16;-fx-font-size:13px;"/>
                     <Label fx:id="errTitre"
                            text="⚠  Le titre est obligatoire (minimum 3 caractères)."
                            style="-fx-text-fill:#FB7185;-fx-font-size:11px;-fx-font-weight:600;"
-                           visible="true" managed="true"/>
+                           visible="false" managed="false"/>
                 </VBox>
 
                 <!-- ═══ SUBJECT + LEVEL ═══ -->
@@ -88,20 +88,20 @@
                             <Label text="Subject" style="-fx-text-fill:#CBD5E1;-fx-font-size:13px;-fx-font-weight:600;"/>
                             <Label text=" *" style="-fx-text-fill:#FB7185;-fx-font-size:14px;-fx-font-weight:700;"/>
                         </HBox>
-                        <Label text="💡 La matière concernée (ex: Maths, Biologie)."
-                               style="-fx-text-fill:#64748B;-fx-font-size:11px;-fx-font-style:italic;"/>
+                        <Label fx:id="tipMatiere" text="💡 La matière concernée (ex: Maths, Biologie)."
+                               style="-fx-text-fill:#64748B;-fx-font-size:11px;-fx-font-style:italic;"
+                               visible="true" managed="true"/>
                         <TextField fx:id="fieldMatiere"
                                    promptText="ex: Math, Physique…"
-                                   onKeyReleased="#validateMatiereInline"
                                    style="-fx-background-color:#1E293B;-fx-text-fill:#F8FAFC;
                                           -fx-prompt-text-fill:#475569;
-                                          -fx-border-color:#FB7185;-fx-border-width:2;
+                                          -fx-border-color:#334155;-fx-border-width:2;
                                           -fx-border-radius:10;-fx-background-radius:10;
                                           -fx-padding:12 16;-fx-font-size:13px;"/>
                         <Label fx:id="errMatiere"
                                text="⚠  La matière est obligatoire (minimum 3 caractères)."
                                style="-fx-text-fill:#FB7185;-fx-font-size:11px;-fx-font-weight:600;"
-                               visible="true" managed="true"/>
+                               visible="false" managed="false"/>
                     </VBox>
 
                     <!-- Level -->
@@ -111,20 +111,20 @@
                             <Label text="Level" style="-fx-text-fill:#CBD5E1;-fx-font-size:13px;-fx-font-weight:600;"/>
                             <Label text=" *" style="-fx-text-fill:#FB7185;-fx-font-size:14px;-fx-font-weight:700;"/>
                         </HBox>
-                        <Label text="💡 Choisissez : Beginner, Intermediate ou Advanced."
-                               style="-fx-text-fill:#64748B;-fx-font-size:11px;-fx-font-style:italic;"/>
+                        <Label fx:id="tipNiveau" text="💡 Choisissez : Beginner, Intermediate ou Advanced."
+                               style="-fx-text-fill:#64748B;-fx-font-size:11px;-fx-font-style:italic;"
+                               visible="true" managed="true"/>
                         <ComboBox fx:id="combNiveau"
                                   promptText="Select level…"
                                   maxWidth="Infinity" prefHeight="44"
-                                  onAction="#validateNiveauInline"
                                   style="-fx-background-color:#1E293B;
-                                         -fx-border-color:#FB7185;-fx-border-width:2;
+                                         -fx-border-color:#334155;-fx-border-width:2;
                                          -fx-border-radius:10;-fx-background-radius:10;
                                          -fx-font-size:13px;"/>
                         <Label fx:id="errNiveau"
                                text="⚠  Veuillez sélectionner un niveau."
                                style="-fx-text-fill:#FB7185;-fx-font-size:11px;-fx-font-weight:600;"
-                               visible="true" managed="true"/>
+                               visible="false" managed="false"/>
                     </VBox>
                 </HBox>
 
@@ -135,8 +135,9 @@
                         <Label text="Description" style="-fx-text-fill:#CBD5E1;-fx-font-size:13px;-fx-font-weight:600;"/>
                         <Label text=" (optionnel)" style="-fx-text-fill:#475569;-fx-font-size:11px;"/>
                     </HBox>
-                    <Label text="💡 Un résumé court vous aide à retrouver ce deck plus tard."
-                           style="-fx-text-fill:#64748B;-fx-font-size:11px;-fx-font-style:italic;"/>
+                    <Label fx:id="tipDescription" text="💡 Un résumé court vous aide à retrouver ce deck plus tard."
+                           style="-fx-text-fill:#64748B;-fx-font-size:11px;-fx-font-style:italic;"
+                           visible="true" managed="true"/>
                     <TextArea fx:id="fieldDescription"
                               promptText="Décrivez le contenu de ce deck…"
                               prefRowCount="4" prefHeight="110"
@@ -152,10 +153,11 @@
                     <HBox alignment="CENTER_LEFT" spacing="6">
                         <FontIcon iconLiteral="fth-image" iconSize="13" iconColor="#38BDF8"/>
                         <Label text="Cover Image" style="-fx-text-fill:#CBD5E1;-fx-font-size:13px;-fx-font-weight:600;"/>
-                        <Label text=" (optionnel)" style="-fx-text-fill:#475569;-fx-font-size:11px;"/>
+                        <Label text=" *" style="-fx-text-fill:#FB7185;-fx-font-size:14px;-fx-font-weight:700;"/>
                     </HBox>
-                    <Label text="💡 Formats acceptés : PNG, JPG, GIF, WEBP. Taille max recommandée : 2 Mo."
-                           style="-fx-text-fill:#64748B;-fx-font-size:11px;-fx-font-style:italic;"/>
+                    <Label fx:id="tipImage" text="💡 Obligatoire. Formats : PNG, JPG, GIF, WEBP. Taille max : 10 Mo."
+                           style="-fx-text-fill:#64748B;-fx-font-size:11px;-fx-font-style:italic;"
+                           visible="true" managed="true"/>
                     <HBox spacing="10" alignment="CENTER_LEFT">
                         <TextField fx:id="fieldImage" promptText="Aucune image sélectionnée…"
                                    HBox.hgrow="ALWAYS" editable="false"
@@ -171,6 +173,10 @@
                             <graphic><FontIcon iconLiteral="fth-upload" iconSize="13" iconColor="#38BDF8"/></graphic>
                         </Button>
                     </HBox>
+                    <Label fx:id="errImage"
+                           text="⚠  Une image de couverture est obligatoire."
+                           style="-fx-text-fill:#FB7185;-fx-font-size:11px;-fx-font-weight:600;"
+                           visible="false" managed="false"/>
                     <Label fx:id="imagePreviewLabel" text=""
                            style="-fx-text-fill:#34D399;-fx-font-size:11px;"
                            visible="false" managed="false"/>
@@ -181,10 +187,11 @@
                     <HBox alignment="CENTER_LEFT" spacing="6">
                         <FontIcon iconLiteral="fth-file-text" iconSize="13" iconColor="#F472B6"/>
                         <Label text="PDF Document" style="-fx-text-fill:#CBD5E1;-fx-font-size:13px;-fx-font-weight:600;"/>
-                        <Label text=" (optionnel)" style="-fx-text-fill:#475569;-fx-font-size:11px;"/>
+                        <Label text=" *" style="-fx-text-fill:#FB7185;-fx-font-size:14px;-fx-font-weight:700;"/>
                     </HBox>
-                    <Label text="💡 Joignez un PDF de référence à votre deck (cours, résumé, exercices…)."
-                           style="-fx-text-fill:#64748B;-fx-font-size:11px;-fx-font-style:italic;"/>
+                    <Label fx:id="tipPdf" text="💡 Obligatoire. Joignez un PDF de référence (cours, résumé, exercices…). Max : 10 Mo."
+                           style="-fx-text-fill:#64748B;-fx-font-size:11px;-fx-font-style:italic;"
+                           visible="true" managed="true"/>
                     <HBox spacing="10" alignment="CENTER_LEFT">
                         <TextField fx:id="fieldPdf" promptText="Aucun PDF sélectionné…"
                                    HBox.hgrow="ALWAYS" editable="false"
@@ -200,6 +207,10 @@
                             <graphic><FontIcon iconLiteral="fth-upload" iconSize="13" iconColor="#F472B6"/></graphic>
                         </Button>
                     </HBox>
+                    <Label fx:id="errPdf"
+                           text="⚠  Un PDF est obligatoire."
+                           style="-fx-text-fill:#FB7185;-fx-font-size:11px;-fx-font-weight:600;"
+                           visible="false" managed="false"/>
                     <Label fx:id="pdfPreviewLabel" text=""
                            style="-fx-text-fill:#34D399;-fx-font-size:11px;"
                            visible="false" managed="false"/>

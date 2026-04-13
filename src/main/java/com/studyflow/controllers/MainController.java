@@ -11,6 +11,7 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
@@ -24,6 +25,7 @@ import java.util.ResourceBundle;
 public class MainController implements Initializable {
 
     @FXML private StackPane contentArea;
+    @FXML private TextField searchField;
 
     // === Labels de la sidebar (User Info) ===
     @FXML private Label sidebarUserName;
@@ -66,6 +68,9 @@ public class MainController implements Initializable {
             sidebarUserName.setText(fullName.isEmpty() ? (user.getUsername() != null ? user.getUsername() : "Student") : fullName);
             sidebarUserSub.setText("Student");
             sidebarAvatar.setText(user.getInitials().isEmpty() ? "??" : user.getInitials());
+        }
+        if (searchField != null && searchField.getParent() != null) {
+            searchField.getParent().setOnMouseClicked(event -> searchField.requestFocus());
         }
         applyThemeOnScene();
     }

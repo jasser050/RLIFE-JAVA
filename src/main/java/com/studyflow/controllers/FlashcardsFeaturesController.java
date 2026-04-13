@@ -60,7 +60,7 @@ public abstract class FlashcardsFeaturesController implements Initializable {
 
     // ── VIEW 2 — Flashcard list ───────────────────────────────────────────
     @FXML protected VBox             flashcardsView;
-    @FXML protected AnchorPane       deckHeroPane;
+    @FXML protected HBox             deckHeroPane;
     @FXML protected StackPane        deckIconBox;
     @FXML protected FontIcon         deckIconGlyph;
     @FXML protected Label            deckTitleLabel;
@@ -194,6 +194,9 @@ public abstract class FlashcardsFeaturesController implements Initializable {
 
     private void setupDeckSearch() {
         if (searchDeckField == null) return;
+        if (searchBoxDeck != null) {
+            searchBoxDeck.setOnMouseClicked(e -> searchDeckField.requestFocus());
+        }
         searchDeckField.textProperty().addListener((obs, oldV, newV) -> onDeckSearchChanged(newV));
         searchDeckField.focusedProperty().addListener((obs, wasFocused, isFocused) -> {
             if (searchBoxDeck == null) return;
@@ -373,6 +376,9 @@ public abstract class FlashcardsFeaturesController implements Initializable {
 
     private void setupFlashcardSearch() {
         if (searchFcField != null) {
+            if (searchBoxFc != null) {
+                searchBoxFc.setOnMouseClicked(e -> searchFcField.requestFocus());
+            }
             searchFcField.textProperty().addListener((obs, o, n) -> onFcSearchChanged(n));
             searchFcField.focusedProperty().addListener((obs, w, isFocused) -> {
                 if (searchBoxFc == null) return;
@@ -783,15 +789,8 @@ public abstract class FlashcardsFeaturesController implements Initializable {
             deckIconGlyph.setIconColor(Color.WHITE);
         }
 
-        // ── Hero pane : on reconstruit le contenu pour y inclure image + PDF ──
+        // ── Hero pane : on reconstruit le contenu ──
         if (deckHeroPane != null) {
-            deckHeroPane.setStyle(
-                    "-fx-background-color:linear-gradient(to bottom right,#0F172A," + darken(hexColor) + ",#0F172A);" +
-                            "-fx-background-radius:24;-fx-border-color:" + hexColor + "33;" +
-                            "-fx-border-radius:24;-fx-border-width:1;-fx-min-height:340;"
-            );
-
-            // Reconstruire le contenu centré
             buildHeroContent(deck, gradient, glowRgb, hexColor, iconLit, colorKey);
         }
 
@@ -806,175 +805,192 @@ public abstract class FlashcardsFeaturesController implements Initializable {
     }
 
     /**
-     * Reconstruit le contenu du hero AnchorPane avec :
-     * - Bouton back (fixé en haut à gauche)
-     * - Grande image du deck (si disponible) avec overlay
-     * - Icône + titre + sous-titre
-     * - Badges stats
-     * - Carte PDF cliquable (si disponible)
-     * - Bouton "Add Flashcard"
+     * Reconstruit le contenu du hero HBox compact avec :
+     * - Vignette image/icône à gauche
+     * - Titre + badge + stats au centre
+     * - Boutons Back + Add à droite
      */
     private void buildHeroContent(Deck deck, String gradient, String glowRgb,
                                   String hexColor, String iconLit, String colorKey) {
 
         deckHeroPane.getChildren().clear();
-
-        // ══════════════════════════════════════════════════════════════
-        // BOUTON BACK — ancré haut gauche (FIXED)
-        // ══════════════════════════════════════════════════════════════
-        Button backBtn = new Button("  Back");
-        backBtn.setGraphic(makeIcon("fth-arrow-left", 14, "#94A3B8"));
-        backBtn.setStyle(
-                "-fx-background-color:rgba(15,23,42,0.85);" +
-                        "-fx-text-fill:#94A3B8;-fx-font-size:12px;-fx-font-weight:700;" +
-                        "-fx-background-radius:12;-fx-cursor:hand;-fx-padding:9 18;" +
-                        "-fx-border-color:#334155;-fx-border-radius:12;-fx-border-width:1;" +
-                        "-fx-effect:dropshadow(gaussian,rgba(0,0,0,0.4),8,0,0,2);"
+        deckHeroPane.setStyle(
+                "-fx-background-color:linear-gradient(to bottom right,#0F172A,#130926,#0F172A);" +
+                        "-fx-background-radius:18;-fx-border-color:#1E293B;" +
+                        "-fx-border-radius:18;-fx-border-width:1;" +
+                        "-fx-min-height:110;-fx-max-height:130;"
         );
-        backBtn.setOnMouseEntered(e -> backBtn.setStyle(
-                "-fx-background-color:rgba(30,41,59,0.95);" +
-                        "-fx-text-fill:#F8FAFC;-fx-font-size:12px;-fx-font-weight:700;" +
-                        "-fx-background-radius:12;-fx-cursor:hand;-fx-padding:9 18;" +
-                        "-fx-border-color:#7C3AED;-fx-border-radius:12;-fx-border-width:1;" +
-                        "-fx-effect:dropshadow(gaussian,rgba(124,58,237,0.3),8,0,0,2);"
-        ));
-        backBtn.setOnMouseExited(e -> backBtn.setStyle(
-                "-fx-background-color:rgba(15,23,42,0.85);" +
-                        "-fx-text-fill:#94A3B8;-fx-font-size:12px;-fx-font-weight:700;" +
-                        "-fx-background-radius:12;-fx-cursor:hand;-fx-padding:9 18;" +
-                        "-fx-border-color:#334155;-fx-border-radius:12;-fx-border-width:1;" +
-                        "-fx-effect:dropshadow(gaussian,rgba(0,0,0,0.4),8,0,0,2);"
-        ));
-        backBtn.setOnAction(e -> goBackToList());
-        AnchorPane.setTopAnchor(backBtn, 16.0);
-        AnchorPane.setLeftAnchor(backBtn, 16.0);
 
-        // ══════════════════════════════════════════════════════════════
-        // CONTENU PRINCIPAL — VBox centrée
-        // ══════════════════════════════════════════════════════════════
-        VBox center = new VBox(20);
-        center.setAlignment(Pos.TOP_CENTER);
-        center.setPadding(new Insets(24, 32, 32, 32));
-        AnchorPane.setTopAnchor(center, 0.0);
-        AnchorPane.setBottomAnchor(center, 0.0);
-        AnchorPane.setLeftAnchor(center, 0.0);
-        AnchorPane.setRightAnchor(center, 0.0);
+        // ── VIGNETTE GAUCHE (image ou icône) ─────────────────────────
+        StackPane thumbPane = new StackPane();
+        thumbPane.setPrefSize(130, 130);
+        thumbPane.setMaxSize(130, 130);
+        thumbPane.setMinSize(130, 130);
 
-        // ── IMAGE HERO (si disponible) ────────────────────────────────
         String imgPath = deck.getImage();
-        boolean hasImage = imgPath != null && !imgPath.trim().isEmpty();
-        if (hasImage) {
-            StackPane imgContainer = buildHeroImage(imgPath, gradient, hexColor);
-            if (imgContainer != null) {
-                center.getChildren().add(imgContainer);
-            } else {
-                hasImage = false;
-            }
+        boolean imageLoaded = false;
+        if (imgPath != null && !imgPath.trim().isEmpty()) {
+            try {
+                String raw = imgPath.trim();
+                Image img;
+                if (raw.startsWith("http://") || raw.startsWith("https://")) {
+                    img = new Image(raw, 130, 130, false, true, true);
+                } else {
+                    File f = new File(raw);
+                    if (!f.exists()) f = new File(System.getProperty("user.dir"), raw);
+                    if (!f.exists()) throw new Exception("not found");
+                    img = new Image(f.toURI().toString(), 130, 130, false, true);
+                }
+                ImageView iv = new ImageView(img);
+                iv.setFitWidth(130); iv.setFitHeight(130); iv.setPreserveRatio(false);
+                Rectangle clip = new Rectangle(130, 130);
+                clip.setArcWidth(36); clip.setArcHeight(36); // left corners rounded
+                iv.setClip(clip);
+                // dark overlay
+                Region overlay = new Region();
+                overlay.setStyle("-fx-background-color:rgba(0,0,0,0.25);-fx-background-radius:18 0 0 18;");
+                thumbPane.getChildren().addAll(iv, overlay);
+                imageLoaded = true;
+            } catch (Exception ignored) {}
         }
-
-        // ── ICONE + TITRE + SOUS-TITRE ────────────────────────────────
-        VBox titleBlock = new VBox(12);
-        titleBlock.setAlignment(Pos.CENTER);
-
-        if (!hasImage) {
-            // Icône grande si pas d'image
-            StackPane iconBox = new StackPane();
-            iconBox.setPrefSize(72, 72);
-            iconBox.setMaxSize(72, 72);
-            iconBox.setStyle(
-                    "-fx-background-color:" + gradient + ";" +
-                            "-fx-background-radius:22;" +
-                            "-fx-effect:dropshadow(gaussian," + glowRgb + ",30,0,0,0);"
-            );
+        if (!imageLoaded) {
+            thumbPane.setStyle("-fx-background-color:" + gradient + ";-fx-background-radius:18 0 0 18;");
             FontIcon ico = new FontIcon(iconLit);
-            ico.setIconSize(30); ico.setIconColor(Color.WHITE);
-            iconBox.getChildren().add(ico);
-            titleBlock.getChildren().add(iconBox);
+            ico.setIconSize(28); ico.setIconColor(Color.WHITE);
+            thumbPane.getChildren().add(ico);
         }
+
+        // ── CENTRE : titre + badge + stats ────────────────────────────
+        VBox centerBox = new VBox(6);
+        HBox.setHgrow(centerBox, Priority.ALWAYS);
+        centerBox.setPadding(new Insets(12, 16, 12, 16));
+        centerBox.setAlignment(Pos.CENTER_LEFT);
 
         Label titleLbl = new Label(deck.getTitre());
-        titleLbl.setStyle(
-                "-fx-text-fill:#F8FAFC;-fx-font-size:" + (hasImage ? "22px" : "28px") + ";" +
-                        "-fx-font-weight:800;-fx-alignment:CENTER;-fx-text-alignment:CENTER;" +
-                        "-fx-effect:dropshadow(gaussian,rgba(0,0,0,0.5),8,0,0,2);"
-        );
+        titleLbl.setStyle("-fx-text-fill:#F8FAFC;-fx-font-size:16px;-fx-font-weight:800;");
         titleLbl.setWrapText(true);
-        titleLbl.setMaxWidth(700);
+        titleLbl.setMaxWidth(Double.MAX_VALUE);
 
-        HBox subRow = new HBox(8);
-        subRow.setAlignment(Pos.CENTER);
         Label subLbl = new Label(deck.getMatiere() + " • " + deck.getNiveau());
         subLbl.setStyle(
-                "-fx-background-color:rgba(124,58,237,0.22);" +
-                        "-fx-text-fill:#A78BFA;-fx-font-size:12px;-fx-font-weight:700;" +
-                        "-fx-padding:5 16;-fx-background-radius:20;" +
-                        "-fx-border-color:" + hexColor + "44;-fx-border-radius:20;-fx-border-width:1;"
+                "-fx-background-color:rgba(124,58,237,0.18);-fx-text-fill:#A78BFA;" +
+                        "-fx-font-size:11px;-fx-font-weight:700;" +
+                        "-fx-padding:3 10;-fx-background-radius:20;"
         );
-        subRow.getChildren().add(subLbl);
 
-        // Description si présente
+        // Description courte
         if (deck.getDescription() != null && !deck.getDescription().isEmpty()) {
             Label descLbl = new Label(deck.getDescription());
-            descLbl.setStyle("-fx-text-fill:#94A3B8;-fx-font-size:12px;-fx-text-alignment:CENTER;");
+            descLbl.setStyle("-fx-text-fill:#64748B;-fx-font-size:11px;");
             descLbl.setWrapText(true);
-            descLbl.setMaxWidth(600);
-            titleBlock.getChildren().addAll(titleLbl, subRow, descLbl);
+            descLbl.setMaxWidth(Double.MAX_VALUE);
+            centerBox.getChildren().addAll(titleLbl, subLbl, descLbl);
         } else {
-            titleBlock.getChildren().addAll(titleLbl, subRow);
+            centerBox.getChildren().addAll(titleLbl, subLbl);
         }
-        center.getChildren().add(titleBlock);
 
-        // ── STATS BAR ────────────────────────────────────────────────
-        HBox statsBar = new HBox(12);
-        statsBar.setAlignment(Pos.CENTER);
+        // Stats compactes
+        HBox statsBar = new HBox(8);
+        statsBar.setAlignment(Pos.CENTER_LEFT);
         statsBar.getChildren().addAll(
-                buildStatBox(fcTotalLabel,    "Total",    "#A78BFA"),
-                buildStatBox(fcMasteredLabel, "Mastered", "#34D399"),
-                buildStatBox(fcLearningLabel, "Learning", "#FBBF24"),
-                buildStatBox(fcNewLabel,      "New",      "#94A3B8")
+                buildCompactStatBox(fcTotalLabel,    "Total",    "#A78BFA"),
+                buildCompactStatBox(fcMasteredLabel, "Mastered", "#34D399"),
+                buildCompactStatBox(fcLearningLabel, "Learning", "#FBBF24"),
+                buildCompactStatBox(fcNewLabel,      "New",      "#94A3B8")
         );
-        center.getChildren().add(statsBar);
+        centerBox.getChildren().add(statsBar);
 
-        // ── MEDIA ROW : PDF + bouton Add Flashcard ────────────────────
-        HBox mediaRow = new HBox(16);
-        mediaRow.setAlignment(Pos.CENTER);
+        // ── DROITE : boutons Back + Add ───────────────────────────────
+        VBox btnBox = new VBox(8);
+        btnBox.setAlignment(Pos.CENTER);
+        btnBox.setPadding(new Insets(12, 16, 12, 0));
 
-        // Carte PDF (si disponible)
-        String pdfPath = deck.getPdf();
-        if (pdfPath != null && !pdfPath.trim().isEmpty()) {
-            HBox pdfCard = buildPdfCard(pdfPath, hexColor, colorKey);
-            mediaRow.getChildren().add(pdfCard);
-        }
+        Button backBtn = new Button();
+        backBtn.setGraphic(makeIcon("fth-arrow-left", 13, "#94A3B8"));
+        backBtn.setStyle(
+                "-fx-background-color:#1E293B;-fx-text-fill:#94A3B8;" +
+                        "-fx-font-size:11px;-fx-font-weight:600;-fx-background-radius:10;" +
+                        "-fx-cursor:hand;-fx-padding:7 14;-fx-border-color:#334155;" +
+                        "-fx-border-radius:10;-fx-border-width:1;"
+        );
+        backBtn.setOnMouseEntered(e -> backBtn.setStyle(
+                "-fx-background-color:#334155;-fx-text-fill:#F8FAFC;" +
+                        "-fx-font-size:11px;-fx-font-weight:600;-fx-background-radius:10;" +
+                        "-fx-cursor:hand;-fx-padding:7 14;-fx-border-color:#7C3AED;" +
+                        "-fx-border-radius:10;-fx-border-width:1;"
+        ));
+        backBtn.setOnMouseExited(e -> backBtn.setStyle(
+                "-fx-background-color:#1E293B;-fx-text-fill:#94A3B8;" +
+                        "-fx-font-size:11px;-fx-font-weight:600;-fx-background-radius:10;" +
+                        "-fx-cursor:hand;-fx-padding:7 14;-fx-border-color:#334155;" +
+                        "-fx-border-radius:10;-fx-border-width:1;"
+        ));
+        backBtn.setOnAction(e -> goBackToList());
 
-        // Bouton Add Flashcard
-        Button addBtn = new Button("  Add Flashcard");
-        addBtn.setGraphic(makeIcon("fth-plus", 15, "white"));
+        Button addBtn = new Button("Add Flashcards");
+        addBtn.setGraphic(makeIcon("fth-plus", 13, "white"));
         addBtn.setStyle(
                 "-fx-background-color:" + gradient + ";" +
-                        "-fx-text-fill:white;-fx-font-size:13px;-fx-font-weight:700;" +
-                        "-fx-background-radius:14;-fx-cursor:hand;-fx-padding:13 28;" +
-                        "-fx-effect:dropshadow(gaussian," + glowRgb + ",16,0,0,4);"
+                        "-fx-text-fill:white;-fx-font-size:12px;-fx-font-weight:700;" +
+                        "-fx-background-radius:10;-fx-cursor:hand;-fx-padding:8 18;" +
+                        "-fx-effect:dropshadow(gaussian," + glowRgb + ",10,0,0,3);"
         );
         addBtn.setOnMouseEntered(e -> addBtn.setStyle(
                 "-fx-background-color:" + gradient + ";" +
-                        "-fx-text-fill:white;-fx-font-size:13px;-fx-font-weight:700;" +
-                        "-fx-background-radius:14;-fx-cursor:hand;-fx-padding:13 28;" +
-                        "-fx-effect:dropshadow(gaussian," + glowRgb + ",24,0,0,6);" +
-                        "-fx-scale-x:1.02;-fx-scale-y:1.02;"
+                        "-fx-text-fill:white;-fx-font-size:12px;-fx-font-weight:700;" +
+                        "-fx-background-radius:10;-fx-cursor:hand;-fx-padding:8 18;" +
+                        "-fx-effect:dropshadow(gaussian," + glowRgb + ",16,0,0,5);" +
+                        "-fx-scale-x:1.03;-fx-scale-y:1.03;"
         ));
         addBtn.setOnMouseExited(e -> addBtn.setStyle(
                 "-fx-background-color:" + gradient + ";" +
-                        "-fx-text-fill:white;-fx-font-size:13px;-fx-font-weight:700;" +
-                        "-fx-background-radius:14;-fx-cursor:hand;-fx-padding:13 28;" +
-                        "-fx-effect:dropshadow(gaussian," + glowRgb + ",16,0,0,4);"
+                        "-fx-text-fill:white;-fx-font-size:12px;-fx-font-weight:700;" +
+                        "-fx-background-radius:10;-fx-cursor:hand;-fx-padding:8 18;" +
+                        "-fx-effect:dropshadow(gaussian," + glowRgb + ",10,0,0,3);"
         ));
         addBtn.setOnAction(e -> showAddFlashcardForm());
-        mediaRow.getChildren().add(addBtn);
 
-        center.getChildren().add(mediaRow);
+        // PDF badge si disponible
+        String pdfPath = deck.getPdf();
+        if (pdfPath != null && !pdfPath.trim().isEmpty()) {
+            Button pdfBtn = new Button("PDF");
+            pdfBtn.setGraphic(makeIcon("fth-file-text", 11, "#F472B6"));
+            pdfBtn.setStyle(
+                    "-fx-background-color:rgba(244,114,182,0.12);-fx-text-fill:#F472B6;" +
+                            "-fx-font-size:10px;-fx-font-weight:700;-fx-background-radius:8;" +
+                            "-fx-cursor:hand;-fx-padding:5 10;-fx-border-color:#F472B6;" +
+                            "-fx-border-radius:8;-fx-border-width:1;"
+            );
+            pdfBtn.setOnAction(e -> {
+                try { Desktop.getDesktop().open(new File(pdfPath)); } catch (Exception ignored) {}
+            });
+            btnBox.getChildren().add(pdfBtn);
+        }
 
-        // ── Ajouter tout au AnchorPane ────────────────────────────────
-        deckHeroPane.getChildren().addAll(center, backBtn);
+        btnBox.getChildren().addAll(backBtn, addBtn);
+        deckHeroPane.getChildren().addAll(thumbPane, centerBox, btnBox);
+    }
+
+    /** Construit un badge stats compact pour le hero HBox */
+    private VBox buildCompactStatBox(Label existingLabel, String caption, String color) {
+        VBox box = new VBox(1);
+        box.setAlignment(Pos.CENTER);
+        box.setStyle(
+                "-fx-background-color:rgba(15,23,42,0.7);-fx-border-color:#1E293B;" +
+                        "-fx-border-radius:10;-fx-background-radius:10;-fx-padding:5 12;"
+        );
+        if (existingLabel != null) {
+            existingLabel.setStyle("-fx-text-fill:" + color + ";-fx-font-size:15px;-fx-font-weight:800;");
+            box.getChildren().add(existingLabel);
+        } else {
+            Label val = new Label("0");
+            val.setStyle("-fx-text-fill:" + color + ";-fx-font-size:15px;-fx-font-weight:800;");
+            box.getChildren().add(val);
+        }
+        Label cap = new Label(caption);
+        cap.setStyle("-fx-text-fill:#475569;-fx-font-size:9px;-fx-font-weight:700;");
+        box.getChildren().add(cap);
+        return box;
     }
 
     /** Construit le bloc image hero avec overlay gradient */
