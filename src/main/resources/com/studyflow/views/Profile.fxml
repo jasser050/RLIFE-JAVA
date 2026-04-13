@@ -1,0 +1,232 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.text.*?>
+<?import javafx.geometry.Insets?>
+<?import org.kordamp.ikonli.javafx.FontIcon?>
+
+<VBox xmlns="http://javafx.com/javafx/21"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.studyflow.controllers.ProfileController"
+      styleClass="profile-container" spacing="0">
+
+    <ScrollPane fitToWidth="true" hbarPolicy="NEVER" VBox.vgrow="ALWAYS" styleClass="auth-scroll">
+        <VBox spacing="28">
+            <padding><Insets top="32" right="36" bottom="40" left="36"/></padding>
+
+            <!-- ══════════════════════════════════════
+                 PAGE HEADER
+                 ══════════════════════════════════════ -->
+            <HBox alignment="CENTER_LEFT" spacing="16">
+                <VBox spacing="4" HBox.hgrow="ALWAYS">
+                    <Label text="Profile &amp; Settings" styleClass="page-title"/>
+                    <Label text="Manage your personal information and account settings" styleClass="auth-subtitle"/>
+                </VBox>
+                <Label fx:id="saveStatus" styleClass="badge success" visible="false" managed="false"/>
+            </HBox>
+
+            <!-- ══════════════════════════════════════
+                 HERO CARD — Gradient profile banner
+                 ══════════════════════════════════════ -->
+            <StackPane styleClass="profile-hero-banner">
+
+                <!-- Gradient bg layer -->
+                <VBox styleClass="profile-hero-bg" maxWidth="999999" maxHeight="999999"/>
+
+                <!-- Glow orb top-right -->
+                <StackPane styleClass="profile-glow-orb" StackPane.alignment="TOP_RIGHT"
+                           translateX="-40" translateY="30" pickOnBounds="false"/>
+
+                <!-- Content -->
+                <HBox spacing="32" alignment="CENTER_LEFT" pickOnBounds="false">
+                    <padding><Insets top="36" right="36" bottom="36" left="36"/></padding>
+
+                    <!-- Avatar column -->
+                    <VBox spacing="12" alignment="CENTER">
+                        <!-- Avatar ring + circle -->
+                        <StackPane styleClass="profile-avatar-ring" alignment="CENTER">
+                            <StackPane styleClass="profile-avatar-inner" alignment="CENTER">
+                                <Label fx:id="avatarInitials" text="??" styleClass="profile-avatar-text"/>
+                            </StackPane>
+                        </StackPane>
+                        <!-- Online status -->
+                        <HBox alignment="CENTER" spacing="6">
+                            <StackPane styleClass="profile-online-dot"/>
+                            <Label text="Active" styleClass="profile-online-label"/>
+                        </HBox>
+                    </VBox>
+
+                    <!-- User info -->
+                    <VBox spacing="8" HBox.hgrow="ALWAYS">
+                        <Label fx:id="profileName" text="Loading..." styleClass="profile-hero-name"/>
+                        <HBox spacing="12" alignment="CENTER_LEFT">
+                            <Label fx:id="profileEmail" text="" styleClass="profile-hero-email"/>
+                            <Label text="·" style="-fx-text-fill: #475569;"/>
+                            <Label fx:id="profileUsername" text="" styleClass="profile-hero-username"/>
+                        </HBox>
+
+                        <!-- Stats chips -->
+                        <HBox spacing="14" style="-fx-padding: 10 0 0 0;">
+                            <VBox styleClass="profile-stat-chip" alignment="CENTER" spacing="3">
+                                <StackPane styleClass="profile-chip-icon-purple" alignment="CENTER">
+                                    <FontIcon iconLiteral="fth-layers" iconSize="13" iconColor="#A78BFA"/>
+                                </StackPane>
+                                <Label fx:id="coinsLabel" text="0" styleClass="profile-stat-chip-value"/>
+                                <Label text="Coins" styleClass="profile-stat-chip-label"/>
+                            </VBox>
+                            <VBox styleClass="profile-stat-chip" alignment="CENTER" spacing="3">
+                                <StackPane styleClass="profile-chip-icon-blue" alignment="CENTER">
+                                    <FontIcon iconLiteral="fth-book-open" iconSize="13" iconColor="#60A5FA"/>
+                                </StackPane>
+                                <Label text="8" styleClass="profile-stat-chip-value"/>
+                                <Label text="Courses" styleClass="profile-stat-chip-label"/>
+                            </VBox>
+                            <VBox styleClass="profile-stat-chip" alignment="CENTER" spacing="3">
+                                <StackPane styleClass="profile-chip-icon-green" alignment="CENTER">
+                                    <FontIcon iconLiteral="fth-users" iconSize="13" iconColor="#34D399"/>
+                                </StackPane>
+                                <Label text="5" styleClass="profile-stat-chip-value"/>
+                                <Label text="Projects" styleClass="profile-stat-chip-label"/>
+                            </VBox>
+                            <VBox styleClass="profile-stat-chip" alignment="CENTER" spacing="3">
+                                <StackPane styleClass="profile-chip-icon-yellow" alignment="CENTER">
+                                    <FontIcon iconLiteral="fth-layers" iconSize="13" iconColor="#FBBF24"/>
+                                </StackPane>
+                                <Label text="12" styleClass="profile-stat-chip-value"/>
+                                <Label text="Decks" styleClass="profile-stat-chip-label"/>
+                            </VBox>
+                        </HBox>
+                    </VBox>
+
+                </HBox>
+            </StackPane>
+
+            <!-- ══════════════════════════════════════
+                 PERSONAL INFORMATION
+                 ══════════════════════════════════════ -->
+            <VBox styleClass="card" spacing="0">
+                <HBox styleClass="card-header" alignment="CENTER_LEFT" spacing="12">
+                    <StackPane styleClass="stat-icon-box primary">
+                        <FontIcon iconLiteral="fth-user" iconSize="16"/>
+                    </StackPane>
+                    <VBox spacing="2" HBox.hgrow="ALWAYS">
+                        <Label text="Personal Information" styleClass="card-title"/>
+                        <Label text="Update your personal details" styleClass="card-subtitle"/>
+                    </VBox>
+                </HBox>
+                <VBox styleClass="card-body" spacing="22">
+
+                    <HBox spacing="20">
+                        <VBox spacing="8" HBox.hgrow="ALWAYS">
+                            <Label text="First name" styleClass="auth-field-label"/>
+                            <TextField fx:id="firstNameField" styleClass="auth-field" promptText="First name"/>
+                        </VBox>
+                        <VBox spacing="8" HBox.hgrow="ALWAYS">
+                            <Label text="Last name" styleClass="auth-field-label"/>
+                            <TextField fx:id="lastNameField" styleClass="auth-field" promptText="Last name"/>
+                        </VBox>
+                    </HBox>
+
+                    <HBox spacing="20">
+                        <VBox spacing="8" HBox.hgrow="ALWAYS">
+                            <Label text="Username" styleClass="auth-field-label"/>
+                            <TextField fx:id="usernameField" styleClass="auth-field" promptText="username"/>
+                        </VBox>
+                        <VBox spacing="8" HBox.hgrow="ALWAYS">
+                            <Label text="Phone number" styleClass="auth-field-label"/>
+                            <TextField fx:id="phoneField" styleClass="auth-field" promptText="+216 XX XXX XXX"/>
+                        </VBox>
+                    </HBox>
+
+                    <VBox spacing="8">
+                        <Label text="Email address" styleClass="auth-field-label"/>
+                        <TextField fx:id="emailField" styleClass="auth-field" promptText="email" editable="false"
+                                   style="-fx-opacity: 0.55;"/>
+                    </VBox>
+
+                    <VBox spacing="10">
+                        <Label text="Gender" styleClass="auth-field-label"/>
+                        <HBox spacing="20">
+                            <RadioButton fx:id="genderMale" text="Male" styleClass="profile-radio"/>
+                            <RadioButton fx:id="genderFemale" text="Female" styleClass="profile-radio"/>
+                        </HBox>
+                    </VBox>
+
+                    <VBox spacing="8">
+                        <Label text="Bio" styleClass="auth-field-label"/>
+                        <TextArea fx:id="bioField" styleClass="auth-field" promptText="Tell us about yourself..."
+                                  prefRowCount="3" wrapText="true"/>
+                    </VBox>
+                </VBox>
+            </VBox>
+
+            <!-- ══════════════════════════════════════
+                 ACADEMIC INFORMATION
+                 ══════════════════════════════════════ -->
+            <VBox styleClass="card" spacing="0">
+                <HBox styleClass="card-header" alignment="CENTER_LEFT" spacing="12">
+                    <StackPane styleClass="stat-icon-box warning">
+                        <FontIcon iconLiteral="fth-book-open" iconSize="16"/>
+                    </StackPane>
+                    <VBox spacing="2" HBox.hgrow="ALWAYS">
+                        <Label text="Academic Information" styleClass="card-title"/>
+                        <Label text="Your university and student details" styleClass="card-subtitle"/>
+                    </VBox>
+                </HBox>
+                <VBox styleClass="card-body" spacing="22">
+                    <HBox spacing="20">
+                        <VBox spacing="8" HBox.hgrow="ALWAYS">
+                            <Label text="University" styleClass="auth-field-label"/>
+                            <TextField fx:id="universityField" styleClass="auth-field" promptText="e.g. ESPRIT, MIT"/>
+                        </VBox>
+                        <VBox spacing="8" HBox.hgrow="ALWAYS">
+                            <Label text="Student ID" styleClass="auth-field-label"/>
+                            <TextField fx:id="studentIdField" styleClass="auth-field" promptText="Your student ID"/>
+                        </VBox>
+                    </HBox>
+                </VBox>
+            </VBox>
+
+            <!-- ══════════════════════════════════════
+                 SECURITY
+                 ══════════════════════════════════════ -->
+            <VBox styleClass="card" spacing="0">
+                <HBox styleClass="card-header" alignment="CENTER_LEFT" spacing="12">
+                    <StackPane styleClass="stat-icon-box danger">
+                        <FontIcon iconLiteral="fth-lock" iconSize="16"/>
+                    </StackPane>
+                    <VBox spacing="2" HBox.hgrow="ALWAYS">
+                        <Label text="Security" styleClass="card-title"/>
+                        <Label text="Change your password (leave blank to keep current)" styleClass="card-subtitle"/>
+                    </VBox>
+                </HBox>
+                <VBox styleClass="card-body" spacing="22">
+                    <HBox spacing="20">
+                        <VBox spacing="8" HBox.hgrow="ALWAYS">
+                            <Label text="New password" styleClass="auth-field-label"/>
+                            <PasswordField fx:id="newPasswordField" styleClass="auth-field" promptText="New password"/>
+                        </VBox>
+                        <VBox spacing="8" HBox.hgrow="ALWAYS">
+                            <Label text="Confirm new password" styleClass="auth-field-label"/>
+                            <PasswordField fx:id="confirmPasswordField" styleClass="auth-field" promptText="Repeat"/>
+                        </VBox>
+                    </HBox>
+                </VBox>
+            </VBox>
+
+            <!-- ══════════════════════════════════════
+                 ACTION BUTTONS
+                 ══════════════════════════════════════ -->
+            <HBox spacing="14" alignment="CENTER_RIGHT">
+                <Button text="Sign Out" styleClass="btn-danger" onAction="#handleLogout">
+                    <graphic><FontIcon iconLiteral="fth-log-out" iconSize="15"/></graphic>
+                </Button>
+                <Button text="Save Changes" styleClass="auth-btn-primary-sm" onAction="#handleSave">
+                    <graphic><FontIcon iconLiteral="fth-check" iconSize="15" iconColor="white"/></graphic>
+                </Button>
+            </HBox>
+
+        </VBox>
+    </ScrollPane>
+</VBox>

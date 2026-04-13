@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.FlowPane?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns="http://javafx.com/javafx/21"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.studyflow.controllers.admin.AdminMatieresController"
+      spacing="20" styleClass="landing-page">
+    <padding>
+        <Insets top="8" right="8" bottom="24" left="8"/>
+    </padding>
+
+    <VBox spacing="6">
+        <Label text="Matieres" styleClass="text-heading"/>
+        <Label text="Zone de gestion des matieres, cours et structures pedagogiques." styleClass="text-muted"/>
+    </VBox>
+
+    <FlowPane fx:id="matieresPane" hgap="16" vgap="16" prefWrapLength="900"/>
+</VBox>

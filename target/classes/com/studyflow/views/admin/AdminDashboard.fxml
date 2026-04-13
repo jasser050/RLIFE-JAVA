@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Priority?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns="http://javafx.com/javafx/21"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.studyflow.controllers.admin.AdminDashboardController"
+      spacing="20" styleClass="landing-page">
+    <padding>
+        <Insets top="8" right="8" bottom="24" left="8"/>
+    </padding>
+
+    <VBox spacing="6">
+        <Label text="Admin Dashboard" styleClass="text-heading"/>
+        <Label text="Vue globale de l'espace de gestion RLife." styleClass="text-muted"/>
+        <Label text="Session admin:" styleClass="text-small"/>
+        <Label fx:id="adminNameLabel" text="Admin" styleClass="card-title"/>
+    </VBox>
+
+    <HBox spacing="16">
+        <VBox styleClass="stat-card, admin-stat-card" spacing="8" HBox.hgrow="ALWAYS">
+            <Label text="Users" styleClass="stat-label"/>
+            <Label fx:id="totalUsersLabel" text="0" styleClass="stat-value"/>
+        </VBox>
+        <VBox styleClass="stat-card, admin-stat-card" spacing="8" HBox.hgrow="ALWAYS">
+            <Label text="Admins" styleClass="stat-label"/>
+            <Label fx:id="adminUsersLabel" text="0" styleClass="stat-value"/>
+        </VBox>
+        <VBox styleClass="stat-card, admin-stat-card" spacing="8" HBox.hgrow="ALWAYS">
+            <Label text="Wellbeing Entries" styleClass="stat-label"/>
+            <Label fx:id="wellbeingEntriesLabel" text="0" styleClass="stat-value"/>
+        </VBox>
+        <VBox styleClass="stat-card, admin-stat-card" spacing="8" HBox.hgrow="ALWAYS">
+            <Label text="Average Stress" styleClass="stat-label"/>
+            <Label fx:id="averageStressLabel" text="0.0/10" styleClass="stat-value"/>
+        </VBox>
+    </HBox>
+
+    <VBox styleClass="card, admin-panel" spacing="14">
+        <padding>
+            <Insets top="18" right="18" bottom="18" left="18"/>
+        </padding>
+        <Label text="Recent Admin Activity" styleClass="card-title"/>
+        <VBox fx:id="recentActivityBox" spacing="12"/>
+    </VBox>
+</VBox>

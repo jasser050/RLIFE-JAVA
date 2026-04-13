@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Priority?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns="http://javafx.com/javafx/21"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.studyflow.controllers.admin.AdminUsersController"
+      spacing="20" styleClass="landing-page">
+    <padding>
+        <Insets top="8" right="8" bottom="24" left="8"/>
+    </padding>
+
+    <VBox spacing="6">
+        <Label text="Users Management" styleClass="text-heading"/>
+        <Label text="Liste des utilisateurs avec distinction admin / front office." styleClass="text-muted"/>
+    </VBox>
+
+    <HBox spacing="16">
+        <VBox styleClass="stat-card, admin-stat-card" spacing="8" HBox.hgrow="ALWAYS">
+            <Label text="Total Users" styleClass="stat-label"/>
+            <Label fx:id="totalUsersLabel" text="0" styleClass="stat-value"/>
+        </VBox>
+        <VBox styleClass="stat-card, admin-stat-card" spacing="8" HBox.hgrow="ALWAYS">
+            <Label text="Admin Users" styleClass="stat-label"/>
+            <Label fx:id="adminUsersLabel" text="0" styleClass="stat-value"/>
+        </VBox>
+        <VBox styleClass="stat-card, admin-stat-card" spacing="8" HBox.hgrow="ALWAYS">
+            <Label text="Student Users" styleClass="stat-label"/>
+            <Label fx:id="studentUsersLabel" text="0" styleClass="stat-value"/>
+        </VBox>
+    </HBox>
+
+    <VBox styleClass="card, admin-panel" spacing="14">
+        <padding>
+            <Insets top="18" right="18" bottom="18" left="18"/>
+        </padding>
+        <Label text="Accounts" styleClass="card-title"/>
+        <VBox fx:id="usersListBox" spacing="12"/>
+    </VBox>
+</VBox>
