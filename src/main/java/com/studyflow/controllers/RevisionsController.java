@@ -1,7 +1,9 @@
 package com.studyflow.controllers;
 
 import com.studyflow.models.Deck;
+import com.studyflow.models.Flashcard;
 import com.studyflow.services.DeckService;
+import com.studyflow.services.FlashcardService;
 import javafx.animation.FadeTransition;
 import javafx.animation.PauseTransition;
 import javafx.animation.SequentialTransition;
@@ -30,6 +32,7 @@ import org.kordamp.ikonli.javafx.FontIcon;
 import java.awt.Desktop;
 import java.io.*;
 import java.net.URL;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -62,9 +65,11 @@ public class RevisionsController implements Initializable {
     @FXML private Label errTitre, errMatiere, errNiveau, errImage, errPdf;
 
     private final DeckService deckService = new DeckService();
+    private final FlashcardService flashcardService = new FlashcardService();
     private List<Deck> decks;
+    private List<Deck> visibleDecks = List.of();
     private Deck selectedDeck = null;
-    private final Map<Integer, Double> masteryMap = new HashMap<>();
+    private final Map<Integer, List<Flashcard>> flashcardsByDeck = new HashMap<>();
     private final Map<Object, Popup> popupMap = new HashMap<>();
 
     /**
@@ -439,7 +444,7 @@ public class RevisionsController implements Initializable {
         Alert dlg=new Alert(Alert.AlertType.CONFIRMATION);
         dlg.setTitle("Delete Deck");dlg.setHeaderText("Delete \""+d.getTitre()+"\"?");dlg.setContentText("This action cannot be undone.");
         Optional<ButtonType> r=dlg.showAndWait();
-        if(r.isPresent()&&r.get()==ButtonType.OK){masteryMap.remove(d.getIdDeck());deckService.delete(d);refreshAll();}
+        if(r.isPresent()&&r.get()==ButtonType.OK){deckService.delete(d);refreshAll();}
     }
 
     // ══════════════════════════════════════════════
@@ -447,13 +452,8 @@ public class RevisionsController implements Initializable {
     // ══════════════════════════════════════════════
     private void refreshAll(){
         decks=deckService.getAll();
-        long mc=masteryMap.values().stream().filter(v->v>=1.0).count();
-        if(totalDecksLabel!=null)totalDecksLabel.setText(String.valueOf(decks.size()));
-        if(masteredLabel  !=null)masteredLabel.setText(String.valueOf(mc));
-        if(dueReviewLabel !=null)dueReviewLabel.setText("0");
-        if(streakLabel    !=null)streakLabel.setText("14");
+         refreshDeckFlashcardsCache();
         applySearchFilter();
-        Platform.runLater(this::drawCharts);
     }
 
     private void setupSearchFilter(){
@@ -471,7 +471,11 @@ public class RevisionsController implements Initializable {
         String q=(searchField==null||searchField.getText()==null)?"":searchField.getText().trim().toLowerCase(Locale.ROOT);
         Stream<Deck> stream=decks.stream();
         if(!q.isBlank())stream=stream.filter(d->deckSearchText(d).contains(q));
-        displayDecks(stream.sorted(getDeckComparator()).toList());
+        List<Deck> filtered=stream.sorted(getDeckComparator()).toList();
+        visibleDecks=filtered;
+        updateOverviewStats(filtered);
+        displayDecks(filtered);
+        Platform.runLater(this::drawCharts);
     }
 
     private Comparator<Deck> getDeckComparator(){
@@ -513,8 +517,12 @@ public class RevisionsController implements Initializable {
         VBox content=new VBox(8); content.setPadding(new Insets(16));
         Label name=new Label(deck.getTitre()); name.setStyle("-fx-text-fill:#F8FAFC;-fx-font-weight:800;-fx-font-size:15px;"); name.setWrapText(true);
         Label sub=new Label(deck.getMatiere()+" • "+deck.getNiveau()); sub.setStyle("-fx-text-fill:#64748B;-fx-font-size:11px;");
-        double mastery=masteryMap.getOrDefault(deck.getIdDeck(),0.0);
-        HBox ph=new HBox(); Label pt=new Label("0/0 mastered"); pt.setStyle("-fx-text-fill:#94A3B8;-fx-font-size:10px;");
+        List<Flashcard> deckFlashcards=getFlashcardsForDeck(deck);
+        int totalCards=deckFlashcards.size();
+        int masteredCards=(int)deckFlashcards.stream().filter(fc->"mastered".equalsIgnoreCase(fc.getEtat())).count();
+        int dueCards=(int)deckFlashcards.stream().filter(fc->!"mastered".equalsIgnoreCase(fc.getEtat())).count();
+        double mastery=totalCards==0?0.0:(double)masteredCards/totalCards;
+        HBox ph=new HBox(); Label pt=new Label(masteredCards+"/"+totalCards+" mastered"); pt.setStyle("-fx-text-fill:#94A3B8;-fx-font-size:10px;");
         Region sp2=new Region(); HBox.setHgrow(sp2,Priority.ALWAYS);
         Label pc=new Label(String.format("%.0f%%",mastery*100)); pc.setStyle("-fx-text-fill:"+hex(color)+";-fx-font-size:11px;-fx-font-weight:700;");
         ph.getChildren().addAll(pt,sp2,pc);
@@ -522,9 +530,9 @@ public class RevisionsController implements Initializable {
         content.getChildren().addAll(name,sub,ph,bar);
         if(deck.getDescription()!=null&&!deck.getDescription().isEmpty()){Label desc=new Label(deck.getDescription());desc.setStyle("-fx-text-fill:#94A3B8;-fx-font-size:11px;");desc.setWrapText(true);desc.setMaxHeight(36);content.getChildren().add(desc);}
         HBox acts=new HBox(8); acts.setAlignment(Pos.CENTER_RIGHT); acts.setPadding(new Insets(12,0,0,0));
-        boolean alreadyM=mastery>=1.0;
+        boolean alreadyM=dueCards==0&&totalCards>0;
         Button masterBtn=alreadyM?chipBtn("✓ Mastered","rgba(52,211,153,0.20)","#34D399","rgba(52,211,153,0.35)"):chipBtn("★ Master","rgba(251,191,36,0.15)","#FBBF24","rgba(251,191,36,0.3)");
-        masterBtn.setOnAction(e->{if(masteryMap.getOrDefault(deck.getIdDeck(),0.0)>=1.0)masteryMap.remove(deck.getIdDeck());else masteryMap.put(deck.getIdDeck(),1.0);if(masteredLabel!=null)masteredLabel.setText(String.valueOf(masteryMap.values().stream().filter(v->v>=1.0).count()));applySearchFilter();});
+        masterBtn.setOnAction(e->openEditForm(deck));
         Button editBtn=chipBtn("✎ Edit","rgba(99,102,241,0.15)","#818CF8","rgba(99,102,241,0.3)");
         Button delBtn =chipBtn("🗑 Delete","rgba(244,63,94,0.15)","#FB7185","rgba(244,63,94,0.3)");
         editBtn.setOnAction(e->openEditForm(deck)); delBtn.setOnAction(e->handleDelete(deck));
@@ -562,13 +570,14 @@ public class RevisionsController implements Initializable {
     // ══════════════════════════════════════════════
     // CHARTS
     // ══════════════════════════════════════════════
-    private void drawCharts(){if(decks==null)return;drawDonut();drawLine();drawBars();}
+    private void drawCharts(){drawDonut();drawLine();drawBars();}
 
     private void drawDonut(){
         if(donutChartPane==null)return;
         double w=donutChartPane.getWidth()>0?donutChartPane.getWidth():300,h=donutChartPane.getHeight()>0?donutChartPane.getHeight():160;
         Canvas c=new Canvas(w,h);GraphicsContext g=c.getGraphicsContext2D();
-        double pct=decks.isEmpty()?0:Math.min(88.0,60+decks.size()*4.0);
+        List<Flashcard> flashcards=getFlashcardsForDecks(visibleDecks);
+        double pct=flashcards.isEmpty()?0:(flashcards.stream().filter(fc->"mastered".equalsIgnoreCase(fc.getEtat())).count()*100.0)/flashcards.size();
         double cx=w/2,cy=h/2,r=Math.min(w,h)*0.38,thick=r*0.38;
         g.setStroke(Color.web("#1E293B"));g.setLineWidth(thick);g.strokeArc(cx-r,cy-r,r*2,r*2,0,360,javafx.scene.shape.ArcType.OPEN);
         g.setStroke(Color.web("#8B5CF6"));g.setLineWidth(thick);g.strokeArc(cx-r,cy-r,r*2,r*2,90,-(pct/100.0*360),javafx.scene.shape.ArcType.OPEN);
@@ -582,30 +591,102 @@ public class RevisionsController implements Initializable {
         double w=lineChartPane.getWidth()>0?lineChartPane.getWidth():300,h=lineChartPane.getHeight()>0?lineChartPane.getHeight():150;
         Canvas c=new Canvas(w,h);GraphicsContext g=c.getGraphicsContext2D();
         String[]days={"Mon","Tue","Wed","Thu","Fri","Sat","Sun"};
-        double[][]series={{3,5,4,7,6,8,5},{2,4,6,5,8,7,9},{1,3,2,4,5,6,4}};String[]colors={"#10B981","#8B5CF6","#F59E0B"};
+        double[][]series=buildWeeklySeries();String[]colors={"#10B981","#8B5CF6","#F59E0B"};
         double padL=30,padR=10,padT=10,padB=30,gw=w-padL-padR,gh=h-padT-padB;int n=days.length;
+        double max=1;
+        for(double[]row:series)for(double v:row)max=Math.max(max,v);
         g.setStroke(Color.web("#1E293B"));g.setLineWidth(1);
-        for(int i=0;i<=5;i++){double y=padT+gh-(i/5.0)*gh;g.strokeLine(padL,y,padL+gw,y);g.setFill(Color.web("#475569"));g.setFont(Font.font("System",10));g.setTextAlign(TextAlignment.RIGHT);g.fillText(String.valueOf(i*2),padL-4,y+4);}
+        for(int i=0;i<=5;i++){double y=padT+gh-(i/5.0)*gh;g.strokeLine(padL,y,padL+gw,y);g.setFill(Color.web("#475569"));g.setFont(Font.font("System",10));g.setTextAlign(TextAlignment.RIGHT);g.fillText(String.valueOf((int)Math.round((i/5.0)*max)),padL-4,y+4);}
         for(int i=0;i<n;i++){double x=padL+(i/(double)(n-1))*gw;g.setFill(Color.web("#475569"));g.setFont(Font.font("System",10));g.setTextAlign(TextAlignment.CENTER);g.fillText(days[i],x,h-6);}
-        for(int s=0;s<series.length;s++){g.setStroke(Color.web(colors[s]));g.setLineWidth(2);g.setLineDashes(s==2?5:0);g.beginPath();for(int i=0;i<n;i++){double x=padL+(i/(double)(n-1))*gw,y=padT+gh-(series[s][i]/10.0)*gh;if(i==0)g.moveTo(x,y);else g.lineTo(x,y);}g.stroke();g.setLineDashes(0);g.setFill(Color.web(colors[s]));for(int i=0;i<n;i++){double x=padL+(i/(double)(n-1))*gw,y=padT+gh-(series[s][i]/10.0)*gh;g.fillOval(x-3,y-3,6,6);}}
+        for(int s=0;s<series.length;s++){g.setStroke(Color.web(colors[s]));g.setLineWidth(2);g.setLineDashes(s==2?5:0);g.beginPath();for(int i=0;i<n;i++){double x=padL+(i/(double)(n-1))*gw,y=padT+gh-(series[s][i]/max)*gh;if(i==0)g.moveTo(x,y);else g.lineTo(x,y);}g.stroke();g.setLineDashes(0);g.setFill(Color.web(colors[s]));for(int i=0;i<n;i++){double x=padL+(i/(double)(n-1))*gw,y=padT+gh-(series[s][i]/max)*gh;g.fillOval(x-3,y-3,6,6);}}
         lineChartPane.getChildren().setAll(c);
     }
 
     private void drawBars(){
-        if(barChartPane==null||decks==null||decks.isEmpty())return;
+        if(barChartPane==null)return;
+        if(visibleDecks==null||visibleDecks.isEmpty()){barChartPane.getChildren().clear();return;}
         double w=barChartPane.getWidth()>0?barChartPane.getWidth():300,h=barChartPane.getHeight()>0?barChartPane.getHeight():130;
         Canvas c=new Canvas(w,h);GraphicsContext g=c.getGraphicsContext2D();
-        int shown=Math.min(decks.size(),6);double padL=28,padR=8,padT=10,padB=28,gw=w-padL-padR,gh=h-padT-padB;
+        int shown=Math.min(visibleDecks.size(),6);double padL=28,padR=8,padT=10,padB=28,gw=w-padL-padR,gh=h-padT-padB;
         double groupW=gw/shown,barW=groupW*0.35;String[]barColors={"#8B5CF6","#F59E0B"};
         g.setStroke(Color.web("#1E293B"));g.setLineWidth(1);
         for(int i=0;i<=4;i++){double y=padT+gh-(i/4.0)*gh;g.strokeLine(padL,y,padL+gw,y);g.setFill(Color.web("#475569"));g.setFont(Font.font("System",9));g.setTextAlign(TextAlignment.RIGHT);g.fillText((i*25)+"%",padL-3,y+3);}
-        for(int i=0;i<shown;i++){Deck deck=decks.get(i);String abbr=deck.getTitre().length()>3?deck.getTitre().substring(0,3).toUpperCase():deck.getTitre().toUpperCase();double cx=padL+i*groupW+groupW/2;double realM=masteryMap.getOrDefault(deck.getIdDeck(),0.0)*100;double[]vals={realM>0?realM:(60+(i*7)%40),realM>0?realM:(10+(i*11)%35)};for(int b=0;b<2;b++){double barH=(vals[b]/100.0)*gh,bx=cx+(b==0?-barW-1:1),by=padT+gh-barH;g.setFill(Color.web(barColors[b]));g.fillRoundRect(bx,by,barW,barH,4,4);}g.setFill(Color.web("#64748B"));g.setFont(Font.font("System",9));g.setTextAlign(TextAlignment.CENTER);g.fillText(abbr,cx,h-4);}
+        for(int i=0;i<shown;i++){Deck deck=visibleDecks.get(i);List<Flashcard> deckFlashcards=getFlashcardsForDeck(deck);int total=deckFlashcards.size();double masteredPct=total==0?0:(deckFlashcards.stream().filter(fc->"mastered".equalsIgnoreCase(fc.getEtat())).count()*100.0)/total;double duePct=total==0?0:(deckFlashcards.stream().filter(fc->!"mastered".equalsIgnoreCase(fc.getEtat())).count()*100.0)/total;String abbr=deck.getTitre().length()>3?deck.getTitre().substring(0,3).toUpperCase():deck.getTitre().toUpperCase();double cx=padL+i*groupW+groupW/2;double[]vals={masteredPct,duePct};for(int b=0;b<2;b++){double barH=(vals[b]/100.0)*gh,bx=cx+(b==0?-barW-1:1),by=padT+gh-barH;g.setFill(Color.web(barColors[b]));g.fillRoundRect(bx,by,barW,barH,4,4);}g.setFill(Color.web("#64748B"));g.setFont(Font.font("System",9));g.setTextAlign(TextAlignment.CENTER);g.fillText(abbr,cx,h-4);}
         barChartPane.getChildren().setAll(c);
     }
 
     // ══════════════════════════════════════════════
     // HELPERS
     // ══════════════════════════════════════════════
+    private void updateOverviewStats(List<Deck> deckList){
+        List<Flashcard> flashcards=getFlashcardsForDecks(deckList);
+        long mastered=flashcards.stream().filter(fc->"mastered".equalsIgnoreCase(fc.getEtat())).count();
+        long due=flashcards.stream().filter(fc->!"mastered".equalsIgnoreCase(fc.getEtat())).count();
+        if(totalDecksLabel!=null)totalDecksLabel.setText(String.valueOf(deckList.size()));
+        if(masteredLabel  !=null)masteredLabel.setText(String.valueOf(mastered));
+        if(dueReviewLabel !=null)dueReviewLabel.setText(String.valueOf(due));
+        if(streakLabel    !=null)streakLabel.setText(String.valueOf(calculateStudyStreak(deckList)));
+    }
+
+    private void refreshDeckFlashcardsCache(){
+        flashcardsByDeck.clear();
+        if(decks==null)return;
+        for(Deck deck:decks) flashcardsByDeck.put(deck.getIdDeck(), flashcardService.getByDeck(deck.getIdDeck()));
+    }
+
+    private List<Flashcard> getFlashcardsForDeck(Deck deck){
+        if(deck==null)return List.of();
+        return flashcardsByDeck.getOrDefault(deck.getIdDeck(), List.of());
+    }
+
+    private List<Flashcard> getFlashcardsForDecks(List<Deck> deckList){
+        if(deckList==null||deckList.isEmpty())return List.of();
+        List<Flashcard> result=new ArrayList<>();
+        for(Deck deck:deckList) result.addAll(getFlashcardsForDeck(deck));
+        return result;
+    }
+
+    private int calculateStudyStreak(List<Deck> deckList){
+        Set<LocalDate> activeDays=new HashSet<>();
+        for(Deck deck:deckList){
+            if(deck.getDateCreation()!=null) activeDays.add(deck.getDateCreation().toLocalDate());
+            for(Flashcard fc:getFlashcardsForDeck(deck)){
+                if(fc.getDateCreation()!=null) activeDays.add(fc.getDateCreation().toLocalDate());
+                if(fc.getDateModification()!=null) activeDays.add(fc.getDateModification().toLocalDate());
+            }
+        }
+        int streak=0;
+        LocalDate cursor=LocalDate.now();
+        while(activeDays.contains(cursor)){
+            streak++;
+            cursor=cursor.minusDays(1);
+        }
+        return streak;
+    }
+
+    private double[][] buildWeeklySeries(){
+        double[][] series=new double[3][7];
+        if(visibleDecks==null)return series;
+        LocalDate start=LocalDate.now().minusDays(6);
+        for(Deck deck:visibleDecks){
+            if(deck.getDateCreation()!=null){
+                int index=(int)(deck.getDateCreation().toLocalDate().toEpochDay()-start.toEpochDay());
+                if(index>=0&&index<7) series[0][index]++;
+            }
+            for(Flashcard fc:getFlashcardsForDeck(deck)){
+                if(fc.getDateCreation()!=null){
+                    int index=(int)(fc.getDateCreation().toLocalDate().toEpochDay()-start.toEpochDay());
+                    if(index>=0&&index<7) series[1][index]++;
+                }
+                if(fc.getDateModification()!=null){
+                    int index=(int)(fc.getDateModification().toLocalDate().toEpochDay()-start.toEpochDay());
+                    if(index>=0&&index<7) series[2][index]++;
+                }
+            }
+        }
+        return series;
+    }
+
     private String safe(String v){return v==null?"":v;}
     private String hex(String c){return switch(c){case"primary"->"#A78BFA";case"success"->"#34D399";case"warning"->"#FBBF24";case"danger"->"#FB7185";case"accent"->"#FB923C";default->"#94A3B8";};}
     private String grad(String c){return switch(c){case"primary"->"linear-gradient(to bottom right,#7C3AED,#8B5CF6)";case"success"->"linear-gradient(to bottom right,#059669,#10B981)";case"warning"->"linear-gradient(to bottom right,#D97706,#F59E0B)";case"danger"->"linear-gradient(to bottom right,#DC2626,#F43F5E)";case"accent"->"linear-gradient(to bottom right,#EA580C,#F97316)";default->"linear-gradient(to bottom right,#475569,#64748B)";};}
