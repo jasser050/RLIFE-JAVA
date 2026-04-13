@@ -4,28 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="aef49e16-18eb-4aef-9a6b-0edc463b5109" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/target/classes/.editorconfig" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/App.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/App.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/DashboardController.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/DashboardController.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/LoginController.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/LoginController.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/MainController.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/MainController.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/ProfileController.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/ProfileController.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/RegisterController.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/RegisterController.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/models/User.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/models/User.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/services/ServiceUser.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/services/ServiceUser.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/styles/dark-theme.css" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/styles/dark-theme.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/utils/MyDataBase.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/utils/MyDataBase.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/views/Landing.fxml" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/views/Landing.fxml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/views/Login.fxml" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/views/Login.fxml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/views/MainLayout.fxml" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/views/MainLayout.fxml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/views/Profile.fxml" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/views/Profile.fxml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/views/Register.fxml" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/views/Register.fxml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/views/spline.html" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/views/spline.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/module-info.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/module-info.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/maven-status/maven-compiler-plugin/compile/default-compile/createdFiles.lst" beforeDir="false" afterPath="$PROJECT_DIR$/target/maven-status/maven-compiler-plugin/compile/default-compile/createdFiles.lst" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/maven-status/maven-compiler-plugin/compile/default-compile/inputFiles.lst" beforeDir="false" afterPath="$PROJECT_DIR$/target/maven-status/maven-compiler-plugin/compile/default-compile/inputFiles.lst" afterDir="false" />
-    </list>
+    <list default="true" id="aef49e16-18eb-4aef-9a6b-0edc463b5109" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
