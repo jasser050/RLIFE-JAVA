@@ -27,6 +27,8 @@ import java.util.ResourceBundle;
  */
 public class MainController implements Initializable {
 
+    private static MainController instance;
+
     @FXML private StackPane contentArea;
     @FXML private TextField searchField;
     @FXML private HBox titleBar;
@@ -56,6 +58,7 @@ public class MainController implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+        instance = this;
         activeButton = btnDashboard;
         showDashboard();
 
@@ -177,9 +180,14 @@ public class MainController implements Initializable {
     }
 
     @FXML
-    private void showPlanning() {
+    public void showPlanning() {
         setActiveButton(btnPlanning);
         loadContent("views/Planning.fxml");
+    }
+
+    public void showSessions() {
+        setActiveButton(btnPlanning);
+        loadContent("views/Sessions.fxml");
     }
 
     @FXML
@@ -227,5 +235,9 @@ public class MainController implements Initializable {
         } catch (java.io.IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public static MainController getInstance() {
+        return instance;
     }
 }

@@ -6,7 +6,7 @@
 <?import javafx.geometry.Insets?>
 <?import org.kordamp.ikonli.javafx.FontIcon?>
 
-<VBox xmlns="http://javafx.com/javafx/21"
+<VBox xmlns="http://javafx.com/javafx/17"
       xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="com.studyflow.controllers.ProfileController"
       styleClass="profile-container" spacing="0">
@@ -15,9 +15,9 @@
         <VBox spacing="28">
             <padding><Insets top="32" right="36" bottom="40" left="36"/></padding>
 
-            <!-- ══════════════════════════════════════
+            <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
                  PAGE HEADER
-                 ══════════════════════════════════════ -->
+                 â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
             <HBox alignment="CENTER_LEFT" spacing="16">
                 <VBox spacing="4" HBox.hgrow="ALWAYS">
                     <Label text="Profile &amp; Settings" styleClass="page-title"/>
@@ -26,9 +26,9 @@
                 <Label fx:id="saveStatus" styleClass="badge success" visible="false" managed="false"/>
             </HBox>
 
-            <!-- ══════════════════════════════════════
-                 HERO CARD — Gradient profile banner
-                 ══════════════════════════════════════ -->
+            <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+                 HERO CARD â€” Gradient profile banner
+                 â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
             <StackPane styleClass="profile-hero-banner">
 
                 <!-- Gradient bg layer -->
@@ -62,7 +62,7 @@
                         <Label fx:id="profileName" text="Loading..." styleClass="profile-hero-name"/>
                         <HBox spacing="12" alignment="CENTER_LEFT">
                             <Label fx:id="profileEmail" text="" styleClass="profile-hero-email"/>
-                            <Label text="·" style="-fx-text-fill: #475569;"/>
+                            <Label text="Â·" style="-fx-text-fill: #475569;"/>
                             <Label fx:id="profileUsername" text="" styleClass="profile-hero-username"/>
                         </HBox>
 
@@ -102,9 +102,9 @@
                 </HBox>
             </StackPane>
 
-            <!-- ══════════════════════════════════════
+            <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
                  PERSONAL INFORMATION
-                 ══════════════════════════════════════ -->
+                 â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
             <VBox styleClass="card" spacing="0">
                 <HBox styleClass="card-header" alignment="CENTER_LEFT" spacing="12">
                     <StackPane styleClass="stat-icon-box primary">
@@ -161,9 +161,9 @@
                 </VBox>
             </VBox>
 
-            <!-- ══════════════════════════════════════
+            <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
                  ACADEMIC INFORMATION
-                 ══════════════════════════════════════ -->
+                 â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
             <VBox styleClass="card" spacing="0">
                 <HBox styleClass="card-header" alignment="CENTER_LEFT" spacing="12">
                     <StackPane styleClass="stat-icon-box warning">
@@ -188,9 +188,9 @@
                 </VBox>
             </VBox>
 
-            <!-- ══════════════════════════════════════
+            <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
                  SECURITY
-                 ══════════════════════════════════════ -->
+                 â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
             <VBox styleClass="card" spacing="0">
                 <HBox styleClass="card-header" alignment="CENTER_LEFT" spacing="12">
                     <StackPane styleClass="stat-icon-box danger">
@@ -215,9 +215,9 @@
                 </VBox>
             </VBox>
 
-            <!-- ══════════════════════════════════════
+            <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
                  ACTION BUTTONS
-                 ══════════════════════════════════════ -->
+                 â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
             <HBox spacing="14" alignment="CENTER_RIGHT">
                 <Button text="Sign Out" styleClass="btn-danger" onAction="#handleLogout">
                     <graphic><FontIcon iconLiteral="fth-log-out" iconSize="15"/></graphic>
@@ -230,3 +230,4 @@
         </VBox>
     </ScrollPane>
 </VBox>
+

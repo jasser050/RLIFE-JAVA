@@ -5,12 +5,12 @@
 <?import javafx.geometry.Insets?>
 <?import org.kordamp.ikonli.javafx.FontIcon?>
 
-<VBox xmlns="http://javafx.com/javafx/21"
+<VBox xmlns="http://javafx.com/javafx/17"
       xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="com.studyflow.controllers.LandingController"
       styleClass="app-container">
 
-    <!-- ══════════ TITLE BAR ══════════ -->
+    <!-- â•â•â•â•â•â•â•â•â•â• TITLE BAR â•â•â•â•â•â•â•â•â•â• -->
     <HBox styleClass="title-bar" alignment="CENTER_LEFT" spacing="0"
           onMousePressed="#onDragStart" onMouseDragged="#onDragged">
         <HBox alignment="CENTER_LEFT" spacing="10" HBox.hgrow="ALWAYS">
@@ -19,7 +19,7 @@
                 <FontIcon iconLiteral="fth-layers" iconSize="14" iconColor="white"/>
             </StackPane>
             <Label text="RLife" styleClass="title-bar-title"/>
-            <Label text="—" style="-fx-text-fill: #475569;"/>
+            <Label text="â€”" style="-fx-text-fill: #475569;"/>
             <Label text="Student Platform" styleClass="title-bar-subtitle"/>
         </HBox>
         <HBox alignment="CENTER_RIGHT" spacing="0" styleClass="window-controls">
@@ -35,15 +35,15 @@
         </HBox>
     </HBox>
 
-    <!-- ══════════ SCROLLABLE CONTENT ══════════ -->
+    <!-- â•â•â•â•â•â•â•â•â•â• SCROLLABLE CONTENT â•â•â•â•â•â•â•â•â•â• -->
     <ScrollPane fitToWidth="true" hbarPolicy="NEVER" VBox.vgrow="ALWAYS"
                 styleClass="landing-scroll">
 
         <VBox spacing="0" styleClass="landing-root">
 
-            <!-- ═══════════════════════════════════
+            <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
                  SECTION 1: HERO
-                 ═══════════════════════════════════ -->
+                 â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
             <HBox spacing="0" minHeight="560">
 
                 <!-- Left: Hero Content -->
@@ -55,7 +55,7 @@
                     <HBox>
                         <HBox styleClass="landing-pill-badge" alignment="CENTER_LEFT" spacing="8">
                             <StackPane styleClass="landing-pill-dot"/>
-                            <Label text="AI-Powered Platform  ·  50,000+ students" styleClass="landing-pill-text"/>
+                            <Label text="AI-Powered Platform  Â·  50,000+ students" styleClass="landing-pill-text"/>
                         </HBox>
                     </HBox>
                     <VBox.margin><Insets bottom="28"/></VBox.margin>
@@ -68,7 +68,7 @@
 
                     <!-- Subtitle -->
                     <Label styleClass="landing-subtitle" wrapText="true" maxWidth="440"
-                           text="All-in-one workspace for courses, flashcards, planning and wellbeing — built for the modern student."/>
+                           text="All-in-one workspace for courses, flashcards, planning and wellbeing â€” built for the modern student."/>
                     <VBox.margin><Insets bottom="36"/></VBox.margin>
 
                     <!-- CTA Buttons -->
@@ -93,7 +93,7 @@
                         </VBox>
                         <StackPane styleClass="landing-stat-sep"/>
                         <VBox styleClass="landing-stat-item" spacing="3" alignment="CENTER">
-                            <Label text="4.9 ★" styleClass="landing-stat-num-yellow"/>
+                            <Label text="4.9 â˜…" styleClass="landing-stat-num-yellow"/>
                             <Label text="App Rating" styleClass="landing-stat-sub"/>
                         </VBox>
                         <StackPane styleClass="landing-stat-sep"/>
@@ -175,12 +175,12 @@
                                 <VBox.margin><Insets bottom="8"/></VBox.margin>
                                 <HBox styleClass="landing-task" alignment="CENTER_LEFT" spacing="8">
                                     <StackPane styleClass="landing-tdot, landing-tdot-purple"/>
-                                    <Label text="Mathematics — Chapter 7" styleClass="landing-task-text" HBox.hgrow="ALWAYS"/>
+                                    <Label text="Mathematics â€” Chapter 7" styleClass="landing-task-text" HBox.hgrow="ALWAYS"/>
                                     <Label text="09:00" styleClass="landing-task-time"/>
                                 </HBox>
                                 <HBox styleClass="landing-task" alignment="CENTER_LEFT" spacing="8">
                                     <StackPane styleClass="landing-tdot, landing-tdot-red"/>
-                                    <Label text="Physics Lab Report — Due" styleClass="landing-task-text" HBox.hgrow="ALWAYS"/>
+                                    <Label text="Physics Lab Report â€” Due" styleClass="landing-task-text" HBox.hgrow="ALWAYS"/>
                                     <Label text="14:30" styleClass="landing-time-danger"/>
                                 </HBox>
                                 <HBox styleClass="landing-task" alignment="CENTER_LEFT" spacing="8">
@@ -194,9 +194,9 @@
                 </VBox>
             </HBox>
 
-            <!-- ═══════════════════════════════════
+            <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
                  SECTION 2: FEATURES GRID
-                 ═══════════════════════════════════ -->
+                 â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
             <VBox styleClass="landing-features-section" alignment="CENTER" spacing="14">
                 <padding><Insets top="56" right="60" bottom="56" left="60"/></padding>
 
@@ -255,9 +255,9 @@
                 </HBox>
             </VBox>
 
-            <!-- ═══════════════════════════════════
+            <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
                  SECTION 3: SOCIAL PROOF + HOW IT WORKS
-                 ═══════════════════════════════════ -->
+                 â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
             <HBox spacing="0" styleClass="landing-proof-section">
 
                 <!-- Left: How It Works -->
@@ -276,7 +276,7 @@
                         </StackPane>
                         <VBox spacing="4" HBox.hgrow="ALWAYS">
                             <Label text="Create your free account" styleClass="landing-step-title"/>
-                            <Label text="Sign up in seconds — no credit card required, free forever."
+                            <Label text="Sign up in seconds â€” no credit card required, free forever."
                                    styleClass="landing-step-desc" wrapText="true"/>
                         </VBox>
                     </HBox>
@@ -319,7 +319,7 @@
                     <VBox styleClass="landing-testimonial" spacing="10">
                         <padding><Insets top="20" right="20" bottom="20" left="20"/></padding>
                         <HBox spacing="4" alignment="CENTER_LEFT">
-                            <Label text="★★★★★" styleClass="landing-stars"/>
+                            <Label text="â˜…â˜…â˜…â˜…â˜…" styleClass="landing-stars"/>
                         </HBox>
                         <Label text="&quot;This app completely changed how I study. My GPA went from 2.8 to 3.7 in one semester!&quot;"
                                styleClass="landing-testimonial-text" wrapText="true"/>
@@ -338,7 +338,7 @@
                     <VBox styleClass="landing-testimonial" spacing="10">
                         <padding><Insets top="20" right="20" bottom="20" left="20"/></padding>
                         <HBox spacing="4" alignment="CENTER_LEFT">
-                            <Label text="★★★★★" styleClass="landing-stars"/>
+                            <Label text="â˜…â˜…â˜…â˜…â˜…" styleClass="landing-stars"/>
                         </HBox>
                         <Label text="&quot;The flashcard system with spaced repetition is incredible. I actually remember what I study now.&quot;"
                                styleClass="landing-testimonial-text" wrapText="true"/>
@@ -355,9 +355,9 @@
                 </VBox>
             </HBox>
 
-            <!-- ═══════════════════════════════════
+            <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
                  SECTION 4: BOTTOM CTA
-                 ═══════════════════════════════════ -->
+                 â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
             <VBox styleClass="landing-bottom-cta" alignment="CENTER" spacing="14">
                 <padding><Insets top="56" right="60" bottom="56" left="60"/></padding>
 
@@ -388,7 +388,7 @@
                         <FontIcon iconLiteral="fth-layers" iconSize="12" iconColor="white"/>
                     </StackPane>
                     <Label text="RLife" style="-fx-text-fill: #475569; -fx-font-size: 13px; -fx-font-weight: bold;"/>
-                    <Label text="— Built for students, by students."
+                    <Label text="â€” Built for students, by students."
                            style="-fx-text-fill: #334155; -fx-font-size: 12px;"/>
                 </HBox>
             </VBox>
@@ -396,3 +396,4 @@
         </VBox>
     </ScrollPane>
 </VBox>
+

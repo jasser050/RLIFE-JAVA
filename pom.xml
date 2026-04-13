@@ -14,9 +14,8 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
-        <javafx.version>21.0.1</javafx.version>
+        <maven.compiler.release>17</maven.compiler.release>
+        <javafx.version>17.0.10</javafx.version>
         <ikonli.version>12.3.1</ikonli.version>
     </properties>
 
@@ -61,6 +60,21 @@
             <version>8.0.33</version>
             <scope>compile</scope>
         </dependency>
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi</artifactId>
+            <version>5.5.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml</artifactId>
+            <version>5.5.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.pdfbox</groupId>
+            <artifactId>pdfbox</artifactId>
+            <version>2.0.35</version>
+        </dependency>
     </dependencies>
 
     <build>
@@ -70,8 +84,7 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.11.0</version>
                 <configuration>
-                    <source>17</source>
-                    <target>17</target>
+                    <release>${maven.compiler.release}</release>
                 </configuration>
             </plugin>
             <plugin>
@@ -79,7 +92,7 @@
                 <artifactId>javafx-maven-plugin</artifactId>
                 <version>0.0.8</version>
                 <configuration>
-                    <mainClass>com.studyflow.App</mainClass>
+                    <mainClass>com.studyflow/com.studyflow.App</mainClass>
                 </configuration>
             </plugin>
         </plugins>

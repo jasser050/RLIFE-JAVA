@@ -5,7 +5,7 @@
 <?import javafx.geometry.Insets?>
 <?import org.kordamp.ikonli.javafx.FontIcon?>
 
-<VBox xmlns="http://javafx.com/javafx/21"
+<VBox xmlns="http://javafx.com/javafx/17"
       xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="com.studyflow.controllers.NotesController"
       spacing="24" style="-fx-background-color: #020617;">
@@ -138,3 +138,4 @@
         </VBox>
     </HBox>
 </VBox>
+

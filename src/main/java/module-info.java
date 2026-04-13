@@ -6,6 +6,10 @@ module com.studyflow {
     requires org.kordamp.ikonli.feather;
     requires java.sql;
     requires javafx.web;
+    requires java.desktop;
+    requires org.apache.poi.poi;
+    requires org.apache.poi.ooxml;
+    requires org.apache.pdfbox;
 
     opens com.studyflow to javafx.fxml;
     opens com.studyflow.controllers to javafx.fxml;
