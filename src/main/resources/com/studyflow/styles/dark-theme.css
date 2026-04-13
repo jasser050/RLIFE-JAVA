@@ -90,10 +90,12 @@
 }
 
 .sidebar-logo {
-    -fx-pref-width: 40;
-    -fx-pref-height: 40;
-    -fx-background-color: linear-gradient(to bottom right, #8B5CF6, #6D28D9);
-    -fx-background-radius: 12;
+    -fx-pref-width: 44;
+    -fx-pref-height: 44;
+}
+
+.sidebar-logo-img {
+    -fx-effect: dropshadow(gaussian, rgba(139, 92, 246, 0.4), 10, 0.4, 0, 2);
 }
 
 .sidebar-logo .ikonli-font-icon {

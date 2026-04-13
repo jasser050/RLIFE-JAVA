@@ -420,11 +420,21 @@ public class RegisterController implements Initializable {
             FontIcon icon = new FontIcon("fth-moon");
             icon.setIconSize(13);
             themeBtn.setGraphic(icon);
+            
+            // Update right panel theme
+            if (splineWebView != null) {
+                splineWebView.getEngine().executeScript("window.javaThemeChange(true);");
+            }
         } else {
             scene.getStylesheets().remove(lightCss);
             FontIcon icon = new FontIcon("fth-sun");
             icon.setIconSize(13);
             themeBtn.setGraphic(icon);
+            
+            // Update right panel theme
+            if (splineWebView != null) {
+                splineWebView.getEngine().executeScript("window.javaThemeChange(false);");
+            }
         }
     }
 

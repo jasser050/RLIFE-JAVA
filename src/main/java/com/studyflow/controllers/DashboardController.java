@@ -1,5 +1,7 @@
 package com.studyflow.controllers;
 
+import com.studyflow.models.User;
+import com.studyflow.utils.UserSession;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.geometry.Insets;
@@ -62,7 +64,10 @@ public class DashboardController implements Initializable {
         } else {
             greeting = "Good evening";
         }
-        welcomeLabel.setText(greeting + ", Jasser");
+        
+        User currentUser = UserSession.getInstance().getCurrentUser();
+        String userName = (currentUser != null) ? currentUser.getFirstName() : "Student";
+        welcomeLabel.setText(greeting + ", " + userName);
     }
 
     private void setupStats() {

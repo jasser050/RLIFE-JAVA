@@ -5,11 +5,75 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>RLIFE - Study Smarter</title>
   <style>
+    :root {
+      --bg-primary: #0F172A;
+      --bg-secondary: #1E1B4B;
+      --text-white: white;
+      --text-muted: rgba(255,255,255,0.6);
+      --text-highlight: #C084FC;
+      --text-live: white;
+      --text-better: #F472B6;
+      --badge-bg: rgba(234,179,8,0.25);
+      --badge-border: rgba(234,179,8,0.4);
+      --badge-text: #FDE047;
+      --card-rating-bg: linear-gradient(135deg, rgba(234,179,8,0.2) 0%, rgba(245,158,11,0.1) 100%);
+      --card-rating-border: rgba(234,179,8,0.35);
+      --card-exam-bg: linear-gradient(135deg, rgba(168,85,247,0.2) 0%, rgba(236,72,153,0.1) 100%);
+      --card-exam-border: rgba(168,85,247,0.35);
+      --card-free-bg: linear-gradient(135deg, rgba(52,211,153,0.2) 0%, rgba(20,184,166,0.1) 100%);
+      --card-free-border: rgba(52,211,153,0.35);
+      --feature-ai-bg: linear-gradient(180deg, rgba(99,102,241,0.2) 0%, rgba(79,70,229,0.1) 100%);
+      --feature-ai-border: rgba(99,102,241,0.3);
+      --feature-courses-bg: linear-gradient(180deg, rgba(168,85,247,0.2) 0%, rgba(126,34,146,0.1) 100%);
+      --feature-courses-border: rgba(168,85,247,0.3);
+      --feature-wellbeing-bg: linear-gradient(180deg, rgba(236,72,153,0.2) 0%, rgba(219,39,119,0.1) 100%);
+      --feature-wellbeing-border: rgba(236,72,153,0.3);
+      --logo-glow: rgba(139, 92, 246, 0.2);
+      --logo-text: #8B5CF6;
+      --top-band-bg: linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.3) 60%, transparent 100%);
+      --bottom-band-bg: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 60%, transparent 100%);
+      --blend-bg: linear-gradient(to right, #0F172A 0%, transparent 100%);
+      --overlay-bg: rgba(0,0,0,0.7);
+      --overlay-bg-light: rgba(248,250,252,0.85);
+    }
+
+    .light-mode {
+      --bg-primary: #F8FAFC;
+      --bg-secondary: #E2E8F0;
+      --text-white: #0F172A;
+      --text-muted: rgba(15, 23, 42, 0.7);
+      --text-highlight: #7C3AED;
+      --text-live: #0F172A;
+      --text-better: #DB2777;
+      --badge-bg: linear-gradient(135deg, rgba(234,179,8,0.3) 0%, rgba(245,158,11,0.2) 100%);
+      --badge-border: rgba(234,179,8,0.6);
+      --badge-text: #B45309;
+      --card-rating-bg: linear-gradient(135deg, rgba(234,179,8,0.25) 0%, rgba(245,158,11,0.15) 100%);
+      --card-rating-border: rgba(234,179,8,0.5);
+      --card-exam-bg: linear-gradient(135deg, rgba(168,85,247,0.25) 0%, rgba(236,72,153,0.15) 100%);
+      --card-exam-border: rgba(168,85,247,0.5);
+      --card-free-bg: linear-gradient(135deg, rgba(52,211,153,0.25) 0%, rgba(20,184,166,0.15) 100%);
+      --card-free-border: rgba(52,211,153,0.5);
+      --feature-ai-bg: linear-gradient(180deg, rgba(99,102,241,0.2) 0%, rgba(79,70,229,0.15) 100%);
+      --feature-ai-border: rgba(99,102,241,0.4);
+      --feature-courses-bg: linear-gradient(180deg, rgba(168,85,247,0.2) 0%, rgba(126,34,146,0.15) 100%);
+      --feature-courses-border: rgba(168,85,247,0.4);
+      --feature-wellbeing-bg: linear-gradient(180deg, rgba(236,72,153,0.2) 0%, rgba(219,39,119,0.15) 100%);
+      --feature-wellbeing-border: rgba(236,72,153,0.4);
+      --logo-glow: rgba(139, 92, 246, 0.15);
+      --logo-text: #7C3AED;
+      --top-band-bg: linear-gradient(to bottom, rgba(248,250,252,0.9) 0%, rgba(226,232,240,0.5) 60%, transparent 100%);
+      --bottom-band-bg: linear-gradient(to top, rgba(248,250,252,0.9) 0%, rgba(226,232,240,0.6) 60%, transparent 100%);
+      --blend-bg: linear-gradient(to right, #F8FAFC 0%, transparent 100%);
+      --overlay-bg: rgba(0,0,0,0.7);
+      --overlay-bg-light: rgba(248,250,252,0.9);
+    }
+
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body {
       width: 100%; height: 100%;
       font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-      background: linear-gradient(135deg, #0F172A 0%, #1E1B4B 50%, #0F172A 100%);
+      background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 50%, var(--bg-primary) 100%);
       overflow: hidden;
     }
 
@@ -21,11 +85,10 @@
       left: 0;
       bottom: 0;
       width: 80px;
-      background: linear-gradient(to right, #0F172A 0%, transparent 100%);
+      background: var(--blend-bg);
       z-index: 10;
     }
 
-    /* Simplified Logo Container - Positioned better */
     .logo-container {
       position: absolute;
       top: 45%;
@@ -40,11 +103,7 @@
       justify-content: center;
     }
 
-    /* Main Logo - Simple floating */
-    .logo-wrapper {
-      width: 180px;
-      height: 180px;
-    }
+    .logo-wrapper { width: 180px; height: 180px; }
 
     .logo-img {
       width: 100%;
@@ -59,7 +118,6 @@
       50% { transform: translateY(-8px); }
     }
 
-    /* Simple glow effect */
     .logo-glow {
       position: absolute;
       top: 50%;
@@ -67,7 +125,7 @@
       transform: translate(-50%, -50%);
       width: 200px;
       height: 200px;
-      background: radial-gradient(circle, rgba(139, 92, 246, 0.2) 0%, transparent 70%);
+      background: radial-gradient(circle, var(--logo-glow) 0%, transparent 70%);
       border-radius: 50%;
       animation: glow-pulse 4s ease-in-out infinite;
     }
@@ -77,24 +135,22 @@
       50% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
     }
 
-    /* Simple RLIFE text */
     .logo-label {
       margin-top: 20px;
       font-size: 26px;
       font-weight: 900;
       letter-spacing: 0.12em;
-      color: #8B5CF6;
-      text-shadow: 0 0 20px rgba(139, 92, 246, 0.5);
+      color: var(--logo-text);
+      text-shadow: 0 0 20px var(--logo-glow);
     }
 
-    /* Top Band */
     .top-band {
       position: absolute;
       top: 0;
       left: 0;
       right: 0;
       padding: 30px 35px 100px;
-      background: linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.3) 60%, transparent 100%);
+      background: var(--top-band-bg);
       z-index: 20;
     }
 
@@ -104,31 +160,35 @@
       gap: 10px;
       padding: 10px 16px;
       border-radius: 50px;
-      background: linear-gradient(135deg, rgba(234,179,8,0.25) 0%, rgba(245,158,11,0.15) 100%);
-      border: 1px solid rgba(234,179,8,0.4);
+      background: var(--badge-bg);
+      border: 1px solid var(--badge-border);
       margin-bottom: 24px;
     }
 
-    .badge-icon { width: 18px; height: 18px; color: #FACC15; }
-    .badge-text { font-size: 11px; font-weight: 700; color: #FDE047; letter-spacing: 0.05em; }
-    .badge-star { color: #FACC15; font-size: 14px; }
+    .badge-icon { width: 18px; height: 18px; color: var(--badge-text); }
+    .badge-text { font-size: 11px; font-weight: 700; color: var(--badge-text); letter-spacing: 0.05em; }
+    .badge-star { color: var(--badge-text); font-size: 14px; }
 
     .headline {
       font-size: 48px;
       font-weight: 900;
       line-height: 1.1;
-      color: white;
-      text-shadow: 0 4px 24px rgba(0,0,0,0.6);
+      color: var(--text-white);
+      text-shadow: 0 4px 24px rgba(0,0,0,0.3);
     }
 
-    .headline .highlight { color: #C084FC; }
-    .headline .live { color: white; }
-    .headline .better { color: #F472B6; }
+    .light-mode .headline {
+      text-shadow: 0 4px 24px rgba(0,0,0,0.1);
+    }
+
+    .headline .highlight { color: var(--text-highlight); }
+    .headline .live { color: var(--text-live); }
+    .headline .better { color: var(--text-better); }
 
     .subtitle {
       margin-top: 20px;
       font-size: 15px;
-      color: rgba(255,255,255,0.6);
+      color: var(--text-muted);
       max-width: 280px;
       line-height: 1.6;
     }
@@ -137,7 +197,10 @@
     .subtitle .habits { color: #D8B4FE; font-weight: 600; }
     .subtitle .wellbeing { color: #F472B6; font-weight: 600; }
 
-    /* Stats */
+    .light-mode .subtitle .courses { color: #7C3AED; }
+    .light-mode .subtitle .habits { color: #9333EA; }
+    .light-mode .subtitle .wellbeing { color: #DB2777; }
+
     .stats-container {
       position: absolute;
       right: 24px;
@@ -160,10 +223,7 @@
       border: 1px solid;
     }
 
-    .stat-rating {
-      background: linear-gradient(135deg, rgba(234,179,8,0.2) 0%, rgba(245,158,11,0.1) 100%);
-      border-color: rgba(234,179,8,0.35);
-    }
+    .stat-rating { background: var(--card-rating-bg); border-color: var(--card-rating-border); }
 
     .stat-icon {
       width: 44px; height: 44px;
@@ -179,46 +239,37 @@
     }
 
     .stat-icon.rating svg { width: 20px; height: 20px; color: #FACC15; }
-    .stat-value { font-size: 24px; font-weight: 900; color: white; }
+    .stat-value { font-size: 24px; font-weight: 900; color: var(--text-white); }
     .stat-value .star { color: #FACC15; }
     .stat-label { font-size: 10px; font-weight: 600; color: rgba(253,224,71,0.7); letter-spacing: 0.1em; text-transform: uppercase; margin-top: 2px; }
 
-    .stat-exam {
-      background: linear-gradient(135deg, rgba(168,85,247,0.2) 0%, rgba(236,72,153,0.1) 100%);
-      border-color: rgba(168,85,247,0.35);
-    }
+    .light-mode .stat-label { color: rgba(180,83,9,0.7); }
 
-    .stat-icon.exam {
-      background: linear-gradient(135deg, rgba(168,85,247,0.4) 0%, rgba(236,72,153,0.4) 100%);
-      border: 1px solid rgba(168,85,247,0.35);
-    }
-
+    .stat-exam { background: var(--card-exam-bg); border-color: var(--card-exam-border); }
+    .stat-icon.exam { background: linear-gradient(135deg, rgba(168,85,247,0.4) 0%, rgba(236,72,153,0.4) 100%); border: 1px solid rgba(168,85,247,0.35); }
     .stat-icon.exam svg { width: 20px; height: 20px; color: #D8B4FE; }
     .stat-value.exam-text { color: #D8B4FE; }
     .stat-label.exam-label { color: rgba(216,180,254,0.7); }
 
-    .stat-free {
-      background: linear-gradient(135deg, rgba(52,211,153,0.2) 0%, rgba(20,184,166,0.1) 100%);
-      border-color: rgba(52,211,153,0.35);
-    }
+    .light-mode .stat-value.exam-text { color: #9333EA; }
+    .light-mode .stat-label.exam-label { color: rgba(147,51,234,0.7); }
 
-    .stat-icon.free {
-      background: linear-gradient(135deg, rgba(52,211,153,0.4) 0%, rgba(20,184,166,0.4) 100%);
-      border: 1px solid rgba(52,211,153,0.35);
-    }
-
+    .stat-free { background: var(--card-free-bg); border-color: var(--card-free-border); }
+    .stat-icon.free { background: linear-gradient(135deg, rgba(52,211,153,0.4) 0%, rgba(20,184,166,0.4) 100%); border: 1px solid rgba(52,211,153,0.35); }
     .stat-icon.free svg { width: 20px; height: 20px; color: #34D399; }
     .stat-value.free-text { color: #34D399; }
     .stat-label.free-label { color: rgba(52,211,153,0.7); }
 
-    /* Bottom Band */
+    .light-mode .stat-value.free-text { color: #059669; }
+    .light-mode .stat-label.free-label { color: rgba(5,150,105,0.7); }
+
     .bottom-band {
       position: absolute;
       bottom: 0;
       left: 0;
       right: 0;
       padding: 160px 35px 40px;
-      background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 60%, transparent 100%);
+      background: var(--bottom-band-bg);
       z-index: 20;
     }
 
@@ -246,47 +297,32 @@
       justify-content: center;
     }
 
-    .feature-title { font-size: 14px; font-weight: 800; color: white; line-height: 1.2; }
+    .feature-title { font-size: 14px; font-weight: 800; color: var(--text-white); line-height: 1.2; }
     .feature-sub { font-size: 11px; margin-top: 4px; }
 
-    .feature-card.ai {
-      background: linear-gradient(180deg, rgba(99,102,241,0.2) 0%, rgba(79,70,229,0.1) 100%);
-      border-color: rgba(99,102,241,0.3);
-    }
-
-    .feature-icon.ai {
-      background: linear-gradient(135deg, rgba(99,102,241,0.45) 0%, rgba(79,70,229,0.45) 100%);
-      border: 1px solid rgba(99,102,241,0.35);
-    }
-
+    .feature-card.ai { background: var(--feature-ai-bg); border-color: var(--feature-ai-border); }
+    .feature-icon.ai { background: linear-gradient(135deg, rgba(99,102,241,0.45) 0%, rgba(79,70,229,0.45) 100%); border: 1px solid rgba(99,102,241,0.35); }
     .feature-icon.ai svg { width: 24px; height: 24px; color: #A5B4FC; }
     .feature-sub.ai-sub { color: rgba(165,180,252,0.75); }
 
-    .feature-card.courses {
-      background: linear-gradient(180deg, rgba(168,85,247,0.2) 0%, rgba(126,34,146,0.1) 100%);
-      border-color: rgba(168,85,247,0.3);
-    }
+    .light-mode .feature-icon.ai svg { color: #6366F1; }
+    .light-mode .feature-sub.ai-sub { color: rgba(99,102,241,0.75); }
 
-    .feature-icon.courses {
-      background: linear-gradient(135deg, rgba(168,85,247,0.45) 0%, rgba(126,34,146,0.45) 100%);
-      border: 1px solid rgba(168,85,247,0.35);
-    }
-
+    .feature-card.courses { background: var(--feature-courses-bg); border-color: var(--feature-courses-border); }
+    .feature-icon.courses { background: linear-gradient(135deg, rgba(168,85,247,0.45) 0%, rgba(126,34,146,0.45) 100%); border: 1px solid rgba(168,85,247,0.35); }
     .feature-icon.courses svg { width: 24px; height: 24px; color: #D8B4FE; }
     .feature-sub.courses-sub { color: rgba(216,180,254,0.75); }
 
-    .feature-card.wellbeing {
-      background: linear-gradient(180deg, rgba(236,72,153,0.2) 0%, rgba(219,39,119,0.1) 100%);
-      border-color: rgba(236,72,153,0.3);
-    }
+    .light-mode .feature-icon.courses svg { color: #9333EA; }
+    .light-mode .feature-sub.courses-sub { color: rgba(147,51,234,0.75); }
 
-    .feature-icon.wellbeing {
-      background: linear-gradient(135deg, rgba(236,72,153,0.45) 0%, rgba(219,39,119,0.45) 100%);
-      border: 1px solid rgba(236,72,153,0.35);
-    }
-
+    .feature-card.wellbeing { background: var(--feature-wellbeing-bg); border-color: var(--feature-wellbeing-border); }
+    .feature-icon.wellbeing { background: linear-gradient(135deg, rgba(236,72,153,0.45) 0%, rgba(219,39,119,0.45) 100%); border: 1px solid rgba(236,72,153,0.35); }
     .feature-icon.wellbeing svg { width: 24px; height: 24px; color: #F9A8D4; }
     .feature-sub.wellbeing-sub { color: rgba(249,168,212,0.75); }
+
+    .light-mode .feature-icon.wellbeing svg { color: #DB2777; }
+    .light-mode .feature-sub.wellbeing-sub { color: rgba(219,39,119,0.75); }
 
     .social-proof {
       display: flex;
@@ -310,13 +346,15 @@
       box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     }
 
+    .light-mode .avatar { border-color: var(--text-white); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+
     .avatar:first-child { margin-left: 0; }
     .avatar.a { background: linear-gradient(135deg, #6366F1, #4F46E5); }
     .avatar.b { background: linear-gradient(135deg, #A855F7, #9333EA); }
     .avatar.c { background: linear-gradient(135deg, #EC4899, #DB2777); }
 
-    .social-text .number { font-size: 14px; font-weight: 900; color: white; }
-    .social-text .label { font-size: 12px; color: rgba(255,255,255,0.45); margin-top: 2px; }
+    .social-text .number { font-size: 14px; font-weight: 900; color: var(--text-white); }
+    .social-text .label { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
 
     @media (max-width: 800px) {
       .stats-container { display: none; }
@@ -327,10 +365,9 @@
 </head>
 <body>
 
-<div class="container">
+<div class="container" id="mainContainer">
   <div class="blend"></div>
 
-  <!-- Simple Holographic Logo -->
   <div class="logo-container">
     <div class="logo-glow"></div>
     <div class="logo-wrapper">
@@ -451,6 +488,18 @@
     </div>
   </div>
 </div>
+
+<script>
+  // Listen for theme changes from JavaFX
+  window.javaThemeChange = function(isLightMode) {
+    const container = document.getElementById('mainContainer');
+    if (isLightMode) {
+      container.classList.add('light-mode');
+    } else {
+      container.classList.remove('light-mode');
+    }
+  };
+</script>
 
 </body>
 </html>

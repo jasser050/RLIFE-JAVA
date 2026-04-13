@@ -62,11 +62,9 @@
             <VBox styleClass="sidebar" spacing="0">
                 <!-- Logo Section -->
                 <HBox styleClass="sidebar-header" alignment="CENTER_LEFT" spacing="12">
-                    <StackPane styleClass="sidebar-logo">
-                        <FontIcon iconLiteral="fth-layers" iconSize="20" iconColor="white"/>
-                    </StackPane>
+                    <ImageView fx:id="sidebarLogo" fitHeight="44" fitWidth="44" preserveRatio="true" styleClass="sidebar-logo-img"/>
                     <VBox spacing="2">
-                        <Label text="StudyFlow" styleClass="sidebar-title"/>
+                        <Label text="RLIFE" styleClass="sidebar-title"/>
                         <Label text="Student Dashboard" styleClass="sidebar-subtitle"/>
                     </VBox>
                 </HBox>

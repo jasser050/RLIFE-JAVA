@@ -11,6 +11,8 @@ import javafx.scene.Parent;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
@@ -35,6 +37,7 @@ public class MainController implements Initializable {
     @FXML private Label sidebarUserName;
     @FXML private Label sidebarUserSub;
     @FXML private Label sidebarAvatar;
+    @FXML private ImageView sidebarLogo;
 
     @FXML private Button btnDashboard;
     @FXML private Button btnCourses;
@@ -58,6 +61,10 @@ public class MainController implements Initializable {
     public void initialize(URL location, ResourceBundle resources) {
         activeButton = btnDashboard;
         showDashboard();
+
+        // Load sidebar logo
+        Image logoImage = new Image(getClass().getResourceAsStream("/com/studyflow/images/logo.png"));
+        sidebarLogo.setImage(logoImage);
 
         // Populate sidebar user info from session
         User user = UserSession.getInstance().getCurrentUser();
