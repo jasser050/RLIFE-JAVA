@@ -2941,3 +2941,108 @@
     -fx-border-color: rgba(71, 85, 105, 0.55);
     -fx-border-width: 1;
 }
+.stress-table-header {
+    -fx-background-color: rgba(30, 41, 59, 0.92);
+    -fx-border-color: rgba(71, 85, 105, 0.65);
+    -fx-border-width: 0 0 1 0;
+}
+.stress-table-head-label {
+    -fx-text-fill: #93C5FD;
+    -fx-font-size: 12px;
+    -fx-font-weight: 700;
+}
+.stress-table-row {
+    -fx-background-color: rgba(15, 23, 42, 0.86);
+    -fx-border-color: rgba(51, 65, 85, 0.55);
+    -fx-border-width: 0 0 1 0;
+}
+.stress-table-row:hover {
+    -fx-background-color: rgba(30, 41, 59, 0.94);
+}
+.stress-table-num {
+    -fx-text-fill: #E2E8F0;
+    -fx-font-size: 13px;
+    -fx-font-weight: 700;
+}
+.stress-table-question {
+    -fx-text-fill: #E2E8F0;
+    -fx-font-size: 13px;
+}
+.stress-table-date {
+    -fx-text-fill: #94A3B8;
+    -fx-font-size: 12px;
+}
+.stress-action-btn {
+    -fx-padding: 6 10;
+    -fx-font-size: 12px;
+    -fx-font-weight: 700;
+    -fx-min-width: 62;
+}
+.stress-draggable-row {
+    -fx-cursor: open-hand;
+}
+.stress-drag-source {
+    -fx-opacity: 0.72;
+}
+.stress-drag-target {
+    -fx-border-color: #60A5FA;
+    -fx-border-width: 1;
+}
+.stress-list-item {
+    -fx-background-color: rgba(15, 23, 42, 0.82);
+    -fx-border-color: rgba(51, 65, 85, 0.65);
+    -fx-border-width: 1;
+    -fx-border-radius: 16;
+    -fx-background-radius: 16;
+}
+.stress-list-item:hover {
+    -fx-background-color: rgba(30, 41, 59, 0.95);
+    -fx-border-color: rgba(96, 165, 250, 0.35);
+}
+.stress-list-number {
+    -fx-min-width: 34;
+    -fx-pref-width: 34;
+    -fx-min-height: 34;
+    -fx-pref-height: 34;
+    -fx-alignment: center;
+    -fx-background-color: rgba(59, 130, 246, 0.18);
+    -fx-background-radius: 999;
+    -fx-border-color: rgba(96, 165, 250, 0.35);
+    -fx-border-radius: 999;
+    -fx-text-fill: #BFDBFE;
+    -fx-font-size: 13px;
+    -fx-font-weight: 800;
+}
+.stress-list-question {
+    -fx-text-fill: #E2E8F0;
+    -fx-font-size: 14px;
+}
+.stress-list-date {
+    -fx-text-fill: #94A3B8;
+    -fx-font-size: 12px;
+}
+.reco-list-item {
+    -fx-background-color: rgba(15, 23, 42, 0.82);
+    -fx-border-color: rgba(51, 65, 85, 0.65);
+    -fx-border-width: 1;
+    -fx-border-radius: 16;
+    -fx-background-radius: 16;
+}
+.reco-list-item:hover {
+    -fx-background-color: rgba(30, 41, 59, 0.95);
+    -fx-border-color: rgba(96, 165, 250, 0.35);
+}
+.reco-list-title {
+    -fx-text-fill: #F8FAFC;
+    -fx-font-size: 15px;
+    -fx-font-weight: 700;
+}
+.reco-list-preview {
+    -fx-text-fill: #CBD5E1;
+    -fx-font-size: 13px;
+}
+.reco-actions .button {
+    -fx-padding: 6 10;
+    -fx-font-size: 12px;
+    -fx-font-weight: 700;
+}

@@ -20,38 +20,42 @@
            fx:controller="com.studyflow.controllers.admin.AdminRecommendationsController"
            styleClass="stress-root">
 
-    <VBox fx:id="listSection" spacing="24" styleClass="stress-page">
-        <HBox alignment="CENTER_LEFT" spacing="16">
-            <VBox spacing="4" HBox.hgrow="ALWAYS">
-                <Label text="Stress Recommendations" styleClass="stress-title"/>
-                <Label text="Manage personalized recommendations for students" styleClass="stress-subtitle"/>
-            </VBox>
-            <Button text="Add Recommendation" styleClass="btn-primary" onAction="#handleAddRecommendation"/>
-        </HBox>
+    <ScrollPane fx:id="listSection" fitToWidth="true" visible="true" managed="true" style="-fx-background-color: transparent;">
+        <content>
+            <VBox spacing="24" styleClass="stress-page">
+                <HBox alignment="CENTER_LEFT" spacing="16">
+                    <VBox spacing="4" HBox.hgrow="ALWAYS">
+                        <Label text="Stress Recommendations" styleClass="stress-title"/>
+                        <Label text="Manage personalized recommendations for students" styleClass="stress-subtitle"/>
+                    </VBox>
+                    <Button text="Add Recommendation" styleClass="btn-primary" onAction="#handleAddRecommendation"/>
+                </HBox>
 
-        <HBox spacing="16">
-            <VBox spacing="8" HBox.hgrow="ALWAYS" styleClass="stress-stat-card, green">
-                <Label fx:id="lowCountLabel" text="0" styleClass="stress-stat-number"/>
-                <Label text="Low Stress" styleClass="stress-stat-label"/>
-            </VBox>
-            <VBox spacing="8" HBox.hgrow="ALWAYS" styleClass="stress-stat-card, warning">
-                <Label fx:id="mediumCountLabel" text="0" styleClass="stress-stat-number"/>
-                <Label text="Medium Stress" styleClass="stress-stat-label"/>
-            </VBox>
-            <VBox spacing="8" HBox.hgrow="ALWAYS" styleClass="stress-stat-card, danger">
-                <Label fx:id="highCountLabel" text="0" styleClass="stress-stat-number"/>
-                <Label text="High Stress" styleClass="stress-stat-label"/>
-            </VBox>
-            <VBox spacing="8" HBox.hgrow="ALWAYS" styleClass="stress-stat-card, blue">
-                <Label fx:id="totalCountLabel" text="0" styleClass="stress-stat-number"/>
-                <Label text="Total" styleClass="stress-stat-label"/>
-            </VBox>
-        </HBox>
+                <HBox spacing="16">
+                    <VBox spacing="8" HBox.hgrow="ALWAYS" styleClass="stress-stat-card, green">
+                        <Label fx:id="lowCountLabel" text="0" styleClass="stress-stat-number"/>
+                        <Label text="Low Stress" styleClass="stress-stat-label"/>
+                    </VBox>
+                    <VBox spacing="8" HBox.hgrow="ALWAYS" styleClass="stress-stat-card, warning">
+                        <Label fx:id="mediumCountLabel" text="0" styleClass="stress-stat-number"/>
+                        <Label text="Medium Stress" styleClass="stress-stat-label"/>
+                    </VBox>
+                    <VBox spacing="8" HBox.hgrow="ALWAYS" styleClass="stress-stat-card, danger">
+                        <Label fx:id="highCountLabel" text="0" styleClass="stress-stat-number"/>
+                        <Label text="High Stress" styleClass="stress-stat-label"/>
+                    </VBox>
+                    <VBox spacing="8" HBox.hgrow="ALWAYS" styleClass="stress-stat-card, blue">
+                        <Label fx:id="totalCountLabel" text="0" styleClass="stress-stat-number"/>
+                        <Label text="Total" styleClass="stress-stat-label"/>
+                    </VBox>
+                </HBox>
 
-        <VBox spacing="0" styleClass="stress-table-shell">
-            <VBox fx:id="recommendationsListBox" spacing="0"/>
-        </VBox>
-    </VBox>
+                <VBox spacing="0" styleClass="stress-table-shell">
+                    <VBox fx:id="recommendationsListBox" spacing="0"/>
+                </VBox>
+            </VBox>
+        </content>
+    </ScrollPane>
 
     <ScrollPane fx:id="formSection" fitToWidth="true" visible="false" managed="false" style="-fx-background-color: transparent;">
         <content>

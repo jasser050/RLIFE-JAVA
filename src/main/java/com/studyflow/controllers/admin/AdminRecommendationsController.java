@@ -30,7 +30,7 @@ import java.util.ResourceBundle;
 
 public class AdminRecommendationsController implements Initializable {
 
-    @FXML private VBox listSection;
+    @FXML private ScrollPane listSection;
     @FXML private ScrollPane formSection;
     @FXML private ScrollPane detailSection;
     @FXML private Label lowCountLabel;
@@ -61,6 +61,7 @@ public class AdminRecommendationsController implements Initializable {
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         service = new ServiceRecommendationStress();
+        recommendationsListBox.setSpacing(10);
         levelCombo.setItems(FXCollections.observableArrayList("low", "medium", "high"));
         levelCombo.setValue("low");
         showListMode();
@@ -92,49 +93,38 @@ public class AdminRecommendationsController implements Initializable {
             return;
         }
 
-        recommendationsListBox.getChildren().add(createHeaderRow());
         for (RecommendationStress item : items) {
             recommendationsListBox.getChildren().add(createRow(item));
         }
     }
 
-    private Node createHeaderRow() {
-        HBox header = new HBox(16);
-        header.getStyleClass().add("admin-table-header");
-        header.setPadding(new Insets(14, 16, 14, 16));
-        header.getChildren().addAll(
-                createColumnLabel("Title", 240),
-                createColumnLabel("Level", 150),
-                createColumnLabel("Preview", 0),
-                createColumnLabel("Status", 120),
-                createColumnLabel("Actions", 180)
-        );
-        HBox.setHgrow(header.getChildren().get(2), Priority.ALWAYS);
-        return header;
-    }
-
     private Node createRow(RecommendationStress item) {
-        HBox row = new HBox(16);
-        row.getStyleClass().add("admin-table-row");
-        row.setPadding(new Insets(16));
+        HBox row = new HBox(14);
+        row.getStyleClass().add("reco-list-item");
+        row.setPadding(new Insets(14, 16, 14, 16));
         row.setAlignment(Pos.CENTER_LEFT);
 
-        Label title = createCellLabel(item.getTitle(), 240);
+        Label title = new Label(item.getTitle());
+        title.getStyleClass().add("reco-list-title");
+
         Label level = new Label(levelText(item.getLevel()));
         level.getStyleClass().addAll("badge", levelBadge(item.getLevel()));
-        level.setMinWidth(150);
         level.setAlignment(Pos.CENTER);
 
-        Label preview = new Label(item.getContent());
-        preview.getStyleClass().add("admin-table-text");
+        Label preview = new Label(item.getContent() == null ? "" : item.getContent());
+        preview.getStyleClass().add("reco-list-preview");
         preview.setWrapText(true);
         preview.setMaxWidth(Double.MAX_VALUE);
-        HBox.setHgrow(preview, Priority.ALWAYS);
 
         Label status = new Label(item.isActive() ? "Active" : "Inactive");
         status.getStyleClass().addAll("badge", item.isActive() ? "success" : "secondary");
-        status.setMinWidth(120);
         status.setAlignment(Pos.CENTER);
+
+        HBox meta = new HBox(8, level, status);
+        meta.setAlignment(Pos.CENTER_LEFT);
+        VBox content = new VBox(6, title, preview, meta);
+        content.setAlignment(Pos.CENTER_LEFT);
+        HBox.setHgrow(content, Priority.ALWAYS);
 
         Button viewBtn = createActionButton("View", "btn-ghost");
         viewBtn.setOnAction(e -> showDetails(item));
@@ -143,10 +133,10 @@ public class AdminRecommendationsController implements Initializable {
         Button deleteBtn = createActionButton("Delete", "btn-danger");
         deleteBtn.setOnAction(e -> deleteRecommendation(item));
         HBox actions = new HBox(8, viewBtn, editBtn, deleteBtn);
-        actions.setMinWidth(180);
+        actions.getStyleClass().add("reco-actions");
         actions.setAlignment(Pos.CENTER_RIGHT);
 
-        row.getChildren().addAll(title, level, preview, status, actions);
+        row.getChildren().addAll(content, actions);
         return row;
     }
 
