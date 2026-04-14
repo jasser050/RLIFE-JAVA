@@ -3,6 +3,7 @@ package com.studyflow.controllers;
 import com.studyflow.App;
 import com.studyflow.models.User;
 import com.studyflow.services.ServiceUser;
+import com.studyflow.utils.AvatarCard;
 import com.studyflow.utils.GlbLoader;
 import com.studyflow.utils.UserSession;
 import javafx.animation.AnimationTimer;
@@ -13,6 +14,7 @@ import javafx.fxml.Initializable;
 import javafx.geometry.Bounds;
 import javafx.scene.*;
 import javafx.scene.control.*;
+import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.scene.transform.Rotate;
@@ -24,6 +26,8 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.ResourceBundle;
 
@@ -38,6 +42,15 @@ public class ProfileController implements Initializable {
     @FXML private Label coinsLabel;
     @FXML private Label saveStatus;
     @FXML private Label saveStatusBottom;
+
+    @FXML private StackPane avatarPickerOverlay;
+    @FXML private FlowPane profileAvatarContainer;
+
+    private final List<AvatarCard> avatarCards = new ArrayList<>();
+    private String selectedAvatar;
+    private String currentAvatar;
+    private AnimationTimer currentModelRotator = null;
+    private AnimationTimer currentAvatarRotator = null;
 
     @FXML private TextField firstNameField;
     @FXML private TextField lastNameField;
@@ -448,6 +461,7 @@ public class ProfileController implements Initializable {
 
     private void populateFields(User user) {
         String pic = user.getProfilePic();
+        currentAvatar = pic; // Store current avatar for picker
         if (pic != null && !pic.isEmpty() && pic.contains("avatar")) {
             loadAvatar3D(pic);
         } else {
@@ -509,6 +523,11 @@ public class ProfileController implements Initializable {
         currentUser.setUniversity(universityField.getText().trim());
         currentUser.setStudentId(studentIdField.getText().trim());
         currentUser.setGender(genderMaleBtn.isSelected() ? "male" : "female");
+        
+        // Save avatar if changed
+        if (selectedAvatar != null && !selectedAvatar.isEmpty()) {
+            currentUser.setProfilePic(selectedAvatar);
+        }
 
         serviceUser.update(currentUser);
 
@@ -530,6 +549,9 @@ public class ProfileController implements Initializable {
         confirmPasswordField.clear();
 
         showStatus("Changes saved successfully!", true);
+        
+        // Reset selected avatar after saving
+        selectedAvatar = null;
     }
 
     @FXML
@@ -648,5 +670,86 @@ public class ProfileController implements Initializable {
         } else {
             scene.getStylesheets().remove(lightCss);
         }
+    }
+
+    // ============================================
+    // AVATAR PICKER
+    // ============================================
+
+    private static final String[] AVATAR_KEYS = {
+        "male-avatar", "male-avatar1", "male-avatar2", "male-avatar3",
+        "male-avatar4", "male-avatar5", "male-avatar6", "male-avatar7",
+        "female-avatar", "female-avatar2", "female-avatar3"
+    };
+    private static final String[] AVATAR_NAMES = {
+        "Student", "Athlete", "Artist", "Scientist", "Creative", "Medic", "Classic", "Tech Lady", "Scholar", "Leader", "Gamer"
+    };
+
+    @FXML
+    private void showAvatarPicker() {
+        // Load avatar cards one by one with delay to avoid memory issues
+        if (profileAvatarContainer.getChildren().isEmpty()) {
+            loadAvatarCardsWithDelay();
+        }
+        
+        // Show overlay
+        avatarPickerOverlay.setVisible(true);
+        avatarPickerOverlay.setManaged(true);
+    }
+    
+    private void loadAvatarCardsWithDelay() {
+        // Load first few avatars immediately
+        int count = Math.min(4, AVATAR_KEYS.length);
+        for (int i = 0; i < count; i++) {
+            addAvatarCard(i);
+        }
+        
+        // Load remaining after a delay
+        if (AVATAR_KEYS.length > count) {
+            new Thread(() -> {
+                try {
+                    Thread.sleep(500);
+                    javafx.application.Platform.runLater(() -> {
+                        for (int i = count; i < AVATAR_KEYS.length; i++) {
+                            addAvatarCard(i);
+                        }
+                    });
+                } catch (InterruptedException e) {}
+            }).start();
+        }
+    }
+    
+    private void addAvatarCard(int i) {
+        final String key = AVATAR_KEYS[i];
+        final String name = AVATAR_NAMES[i];
+        final String gen = key.startsWith("female") ? "female" : "male";
+        
+        AvatarCard card = new AvatarCard(key, name, gen, () -> {
+            javafx.application.Platform.runLater(() -> onProfileAvatarSelected(key));
+        });
+        avatarCards.add(card);
+        profileAvatarContainer.getChildren().add(card);
+    }
+
+    @FXML
+    private void hideAvatarPicker() {
+        avatarPickerOverlay.setVisible(false);
+        avatarPickerOverlay.setManaged(false);
+    }
+
+    private void onProfileAvatarSelected(String avatarKey) {
+        selectedAvatar = avatarKey;
+        
+        // Update UI to show selected
+        for (AvatarCard c : avatarCards) {
+            c.setSelected(c.getAvatarKey().equals(avatarKey));
+        }
+        
+        // Immediately load new avatar (direct change, no transition delay)
+        avatarContainer.getChildren().clear();
+        loadAvatar3D(avatarKey);
+        
+        // Hide picker after selection
+        hideAvatarPicker();
     }
 }
