@@ -1,5 +1,6 @@
 package com.studyflow.controllers;
 
+import com.studyflow.App;
 import com.studyflow.models.PlanningEntry;
 import com.studyflow.models.Seance;
 import com.studyflow.models.User;
@@ -11,32 +12,45 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.ColorPicker;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.Control;
 import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.DatePicker;
+import javafx.scene.control.DateCell;
+import javafx.scene.control.Hyperlink;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
+import javafx.scene.control.Toggle;
+import javafx.scene.control.ToggleButton;
+import javafx.scene.control.ToggleGroup;
+import javafx.scene.input.ClipboardContent;
+import javafx.scene.input.Dragboard;
+import javafx.scene.input.TransferMode;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.RowConstraints;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.scene.paint.Paint;
 import javafx.util.StringConverter;
 import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.net.URL;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
@@ -50,9 +64,13 @@ import java.util.ResourceBundle;
 
 public class PlanningController implements Initializable {
 
+    private static final double BASE_CALENDAR_ROW_HEIGHT = 108;
+    private static final double CALENDAR_ENTRY_HEIGHT_STEP = 30;
+
     private static final List<String> COLOR_PALETTE = List.of(
             "#8B5CF6", "#10B981", "#F59E0B", "#F43F5E", "#F97316", "#3B82F6", "#14B8A6", "#EAB308"
     );
+    private static final String DRAG_ENTRY_PREFIX = "planning-entry:";
     private static final String SEARCH_SCOPE_ALL = "All fields";
     private static final String SEARCH_SCOPE_TITLE = "Session title";
     private static final String SEARCH_SCOPE_DATE = "Date";
@@ -71,26 +89,54 @@ public class PlanningController implements Initializable {
     private static final String UPCOMING_SORT_TITLE_AZ = "Session title (A-Z)";
     private static final String UPCOMING_SORT_TITLE_ZA = "Session title (Z-A)";
 
+    private static final String UPCOMING_MODE_ALL_NEAREST = "All upcoming - nearest";
+    private static final String UPCOMING_MODE_ALL_LATEST = "All upcoming - latest";
+    private static final String UPCOMING_MODE_TODAY = "Today - nearest";
+    private static final String UPCOMING_MODE_WEEK = "This week - nearest";
+    private static final String UPCOMING_MODE_MONTH = "This month - nearest";
+    private static final String UPCOMING_MODE_TITLE_AZ = "Title search - A to Z";
+    private static final String UPCOMING_MODE_TITLE_ZA = "Title search - Z to A";
+    private static final String UPCOMING_MODE_TIME = "Time search - earliest";
+    private static final String UPCOMING_MODE_COLOR = "Color search - nearest";
+    private static final String UPCOMING_MODE_FEEDBACK = "Feedback search - nearest";
+
     @FXML private Label currentMonthLabel;
     @FXML private Label todayDateLabel;
     @FXML private Label pageMessageLabel;
+    @FXML private VBox feedbackPendingBox;
+    @FXML private Label feedbackPendingLabel;
+    @FXML private FlowPane feedbackQuickLinksBox;
+    @FXML private VBox feedbackPage;
+    @FXML private VBox feedbackPickerPage;
+    @FXML private ListView<PlanningEntry> feedbackPendingListView;
+    @FXML private Label feedbackSelectedSessionLabel;
     @FXML private Label formMessageLabel;
     @FXML private Label planningFormTitleLabel;
     @FXML private GridPane calendarGrid;
     @FXML private HBox planningBoardView;
     @FXML private VBox planningFormPage;
     @FXML private ComboBox<Seance> sessionComboBox;
+    @FXML private Label sessionErrorLabel;
     @FXML private DatePicker planningDatePicker;
+    @FXML private Label dateErrorLabel;
     @FXML private ComboBox<LocalTime> startTimeComboBox;
+    @FXML private Label startTimeErrorLabel;
     @FXML private ComboBox<LocalTime> endTimeComboBox;
+    @FXML private Label endTimeErrorLabel;
     @FXML private ColorPicker colorPicker;
+    @FXML private Label colorErrorLabel;
+    @FXML private ToggleButton feedbackVeryBadButton;
+    @FXML private ToggleButton feedbackBadButton;
+    @FXML private ToggleButton feedbackMediumButton;
+    @FXML private ToggleButton feedbackGoodButton;
+    @FXML private ToggleButton feedbackExcellentButton;
+    @FXML private Label feedbackErrorLabel;
+    @FXML private Button saveFeedbackButton;
     @FXML private Button savePlanningButton;
     @FXML private ListView<PlanningEntry> todayEventsListView;
     @FXML private ListView<PlanningEntry> upcomingEventsListView;
     @FXML private TextField upcomingSearchField;
-    @FXML private ComboBox<String> upcomingSearchScopeComboBox;
-    @FXML private ComboBox<String> upcomingFilterComboBox;
-    @FXML private ComboBox<String> upcomingSortComboBox;
+    @FXML private ComboBox<String> upcomingUnifiedFilterComboBox;
 
     private final ServicePlanning servicePlanning = new ServicePlanning();
     private final ServiceSeance serviceSeance = new ServiceSeance();
@@ -98,8 +144,11 @@ public class PlanningController implements Initializable {
     private final DateTimeFormatter fullDateFormatter = DateTimeFormatter.ofPattern("EEEE, MMM d");
     private final DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
     private final DateTimeFormatter calendarEntryFormatter = DateTimeFormatter.ofPattern("HH:mm");
+    private final DateTimeFormatter shortDateFormatter = DateTimeFormatter.ofPattern("EEE, MMM d");
 
     private YearMonth currentYearMonth;
+    private final ToggleGroup feedbackToggleGroup = new ToggleGroup();
+    private PlanningEntry selectedFeedbackEntry;
     private PlanningEntry editingPlanning;
     private List<PlanningEntry> allPlanningEntries = new ArrayList<>();
     private Map<LocalDate, List<PlanningEntry>> planningByDate = new HashMap<>();
@@ -109,13 +158,68 @@ public class PlanningController implements Initializable {
         currentYearMonth = YearMonth.now();
         configureSessionComboBox();
         configureTimeComboBoxes();
+        configurePlanningDatePickerReadability();
         configureListViews();
         configureFormInteractions();
+        configureFeedbackControls();
         configureUpcomingControls();
         loadSessions();
         refreshPlanningData();
         resetForm();
         showForm(false);
+        if (feedbackPage != null) {
+            feedbackPage.setManaged(false);
+            feedbackPage.setVisible(false);
+        }
+        if (feedbackPickerPage != null) {
+            feedbackPickerPage.setManaged(false);
+            feedbackPickerPage.setVisible(false);
+        }
+    }
+
+    // Force explicit day-number colors to keep DatePicker readable in both themes.
+    private void configurePlanningDatePickerReadability() {
+        if (planningDatePicker == null) {
+            return;
+        }
+
+        planningDatePicker.setDayCellFactory(datePicker -> new DateCell() {
+            @Override
+            public void updateItem(LocalDate item, boolean empty) {
+                super.updateItem(item, empty);
+
+                if (empty || item == null) {
+                    setStyle("");
+                    return;
+                }
+
+                boolean isLightTheme = isLightThemeActive();
+                String normalColor = isLightTheme ? "#0F172A" : "#E2E8F0";
+                String outsideMonthColor = isLightTheme ? "#94A3B8" : "#64748B";
+                Paint normalPaint = Color.web(normalColor);
+                Paint outsidePaint = Color.web(outsideMonthColor);
+
+                boolean outsideMonth = getStyleClass().contains("previous-month")
+                        || getStyleClass().contains("next-month");
+
+                if (isSelected()) {
+                    setTextFill(Color.WHITE);
+                    setStyle("-fx-text-fill: #FFFFFF; -fx-font-weight: 700; -fx-opacity: 1;");
+                } else {
+                    setTextFill(outsideMonth ? outsidePaint : normalPaint);
+                    String cellColor = outsideMonth ? outsideMonthColor : normalColor;
+                    setStyle("-fx-text-fill: " + cellColor + "; -fx-font-weight: 600; -fx-opacity: 1;");
+                }
+            }
+        });
+    }
+
+    private boolean isLightThemeActive() {
+        Scene scene = App.getScene();
+        if (scene == null) {
+            return App.getCurrentTheme() == App.Theme.LIGHT;
+        }
+        return scene.getStylesheets().stream().anyMatch(css -> css != null && css.contains("light-theme.css"));
     }
 
     @FXML
@@ -168,24 +272,16 @@ public class PlanningController implements Initializable {
         LocalTime endTime = endTimeComboBox.getValue();
         String selectedColor = toHex(colorPicker.getValue());
 
-        if (selectedSeance == null) {
-            showError("A session must be selected.");
-            return;
-        }
-        if (planningDate == null) {
-            showError("A planning date is required.");
-            return;
-        }
-        if (startTime == null || endTime == null) {
-            showError("Start and end time are required.");
-            return;
-        }
-        if (!endTime.isAfter(startTime)) {
-            showError("End time must be after start time.");
-            return;
-        }
-        if (servicePlanning.isColorUsedOnDate(currentUser.getId(), planningDate, selectedColor, editingPlanning == null ? null : editingPlanning.getId())) {
-            showError("This color is already used on that day. Choose another one.");
+        clearPlanningValidationErrors();
+
+        boolean hasError = !validateSession(selectedSeance, true)
+                | !validateDate(planningDate, true)
+                | !validateTimeRange(startTime, endTime, true)
+                | !validateTimeOverlap(currentUser.getId(), planningDate, startTime, endTime, true)
+                | !validateColorForDate(planningDate, selectedColor, true);
+
+        if (hasError) {
+            showError("Please fix the highlighted fields.");
             return;
         }
 
@@ -275,6 +371,9 @@ public class PlanningController implements Initializable {
     private void configureListViews() {
         todayEventsListView.setCellFactory(list -> new PlanningEntryCell());
         upcomingEventsListView.setCellFactory(list -> new PlanningEntryCell());
+        if (feedbackPendingListView != null) {
+            feedbackPendingListView.setCellFactory(list -> new FeedbackPendingCell());
+        }
     }
 
     private void configureFormInteractions() {
@@ -282,41 +381,133 @@ public class PlanningController implements Initializable {
             if (newValue != null && editingPlanning == null) {
                 colorPicker.setValue(Color.web(findAvailableColor(newValue, null)));
             }
+            if (dateErrorLabel != null && dateErrorLabel.isVisible()) {
+                validateDate(newValue, true);
+            }
+            if (colorErrorLabel != null && colorErrorLabel.isVisible()) {
+                validateColorForDate(newValue, colorPicker.getValue() == null ? null : toHex(colorPicker.getValue()), true);
+            }
+        });
+
+        sessionComboBox.valueProperty().addListener((observable, oldValue, newValue) -> {
+            if (sessionErrorLabel != null && sessionErrorLabel.isVisible()) {
+                validateSession(newValue, true);
+            }
+        });
+
+        startTimeComboBox.valueProperty().addListener((observable, oldValue, newValue) -> {
+            if (startTimeErrorLabel != null && startTimeErrorLabel.isVisible()) {
+                validateTimeRange(startTimeComboBox.getValue(), endTimeComboBox.getValue(), true);
+            }
+        });
+
+        endTimeComboBox.valueProperty().addListener((observable, oldValue, newValue) -> {
+            if (endTimeErrorLabel != null && endTimeErrorLabel.isVisible()) {
+                validateTimeRange(startTimeComboBox.getValue(), endTimeComboBox.getValue(), true);
+            }
+        });
+
+        colorPicker.valueProperty().addListener((observable, oldValue, newValue) -> {
+            if (colorErrorLabel != null && colorErrorLabel.isVisible()) {
+                validateColorForDate(planningDatePicker.getValue(), newValue == null ? null : toHex(newValue), true);
+            }
         });
     }
 
+    private void configureFeedbackControls() {
+        configureFeedbackButton(feedbackVeryBadButton, "1");
+        configureFeedbackButton(feedbackBadButton, "2");
+        configureFeedbackButton(feedbackMediumButton, "3");
+        configureFeedbackButton(feedbackGoodButton, "4");
+        configureFeedbackButton(feedbackExcellentButton, "5");
+
+        feedbackToggleGroup.selectedToggleProperty().addListener((observable, oldValue, newValue) -> {
+            if (feedbackErrorLabel != null && feedbackErrorLabel.isVisible()) {
+                validateFeedbackSelection(true);
+            }
+        });
+
+        if (feedbackPendingListView != null) {
+            feedbackPendingListView.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
+                if (newValue != null && feedbackPage != null && feedbackPage.isVisible()) {
+                    openFeedbackPickerFor(newValue);
+                }
+            });
+        }
+
+    }
+
+    @FXML
+    private void handleOpenFeedbackQueue() {
+        refreshFeedbackQueue();
+        showFeedbackPage(true);
+        hideMessage();
+    }
+
+    @FXML
+    private void handleBackFromFeedback() {
+        showFeedbackPage(false);
+    }
+
+    @FXML
+    private void handleBackFromFeedbackPicker() {
+        showFeedbackPickerPage(false);
+        showFeedbackPage(true);
+    }
+
+    @FXML
+    private void handleSaveFeedback() {
+        if (selectedFeedbackEntry == null) {
+            markFeedbackInvalid("Select a finished session first.");
+            return;
+        }
+        if (!validateFeedbackSelection(true)) {
+            return;
+        }
+
+        selectedFeedbackEntry.setFeedback(blankToNull(getSelectedFeedback()));
+        servicePlanning.update(selectedFeedbackEntry);
+        refreshPlanningData();
+        refreshFeedbackQueue();
+        showInfo("Feedback saved successfully.");
+    }
+
+    private void openFeedbackPickerFor(PlanningEntry entry) {
+        selectedFeedbackEntry = entry;
+        feedbackSelectedSessionLabel.setText(entry.getSeanceTitle() + " - " + formatEntryTime(entry));
+        selectFeedback(entry.getFeedback());
+        clearFeedbackValidation();
+        showFeedbackPickerPage(true);
+    }
+
+    private void configureFeedbackButton(ToggleButton button, String feedbackValue) {
+        if (button == null) {
+            return;
+        }
+        button.setToggleGroup(feedbackToggleGroup);
+        button.setUserData(feedbackValue);
+        if (!button.getStyleClass().contains("planning-feedback-chip")) {
+            button.getStyleClass().add("planning-feedback-chip");
+        }
+    }
+
     private void configureUpcomingControls() {
-        upcomingSearchScopeComboBox.setItems(FXCollections.observableArrayList(
-                SEARCH_SCOPE_ALL,
-                SEARCH_SCOPE_TITLE,
-                SEARCH_SCOPE_DATE,
-                SEARCH_SCOPE_TIME,
-                SEARCH_SCOPE_COLOR,
-                SEARCH_SCOPE_FEEDBACK
+        upcomingUnifiedFilterComboBox.setItems(FXCollections.observableArrayList(
+                UPCOMING_MODE_ALL_NEAREST,
+                UPCOMING_MODE_ALL_LATEST,
+                UPCOMING_MODE_TODAY,
+                UPCOMING_MODE_WEEK,
+                UPCOMING_MODE_MONTH,
+                UPCOMING_MODE_TITLE_AZ,
+                UPCOMING_MODE_TITLE_ZA,
+                UPCOMING_MODE_TIME,
+                UPCOMING_MODE_COLOR,
+                UPCOMING_MODE_FEEDBACK
         ));
-        upcomingSearchScopeComboBox.setValue(SEARCH_SCOPE_ALL);
-
-        upcomingFilterComboBox.setItems(FXCollections.observableArrayList(
-                UPCOMING_FILTER_ALL,
-                UPCOMING_FILTER_TODAY,
-                UPCOMING_FILTER_WEEK,
-                UPCOMING_FILTER_MONTH
-        ));
-        upcomingFilterComboBox.setValue(UPCOMING_FILTER_ALL);
-
-        upcomingSortComboBox.setItems(FXCollections.observableArrayList(
-                UPCOMING_SORT_NEAREST,
-                UPCOMING_SORT_LATEST,
-                UPCOMING_SORT_START_TIME,
-                UPCOMING_SORT_TITLE_AZ,
-                UPCOMING_SORT_TITLE_ZA
-        ));
-        upcomingSortComboBox.setValue(UPCOMING_SORT_NEAREST);
+        upcomingUnifiedFilterComboBox.setValue(UPCOMING_MODE_ALL_NEAREST);
 
         upcomingSearchField.textProperty().addListener((observable, oldValue, newValue) -> updateUpcomingPanel());
-        upcomingSearchScopeComboBox.valueProperty().addListener((observable, oldValue, newValue) -> updateUpcomingPanel());
-        upcomingFilterComboBox.valueProperty().addListener((observable, oldValue, newValue) -> updateUpcomingPanel());
-        upcomingSortComboBox.valueProperty().addListener((observable, oldValue, newValue) -> updateUpcomingPanel());
+        upcomingUnifiedFilterComboBox.valueProperty().addListener((observable, oldValue, newValue) -> updateUpcomingPanel());
     }
 
     private void loadSessions() {
@@ -332,6 +523,8 @@ public class PlanningController implements Initializable {
         updateCalendar();
         updateTodayPanel();
         updateUpcomingPanel();
+        updateFeedbackPendingBanner();
+        refreshFeedbackQueue();
     }
 
     private void updateCalendar() {
@@ -347,21 +540,25 @@ public class PlanningController implements Initializable {
             calendarGrid.getColumnConstraints().add(column);
         }
 
-        for (int i = 0; i < 6; i++) {
-            RowConstraints row = new RowConstraints();
-            row.setPercentHeight(100.0 / 6.0);
-            row.setVgrow(Priority.ALWAYS);
-            row.setFillHeight(true);
-            calendarGrid.getRowConstraints().add(row);
-        }
-
-        currentMonthLabel.setText(currentYearMonth.format(monthFormatter));
-
         LocalDate firstOfMonth = currentYearMonth.atDay(1);
         int dayOfWeek = firstOfMonth.getDayOfWeek().getValue() % 7;
+        LocalDate gridStart = firstOfMonth.minusDays(dayOfWeek);
+
+        double calendarMinHeight = 0;
+        for (int i = 0; i < 6; i++) {
+            RowConstraints row = new RowConstraints();
+            double rowHeight = computeCalendarRowHeight(gridStart, i);
+            row.setPrefHeight(rowHeight);
+            row.setVgrow(Priority.NEVER);
+            row.setFillHeight(true);
+            calendarGrid.getRowConstraints().add(row);
+            calendarMinHeight += rowHeight;
+        }
+        calendarGrid.setPrefHeight(calendarMinHeight + (calendarGrid.getVgap() * 5));
+
+        currentMonthLabel.setText(currentYearMonth.format(monthFormatter));
         LocalDate today = LocalDate.now();
 
-        LocalDate gridStart = firstOfMonth.minusDays(dayOfWeek);
         for (int index = 0; index < 42; index++) {
             LocalDate date = gridStart.plusDays(index);
             boolean isCurrentMonth = date.getMonth() == currentYearMonth.getMonth() && date.getYear() == currentYearMonth.getYear();
@@ -399,26 +596,8 @@ public class PlanningController implements Initializable {
         List<PlanningEntry> entries = planningByDate.getOrDefault(date, List.of()).stream()
                 .sorted(Comparator.comparing(PlanningEntry::getStartTime))
                 .toList();
-        int maxEntries = Math.min(entries.size(), 2);
-        for (int i = 0; i < maxEntries; i++) {
-            PlanningEntry entry = entries.get(i);
-            String sessionTitle = entry.getSeanceTitle() == null ? "Session" : entry.getSeanceTitle();
-            if (sessionTitle.length() > 14) {
-                sessionTitle = sessionTitle.substring(0, 14) + "...";
-            }
-
-            Label eventLabel = new Label(entry.getStartTime().format(calendarEntryFormatter) + "  " + sessionTitle);
-            eventLabel.setMaxWidth(Double.MAX_VALUE);
-            eventLabel.getStyleClass().add("planning-calendar-entry");
-            eventLabel.setStyle("-fx-background-color: " + toRgba(entry.getColorHex(), 0.18) +
-                    "; -fx-border-color: transparent transparent transparent " + entry.getColorHex() +
-                    "; -fx-border-width: 0 0 0 3;");
-            cell.getChildren().add(eventLabel);
-        }
-        if (entries.size() > 2) {
-            Label moreLabel = new Label("+" + (entries.size() - 2) + " more");
-            moreLabel.getStyleClass().add("planning-calendar-more");
-            cell.getChildren().add(moreLabel);
+        for (PlanningEntry entry : entries) {
+            cell.getChildren().add(createCalendarEntryCard(entry));
         }
 
         cell.setOnMouseEntered(event -> {
@@ -427,6 +606,7 @@ public class PlanningController implements Initializable {
             }
         });
         cell.setOnMouseExited(event -> cell.getStyleClass().remove("planning-calendar-cell-hover"));
+        configureCalendarCellDragAndDrop(cell, date);
         cell.setOnMouseClicked(event -> {
             if (!isCurrentMonth) {
                 currentYearMonth = YearMonth.from(date);
@@ -444,6 +624,153 @@ public class PlanningController implements Initializable {
         return cell;
     }
 
+    private double computeCalendarRowHeight(LocalDate gridStart, int rowIndex) {
+        int rowMaxEntries = 0;
+        int rowStartIndex = rowIndex * 7;
+        for (int dayOffset = 0; dayOffset < 7; dayOffset++) {
+            LocalDate date = gridStart.plusDays(rowStartIndex + dayOffset);
+            int dayEntries = planningByDate.getOrDefault(date, List.of()).size();
+            rowMaxEntries = Math.max(rowMaxEntries, dayEntries);
+        }
+
+        if (rowMaxEntries <= 0) {
+            return BASE_CALENDAR_ROW_HEIGHT;
+        }
+        return BASE_CALENDAR_ROW_HEIGHT + (rowMaxEntries * CALENDAR_ENTRY_HEIGHT_STEP);
+    }
+
+    private HBox createCalendarEntryCard(PlanningEntry entry) {
+        HBox card = new HBox(6);
+        card.getStyleClass().add("planning-calendar-entry-card");
+        card.setMaxWidth(Double.MAX_VALUE);
+
+        Region colorStrip = new Region();
+        colorStrip.getStyleClass().add("planning-calendar-entry-color");
+        colorStrip.setStyle("-fx-background-color: " + entry.getColorHex() + ";");
+
+        VBox infoBox = new VBox(1);
+        HBox.setHgrow(infoBox, Priority.ALWAYS);
+
+        String sessionTitle = entry.getSeanceTitle() == null ? "Session" : entry.getSeanceTitle();
+        if (sessionTitle.length() > 15) {
+            sessionTitle = sessionTitle.substring(0, 15) + "...";
+        }
+
+        Label titleLabel = new Label(sessionTitle);
+        titleLabel.getStyleClass().add("planning-calendar-entry-title");
+        Label timeLabel = new Label(entry.getStartTime().format(calendarEntryFormatter) + " - " + entry.getEndTime().format(calendarEntryFormatter));
+        timeLabel.getStyleClass().add("planning-calendar-entry-time");
+        infoBox.getChildren().addAll(titleLabel, timeLabel);
+
+        card.getChildren().addAll(colorStrip, infoBox);
+
+        card.setOnMouseClicked(event -> {
+            PlanningController.this.startEdit(entry);
+            event.consume();
+        });
+
+        card.setOnDragDetected(event -> {
+            Dragboard dragboard = card.startDragAndDrop(TransferMode.MOVE);
+            ClipboardContent content = new ClipboardContent();
+            content.putString(DRAG_ENTRY_PREFIX + entry.getId());
+            dragboard.setContent(content);
+            event.consume();
+        });
+
+        return card;
+    }
+
+    private void configureCalendarCellDragAndDrop(VBox cell, LocalDate targetDate) {
+        cell.setOnDragOver(event -> {
+            Integer draggedId = extractDraggedPlanningId(event.getDragboard());
+            if (draggedId != null) {
+                PlanningEntry draggedEntry = findPlanningEntryById(draggedId);
+                if (draggedEntry != null && !targetDate.equals(draggedEntry.getPlanningDate())) {
+                    event.acceptTransferModes(TransferMode.MOVE);
+                }
+            }
+            event.consume();
+        });
+
+        cell.setOnDragEntered(event -> {
+            if (extractDraggedPlanningId(event.getDragboard()) != null
+                    && !cell.getStyleClass().contains("planning-calendar-drop-target")) {
+                cell.getStyleClass().add("planning-calendar-drop-target");
+            }
+            event.consume();
+        });
+
+        cell.setOnDragExited(event -> {
+            cell.getStyleClass().remove("planning-calendar-drop-target");
+            event.consume();
+        });
+
+        cell.setOnDragDropped(event -> {
+            boolean success = false;
+            Integer draggedId = extractDraggedPlanningId(event.getDragboard());
+            if (draggedId != null) {
+                PlanningEntry draggedEntry = findPlanningEntryById(draggedId);
+                if (draggedEntry != null && !targetDate.equals(draggedEntry.getPlanningDate())) {
+                    movePlanningEntryToDate(draggedEntry, targetDate);
+                    success = true;
+                }
+            }
+            event.setDropCompleted(success);
+            event.consume();
+        });
+    }
+
+    private Integer extractDraggedPlanningId(Dragboard dragboard) {
+        if (dragboard == null || !dragboard.hasString()) {
+            return null;
+        }
+        String payload = dragboard.getString();
+        if (payload == null || !payload.startsWith(DRAG_ENTRY_PREFIX)) {
+            return null;
+        }
+        try {
+            return Integer.parseInt(payload.substring(DRAG_ENTRY_PREFIX.length()));
+        } catch (NumberFormatException exception) {
+            return null;
+        }
+    }
+
+    private PlanningEntry findPlanningEntryById(int planningId) {
+        for (PlanningEntry entry : allPlanningEntries) {
+            if (entry.getId() == planningId) {
+                return entry;
+            }
+        }
+        return null;
+    }
+
+    private void movePlanningEntryToDate(PlanningEntry entry, LocalDate targetDate) {
+        if (servicePlanning.hasTimeOverlap(entry.getUserId(), targetDate, entry.getStartTime(), entry.getEndTime(), entry.getId())) {
+            showErrorOn(pageMessageLabel,
+                    "Move cancelled: another session already uses this time range on " + targetDate.format(shortDateFormatter) + ".");
+            return;
+        }
+
+        entry.setPlanningDate(targetDate);
+        boolean colorAlreadyUsed = servicePlanning.isColorUsedOnDate(
+                entry.getUserId(),
+                targetDate,
+                entry.getColorHex(),
+                entry.getId()
+        );
+        if (colorAlreadyUsed) {
+            showErrorOn(pageMessageLabel,
+                    "Move cancelled: this color is already used on " + targetDate.format(shortDateFormatter) + ".");
+            return;
+        }
+
+        servicePlanning.update(entry);
+        refreshPlanningData();
+
+        String message = "Planning moved to " + targetDate.format(shortDateFormatter) + ".";
+        showInfo(message);
+    }
+
     private void updateTodayPanel() {
         LocalDate today = LocalDate.now();
         todayDateLabel.setText(today.format(fullDateFormatter));
@@ -454,9 +781,10 @@ public class PlanningController implements Initializable {
     private void updateUpcomingPanel() {
         LocalDate today = LocalDate.now();
         String query = normalize(upcomingSearchField.getText());
-        String searchScope = upcomingSearchScopeComboBox.getValue();
-        String periodFilter = upcomingFilterComboBox.getValue();
-        String sortOption = upcomingSortComboBox.getValue();
+        String selectedMode = upcomingUnifiedFilterComboBox.getValue();
+        String searchScope = resolveSearchScopeFromMode(selectedMode);
+        String periodFilter = resolvePeriodFilterFromMode(selectedMode);
+        String sortOption = resolveSortFromMode(selectedMode);
 
         List<PlanningEntry> upcomingEntries = allPlanningEntries.stream()
                 .filter(entry -> !entry.getPlanningDate().isBefore(today))
@@ -465,6 +793,51 @@ public class PlanningController implements Initializable {
                 .sorted(resolveUpcomingComparator(sortOption))
                 .toList();
         upcomingEventsListView.setItems(FXCollections.observableArrayList(upcomingEntries));
+    }
+
+    private String resolveSearchScopeFromMode(String selectedMode) {
+        if (UPCOMING_MODE_TITLE_AZ.equals(selectedMode) || UPCOMING_MODE_TITLE_ZA.equals(selectedMode)) {
+            return SEARCH_SCOPE_TITLE;
+        }
+        if (UPCOMING_MODE_TIME.equals(selectedMode)) {
+            return SEARCH_SCOPE_TIME;
+        }
+        if (UPCOMING_MODE_COLOR.equals(selectedMode)) {
+            return SEARCH_SCOPE_COLOR;
+        }
+        if (UPCOMING_MODE_FEEDBACK.equals(selectedMode)) {
+            return SEARCH_SCOPE_FEEDBACK;
+        }
+        return SEARCH_SCOPE_ALL;
+    }
+
+    private String resolvePeriodFilterFromMode(String selectedMode) {
+        if (UPCOMING_MODE_TODAY.equals(selectedMode)) {
+            return UPCOMING_FILTER_TODAY;
+        }
+        if (UPCOMING_MODE_WEEK.equals(selectedMode)) {
+            return UPCOMING_FILTER_WEEK;
+        }
+        if (UPCOMING_MODE_MONTH.equals(selectedMode)) {
+            return UPCOMING_FILTER_MONTH;
+        }
+        return UPCOMING_FILTER_ALL;
+    }
+
+    private String resolveSortFromMode(String selectedMode) {
+        if (UPCOMING_MODE_ALL_LATEST.equals(selectedMode)) {
+            return UPCOMING_SORT_LATEST;
+        }
+        if (UPCOMING_MODE_TITLE_AZ.equals(selectedMode)) {
+            return UPCOMING_SORT_TITLE_AZ;
+        }
+        if (UPCOMING_MODE_TITLE_ZA.equals(selectedMode)) {
+            return UPCOMING_SORT_TITLE_ZA;
+        }
+        if (UPCOMING_MODE_TIME.equals(selectedMode)) {
+            return UPCOMING_SORT_START_TIME;
+        }
+        return UPCOMING_SORT_NEAREST;
     }
 
     private boolean matchesPeriodFilter(PlanningEntry entry, LocalDate today, String selectedFilter) {
@@ -561,6 +934,7 @@ public class PlanningController implements Initializable {
         startTimeComboBox.setValue(planningEntry.getStartTime());
         endTimeComboBox.setValue(planningEntry.getEndTime());
         colorPicker.setValue(Color.web(planningEntry.getColorHex()));
+        clearPlanningValidationErrors();
         showForm(true);
         hideMessage();
     }
@@ -592,7 +966,345 @@ public class PlanningController implements Initializable {
         startTimeComboBox.setValue(null);
         endTimeComboBox.setValue(null);
         colorPicker.setValue(Color.web(COLOR_PALETTE.get(0)));
+        clearPlanningValidationErrors();
         hideMessage();
+    }
+
+    private boolean validateSession(Seance selectedSeance, boolean showMessage) {
+        if (selectedSeance == null) {
+            if (showMessage) {
+                markFieldInvalid(sessionComboBox, sessionErrorLabel, "A session must be selected.");
+            }
+            return false;
+        }
+        clearFieldValidation(sessionComboBox, sessionErrorLabel);
+        return true;
+    }
+
+    private boolean validateDate(LocalDate planningDate, boolean showMessage) {
+        if (planningDate == null) {
+            if (showMessage) {
+                markFieldInvalid(planningDatePicker, dateErrorLabel, "A planning date is required.");
+            }
+            return false;
+        }
+        clearFieldValidation(planningDatePicker, dateErrorLabel);
+        return true;
+    }
+
+    private boolean validateTimeRange(LocalTime startTime, LocalTime endTime, boolean showMessage) {
+        boolean valid = true;
+
+        if (startTime == null) {
+            valid = false;
+            if (showMessage) {
+                markFieldInvalid(startTimeComboBox, startTimeErrorLabel, "Start time is required.");
+            }
+        } else {
+            clearFieldValidation(startTimeComboBox, startTimeErrorLabel);
+        }
+
+        if (endTime == null) {
+            valid = false;
+            if (showMessage) {
+                markFieldInvalid(endTimeComboBox, endTimeErrorLabel, "End time is required.");
+            }
+        } else {
+            clearFieldValidation(endTimeComboBox, endTimeErrorLabel);
+        }
+
+        if (valid && !endTime.isAfter(startTime)) {
+            valid = false;
+            if (showMessage) {
+                markFieldInvalid(endTimeComboBox, endTimeErrorLabel, "End time must be after start time.");
+            }
+        }
+
+        return valid;
+    }
+
+    private boolean validateTimeOverlap(int userId, LocalDate planningDate, LocalTime startTime, LocalTime endTime, boolean showMessage) {
+        if (planningDate == null || startTime == null || endTime == null || !endTime.isAfter(startTime)) {
+            return true;
+        }
+
+        boolean hasOverlap = servicePlanning.hasTimeOverlap(
+                userId,
+                planningDate,
+                startTime,
+                endTime,
+                editingPlanning == null ? null : editingPlanning.getId()
+        );
+        if (hasOverlap) {
+            if (showMessage) {
+                markFieldInvalid(startTimeComboBox, startTimeErrorLabel, "This time range overlaps another session on this day.");
+                markFieldInvalid(endTimeComboBox, endTimeErrorLabel, "This time range overlaps another session on this day.");
+            }
+            return false;
+        }
+
+        return true;
+    }
+
+    private boolean validateColorForDate(LocalDate planningDate, String selectedColor, boolean showMessage) {
+        if (planningDate == null || selectedColor == null || selectedColor.isBlank()) {
+            clearFieldValidation(colorPicker, colorErrorLabel);
+            return true;
+        }
+
+        User currentUser = UserSession.getInstance().getCurrentUser();
+        if (currentUser == null) {
+            return true;
+        }
+
+        boolean colorUsed = servicePlanning.isColorUsedOnDate(
+                currentUser.getId(),
+                planningDate,
+                selectedColor,
+                editingPlanning == null ? null : editingPlanning.getId()
+        );
+        if (colorUsed) {
+            if (showMessage) {
+                markFieldInvalid(colorPicker, colorErrorLabel, "This color is already used on that day.");
+            }
+            return false;
+        }
+
+        clearFieldValidation(colorPicker, colorErrorLabel);
+        return true;
+    }
+
+    private boolean validateFeedbackSelection(boolean showMessage) {
+        String feedback = getSelectedFeedback();
+        if (feedback == null || feedback.isBlank()) {
+            if (showMessage) {
+                markFeedbackInvalid("Choose one feedback option.");
+            }
+            return false;
+        }
+
+        clearFeedbackValidation();
+        return true;
+    }
+
+    private void clearPlanningValidationErrors() {
+        clearFieldValidation(sessionComboBox, sessionErrorLabel);
+        clearFieldValidation(planningDatePicker, dateErrorLabel);
+        clearFieldValidation(startTimeComboBox, startTimeErrorLabel);
+        clearFieldValidation(endTimeComboBox, endTimeErrorLabel);
+        clearFieldValidation(colorPicker, colorErrorLabel);
+    }
+
+    private void markFeedbackInvalid(String message) {
+        applyFeedbackErrorStyle(true);
+        if (feedbackErrorLabel != null) {
+            feedbackErrorLabel.setText(message);
+            feedbackErrorLabel.setVisible(true);
+            feedbackErrorLabel.setManaged(true);
+        }
+    }
+
+    private void clearFeedbackValidation() {
+        applyFeedbackErrorStyle(false);
+        if (feedbackErrorLabel != null) {
+            feedbackErrorLabel.setText("");
+            feedbackErrorLabel.setVisible(false);
+            feedbackErrorLabel.setManaged(false);
+        }
+    }
+
+    private void applyFeedbackErrorStyle(boolean invalid) {
+        for (Toggle toggle : feedbackToggleGroup.getToggles()) {
+            if (!(toggle instanceof ToggleButton button)) {
+                continue;
+            }
+            if (invalid) {
+                if (!button.getStyleClass().contains("field-invalid")) {
+                    button.getStyleClass().add("field-invalid");
+                }
+            } else {
+                button.getStyleClass().remove("field-invalid");
+            }
+        }
+    }
+
+    private String getSelectedFeedback() {
+        Toggle selectedToggle = feedbackToggleGroup.getSelectedToggle();
+        if (selectedToggle == null || selectedToggle.getUserData() == null) {
+            return null;
+        }
+        return toFeedbackCode(selectedToggle.getUserData().toString());
+    }
+
+    private void selectFeedback(String feedbackValue) {
+        String normalizedCode = toFeedbackCode(feedbackValue);
+        if (normalizedCode == null || normalizedCode.isBlank()) {
+            feedbackToggleGroup.selectToggle(null);
+            return;
+        }
+        for (Toggle toggle : feedbackToggleGroup.getToggles()) {
+            if (normalizedCode.equals(String.valueOf(toggle.getUserData()))) {
+                feedbackToggleGroup.selectToggle(toggle);
+                return;
+            }
+        }
+        feedbackToggleGroup.selectToggle(null);
+    }
+
+    private String toFeedbackCode(String rawFeedback) {
+        if (rawFeedback == null || rawFeedback.isBlank()) {
+            return null;
+        }
+        String value = rawFeedback.trim();
+        return switch (value.toLowerCase()) {
+            case "1", "very bad" -> "1";
+            case "2", "bad" -> "2";
+            case "3", "medium" -> "3";
+            case "4", "good" -> "4";
+            case "5", "excellent" -> "5";
+            default -> null;
+        };
+    }
+
+    private String toFeedbackLabel(String feedbackCode) {
+        return switch (feedbackCode) {
+            case "1" -> "Very Bad";
+            case "2" -> "Bad";
+            case "3" -> "Medium";
+            case "4" -> "Good";
+            case "5" -> "Excellent";
+            default -> "Unknown";
+        };
+    }
+
+    private boolean isSessionCompleted(LocalDate planningDate, LocalTime endTime) {
+        if (planningDate == null || endTime == null) {
+            return false;
+        }
+        LocalDateTime endDateTime = LocalDateTime.of(planningDate, endTime);
+        return !endDateTime.isAfter(LocalDateTime.now());
+    }
+
+    private void updateFeedbackPendingBanner() {
+        long pendingCount = allPlanningEntries.stream()
+                .filter(entry -> isSessionCompleted(entry.getPlanningDate(), entry.getEndTime()))
+                .filter(entry -> entry.getFeedback() == null || entry.getFeedback().isBlank())
+                .count();
+
+        if (feedbackPendingBox == null || feedbackPendingLabel == null) {
+            return;
+        }
+
+        if (pendingCount <= 0) {
+            feedbackPendingBox.setVisible(false);
+            feedbackPendingBox.setManaged(false);
+            feedbackPendingLabel.setText("");
+            return;
+        }
+
+        String suffix = pendingCount == 1 ? " session awaiting feedback" : " sessions awaiting feedback";
+        feedbackPendingLabel.setText(pendingCount + suffix);
+        feedbackPendingBox.setVisible(true);
+        feedbackPendingBox.setManaged(true);
+    }
+
+    private void refreshFeedbackQueue() {
+        if (feedbackPendingListView == null) {
+            return;
+        }
+
+        List<PlanningEntry> completedEntries = allPlanningEntries.stream()
+                .filter(entry -> isSessionCompleted(entry.getPlanningDate(), entry.getEndTime()))
+                .sorted(Comparator.comparing(PlanningEntry::getPlanningDate).reversed()
+                        .thenComparing(PlanningEntry::getStartTime).reversed())
+                .toList();
+
+        List<PlanningEntry> pendingEntries = completedEntries.stream()
+                .filter(entry -> entry.getFeedback() == null || entry.getFeedback().isBlank())
+                .toList();
+
+        feedbackPendingListView.setItems(FXCollections.observableArrayList(completedEntries));
+        renderFeedbackQuickLinks(pendingEntries);
+        if (completedEntries.isEmpty()) {
+            selectedFeedbackEntry = null;
+            if (feedbackSelectedSessionLabel != null) {
+                feedbackSelectedSessionLabel.setText("No finished sessions available for feedback.");
+            }
+            feedbackToggleGroup.selectToggle(null);
+            return;
+        }
+
+        if (selectedFeedbackEntry != null) {
+            for (PlanningEntry entry : completedEntries) {
+                if (entry.getId() == selectedFeedbackEntry.getId()) {
+                    feedbackPendingListView.getSelectionModel().select(entry);
+                    return;
+                }
+            }
+        }
+        feedbackPendingListView.getSelectionModel().select(completedEntries.get(0));
+    }
+
+    private void renderFeedbackQuickLinks(List<PlanningEntry> pendingEntries) {
+        if (feedbackQuickLinksBox == null) {
+            return;
+        }
+
+        feedbackQuickLinksBox.getChildren().clear();
+        if (pendingEntries == null || pendingEntries.isEmpty()) {
+            feedbackQuickLinksBox.setManaged(false);
+            feedbackQuickLinksBox.setVisible(false);
+            return;
+        }
+
+        int maxLinks = Math.min(4, pendingEntries.size());
+        for (int i = 0; i < maxLinks; i++) {
+            PlanningEntry entry = pendingEntries.get(i);
+            Hyperlink link = new Hyperlink("💬 " + entry.getSeanceTitle() + " - " + formatEntryTime(entry));
+            link.getStyleClass().add("planning-feedback-link-chip");
+            link.setFocusTraversable(false);
+            link.setOnAction(event -> openFeedbackPickerFor(entry));
+            feedbackQuickLinksBox.getChildren().add(link);
+        }
+
+        if (pendingEntries.size() > maxLinks) {
+            Label moreLabel = new Label("+" + (pendingEntries.size() - maxLinks) + " more awaiting feedback");
+            moreLabel.getStyleClass().add("planning-feedback-link-chip-muted");
+            feedbackQuickLinksBox.getChildren().add(moreLabel);
+        }
+
+        feedbackQuickLinksBox.setManaged(true);
+        feedbackQuickLinksBox.setVisible(true);
+    }
+
+    private String blankToNull(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private void markFieldInvalid(Control field, Label errorLabel, String message) {
+        if (field != null && !field.getStyleClass().contains("field-invalid")) {
+            field.getStyleClass().add("field-invalid");
+        }
+        if (errorLabel != null) {
+            errorLabel.setText(message);
+            errorLabel.setVisible(true);
+            errorLabel.setManaged(true);
+        }
+    }
+
+    private void clearFieldValidation(Control field, Label errorLabel) {
+        if (field != null) {
+            field.getStyleClass().remove("field-invalid");
+        }
+        if (errorLabel != null) {
+            errorLabel.setText("");
+            errorLabel.setVisible(false);
+            errorLabel.setManaged(false);
+        }
     }
 
     private void showForm(boolean visible) {
@@ -600,6 +1312,59 @@ public class PlanningController implements Initializable {
         planningBoardView.setVisible(!visible);
         planningFormPage.setManaged(visible);
         planningFormPage.setVisible(visible);
+        if (feedbackPage != null && visible) {
+            feedbackPage.setManaged(false);
+            feedbackPage.setVisible(false);
+        }
+        if (feedbackPickerPage != null && visible) {
+            feedbackPickerPage.setManaged(false);
+            feedbackPickerPage.setVisible(false);
+        }
+    }
+
+    private void showFeedbackPage(boolean visible) {
+        if (feedbackPage == null) {
+            return;
+        }
+        feedbackPage.setManaged(visible);
+        feedbackPage.setVisible(visible);
+        if (visible) {
+            planningBoardView.setManaged(false);
+            planningBoardView.setVisible(false);
+            planningFormPage.setManaged(false);
+            planningFormPage.setVisible(false);
+            if (feedbackPickerPage != null) {
+                feedbackPickerPage.setManaged(false);
+                feedbackPickerPage.setVisible(false);
+            }
+            clearFeedbackValidation();
+        } else {
+            planningBoardView.setManaged(true);
+            planningBoardView.setVisible(true);
+            if (feedbackPickerPage != null) {
+                feedbackPickerPage.setManaged(false);
+                feedbackPickerPage.setVisible(false);
+            }
+        }
+    }
+
+    private void showFeedbackPickerPage(boolean visible) {
+        if (feedbackPickerPage == null) {
+            return;
+        }
+        feedbackPickerPage.setManaged(visible);
+        feedbackPickerPage.setVisible(visible);
+
+        if (visible) {
+            planningBoardView.setManaged(false);
+            planningBoardView.setVisible(false);
+            planningFormPage.setManaged(false);
+            planningFormPage.setVisible(false);
+            if (feedbackPage != null) {
+                feedbackPage.setManaged(false);
+                feedbackPage.setVisible(false);
+            }
+        }
     }
 
     private String findAvailableColor(LocalDate date, Integer excludedPlanningId) {
@@ -693,8 +1458,8 @@ public class PlanningController implements Initializable {
             colorBar.setMaxWidth(5);
             colorBar.setPrefHeight(44);
 
-            titleLabel.setStyle("-fx-text-fill: #F8FAFC; -fx-font-size: 14px; -fx-font-weight: 700;");
-            dateTimeLabel.setStyle("-fx-text-fill: #94A3B8; -fx-font-size: 12px;");
+            titleLabel.getStyleClass().add("planning-upcoming-item-title");
+            dateTimeLabel.getStyleClass().add("planning-upcoming-item-time");
 
             editButton.getStyleClass().add("btn-secondary");
             deleteButton.getStyleClass().add("btn-danger");
@@ -719,7 +1484,7 @@ public class PlanningController implements Initializable {
             topRow.getChildren().addAll(colorBar, content, actionBox);
 
             root.setPadding(new Insets(14));
-            root.setStyle("-fx-background-color: #0F172A; -fx-border-color: #1E293B; -fx-border-width: 1; -fx-border-radius: 14; -fx-background-radius: 14;");
+            root.getStyleClass().add("planning-upcoming-item-card");
             root.getChildren().add(topRow);
             setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
         }
@@ -735,6 +1500,38 @@ public class PlanningController implements Initializable {
             colorBar.setStyle("-fx-background-color: " + item.getColorHex() + "; -fx-background-radius: 4;");
             titleLabel.setText(item.getSeanceTitle());
             dateTimeLabel.setText(item.getPlanningDate().format(DateTimeFormatter.ofPattern("EEE, MMM d")) + "  •  " + formatEntryTime(item));
+            setGraphic(root);
+        }
+    }
+
+    private final class FeedbackPendingCell extends ListCell<PlanningEntry> {
+        private final VBox root = new VBox(4);
+        private final Label titleLabel = new Label();
+        private final Label detailLabel = new Label();
+
+        private FeedbackPendingCell() {
+            root.getStyleClass().add("planning-feedback-item-card");
+            root.setPadding(new Insets(10, 12, 10, 12));
+
+            titleLabel.getStyleClass().add("planning-feedback-item-title");
+            detailLabel.getStyleClass().add("planning-feedback-item-detail");
+            root.getChildren().addAll(titleLabel, detailLabel);
+            setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
+        }
+
+        @Override
+        protected void updateItem(PlanningEntry item, boolean empty) {
+            super.updateItem(item, empty);
+            if (empty || item == null) {
+                setGraphic(null);
+                return;
+            }
+
+            String status = (item.getFeedback() == null || item.getFeedback().isBlank())
+                    ? "Awaiting feedback"
+                    : "Feedback: " + toFeedbackCode(item.getFeedback()) + " (" + toFeedbackLabel(toFeedbackCode(item.getFeedback())) + ")";
+            titleLabel.setText(item.getSeanceTitle());
+            detailLabel.setText(item.getPlanningDate().format(shortDateFormatter) + " • " + formatEntryTime(item) + " • " + status);
             setGraphic(root);
         }
     }
