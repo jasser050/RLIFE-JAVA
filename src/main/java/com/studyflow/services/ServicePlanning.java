@@ -12,7 +12,10 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Time;
 import java.sql.Timestamp;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -119,6 +122,31 @@ public class ServicePlanning implements IService<PlanningEntry> {
             }
         } catch (SQLException e) {
             System.out.println("ServicePlanning.isColorUsedOnDate: " + e.getMessage());
+            return false;
+        }
+    }
+
+    public boolean hasTimeOverlap(int userId, LocalDate date, LocalTime startTime, LocalTime endTime, Integer excludedPlanningId) {
+        String req = "SELECT COUNT(*) FROM planning " +
+                "WHERE user_id = ? AND DATE(date_debut) = ? " +
+                "AND ? < TIME(date_fin) " +
+                "AND ? > TIME(date_debut) " +
+                (excludedPlanningId != null ? "AND id <> ?" : "");
+
+        try (PreparedStatement pstm = cnx.prepareStatement(req)) {
+            pstm.setInt(1, userId);
+            pstm.setDate(2, Date.valueOf(date));
+            pstm.setTime(3, Time.valueOf(startTime));
+            pstm.setTime(4, Time.valueOf(endTime));
+            if (excludedPlanningId != null) {
+                pstm.setInt(5, excludedPlanningId);
+            }
+
+            try (ResultSet rs = pstm.executeQuery()) {
+                return rs.next() && rs.getInt(1) > 0;
+            }
+        } catch (SQLException e) {
+            System.out.println("ServicePlanning.hasTimeOverlap: " + e.getMessage());
             return false;
         }
     }

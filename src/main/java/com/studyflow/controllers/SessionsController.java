@@ -18,6 +18,7 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.Control;
 import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
@@ -62,12 +63,14 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.ResourceBundle;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class SessionsController implements Initializable {
@@ -77,8 +80,17 @@ public class SessionsController implements Initializable {
             "/com/studyflow/assets/logo.jpg",
             "/com/studyflow/assets/logo.jpeg"
     };
+    private static final Pattern TITLE_PATTERN = Pattern.compile("^(?=.{3,80}$)(?=.*\\p{L})[\\p{L} _-]+$");
 
     @FXML private Label sessionsCountLabel;
+    @FXML private Label sessionsTotalValueLabel;
+    @FXML private Label sessionsTotalTrendLabel;
+    @FXML private Label sessionsQualityValueLabel;
+    @FXML private Label sessionsQualityTrendLabel;
+    @FXML private Label sessionsTypesValueLabel;
+    @FXML private Label sessionsTypesTrendLabel;
+    @FXML private Label sessionsRecentValueLabel;
+    @FXML private Label sessionsRecentTrendLabel;
     @FXML private Label pageMessageLabel;
     @FXML private Label formTitleLabel;
     @FXML private Label formSubtitleLabel;
@@ -87,7 +99,9 @@ public class SessionsController implements Initializable {
     @FXML private VBox formCard;
     @FXML private Button addSessionButton;
     @FXML private TextField titleField;
+    @FXML private Label titleErrorLabel;
     @FXML private ComboBox<TypeSeance> typeComboBox;
+    @FXML private Label typeErrorLabel;
     @FXML private TextArea descriptionArea;
     @FXML private Button saveButton;
     @FXML private Button cancelButton;
@@ -106,6 +120,7 @@ public class SessionsController implements Initializable {
     public void initialize(URL location, ResourceBundle resources) {
         configureListView();
         configureFilters();
+        configureFormValidation();
         loadTypes();
         resetForm();
         refreshList();
@@ -130,13 +145,10 @@ public class SessionsController implements Initializable {
         String title = titleField.getText() == null ? "" : titleField.getText().trim();
         TypeSeance selectedType = typeComboBox.getValue();
 
-        if (title.isEmpty()) {
-            showError("Title is required.");
-            return;
-        }
-
-        if (selectedType == null) {
-            showError("Type is required.");
+        clearValidationErrors();
+        boolean hasValidationErrors = !validateTitle(title, true) | !validateType(selectedType, true);
+        if (hasValidationErrors) {
+            showError("Please fix the highlighted fields.");
             return;
         }
 
@@ -324,10 +336,186 @@ public class SessionsController implements Initializable {
         typeComboBox.setItems(FXCollections.observableArrayList(availableTypes));
     }
 
+    private void configureFormValidation() {
+        titleField.textProperty().addListener((observable, oldValue, newValue) -> {
+            if (titleErrorLabel != null && titleErrorLabel.isVisible()) {
+                validateTitle(newValue == null ? "" : newValue.trim(), true);
+            } else {
+                validateTitle(newValue == null ? "" : newValue.trim(), false);
+            }
+        });
+
+        typeComboBox.valueProperty().addListener((observable, oldValue, newValue) -> {
+            if (typeErrorLabel != null && typeErrorLabel.isVisible()) {
+                validateType(newValue, true);
+            } else {
+                validateType(newValue, false);
+            }
+        });
+    }
+
+    private boolean validateTitle(String title, boolean showMessage) {
+        if (title == null || title.isBlank()) {
+            if (showMessage) {
+                markFieldInvalid(titleField, titleErrorLabel, "Title is required.");
+            }
+            return false;
+        }
+
+        if (!TITLE_PATTERN.matcher(title).matches()) {
+            if (showMessage) {
+                markFieldInvalid(titleField, titleErrorLabel,
+                        "Title must use letters only (spaces, '_' and '-' are allowed). No numbers.");
+            }
+            return false;
+        }
+
+        clearFieldValidation(titleField, titleErrorLabel);
+        return true;
+    }
+
+    private boolean validateType(TypeSeance selectedType, boolean showMessage) {
+        if (selectedType == null) {
+            if (showMessage) {
+                markFieldInvalid(typeComboBox, typeErrorLabel, "Type is required.");
+            }
+            return false;
+        }
+        clearFieldValidation(typeComboBox, typeErrorLabel);
+        return true;
+    }
+
+    private void clearValidationErrors() {
+        clearFieldValidation(titleField, titleErrorLabel);
+        clearFieldValidation(typeComboBox, typeErrorLabel);
+    }
+
+    private void markFieldInvalid(Control field, Label errorLabel, String message) {
+        if (field != null && !field.getStyleClass().contains("field-invalid")) {
+            field.getStyleClass().add("field-invalid");
+        }
+        if (errorLabel != null) {
+            errorLabel.setText(message);
+            errorLabel.setVisible(true);
+            errorLabel.setManaged(true);
+        }
+    }
+
+    private void clearFieldValidation(Control field, Label errorLabel) {
+        if (field != null) {
+            field.getStyleClass().remove("field-invalid");
+        }
+        if (errorLabel != null) {
+            errorLabel.setText("");
+            errorLabel.setVisible(false);
+            errorLabel.setManaged(false);
+        }
+    }
+
     private void refreshList() {
         List<Seance> seances = serviceSeance.getAll();
         masterSessions.setAll(seances);
+        updateSessionsStatistics();
         applySearchAndSort();
+    }
+
+    private void updateSessionsStatistics() {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime current30Start = now.minusDays(30);
+        LocalDateTime previous30Start = now.minusDays(60);
+        LocalDateTime previous30End = now.minusDays(30);
+
+        int total = masterSessions.size();
+        long totalPrevious = masterSessions.stream()
+                .filter(seance -> seance.getCreatedAt() != null)
+                .map(Seance::getCreatedAt)
+                .map(Timestamp::toLocalDateTime)
+                .filter(createdAt -> !createdAt.isBefore(previous30Start) && createdAt.isBefore(previous30End))
+                .count();
+
+        double qualityRate = computeDescriptionRate(masterSessions);
+        double previousQualityRate = computeDescriptionRate(
+                masterSessions.stream()
+                        .filter(seance -> seance.getCreatedAt() != null)
+                        .filter(seance -> {
+                            LocalDateTime created = seance.getCreatedAt().toLocalDateTime();
+                            return !created.isBefore(previous30Start) && created.isBefore(previous30End);
+                        })
+                        .toList()
+        );
+
+        long distinctTypes = masterSessions.stream()
+                .map(this::resolveTypeLabel)
+                .filter(type -> type != null && !type.isBlank() && !"-".equals(type))
+                .map(String::toLowerCase)
+                .distinct()
+                .count();
+        long previousDistinctTypes = masterSessions.stream()
+                .filter(seance -> seance.getCreatedAt() != null)
+                .filter(seance -> {
+                    LocalDateTime created = seance.getCreatedAt().toLocalDateTime();
+                    return !created.isBefore(previous30Start) && created.isBefore(previous30End);
+                })
+                .map(this::resolveTypeLabel)
+                .filter(type -> type != null && !type.isBlank() && !"-".equals(type))
+                .map(String::toLowerCase)
+                .distinct()
+                .count();
+
+        long recentCount = masterSessions.stream()
+                .filter(seance -> seance.getCreatedAt() != null)
+                .map(Seance::getCreatedAt)
+                .map(Timestamp::toLocalDateTime)
+                .filter(createdAt -> !createdAt.isBefore(current30Start))
+                .count();
+        long previousRecentCount = totalPrevious;
+
+        setKpiValue(sessionsTotalValueLabel, String.valueOf(total));
+        setTrendChip(sessionsTotalTrendLabel, total - totalPrevious, "vs prev 30d", false);
+
+        setKpiValue(sessionsQualityValueLabel, Math.round(qualityRate) + "%");
+        setTrendChip(sessionsQualityTrendLabel, qualityRate - previousQualityRate, "pts", false);
+
+        setKpiValue(sessionsTypesValueLabel, String.valueOf(distinctTypes));
+        setTrendChip(sessionsTypesTrendLabel, distinctTypes - previousDistinctTypes, "types", false);
+
+        setKpiValue(sessionsRecentValueLabel, String.valueOf(recentCount));
+        setTrendChip(sessionsRecentTrendLabel, recentCount - previousRecentCount, "vs prev 30d", false);
+    }
+
+    private double computeDescriptionRate(List<Seance> seances) {
+        if (seances == null || seances.isEmpty()) {
+            return 0;
+        }
+        long withDescription = seances.stream()
+                .filter(seance -> seance.getDescription() != null && !seance.getDescription().isBlank())
+                .count();
+        return (withDescription * 100.0) / seances.size();
+    }
+
+    private void setKpiValue(Label label, String value) {
+        if (label != null) {
+            label.setText(value);
+        }
+    }
+
+    private void setTrendChip(Label label, double delta, String suffix, boolean invertGoodSignal) {
+        if (label == null) {
+            return;
+        }
+        String sign = delta > 0.01 ? "+" : (delta < -0.01 ? "-" : "");
+        String number = Math.abs(delta) >= 10
+                ? String.valueOf(Math.round(Math.abs(delta)))
+                : String.format(java.util.Locale.US, "%.1f", Math.abs(delta));
+        label.setText(sign + number + " " + suffix);
+
+        String trendClass = "neutral";
+        if (delta > 0.01) {
+            trendClass = invertGoodSignal ? "down" : "up";
+        } else if (delta < -0.01) {
+            trendClass = invertGoodSignal ? "up" : "down";
+        }
+        label.getStyleClass().setAll("kpi-trend-chip", trendClass);
     }
 
     private void applySearchAndSort() {
@@ -415,6 +603,7 @@ public class SessionsController implements Initializable {
             typeComboBox.setValue(null);
         }
 
+        clearValidationErrors();
         hideMessage();
     }
 
@@ -449,6 +638,7 @@ public class SessionsController implements Initializable {
         titleField.clear();
         typeComboBox.setValue(null);
         descriptionArea.clear();
+        clearValidationErrors();
         hideMessage();
     }
 

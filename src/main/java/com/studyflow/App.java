@@ -9,6 +9,7 @@ import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 
 import java.io.IOException;
+import java.util.Objects;
 
 /**
  * StudyFlow - Modern Student Productivity Dashboard
@@ -16,8 +17,17 @@ import java.io.IOException;
  */
 public class App extends Application {
 
+    public enum Theme {
+        DARK,
+        LIGHT
+    }
+
     private static Scene scene;
     private static Stage primaryStage;
+    private static Theme currentTheme = Theme.DARK;
+
+    private static final String DARK_THEME_CSS = "styles/dark-theme.css";
+    private static final String LIGHT_THEME_CSS = "styles/light-theme.css";
 
     @Override
     public void start(Stage stage) throws IOException {
@@ -30,8 +40,7 @@ public class App extends Application {
         scene = new Scene(root, 1400, 900);
         scene.setFill(Color.TRANSPARENT);
 
-        // Load stylesheets
-        scene.getStylesheets().add(getClass().getResource("styles/dark-theme.css").toExternalForm());
+        applyTheme(currentTheme);
 
         // Configure stage - UNDECORATED for custom title bar
         stage.initStyle(StageStyle.TRANSPARENT);
@@ -71,6 +80,32 @@ public class App extends Application {
      */
     public static Scene getScene() {
         return scene;
+    }
+
+    public static Theme getCurrentTheme() {
+        return currentTheme;
+    }
+
+    public static void toggleTheme() {
+        if (currentTheme == Theme.DARK) {
+            setTheme(Theme.LIGHT);
+        } else {
+            setTheme(Theme.DARK);
+        }
+    }
+
+    public static void setTheme(Theme theme) {
+        currentTheme = theme;
+        applyTheme(theme);
+    }
+
+    private static void applyTheme(Theme theme) {
+        if (scene == null) {
+            return;
+        }
+        scene.getStylesheets().clear();
+        String stylesheet = theme == Theme.LIGHT ? LIGHT_THEME_CSS : DARK_THEME_CSS;
+        scene.getStylesheets().add(Objects.requireNonNull(App.class.getResource(stylesheet)).toExternalForm());
     }
 
     public static void main(String[] args) {

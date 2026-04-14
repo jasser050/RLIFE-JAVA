@@ -22,7 +22,6 @@ import javafx.scene.control.Control;
 import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.DateCell;
-import javafx.scene.control.Hyperlink;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
@@ -36,7 +35,6 @@ import javafx.scene.input.TransferMode;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.RowConstraints;
@@ -47,6 +45,7 @@ import javafx.scene.paint.Paint;
 import javafx.util.StringConverter;
 import org.kordamp.ikonli.javafx.FontIcon;
 
+import java.io.IOException;
 import java.net.URL;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -103,11 +102,20 @@ public class PlanningController implements Initializable {
     @FXML private Label currentMonthLabel;
     @FXML private Label todayDateLabel;
     @FXML private Label pageMessageLabel;
+    @FXML private Label planningHoursValueLabel;
+    @FXML private Label planningHoursTrendLabel;
+    @FXML private Label planningCompletionValueLabel;
+    @FXML private Label planningCompletionTrendLabel;
+    @FXML private Label planningFeedbackScoreValueLabel;
+    @FXML private Label planningFeedbackScoreTrendLabel;
+    @FXML private Label planningStreakValueLabel;
+    @FXML private Label planningStreakTrendLabel;
     @FXML private VBox feedbackPendingBox;
     @FXML private Label feedbackPendingLabel;
-    @FXML private FlowPane feedbackQuickLinksBox;
+    @FXML private Button feedbackOpenQueueButton;
     @FXML private VBox feedbackPage;
     @FXML private VBox feedbackPickerPage;
+    @FXML private VBox feedbackPendingListContainer;
     @FXML private ListView<PlanningEntry> feedbackPendingListView;
     @FXML private Label feedbackSelectedSessionLabel;
     @FXML private Label formMessageLabel;
@@ -239,6 +247,26 @@ public class PlanningController implements Initializable {
         MainController mainController = MainController.getInstance();
         if (mainController != null) {
             mainController.showSessions();
+            return;
+        }
+        try {
+            App.setRoot("views/Sessions");
+        } catch (IOException exception) {
+            showErrorOn(pageMessageLabel, "Unable to open sessions page: " + exception.getMessage());
+        }
+    }
+
+    @FXML
+    private void handleManageSessionTypes() {
+        MainController mainController = MainController.getInstance();
+        if (mainController != null) {
+            mainController.showSessionTypes();
+            return;
+        }
+        try {
+            App.setRoot("views/TypeSeance");
+        } catch (IOException exception) {
+            showErrorOn(pageMessageLabel, "Unable to open session types page: " + exception.getMessage());
         }
     }
 
@@ -467,14 +495,32 @@ public class PlanningController implements Initializable {
 
         selectedFeedbackEntry.setFeedback(blankToNull(getSelectedFeedback()));
         servicePlanning.update(selectedFeedbackEntry);
+        if (feedbackPendingListView != null) {
+            feedbackPendingListView.getItems().removeIf(entry -> entry.getId() == selectedFeedbackEntry.getId());
+        }
         refreshPlanningData();
         refreshFeedbackQueue();
-        showInfo("Feedback saved successfully.");
+        selectedFeedbackEntry = null;
+        feedbackToggleGroup.selectToggle(null);
+        showFeedbackPickerPage(false);
+        if (hasPendingFeedbackEntries()) {
+            showFeedbackPage(true);
+            showInfo("Feedback saved successfully.");
+        } else {
+            showFeedbackPage(false);
+            showInfo("Feedback saved successfully. All finished sessions are now rated.");
+        }
+    }
+
+    private boolean hasPendingFeedbackEntries() {
+        return allPlanningEntries.stream()
+                .filter(entry -> isSessionCompleted(entry.getPlanningDate(), entry.getEndTime()))
+                .anyMatch(this::isAwaitingFeedback);
     }
 
     private void openFeedbackPickerFor(PlanningEntry entry) {
         selectedFeedbackEntry = entry;
-        feedbackSelectedSessionLabel.setText(entry.getSeanceTitle() + " - " + formatEntryTime(entry));
+        feedbackSelectedSessionLabel.setText(entry.getSeanceTitle() + " - " + formatEntryDateTime(entry));
         selectFeedback(entry.getFeedback());
         clearFeedbackValidation();
         showFeedbackPickerPage(true);
@@ -523,8 +569,164 @@ public class PlanningController implements Initializable {
         updateCalendar();
         updateTodayPanel();
         updateUpcomingPanel();
+        updatePlanningStatistics();
         updateFeedbackPendingBanner();
         refreshFeedbackQueue();
+    }
+
+    private void updatePlanningStatistics() {
+        LocalDate today = LocalDate.now();
+        LocalDate currentStart = today.minusDays(6);
+        LocalDate previousStart = today.minusDays(13);
+        LocalDate previousEnd = today.minusDays(7);
+
+        double hoursCurrent = computePlannedHoursBetween(currentStart, today);
+        double hoursPrevious = computePlannedHoursBetween(previousStart, previousEnd);
+        setKpiValue(planningHoursValueLabel, formatHours(hoursCurrent));
+        setTrendChip(planningHoursTrendLabel, hoursCurrent - hoursPrevious, "h vs last 7d", false);
+
+        double completionCurrent = computeCompletionRateBetween(currentStart, today);
+        double completionPrevious = computeCompletionRateBetween(previousStart, previousEnd);
+        setKpiValue(planningCompletionValueLabel, formatPercent(completionCurrent));
+        setTrendChip(planningCompletionTrendLabel, completionCurrent - completionPrevious, "pts vs last 7d", false);
+
+        double feedbackCurrent = computeFeedbackAverageBetween(currentStart, today);
+        double feedbackPrevious = computeFeedbackAverageBetween(previousStart, previousEnd);
+        setKpiValue(planningFeedbackScoreValueLabel, formatScore(feedbackCurrent));
+        setTrendChip(planningFeedbackScoreTrendLabel, feedbackCurrent - feedbackPrevious, "vs last 7d", false);
+
+        int streak = computeCurrentPlanningStreak(today);
+        int bestStreak = computeBestPlanningStreak();
+        setKpiValue(planningStreakValueLabel, streak + " days");
+        if (planningStreakTrendLabel != null) {
+            planningStreakTrendLabel.setText("Best " + bestStreak + " days");
+            planningStreakTrendLabel.getStyleClass().setAll("kpi-trend-chip", "neutral");
+        }
+    }
+
+    private double computePlannedHoursBetween(LocalDate startInclusive, LocalDate endInclusive) {
+        return allPlanningEntries.stream()
+                .filter(entry -> isDateBetween(entry.getPlanningDate(), startInclusive, endInclusive))
+                .mapToDouble(this::durationHours)
+                .sum();
+    }
+
+    private double computeCompletionRateBetween(LocalDate startInclusive, LocalDate endInclusive) {
+        List<PlanningEntry> periodEntries = allPlanningEntries.stream()
+                .filter(entry -> isDateBetween(entry.getPlanningDate(), startInclusive, endInclusive))
+                .toList();
+        if (periodEntries.isEmpty()) {
+            return 0;
+        }
+        long completed = periodEntries.stream()
+                .filter(entry -> isSessionCompleted(entry.getPlanningDate(), entry.getEndTime()))
+                .count();
+        return (completed * 100.0) / periodEntries.size();
+    }
+
+    private double computeFeedbackAverageBetween(LocalDate startInclusive, LocalDate endInclusive) {
+        List<Integer> scores = allPlanningEntries.stream()
+                .filter(entry -> isDateBetween(entry.getPlanningDate(), startInclusive, endInclusive))
+                .map(PlanningEntry::getFeedback)
+                .map(this::toFeedbackCode)
+                .filter(code -> code != null && !code.isBlank())
+                .map(Integer::parseInt)
+                .toList();
+        if (scores.isEmpty()) {
+            return 0;
+        }
+        return scores.stream().mapToInt(Integer::intValue).average().orElse(0);
+    }
+
+    private int computeCurrentPlanningStreak(LocalDate anchorDate) {
+        int streak = 0;
+        LocalDate cursor = anchorDate;
+        while (hasPlanningOnDate(cursor)) {
+            streak++;
+            cursor = cursor.minusDays(1);
+        }
+        return streak;
+    }
+
+    private int computeBestPlanningStreak() {
+        List<LocalDate> dates = allPlanningEntries.stream()
+                .map(PlanningEntry::getPlanningDate)
+                .distinct()
+                .sorted()
+                .toList();
+        int best = 0;
+        int current = 0;
+        LocalDate previous = null;
+        for (LocalDate date : dates) {
+            if (previous == null || date.equals(previous.plusDays(1))) {
+                current++;
+            } else {
+                current = 1;
+            }
+            best = Math.max(best, current);
+            previous = date;
+        }
+        return best;
+    }
+
+    private boolean hasPlanningOnDate(LocalDate date) {
+        return allPlanningEntries.stream().anyMatch(entry -> date.equals(entry.getPlanningDate()));
+    }
+
+    private boolean isDateBetween(LocalDate value, LocalDate startInclusive, LocalDate endInclusive) {
+        if (value == null || startInclusive == null || endInclusive == null) {
+            return false;
+        }
+        return !value.isBefore(startInclusive) && !value.isAfter(endInclusive);
+    }
+
+    private double durationHours(PlanningEntry entry) {
+        if (entry == null || entry.getStartTime() == null || entry.getEndTime() == null || !entry.getEndTime().isAfter(entry.getStartTime())) {
+            return 0;
+        }
+        return (entry.getEndTime().toSecondOfDay() - entry.getStartTime().toSecondOfDay()) / 3600.0;
+    }
+
+    private void setKpiValue(Label label, String value) {
+        if (label != null) {
+            label.setText(value);
+        }
+    }
+
+    private void setTrendChip(Label label, double delta, String suffix, boolean invertGoodSignal) {
+        if (label == null) {
+            return;
+        }
+        String sign = delta > 0.01 ? "+" : (delta < -0.01 ? "-" : "");
+        double absolute = Math.abs(delta);
+        label.setText(sign + formatNumber(absolute) + " " + suffix);
+
+        String trendClass = "neutral";
+        if (delta > 0.01) {
+            trendClass = invertGoodSignal ? "down" : "up";
+        } else if (delta < -0.01) {
+            trendClass = invertGoodSignal ? "up" : "down";
+        }
+        label.getStyleClass().setAll("kpi-trend-chip", trendClass);
+    }
+
+    private String formatHours(double value) {
+        return formatNumber(value) + " h";
+    }
+
+    private String formatPercent(double value) {
+        return Math.round(value) + "%";
+    }
+
+    private String formatScore(double value) {
+        if (value <= 0) {
+            return "- / 5";
+        }
+        return formatNumber(value) + " / 5";
+    }
+
+    private String formatNumber(double value) {
+        return String.format(java.util.Locale.US, "%.1f", value);
     }
 
     private void updateCalendar() {
@@ -970,6 +1172,7 @@ public class PlanningController implements Initializable {
         hideMessage();
     }
 
+
     private boolean validateSession(Seance selectedSeance, boolean showMessage) {
         if (selectedSeance == null) {
             if (showMessage) {
@@ -1188,7 +1391,7 @@ public class PlanningController implements Initializable {
     private void updateFeedbackPendingBanner() {
         long pendingCount = allPlanningEntries.stream()
                 .filter(entry -> isSessionCompleted(entry.getPlanningDate(), entry.getEndTime()))
-                .filter(entry -> entry.getFeedback() == null || entry.getFeedback().isBlank())
+                .filter(this::isAwaitingFeedback)
                 .count();
 
         if (feedbackPendingBox == null || feedbackPendingLabel == null) {
@@ -1199,6 +1402,7 @@ public class PlanningController implements Initializable {
             feedbackPendingBox.setVisible(false);
             feedbackPendingBox.setManaged(false);
             feedbackPendingLabel.setText("");
+            updateFeedbackPendingCta(0);
             return;
         }
 
@@ -1206,6 +1410,7 @@ public class PlanningController implements Initializable {
         feedbackPendingLabel.setText(pendingCount + suffix);
         feedbackPendingBox.setVisible(true);
         feedbackPendingBox.setManaged(true);
+        updateFeedbackPendingCta(pendingCount);
     }
 
     private void refreshFeedbackQueue() {
@@ -1220,61 +1425,53 @@ public class PlanningController implements Initializable {
                 .toList();
 
         List<PlanningEntry> pendingEntries = completedEntries.stream()
-                .filter(entry -> entry.getFeedback() == null || entry.getFeedback().isBlank())
+                .filter(this::isAwaitingFeedback)
                 .toList();
 
-        feedbackPendingListView.setItems(FXCollections.observableArrayList(completedEntries));
-        renderFeedbackQuickLinks(pendingEntries);
-        if (completedEntries.isEmpty()) {
+        boolean hasPendingEntries = !pendingEntries.isEmpty();
+        if (feedbackPendingListContainer != null) {
+            feedbackPendingListContainer.setManaged(hasPendingEntries);
+            feedbackPendingListContainer.setVisible(hasPendingEntries);
+        }
+
+        feedbackPendingListView.setItems(FXCollections.observableArrayList(pendingEntries));
+        updateFeedbackPendingCta(pendingEntries.size());
+        if (pendingEntries.isEmpty()) {
             selectedFeedbackEntry = null;
             if (feedbackSelectedSessionLabel != null) {
-                feedbackSelectedSessionLabel.setText("No finished sessions available for feedback.");
+                feedbackSelectedSessionLabel.setText("No sessions are awaiting feedback.");
             }
             feedbackToggleGroup.selectToggle(null);
             return;
         }
 
         if (selectedFeedbackEntry != null) {
-            for (PlanningEntry entry : completedEntries) {
+            for (PlanningEntry entry : pendingEntries) {
                 if (entry.getId() == selectedFeedbackEntry.getId()) {
                     feedbackPendingListView.getSelectionModel().select(entry);
                     return;
                 }
             }
         }
-        feedbackPendingListView.getSelectionModel().select(completedEntries.get(0));
+        feedbackPendingListView.getSelectionModel().select(pendingEntries.get(0));
     }
 
-    private void renderFeedbackQuickLinks(List<PlanningEntry> pendingEntries) {
-        if (feedbackQuickLinksBox == null) {
+    private void updateFeedbackPendingCta(long pendingCount) {
+        if (feedbackOpenQueueButton == null) {
             return;
         }
 
-        feedbackQuickLinksBox.getChildren().clear();
-        if (pendingEntries == null || pendingEntries.isEmpty()) {
-            feedbackQuickLinksBox.setManaged(false);
-            feedbackQuickLinksBox.setVisible(false);
+        if (pendingCount <= 0) {
+            feedbackOpenQueueButton.setVisible(false);
+            feedbackOpenQueueButton.setManaged(false);
+            feedbackOpenQueueButton.setDisable(true);
             return;
         }
 
-        int maxLinks = Math.min(4, pendingEntries.size());
-        for (int i = 0; i < maxLinks; i++) {
-            PlanningEntry entry = pendingEntries.get(i);
-            Hyperlink link = new Hyperlink("💬 " + entry.getSeanceTitle() + " - " + formatEntryTime(entry));
-            link.getStyleClass().add("planning-feedback-link-chip");
-            link.setFocusTraversable(false);
-            link.setOnAction(event -> openFeedbackPickerFor(entry));
-            feedbackQuickLinksBox.getChildren().add(link);
-        }
-
-        if (pendingEntries.size() > maxLinks) {
-            Label moreLabel = new Label("+" + (pendingEntries.size() - maxLinks) + " more awaiting feedback");
-            moreLabel.getStyleClass().add("planning-feedback-link-chip-muted");
-            feedbackQuickLinksBox.getChildren().add(moreLabel);
-        }
-
-        feedbackQuickLinksBox.setManaged(true);
-        feedbackQuickLinksBox.setVisible(true);
+        feedbackOpenQueueButton.setText("Open feedback queue (" + pendingCount + ")");
+        feedbackOpenQueueButton.setDisable(false);
+        feedbackOpenQueueButton.setVisible(true);
+        feedbackOpenQueueButton.setManaged(true);
     }
 
     private String blankToNull(String value) {
@@ -1283,6 +1480,17 @@ public class PlanningController implements Initializable {
         }
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private boolean isAwaitingFeedback(PlanningEntry entry) {
+        return !hasFeedback(entry);
+    }
+
+    private boolean hasFeedback(PlanningEntry entry) {
+        if (entry == null) {
+            return false;
+        }
+        return toFeedbackCode(entry.getFeedback()) != null;
     }
 
     private void markFieldInvalid(Control field, Label errorLabel, String message) {
@@ -1400,6 +1608,10 @@ public class PlanningController implements Initializable {
         return entry.getStartTime().format(timeFormatter) + " - " + entry.getEndTime().format(timeFormatter);
     }
 
+    private String formatEntryDateTime(PlanningEntry entry) {
+        return entry.getPlanningDate().format(shortDateFormatter) + " • " + formatEntryTime(entry);
+    }
+
     private void showError(String message) {
         showErrorOn(formMessageLabel, message);
     }
@@ -1512,6 +1724,19 @@ public class PlanningController implements Initializable {
         private FeedbackPendingCell() {
             root.getStyleClass().add("planning-feedback-item-card");
             root.setPadding(new Insets(10, 12, 10, 12));
+            root.setOnMouseClicked(event -> {
+                PlanningEntry entry = getItem();
+                if (entry == null) {
+                    return;
+                }
+                if (feedbackPendingListView != null) {
+                    feedbackPendingListView.getSelectionModel().select(entry);
+                }
+                if (feedbackPage != null && feedbackPage.isVisible()) {
+                    openFeedbackPickerFor(entry);
+                }
+                event.consume();
+            });
 
             titleLabel.getStyleClass().add("planning-feedback-item-title");
             detailLabel.getStyleClass().add("planning-feedback-item-detail");
@@ -1527,7 +1752,7 @@ public class PlanningController implements Initializable {
                 return;
             }
 
-            String status = (item.getFeedback() == null || item.getFeedback().isBlank())
+            String status = isAwaitingFeedback(item)
                     ? "Awaiting feedback"
                     : "Feedback: " + toFeedbackCode(item.getFeedback()) + " (" + toFeedbackLabel(toFeedbackCode(item.getFeedback())) + ")";
             titleLabel.setText(item.getSeanceTitle());

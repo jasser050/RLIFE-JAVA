@@ -33,6 +33,8 @@ public class MainController implements Initializable {
     @FXML private TextField searchField;
     @FXML private HBox titleBar;
     @FXML private FontIcon maximizeIcon;
+    @FXML private Button themeToggleButton;
+    @FXML private FontIcon themeToggleIcon;
 
     @FXML private Label sidebarUserName;
     @FXML private Label sidebarUserSub;
@@ -70,6 +72,8 @@ public class MainController implements Initializable {
                     ? user.getUniversity() : user.getEmail());
             sidebarAvatar.setText(user.getInitials().isEmpty() ? "??" : user.getInitials());
         }
+
+        updateThemeToggleIcon();
     }
 
     // ============================================
@@ -190,6 +194,11 @@ public class MainController implements Initializable {
         loadContent("views/Sessions.fxml");
     }
 
+    public void showSessionTypes() {
+        setActiveButton(btnPlanning);
+        loadContent("views/TypeSeance.fxml");
+    }
+
     @FXML
     private void showRevisions() {
         setActiveButton(btnRevisions);
@@ -234,6 +243,23 @@ public class MainController implements Initializable {
             App.setRoot("views/Landing");
         } catch (java.io.IOException e) {
             e.printStackTrace();
+        }
+    }
+
+    @FXML
+    private void handleThemeToggle() {
+        App.toggleTheme();
+        updateThemeToggleIcon();
+    }
+
+    private void updateThemeToggleIcon() {
+        if (themeToggleIcon == null) {
+            return;
+        }
+        if (App.getCurrentTheme() == App.Theme.DARK) {
+            themeToggleIcon.setIconLiteral("fth-sun");
+        } else {
+            themeToggleIcon.setIconLiteral("fth-moon");
         }
     }
 
