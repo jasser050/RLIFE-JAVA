@@ -75,6 +75,12 @@ public class LoginController implements Initializable {
             return;
         }
 
+        // Validate email format
+        if (!email.contains("@") || !email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$")) {
+            showError("Please enter a valid email address.");
+            return;
+        }
+
         loginBtn.setDisable(true);
         loginBtn.setText("Signing in...");
 

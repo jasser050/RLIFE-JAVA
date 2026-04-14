@@ -250,6 +250,9 @@ public class RegisterController implements Initializable {
             if (currentStep == 1) {
                 if (!validateStep1()) return;
             }
+            if (currentStep == 2) {
+                if (!validateStep2()) return;
+            }
             if (currentStep < 4) {
                 showStep(currentStep + 1);
             }
@@ -257,6 +260,17 @@ public class RegisterController implements Initializable {
             e.printStackTrace();
             showError("Error: " + e.getMessage());
         }
+    }
+
+    private boolean validateStep2() {
+        String phone = phoneField.getText().trim();
+        String university = universityField.getText().trim();
+
+        if (!phone.isEmpty() && !phone.matches("^\\+?[0-9]{8,15}$")) {
+            showError("Please enter a valid phone number.");
+            return false;
+        }
+        return true;
     }
 
     @FXML
@@ -337,22 +351,83 @@ public class RegisterController implements Initializable {
         String password  = passwordField.getText();
         String confirm   = confirmPasswordField.getText();
 
-        if (firstName.isEmpty() || lastName.isEmpty() || username.isEmpty() || email.isEmpty() || password.isEmpty()) {
-            showError("Please fill in all required fields.");
+        if (firstName.isEmpty()) {
+            showError("First name is required.");
             return false;
         }
-        if (username.length() < 3 || username.length() > 20) {
-            showError("Username must be between 3 and 20 characters.");
+        if (firstName.length() < 2) {
+            showError("First name must be at least 2 characters.");
+            return false;
+        }
+        if (!firstName.matches("^[a-zA-Z\\s]+$")) {
+            showError("First name can only contain letters.");
+            return false;
+        }
+
+        if (lastName.isEmpty()) {
+            showError("Last name is required.");
+            return false;
+        }
+        if (lastName.length() < 2) {
+            showError("Last name must be at least 2 characters.");
+            return false;
+        }
+        if (!lastName.matches("^[a-zA-Z\\s]+$")) {
+            showError("Last name can only contain letters.");
+            return false;
+        }
+
+        if (username.isEmpty()) {
+            showError("Username is required.");
+            return false;
+        }
+        if (username.length() < 4) {
+            showError("Username must be at least 4 characters.");
+            return false;
+        }
+        if (!username.matches(".*\\d.*")) {
+            showError("Username must contain at least one number.");
+            return false;
+        }
+        if (!username.matches("^[a-zA-Z0-9_]+$")) {
+            showError("Username can only contain letters, numbers and underscores.");
+            return false;
+        }
+
+        if (email.isEmpty()) {
+            showError("Email is required.");
             return false;
         }
         if (!email.contains("@")) {
+            showError("Email must contain @ symbol.");
+            return false;
+        }
+        if (!email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$")) {
             showError("Please enter a valid email address.");
             return false;
         }
-        if (password.length() < 6) {
-            showError("Password must be at least 6 characters.");
+
+        if (password.isEmpty()) {
+            showError("Password is required.");
             return false;
         }
+        if (password.length() < 8) {
+            showError("Password must be at least 8 characters.");
+            return false;
+        }
+        if (!password.matches(".*[0-9].*")) {
+            showError("Password must contain at least one number.");
+            return false;
+        }
+        if (!password.matches(".*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>/?].*")) {
+            showError("Password must contain at least one special character.");
+            return false;
+        }
+        if (!password.matches(".*[a-zA-Z].*")) {
+            showError("Password must contain at least one letter.");
+            return false;
+        }
+
         if (!password.equals(confirm)) {
             showError("Passwords do not match.");
             return false;
@@ -364,7 +439,6 @@ public class RegisterController implements Initializable {
             }
         } catch (Exception e) {
             System.err.println("DB check failed: " + e.getMessage());
-            // Allow to proceed if DB is unreachable
         }
         return true;
     }
@@ -372,6 +446,13 @@ public class RegisterController implements Initializable {
     @FXML
     private void handleRegister() {
         hideError();
+
+        // Validate inputs
+        String validationError = validateInputs();
+        if (validationError != null) {
+            showError(validationError);
+            return;
+        }
 
         registerBtn.setDisable(true);
         registerBtn.setText("Creating account...");
@@ -406,6 +487,88 @@ public class RegisterController implements Initializable {
             registerBtn.setDisable(false);
             registerBtn.setText("Create Account  ✓");
         }
+    }
+
+    private String validateInputs() {
+        String firstName = firstNameField.getText().trim();
+        String lastName = lastNameField.getText().trim();
+        String username = usernameField.getText().trim();
+        String email = emailField.getText().trim();
+        String password = passwordField.getText();
+        String phone = phoneField.getText().trim();
+        String university = universityField.getText().trim();
+
+        if (firstName.isEmpty()) {
+            return "First name is required";
+        }
+        if (firstName.length() < 2) {
+            return "First name must be at least 2 characters";
+        }
+        if (!firstName.matches("^[a-zA-Z\\s]+$")) {
+            return "First name can only contain letters";
+        }
+
+        if (lastName.isEmpty()) {
+            return "Last name is required";
+        }
+        if (lastName.length() < 2) {
+            return "Last name must be at least 2 characters";
+        }
+        if (!lastName.matches("^[a-zA-Z\\s]+$")) {
+            return "Last name can only contain letters";
+        }
+
+        if (username.isEmpty()) {
+            return "Username is required";
+        }
+        if (username.length() < 4) {
+            return "Username must be at least 4 characters";
+        }
+        if (!username.matches(".*\\d.*")) {
+            return "Username must contain at least one number";
+        }
+        if (!username.matches("^[a-zA-Z0-9_]+$")) {
+            return "Username can only contain letters, numbers and underscores";
+        }
+
+        if (email.isEmpty()) {
+            return "Email is required";
+        }
+        if (!email.contains("@")) {
+            return "Email must contain @ symbol";
+        }
+        if (!email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$")) {
+            return "Please enter a valid email address";
+        }
+
+        if (password.isEmpty()) {
+            return "Password is required";
+        }
+        if (password.length() < 8) {
+            return "Password must be at least 8 characters";
+        }
+        if (!password.matches(".*[0-9].*")) {
+            return "Password must contain at least one number";
+        }
+        if (!password.matches(".*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>/?].*")) {
+            return "Password must contain at least one special character";
+        }
+        if (!password.matches(".*[a-zA-Z].*")) {
+            return "Password must contain at least one letter";
+        }
+
+        if (phone.isEmpty()) {
+            return "Phone number is required";
+        }
+        if (!phone.matches("^\\+?[0-9]{8,15}$")) {
+            return "Please enter a valid phone number";
+        }
+
+        if (university.isEmpty()) {
+            return "University is required";
+        }
+
+        return null;
     }
 
     @FXML

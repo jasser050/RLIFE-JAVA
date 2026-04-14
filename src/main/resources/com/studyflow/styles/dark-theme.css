@@ -386,18 +386,28 @@
 }
 
 .badge.success {
-    -fx-background-color: rgba(16, 185, 129, 0.2);
-    -fx-text-fill: #6EE7B7;
+    -fx-background-color: #10B981;
+    -fx-text-fill: white;
+    -fx-padding: 8 16;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
 }
 
-.badge.warning {
-    -fx-background-color: rgba(245, 158, 11, 0.2);
-    -fx-text-fill: #FCD34D;
+.save-status-label {
+    -fx-padding: 8 16;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 6;
 }
 
-.badge.danger {
-    -fx-background-color: rgba(244, 63, 94, 0.2);
-    -fx-text-fill: #FDA4AF;
+.save-status-label.success {
+    -fx-background-color: #10B981;
+    -fx-text-fill: white;
+}
+
+.save-status-label.danger {
+    -fx-background-color: #EF4444;
+    -fx-text-fill: white;
 }
 
 .badge.accent {
@@ -428,6 +438,39 @@
 
 .btn-primary:pressed {
     -fx-background-color: #6D28D9;
+}
+
+.admin-export-btn {
+    -fx-background-color: linear-gradient(to bottom right, #8B5CF6, #7C3AED);
+    -fx-text-fill: white;
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+    -fx-background-radius: 10;
+    -fx-padding: 10 20;
+}
+
+.admin-export-btn:hover {
+    -fx-background-color: linear-gradient(to bottom right, #A78BFA, #8B5CF6);
+}
+
+.admin-export-btn > .arrow-button {
+    -fx-background-color: transparent;
+}
+
+.admin-export-btn .context-menu {
+    -fx-background-color: #1E293B;
+    -fx-border-color: #334155;
+    -fx-border-width: 1;
+    -fx-background-radius: 8;
+}
+
+.admin-export-btn .menu-item {
+    -fx-text-fill: #E2E8F0;
+    -fx-padding: 10 16;
+}
+
+.admin-export-btn .menu-item:hover {
+    -fx-background-color: #334155;
 }
 
 .btn-secondary {
@@ -2570,8 +2613,19 @@
 }
 .profile-pill-text {
     -fx-font-size: 13px;
-    -fx-font-weight: 600;
-    -fx-text-fill: #E2E8F0;
+    -fx-text-fill: #94A3B8;
+}
+
+.profile-pill-text-purple {
+    -fx-font-size: 13px;
+    -fx-text-fill: #C4B5FD;
+}
+
+.profile-bio-text {
+    -fx-font-size: 14px;
+    -fx-text-fill: #CBD5E1;
+    -fx-wrap-text: true;
+    -fx-max-width: 500;
 }
 .profile-pill-text-purple {
     -fx-font-size: 13px;

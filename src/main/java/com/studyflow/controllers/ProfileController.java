@@ -32,10 +32,12 @@ public class ProfileController implements Initializable {
     @FXML private StackPane avatarContainer;
     @FXML private Label avatarInitials;
     @FXML private Label profileName;
+    @FXML private Label profileBio;
     @FXML private Label profileEmail;
     @FXML private Label profileUsername;
     @FXML private Label coinsLabel;
     @FXML private Label saveStatus;
+    @FXML private Label saveStatusBottom;
 
     @FXML private TextField firstNameField;
     @FXML private TextField lastNameField;
@@ -455,6 +457,14 @@ public class ProfileController implements Initializable {
         profileEmail.setText(user.getEmail() != null ? user.getEmail() : "");
         profileUsername.setText("@" + (user.getUsername() != null ? user.getUsername() : ""));
         coinsLabel.setText(String.valueOf(user.getCoins()));
+        
+        // Display bio in header
+        String userBio = user.getBio();
+        if (userBio != null && !userBio.isEmpty()) {
+            profileBio.setText(userBio);
+            profileBio.setVisible(true);
+            profileBio.setManaged(true);
+        }
 
         firstNameField.setText(orEmpty(user.getFirstName()));
         lastNameField.setText(orEmpty(user.getLastName()));
@@ -504,6 +514,17 @@ public class ProfileController implements Initializable {
 
         profileName.setText(currentUser.getFullName().trim());
         profileUsername.setText("@" + currentUser.getUsername());
+        
+        // Update bio display
+        String userBio = currentUser.getBio();
+        if (userBio != null && !userBio.isEmpty()) {
+            profileBio.setText(userBio);
+            profileBio.setVisible(true);
+            profileBio.setManaged(true);
+        } else {
+            profileBio.setVisible(false);
+            profileBio.setManaged(false);
+        }
 
         newPasswordField.clear();
         confirmPasswordField.clear();
@@ -543,11 +564,36 @@ public class ProfileController implements Initializable {
     }
 
     private void showStatus(String msg, boolean success) {
+        // Update top badge
         saveStatus.setText(msg);
         saveStatus.getStyleClass().removeAll("success", "danger");
         saveStatus.getStyleClass().add(success ? "success" : "danger");
         saveStatus.setVisible(true);
         saveStatus.setManaged(true);
+        
+        // Update bottom label
+        saveStatusBottom.setText(msg);
+        saveStatusBottom.getStyleClass().removeAll("success", "danger");
+        saveStatusBottom.getStyleClass().add(success ? "success" : "danger");
+        saveStatusBottom.setVisible(true);
+        saveStatusBottom.setManaged(true);
+        
+        // Auto-hide after 3 seconds
+        Thread timerThread = new Thread(() -> {
+            try {
+                Thread.sleep(3000);
+                javafx.application.Platform.runLater(() -> {
+                    saveStatus.setVisible(false);
+                    saveStatus.setManaged(false);
+                    saveStatusBottom.setVisible(false);
+                    saveStatusBottom.setManaged(false);
+                });
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        });
+        timerThread.setDaemon(true);
+        timerThread.start();
     }
 
     private String orEmpty(String val) {

@@ -17,9 +17,6 @@
             <Label text="User Management" styleClass="text-heading"/>
             <Label text="View, ban, and unban platform users" styleClass="text-muted"/>
         </VBox>
-        <Button fx:id="refreshBtn" text="Refresh" styleClass="btn-secondary" onAction="#refreshUsers">
-            <graphic><FontIcon iconLiteral="fth-refresh-cw" iconSize="14"/></graphic>
-        </Button>
     </HBox>
 
     <!-- Users Table -->

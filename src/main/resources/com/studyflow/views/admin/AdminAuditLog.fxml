@@ -16,9 +16,6 @@
             <Label text="Audit Log" styleClass="text-heading"/>
             <Label text="Track all user registrations and moderation actions" styleClass="text-muted"/>
         </VBox>
-        <Button text="Refresh" styleClass="btn-secondary" onAction="#refresh">
-            <graphic><FontIcon iconLiteral="fth-refresh-cw" iconSize="14"/></graphic>
-        </Button>
     </HBox>
 
     <VBox styleClass="card" VBox.vgrow="ALWAYS">
