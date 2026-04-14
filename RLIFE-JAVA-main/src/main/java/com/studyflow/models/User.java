@@ -14,6 +14,9 @@ public class User {
     private String studentId;
     private String profilePic;
     private int coins;
+    private boolean banned;
+    private String banReason;
+    private String createdAt;
 
     public User() {}
 
@@ -55,6 +58,15 @@ public class User {
 
     public int getCoins() { return coins; }
     public void setCoins(int coins) { this.coins = coins; }
+
+    public boolean isBanned() { return banned; }
+    public void setBanned(boolean banned) { this.banned = banned; }
+
+    public String getBanReason() { return banReason; }
+    public void setBanReason(String banReason) { this.banReason = banReason; }
+
+    public String getCreatedAt() { return createdAt; }
+    public void setCreatedAt(String createdAt) { this.createdAt = createdAt; }
 
     public String getFullName() {
         return (firstName != null ? firstName : "") + " " + (lastName != null ? lastName : "");

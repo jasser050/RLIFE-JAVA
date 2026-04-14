@@ -10,18 +10,19 @@ public class MyDataBase {
     final String USER = "root";
     final String PASSWORD = "";
 
+    
     private Connection connection;
     private static MyDataBase instance;
-    private boolean connected;
 
     private MyDataBase() {
         try {
+            Class.forName("com.mysql.cj.jdbc.Driver");
             connection = DriverManager.getConnection(URL, USER, PASSWORD);
-            connected = true;
-            System.out.println("Connected");
+            System.out.println("Connected to database successfully");
+        } catch (ClassNotFoundException e) {
+            System.err.println("MySQL driver not found: " + e.getMessage());
         } catch (SQLException e) {
-            connected = false;
-            System.err.println(e.getMessage());
+            System.err.println("Database connection failed: " + e.getMessage());
         }
     }
 
@@ -32,10 +33,14 @@ public class MyDataBase {
     }
 
     public Connection getConnection() {
+        try {
+            if (connection == null || connection.isClosed() || !connection.isValid(2)) {
+                connection = DriverManager.getConnection(URL, USER, PASSWORD);
+                System.out.println("Reconnected to database");
+            }
+        } catch (SQLException e) {
+            System.err.println("DB reconnect failed: " + e.getMessage());
+        }
         return connection;
-    }
-
-    public boolean isConnected() {
-        return connected && connection != null;
     }
 }

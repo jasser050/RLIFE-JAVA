@@ -264,21 +264,12 @@ public class WellbeingController implements Initializable {
         ProgressBar bar = new ProgressBar(entry.hours / 10.0);
         bar.setMaxWidth(Double.MAX_VALUE);
         bar.setPrefHeight(8);
-        String barColor;
-        switch (entry.quality) {
-            case "great":
-                barColor = "success";
-                break;
-            case "good":
-                barColor = "primary";
-                break;
-            case "fair":
-                barColor = "warning";
-                break;
-            default:
-                barColor = "danger";
-                break;
-        }
+        String barColor = switch (entry.quality) {
+            case "great" -> "success";
+            case "good" -> "primary";
+            case "fair" -> "warning";
+            default -> "danger";
+        };
         bar.getStyleClass().add(barColor);
 
         barBox.getChildren().add(bar);
@@ -290,21 +281,12 @@ public class WellbeingController implements Initializable {
         hoursLabel.setAlignment(Pos.CENTER_RIGHT);
 
         // Quality indicator
-        String qualityColor;
-        switch (entry.quality) {
-            case "great":
-                qualityColor = "#10B981";
-                break;
-            case "good":
-                qualityColor = "#8B5CF6";
-                break;
-            case "fair":
-                qualityColor = "#F59E0B";
-                break;
-            default:
-                qualityColor = "#F43F5E";
-                break;
-        }
+        String qualityColor = switch (entry.quality) {
+            case "great" -> "#10B981";
+            case "good" -> "#8B5CF6";
+            case "fair" -> "#F59E0B";
+            default -> "#F43F5E";
+        };
 
         Label qualityLabel = new Label(entry.quality.substring(0, 1).toUpperCase() + entry.quality.substring(1));
         qualityLabel.setStyle("-fx-background-color: " + qualityColor + "33; -fx-text-fill: " + qualityColor +
@@ -315,37 +297,25 @@ public class WellbeingController implements Initializable {
     }
 
     private String getColorHex(String color) {
-        switch (color) {
-            case "primary":
-                return "#A78BFA";
-            case "success":
-                return "#34D399";
-            case "warning":
-                return "#FBBF24";
-            case "danger":
-                return "#FB7185";
-            case "accent":
-                return "#FB923C";
-            default:
-                return "#94A3B8";
-        }
+        return switch (color) {
+            case "primary" -> "#A78BFA";
+            case "success" -> "#34D399";
+            case "warning" -> "#FBBF24";
+            case "danger" -> "#FB7185";
+            case "accent" -> "#FB923C";
+            default -> "#94A3B8";
+        };
     }
 
     private String getColorWithAlpha(String color) {
-        switch (color) {
-            case "primary":
-                return "rgba(139, 92, 246, 0.2)";
-            case "success":
-                return "rgba(16, 185, 129, 0.2)";
-            case "warning":
-                return "rgba(245, 158, 11, 0.2)";
-            case "danger":
-                return "rgba(244, 63, 94, 0.2)";
-            case "accent":
-                return "rgba(249, 115, 22, 0.2)";
-            default:
-                return "rgba(148, 163, 184, 0.2)";
-        }
+        return switch (color) {
+            case "primary" -> "rgba(139, 92, 246, 0.2)";
+            case "success" -> "rgba(16, 185, 129, 0.2)";
+            case "warning" -> "rgba(245, 158, 11, 0.2)";
+            case "danger" -> "rgba(244, 63, 94, 0.2)";
+            case "accent" -> "rgba(249, 115, 22, 0.2)";
+            default -> "rgba(148, 163, 184, 0.2)";
+        };
     }
 
     @FXML

@@ -1,0 +1,74 @@
+/* ============================================
+   AUTH LIGHT MODE — overrides dark-theme.css
+   Added AFTER dark-theme.css in scene stylesheets,
+   so same-specificity rules here win.
+   ============================================ */
+
+/* Root */
+.app-container {
+    -fx-background-color: #F1F5F9;
+    -fx-border-color: #CBD5E1;
+}
+
+/* Title bar stays dark for contrast */
+
+/* Left panel */
+.auth-left-panel {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: rgba(203,213,225,0.8);
+}
+
+/* Scroll area */
+.auth-scroll {
+    -fx-background-color: #FFFFFF;
+    -fx-background: #FFFFFF;
+}
+.auth-scroll .viewport {
+    -fx-background-color: #FFFFFF;
+}
+
+/* Typography */
+.auth-title {
+    -fx-text-fill: #0F172A;
+}
+.auth-subtitle {
+    -fx-text-fill: #64748B;
+}
+.auth-field-label {
+    -fx-text-fill: #374151;
+}
+.auth-muted-text {
+    -fx-text-fill: #64748B;
+}
+.auth-divider-text {
+    -fx-text-fill: #94A3B8;
+}
+
+/* Form fields */
+.auth-field {
+    -fx-background-color: #F8FAFC;
+    -fx-border-color: #CBD5E1;
+    -fx-text-fill: #0F172A;
+    -fx-prompt-text-fill: #94A3B8;
+}
+.auth-field:focused {
+    -fx-border-color: #8B5CF6;
+    -fx-background-color: #FFFFFF;
+    -fx-effect: dropshadow(gaussian, rgba(139,92,246,0.2), 8, 0, 0, 0);
+}
+
+/* Icon badge on light bg */
+.auth-icon-badge {
+    -fx-background-color: rgba(139,92,246,0.1);
+    -fx-border-color: rgba(139,92,246,0.25);
+}
+
+/* Error label */
+.auth-error {
+    -fx-background-color: rgba(244,63,94,0.08);
+    -fx-border-color: rgba(244,63,94,0.25);
+}
+
+/* Links stay purple */
+/* Buttons stay purple */
+/* Right panel stays dark (Spline) */

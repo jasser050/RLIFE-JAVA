@@ -10,30 +10,15 @@ import java.util.List;
 
 public class ServiceUser implements IService<User> {
 
-    private final Connection cnx;
+    private Connection cnx;
 
     public ServiceUser() {
         this.cnx = MyDataBase.getInstance().getConnection();
     }
 
-    public boolean isDatabaseAvailable() {
-        return MyDataBase.getInstance().isConnected() && cnx != null;
-    }
-
-    private boolean ensureConnection(String operation) {
-        if (isDatabaseAvailable()) {
-            return true;
-        }
-        System.out.println(operation + ": database connection unavailable.");
-        return false;
-    }
-
     @Override
     public void add(User user) {
-        if (!ensureConnection("ServiceUser.add")) {
-            return;
-        }
-        String req = "INSERT INTO `user`(`email`, `first_name`, `last_name`, `username`, `roles`, `password`, `gender`, `created_at`, `updated_at`) VALUES (?,?,?,?,?,?,?,NOW(),NOW())";
+        String req = "INSERT INTO `user`(`email`, `first_name`, `last_name`, `username`, `roles`, `password`, `gender`, `phone_number`, `university`, `student_id`, `profile_pic`, `created_at`, `updated_at`) VALUES (?,?,?,?,?,?,?,?,?,?,?,NOW(),NOW())";
         try {
             PreparedStatement pstm = cnx.prepareStatement(req, Statement.RETURN_GENERATED_KEYS);
             pstm.setString(1, user.getEmail());
@@ -41,25 +26,27 @@ public class ServiceUser implements IService<User> {
             pstm.setString(3, user.getLastName());
             pstm.setString(4, user.getUsername());
             pstm.setString(5, "[\"ROLE_USER\"]");
-            pstm.setString(6, ""); // placeholder password
-            pstm.setString(7, "male");
+            pstm.setString(6, user.getPassword() != null ? user.getPassword() : "");
+            pstm.setString(7, user.getGender() != null ? user.getGender() : "male");
+            pstm.setString(8, user.getPhoneNumber());
+            pstm.setString(9, user.getUniversity());
+            pstm.setString(10, user.getStudentId());
+            pstm.setString(11, user.getProfilePic());
             pstm.executeUpdate();
             ResultSet rs = pstm.getGeneratedKeys();
             if (rs.next()) {
                 user.setId(rs.getInt(1));
             }
-            System.out.println("User added: " + user);
+            System.out.println("User added with id=" + user.getId());
         } catch (SQLException e) {
-            System.out.println("ServiceUser.add: " + e.getMessage());
+            System.err.println("ServiceUser.add FAILED: " + e.getMessage());
+            throw new RuntimeException("Failed to create account: " + e.getMessage(), e);
         }
     }
 
     @Override
     public void update(User user) {
-        if (!ensureConnection("ServiceUser.update")) {
-            return;
-        }
-        String req = "UPDATE `user` SET `first_name`=?, `last_name`=?, `username`=?, `phone_number`=?, `bio`=?, `gender`=?, `university`=?, `student_id`=?, `password`=?, `updated_at`=NOW() WHERE `id`=?";
+        String req = "UPDATE `user` SET `first_name`=?, `last_name`=?, `username`=?, `phone_number`=?, `bio`=?, `gender`=?, `university`=?, `student_id`=?, `password`=?, `profile_pic`=?, `updated_at`=NOW() WHERE `id`=?";
         try {
             PreparedStatement pstm = cnx.prepareStatement(req);
             pstm.setString(1, user.getFirstName());
@@ -71,7 +58,8 @@ public class ServiceUser implements IService<User> {
             pstm.setString(7, user.getUniversity());
             pstm.setString(8, user.getStudentId());
             pstm.setString(9, user.getPassword());
-            pstm.setInt(10, user.getId());
+            pstm.setString(10, user.getProfilePic());
+            pstm.setInt(11, user.getId());
             pstm.executeUpdate();
             System.out.println("User updated: " + user);
         } catch (SQLException e) {
@@ -81,24 +69,23 @@ public class ServiceUser implements IService<User> {
 
     @Override
     public void delete(User user) {
-        if (!ensureConnection("ServiceUser.delete")) {
-            return;
-        }
-        String req = "DELETE FROM `user` WHERE `id`=?";
         try {
-            PreparedStatement pstm = cnx.prepareStatement(req);
+            // Remove related records first (foreign key constraints)
+            PreparedStatement cleanSettings = cnx.prepareStatement("DELETE FROM `user_settings` WHERE `user_id`=?");
+            cleanSettings.setInt(1, user.getId());
+            cleanSettings.executeUpdate();
+
+            PreparedStatement pstm = cnx.prepareStatement("DELETE FROM `user` WHERE `id`=?");
             pstm.setInt(1, user.getId());
             pstm.executeUpdate();
             System.out.println("User deleted: " + user);
         } catch (SQLException e) {
-            System.out.println("ServiceUser.delete: " + e.getMessage());
+            System.err.println("ServiceUser.delete FAILED: " + e.getMessage());
+            throw new RuntimeException("Failed to delete account: " + e.getMessage(), e);
         }
     }
 
     public User findByEmail(String email) {
-        if (!ensureConnection("ServiceUser.findByEmail")) {
-            return null;
-        }
         String req = "SELECT * FROM `user` WHERE `email` = ?";
         try {
             PreparedStatement pstm = cnx.prepareStatement(req);
@@ -136,6 +123,9 @@ public class ServiceUser implements IService<User> {
         u.setStudentId(safeString(rs, "student_id"));
         u.setProfilePic(safeString(rs, "profile_pic"));
         u.setCoins(safeInt(rs, "coins"));
+        u.setBanned(safeInt(rs, "is_banned") == 1);
+        u.setBanReason(safeString(rs, "ban_reason"));
+        try { Timestamp ts = rs.getTimestamp("created_at"); if (ts != null) u.setCreatedAt(ts.toString()); } catch (SQLException ignored) {}
         return u;
     }
 
@@ -149,26 +139,100 @@ public class ServiceUser implements IService<User> {
 
     @Override
     public List<User> getAll() {
-        if (!ensureConnection("ServiceUser.getAll")) {
-            return new ArrayList<>();
-        }
         List<User> users = new ArrayList<>();
-        String req = "SELECT `id`, `email`, `first_name`, `last_name`, `username` FROM `user`";
+        String req = "SELECT * FROM `user`";
         try {
             Statement stm = cnx.createStatement();
             ResultSet rs = stm.executeQuery(req);
             while (rs.next()) {
-                User u = new User();
-                u.setId(rs.getInt("id"));
-                u.setEmail(rs.getString("email"));
-                u.setFirstName(rs.getString("first_name"));
-                u.setLastName(rs.getString("last_name"));
-                u.setUsername(rs.getString("username"));
-                users.add(u);
+                users.add(mapUser(rs));
             }
         } catch (SQLException e) {
             System.out.println("ServiceUser.getAll: " + e.getMessage());
         }
         return users;
+    }
+
+    // ── Admin methods ────────────────────────────────────────────────
+
+    public int countUsers() {
+        try {
+            ResultSet rs = cnx.createStatement().executeQuery("SELECT COUNT(*) FROM `user`");
+            if (rs.next()) return rs.getInt(1);
+        } catch (SQLException e) { System.err.println("countUsers: " + e.getMessage()); }
+        return 0;
+    }
+
+    public int countBannedUsers() {
+        try {
+            ResultSet rs = cnx.createStatement().executeQuery("SELECT COUNT(*) FROM `user` WHERE `is_banned` = 1");
+            if (rs.next()) return rs.getInt(1);
+        } catch (SQLException e) { System.err.println("countBanned: " + e.getMessage()); }
+        return 0;
+    }
+
+    public void banUser(int userId, String reason) {
+        String req = "UPDATE `user` SET `is_banned`=1, `ban_reason`=?, `banned_at`=NOW() WHERE `id`=?";
+        try {
+            PreparedStatement pstm = cnx.prepareStatement(req);
+            pstm.setString(1, reason);
+            pstm.setInt(2, userId);
+            pstm.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to ban user: " + e.getMessage(), e);
+        }
+    }
+
+    public void unbanUser(int userId) {
+        String req = "UPDATE `user` SET `is_banned`=0, `ban_reason`=NULL, `banned_at`=NULL WHERE `id`=?";
+        try {
+            PreparedStatement pstm = cnx.prepareStatement(req);
+            pstm.setInt(1, userId);
+            pstm.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to unban user: " + e.getMessage(), e);
+        }
+    }
+
+    public List<String[]> getAuditLog() {
+        List<String[]> log = new ArrayList<>();
+        String req = "SELECT id, email, CONCAT(first_name,' ',last_name) as name, " +
+                     "created_at, is_banned, banned_at, ban_reason FROM `user` ORDER BY created_at DESC";
+        try {
+            ResultSet rs = cnx.createStatement().executeQuery(req);
+            while (rs.next()) {
+                String action;
+                String date;
+                if (rs.getInt("is_banned") == 1 && rs.getTimestamp("banned_at") != null) {
+                    action = "BANNED: " + (rs.getString("ban_reason") != null ? rs.getString("ban_reason") : "No reason");
+                    date = rs.getTimestamp("banned_at").toString();
+                } else {
+                    action = "REGISTERED";
+                    date = rs.getTimestamp("created_at") != null ? rs.getTimestamp("created_at").toString() : "N/A";
+                }
+                log.add(new String[]{
+                    String.valueOf(rs.getInt("id")),
+                    rs.getString("email"),
+                    rs.getString("name"),
+                    action,
+                    date
+                });
+            }
+        } catch (SQLException e) { System.err.println("getAuditLog: " + e.getMessage()); }
+        return log;
+    }
+
+    public java.util.Map<String, Integer> getUserRegistrationsByMonth() {
+        java.util.Map<String, Integer> stats = new java.util.LinkedHashMap<>();
+        String req = "SELECT DATE_FORMAT(created_at, '%Y-%m') as month, COUNT(*) as cnt " +
+                     "FROM `user` WHERE created_at IS NOT NULL " +
+                     "GROUP BY month ORDER BY month DESC LIMIT 6";
+        try {
+            ResultSet rs = cnx.createStatement().executeQuery(req);
+            while (rs.next()) {
+                stats.put(rs.getString("month"), rs.getInt("cnt"));
+            }
+        } catch (SQLException e) { System.err.println("getRegByMonth: " + e.getMessage()); }
+        return stats;
     }
 }

@@ -4,9 +4,7 @@ import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.paint.Color;
 import javafx.stage.Stage;
-import javafx.stage.StageStyle;
 
 import java.io.IOException;
 
@@ -15,33 +13,30 @@ import java.io.IOException;
  * A beautiful, elegant JavaFX application with dark theme
  */
 public class App extends Application {
-    private static final String DARK_THEME = "styles/dark-theme.css";
-    private static final String LIGHT_THEME = "styles/light-theme.css";
 
     private static Scene scene;
     private static Stage primaryStage;
-    private static boolean darkTheme = true;
 
     @Override
     public void start(Stage stage) throws IOException {
         primaryStage = stage;
+        LocalServer.start();
 
         // Load the main layout
         Parent root = loadFXML("views/Landing");
 
-        // Create scene with dark background
+        // Use a standard decorated stage to avoid platform-specific issues
+        // with transparent windows and custom window chrome.
         scene = new Scene(root, 1400, 900);
-        scene.setFill(Color.TRANSPARENT);
 
         // Load stylesheets
-        applyTheme();
+        scene.getStylesheets().add(getClass().getResource("styles/dark-theme.css").toExternalForm());
 
-        // Configure stage - UNDECORATED for custom title bar
-        stage.initStyle(StageStyle.TRANSPARENT);
         stage.setTitle("StudyFlow - Student Dashboard");
         stage.setScene(scene);
         stage.setMinWidth(1200);
         stage.setMinHeight(700);
+        stage.centerOnScreen();
 
         // Show the stage
         stage.show();
@@ -62,24 +57,6 @@ public class App extends Application {
         scene.setRoot(loadFXML(fxml));
     }
 
-    public static void toggleTheme() {
-        darkTheme = !darkTheme;
-        applyTheme();
-    }
-
-    public static boolean isDarkTheme() {
-        return darkTheme;
-    }
-
-    private static void applyTheme() {
-        if (scene == null) {
-            return;
-        }
-        scene.getStylesheets().clear();
-        String stylesheet = darkTheme ? DARK_THEME : LIGHT_THEME;
-        scene.getStylesheets().add(App.class.getResource(stylesheet).toExternalForm());
-    }
-
     /**
      * Get the primary stage
      */
@@ -95,6 +72,8 @@ public class App extends Application {
     }
 
     public static void main(String[] args) {
+        // Keep rendering defaults for broader compatibility across Windows setups.
+        System.setProperty("prism.vsync", "false");
         launch(args);
     }
 }

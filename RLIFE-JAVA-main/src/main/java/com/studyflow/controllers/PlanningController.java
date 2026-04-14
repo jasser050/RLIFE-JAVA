@@ -278,36 +278,24 @@ public class PlanningController implements Initializable {
     }
 
     private String getColorHex(String color) {
-        switch (color) {
-            case "primary":
-                return "#A78BFA";
-            case "success":
-                return "#34D399";
-            case "warning":
-                return "#FBBF24";
-            case "danger":
-                return "#FB7185";
-            case "accent":
-                return "#FB923C";
-            default:
-                return "#94A3B8";
-        }
+        return switch (color) {
+            case "primary" -> "#A78BFA";
+            case "success" -> "#34D399";
+            case "warning" -> "#FBBF24";
+            case "danger" -> "#FB7185";
+            case "accent" -> "#FB923C";
+            default -> "#94A3B8";
+        };
     }
 
     private String getColorWithAlpha(String color) {
-        switch (color) {
-            case "primary":
-                return "rgba(139, 92, 246, 0.2)";
-            case "success":
-                return "rgba(16, 185, 129, 0.2)";
-            case "warning":
-                return "rgba(245, 158, 11, 0.2)";
-            case "danger":
-                return "rgba(244, 63, 94, 0.2)";
-            case "accent":
-                return "rgba(249, 115, 22, 0.2)";
-            default:
-                return "rgba(148, 163, 184, 0.2)";
-        }
+        return switch (color) {
+            case "primary" -> "rgba(139, 92, 246, 0.2)";
+            case "success" -> "rgba(16, 185, 129, 0.2)";
+            case "warning" -> "rgba(245, 158, 11, 0.2)";
+            case "danger" -> "rgba(244, 63, 94, 0.2)";
+            case "accent" -> "rgba(249, 115, 22, 0.2)";
+            default -> "rgba(148, 163, 184, 0.2)";
+        };
     }
 }

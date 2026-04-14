@@ -28,15 +28,9 @@ public class CourseCardController implements Initializable {
     public void initialize(URL location, ResourceBundle resources) {
         // Set different data for each card instance
         switch (cardIndex % 3) {
-            case 0:
-                setupCard("CS301", "Data Structures", 0.68, "primary");
-                break;
-            case 1:
-                setupCard("CS305", "Database Systems", 0.45, "success");
-                break;
-            default:
-                setupCard("CS202", "Algorithms", 0.82, "warning");
-                break;
+            case 0 -> setupCard("CS301", "Data Structures", 0.68, "primary");
+            case 1 -> setupCard("CS305", "Database Systems", 0.45, "success");
+            case 2 -> setupCard("CS202", "Algorithms", 0.82, "warning");
         }
         cardIndex++;
     }

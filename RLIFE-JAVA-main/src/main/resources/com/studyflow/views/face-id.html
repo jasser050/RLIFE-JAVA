@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Face ID</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: linear-gradient(135deg, #0D0A1F 0%, #130B35 50%, #0A1628 100%);
+    font-family: "Segoe UI", system-ui, sans-serif;
+    color: #F8FAFC;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 28px 20px 32px;
+    overflow: hidden;
+  }
+
+  h2 {
+    font-size: 20px;
+    font-weight: 700;
+    color: #E2E8F0;
+    margin-bottom: 6px;
+    text-align: center;
+  }
+  .subtitle {
+    font-size: 13px;
+    color: #64748B;
+    text-align: center;
+    margin-bottom: 24px;
+  }
+
+  /* Camera container */
+  .camera-wrap {
+    position: relative;
+    width: 280px;
+    height: 280px;
+    margin: 0 auto 20px;
+  }
+
+  /* Oval frame */
+  .oval-frame {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 3px solid transparent;
+    background: linear-gradient(#0D0A1F, #0D0A1F) padding-box,
+                linear-gradient(135deg, #8B5CF6, #6366F1, #A855F7) border-box;
+    z-index: 3;
+    pointer-events: none;
+    box-shadow: 0 0 40px rgba(139,92,246,0.4), inset 0 0 40px rgba(139,92,246,0.08);
+    transition: box-shadow 0.4s;
+  }
+  .oval-frame.scanning {
+    box-shadow: 0 0 60px rgba(139,92,246,0.7), inset 0 0 60px rgba(139,92,246,0.15);
+    animation: pulse-ring 1.5s infinite;
+  }
+  .oval-frame.success {
+    background: linear-gradient(#0D0A1F, #0D0A1F) padding-box,
+                linear-gradient(135deg, #22C55E, #16A34A) border-box;
+    box-shadow: 0 0 60px rgba(34,197,94,0.6);
+  }
+
+  @keyframes pulse-ring {
+    0%   { box-shadow: 0 0 40px rgba(139,92,246,0.5); }
+    50%  { box-shadow: 0 0 80px rgba(139,92,246,0.85), inset 0 0 30px rgba(139,92,246,0.2); }
+    100% { box-shadow: 0 0 40px rgba(139,92,246,0.5); }
+  }
+
+  /* Scan line animation */
+  .scan-line {
+    position: absolute;
+    left: 10px; right: 10px;
+    height: 2px;
+    background: linear-gradient(to right, transparent, rgba(139,92,246,0.8), transparent);
+    top: 50%;
+    z-index: 4;
+    display: none;
+    border-radius: 2px;
+  }
+  .scan-line.active {
+    display: block;
+    animation: scan-move 1.8s infinite ease-in-out;
+  }
+
+  @keyframes scan-move {
+    0%   { top: 12%; opacity: 0; }
+    10%  { opacity: 1; }
+    90%  { opacity: 1; }
+    100% { top: 88%; opacity: 0; }
+  }
+
+  /* Corner marks */
+  .corners {
+    position: absolute;
+    inset: -2px;
+    z-index: 5;
+    pointer-events: none;
+  }
+  .corner {
+    position: absolute;
+    width: 22px; height: 22px;
+    border-color: #8B5CF6;
+    border-style: solid;
+    border-width: 0;
+  }
+  .corner.tl { top: 10px; left: 10px; border-top-width: 3px; border-left-width: 3px; border-radius: 4px 0 0 0; }
+  .corner.tr { top: 10px; right: 10px; border-top-width: 3px; border-right-width: 3px; border-radius: 0 4px 0 0; }
+  .corner.bl { bottom: 10px; left: 10px; border-bottom-width: 3px; border-left-width: 3px; border-radius: 0 0 0 4px; }
+  .corner.br { bottom: 10px; right: 10px; border-bottom-width: 3px; border-right-width: 3px; border-radius: 0 0 4px 0; }
+
+  video {
+    width: 100%; height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    display: block;
+    transform: scaleX(-1); /* mirror */
+  }
+
+  /* Placeholder (no camera) */
+  .cam-placeholder {
+    width: 100%; height: 100%;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.03);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 10px;
+  }
+  .cam-icon { font-size: 52px; opacity: 0.4; }
+  .cam-text { font-size: 12px; color: #475569; text-align: center; max-width: 140px; line-height: 1.5; }
+
+  /* Dots indicator */
+  .dots {
+    display: flex; gap: 8px; justify-content: center;
+    margin-bottom: 20px;
+  }
+  .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: rgba(255,255,255,0.12);
+    transition: background 0.3s;
+  }
+  .dot.active { background: #8B5CF6; box-shadow: 0 0 8px rgba(139,92,246,0.6); }
+
+  /* Status */
+  .status-text {
+    font-size: 13px;
+    color: #64748B;
+    text-align: center;
+    height: 20px;
+    margin-bottom: 20px;
+    transition: color 0.3s;
+  }
+  .status-text.scanning { color: #A78BFA; }
+  .status-text.success  { color: #34D399; }
+
+  /* Buttons */
+  .btn {
+    padding: 13px 32px;
+    border: none;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.3px;
+    width: 280px;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, #8B5CF6, #6D28D9);
+    color: white;
+    box-shadow: 0 4px 20px rgba(139,92,246,0.4);
+  }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 28px rgba(139,92,246,0.55); }
+  .btn-secondary {
+    background: rgba(255,255,255,0.05);
+    color: #94A3B8;
+    border: 1px solid rgba(255,255,255,0.1);
+    margin-top: 10px;
+  }
+  .btn-secondary:hover { background: rgba(255,255,255,0.09); color: #CBD5E1; }
+
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  /* Success overlay */
+  .success-overlay {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+  .success-overlay.show { display: flex; }
+  .success-icon { font-size: 48px; animation: bounce 0.5s; }
+  @keyframes bounce {
+    0%   { transform: scale(0); }
+    60%  { transform: scale(1.2); }
+    100% { transform: scale(1); }
+  }
+  .success-msg { font-size: 15px; font-weight: 700; color: #34D399; }
+  .success-sub { font-size: 12px; color: #64748B; }
+</style>
+</head>
+<body>
+
+<h2>Face ID Setup</h2>
+<p class="subtitle">Look straight at the camera to register your face</p>
+
+<div class="camera-wrap">
+  <div class="oval-frame" id="ovalFrame"></div>
+  <div class="scan-line" id="scanLine"></div>
+  <div class="corners">
+    <div class="corner tl"></div>
+    <div class="corner tr"></div>
+    <div class="corner bl"></div>
+    <div class="corner br"></div>
+  </div>
+  <video id="video" autoplay playsinline muted style="display:none;"></video>
+  <div class="cam-placeholder" id="placeholder">
+    <div class="cam-icon">📷</div>
+    <div class="cam-text">Camera access needed to set up Face ID</div>
+  </div>
+</div>
+
+<div class="dots">
+  <div class="dot" id="d1"></div>
+  <div class="dot" id="d2"></div>
+  <div class="dot" id="d3"></div>
+</div>
+
+<div class="status-text" id="statusText">Position your face in the oval</div>
+
+<div class="success-overlay" id="successOverlay">
+  <div class="success-icon">✅</div>
+  <div class="success-msg">Face Registered!</div>
+  <div class="success-sub">Your Face ID has been set up successfully</div>
+</div>
+
+<button class="btn btn-primary" id="startBtn" onclick="startCamera()">Enable Camera</button>
+<button class="btn btn-secondary" onclick="skipFaceId()">Skip for now →</button>
+
+<script>
+  var stream = null;
+  var scanning = false;
+  var step = 0;
+
+  function startCamera() {
+    document.getElementById('startBtn').disabled = true;
+    document.getElementById('startBtn').textContent = 'Accessing camera...';
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      simulateFaceId();
+      return;
+    }
+
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false })
+      .then(function(s) {
+        stream = s;
+        var video = document.getElementById('video');
+        video.srcObject = s;
+        video.style.display = 'block';
+        document.getElementById('placeholder').style.display = 'none';
+        startScanning();
+      })
+      .catch(function() {
+        simulateFaceId();
+      });
+  }
+
+  function startScanning() {
+    var frame = document.getElementById('ovalFrame');
+    var scanLine = document.getElementById('scanLine');
+    var status = document.getElementById('statusText');
+
+    frame.classList.add('scanning');
+    scanLine.classList.add('active');
+    status.className = 'status-text scanning';
+    status.textContent = 'Scanning face...';
+
+    document.getElementById('startBtn').textContent = 'Scanning...';
+    scanning = true;
+
+    animateDots();
+
+    setTimeout(function() {
+      completeScan();
+    }, 3500);
+  }
+
+  function animateDots() {
+    var dots = ['d1','d2','d3'];
+    var i = 0;
+    var interval = setInterval(function() {
+      dots.forEach(function(id) {
+        document.getElementById(id).classList.remove('active');
+      });
+      document.getElementById(dots[i % 3]).classList.add('active');
+      i++;
+      if (!scanning) clearInterval(interval);
+    }, 500);
+  }
+
+  function completeScan() {
+    scanning = false;
+    var frame = document.getElementById('ovalFrame');
+    var scanLine = document.getElementById('scanLine');
+    var status = document.getElementById('statusText');
+
+    frame.classList.remove('scanning');
+    scanLine.classList.remove('active');
+    frame.classList.add('success');
+    status.className = 'status-text success';
+    status.textContent = 'Face recognized!';
+
+    ['d1','d2','d3'].forEach(function(id) {
+      document.getElementById(id).classList.add('active');
+      document.getElementById(id).style.background = '#22C55E';
+    });
+
+    document.getElementById('successOverlay').classList.add('show');
+    document.getElementById('startBtn').style.display = 'none';
+
+    setTimeout(function() {
+      if (stream) {
+        stream.getTracks().forEach(function(t) { t.stop(); });
+      }
+      window.alert('faceid:captured');
+    }, 1200);
+  }
+
+  function simulateFaceId() {
+    // Simulate when camera is not available
+    document.getElementById('startBtn').textContent = 'Simulating...';
+    startScanning();
+  }
+
+  function skipFaceId() {
+    if (stream) {
+      stream.getTracks().forEach(function(t) { t.stop(); });
+    }
+    window.alert('faceid:skipped');
+  }
+</script>
+</body>
+</html>

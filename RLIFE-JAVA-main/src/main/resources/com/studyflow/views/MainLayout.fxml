@@ -3,6 +3,8 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.text.*?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.image.Image?>
 <?import javafx.geometry.Insets?>
 <?import org.kordamp.ikonli.javafx.FontIcon?>
 
@@ -20,11 +22,11 @@
             <padding>
                 <Insets left="16"/>
             </padding>
-            <StackPane styleClass="title-bar-logo">
-                <FontIcon iconLiteral="fth-layers" iconSize="14" iconColor="white"/>
-            </StackPane>
-            <Label text="StudyFlow" styleClass="title-bar-title"/>
-            <Label text="-" style="-fx-text-fill: #475569;"/>
+            <ImageView fitWidth="28" fitHeight="28" preserveRatio="true">
+                <image><Image url="@../images/logo.png"/></image>
+            </ImageView>
+            <Label text="RLife" styleClass="title-bar-title"/>
+            <Label text="—" style="-fx-text-fill: #475569;"/>
             <Label text="Student Dashboard" styleClass="title-bar-subtitle"/>
         </HBox>
 
@@ -202,7 +204,7 @@
 
                     <HBox alignment="CENTER_RIGHT" spacing="8">
                         <!-- Notifications -->
-                        <Button fx:id="notificationsButton" styleClass="topbar-button, notifications-button" onAction="#showNotifications">
+                        <Button styleClass="topbar-button">
                             <graphic>
                                 <FontIcon iconLiteral="fth-bell" iconSize="20"/>
                             </graphic>
@@ -219,9 +221,9 @@
                         </Button>
 
                         <!-- Theme Toggle -->
-                        <Button fx:id="themeToggleButton" styleClass="topbar-button" onAction="#toggleTheme" text="Light">
+                        <Button styleClass="topbar-button">
                             <graphic>
-                                <FontIcon fx:id="themeToggleIcon" iconLiteral="fth-sun" iconSize="20"/>
+                                <FontIcon iconLiteral="fth-moon" iconSize="20"/>
                             </graphic>
                             <tooltip>
                                 <Tooltip text="Toggle Theme"/>

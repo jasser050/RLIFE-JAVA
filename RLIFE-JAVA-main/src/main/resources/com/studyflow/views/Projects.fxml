@@ -1,252 +1,107 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.geometry.Insets?>
-<?import javafx.scene.chart.*?>
-<?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.geometry.Insets?>
 <?import org.kordamp.ikonli.javafx.FontIcon?>
 
 <VBox xmlns="http://javafx.com/javafx/21"
       xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="com.studyflow.controllers.ProjectsController"
-      spacing="20"
-      styleClass="page-section">
-
-    <HBox alignment="CENTER_LEFT" spacing="16">
-        <VBox spacing="4" HBox.hgrow="ALWAYS">
-            <Label text="Projects" styleClass="text-heading"/>
-            <Label text="Manage delivery timelines, linked assignments, and project progress." styleClass="text-muted"/>
-        </VBox>
-        <ComboBox fx:id="projectSortCombo" prefWidth="180" styleClass="form-combo" accessibleText="Sort projects"/>
-        <Button fx:id="exportProjectsPdfButton" text="Export PDF" onAction="#handleExportProjectsPdf" styleClass="pdf-export-button" accessibleText="Export visible projects to PDF">
-            <graphic>
-                <FontIcon iconLiteral="fth-download" iconSize="16"/>
-            </graphic>
-        </Button>
-        <TextField fx:id="projectSearchField" promptText="Search by title, status, description, or date..." styleClass="search-field" prefWidth="320" accessibleText="Search projects"/>
-    </HBox>
-
-    <Label fx:id="feedbackLabel" managed="false" visible="false" maxWidth="Infinity" styleClass="inline-alert, inline-alert-success"/>
-
-    <HBox spacing="16">
-        <VBox styleClass="stat-card, colorful-card, colorful-purple" spacing="16" HBox.hgrow="ALWAYS">
-            <HBox alignment="CENTER_LEFT" spacing="12">
-                <StackPane styleClass="stat-icon-box, primary" prefWidth="44" prefHeight="44">
-                    <FontIcon iconLiteral="fth-folder" iconSize="20"/>
-                </StackPane>
-                <Region HBox.hgrow="ALWAYS"/>
-                <Label text="Overview" styleClass="badge, primary"/>
-            </HBox>
-            <HBox alignment="CENTER_LEFT" spacing="12">
-                <VBox spacing="2">
-                    <Label fx:id="totalProjectsLabel" text="0" styleClass="stat-value" style="-fx-font-size: 24px;"/>
-                    <Label text="Total Projects" styleClass="stat-label"/>
-                </VBox>
-            </HBox>
-        </VBox>
-        <VBox styleClass="stat-card, colorful-card, colorful-amber" spacing="16" HBox.hgrow="ALWAYS">
-            <HBox alignment="CENTER_LEFT" spacing="12">
-                <StackPane styleClass="stat-icon-box, warning" prefWidth="44" prefHeight="44">
-                    <FontIcon iconLiteral="fth-loader" iconSize="20"/>
-                </StackPane>
-                <Region HBox.hgrow="ALWAYS"/>
-                <Label text="Active" styleClass="badge, warning"/>
-            </HBox>
-            <HBox alignment="CENTER_LEFT" spacing="12">
-                <VBox spacing="2">
-                    <Label fx:id="inProgressProjectsLabel" text="0" styleClass="stat-value" style="-fx-font-size: 24px;"/>
-                    <Label text="In Progress" styleClass="stat-label"/>
-                </VBox>
-            </HBox>
-        </VBox>
-        <VBox styleClass="stat-card, colorful-card, colorful-green" spacing="16" HBox.hgrow="ALWAYS">
-            <HBox alignment="CENTER_LEFT" spacing="12">
-                <StackPane styleClass="stat-icon-box, success" prefWidth="44" prefHeight="44">
-                    <FontIcon iconLiteral="fth-check-circle" iconSize="20"/>
-                </StackPane>
-                <Region HBox.hgrow="ALWAYS"/>
-                <Label text="Done" styleClass="badge, success"/>
-            </HBox>
-            <HBox alignment="CENTER_LEFT" spacing="12">
-                <VBox spacing="2">
-                    <Label fx:id="completedProjectsLabel" text="0" styleClass="stat-value" style="-fx-font-size: 24px;"/>
-                    <Label text="Completed" styleClass="stat-label"/>
-                </VBox>
-            </HBox>
-        </VBox>
-        <VBox styleClass="stat-card, colorful-card, colorful-coral" spacing="16" HBox.hgrow="ALWAYS">
-            <HBox alignment="CENTER_LEFT" spacing="12">
-                <StackPane styleClass="stat-icon-box, accent" prefWidth="44" prefHeight="44">
-                    <FontIcon iconLiteral="fth-link" iconSize="20"/>
-                </StackPane>
-                <Region HBox.hgrow="ALWAYS"/>
-                <Label text="Workload" styleClass="badge, accent"/>
-            </HBox>
-            <HBox alignment="CENTER_LEFT" spacing="12">
-                <VBox spacing="2">
-                    <Label fx:id="linkedAssignmentsLabel" text="0" styleClass="stat-value" style="-fx-font-size: 24px;"/>
-                    <Label text="Linked Assignments" styleClass="stat-label"/>
-                </VBox>
-            </HBox>
-        </VBox>
-    </HBox>
-
-    <HBox spacing="16">
-        <VBox styleClass="card, chart-shell" HBox.hgrow="ALWAYS">
-            <HBox styleClass="card-header" alignment="CENTER_LEFT" spacing="12">
-                <StackPane styleClass="stat-icon-box, primary" prefWidth="36" prefHeight="36">
-                    <FontIcon iconLiteral="fth-pie-chart" iconSize="16"/>
-                </StackPane>
-                <VBox spacing="2" HBox.hgrow="ALWAYS">
-                    <Label text="Project Status" styleClass="card-title"/>
-                    <Label text="Distribution of current project states" styleClass="text-small"/>
-                </VBox>
-            </HBox>
-            <VBox styleClass="card-body" alignment="CENTER">
-                <PieChart fx:id="projectStatusChart" prefHeight="240" labelsVisible="false"/>
-            </VBox>
-        </VBox>
-
-        <VBox styleClass="card, chart-shell" HBox.hgrow="ALWAYS">
-            <HBox styleClass="card-header" alignment="CENTER_LEFT" spacing="12">
-                <StackPane styleClass="stat-icon-box, accent" prefWidth="36" prefHeight="36">
-                    <FontIcon iconLiteral="fth-bar-chart-2" iconSize="16"/>
-                </StackPane>
-                <VBox spacing="2" HBox.hgrow="ALWAYS">
-                    <Label text="Assignment Load" styleClass="card-title"/>
-                    <Label text="Most active projects by linked assignments" styleClass="text-small"/>
-                </VBox>
-            </HBox>
-            <VBox styleClass="card-body">
-                <BarChart fx:id="projectLoadChart" legendVisible="false" prefHeight="240">
-                    <xAxis>
-                        <CategoryAxis side="BOTTOM"/>
-                    </xAxis>
-                    <yAxis>
-                        <NumberAxis side="LEFT"/>
-                    </yAxis>
-                </BarChart>
-            </VBox>
-        </VBox>
-    </HBox>
-
-    <HBox spacing="20" VBox.vgrow="ALWAYS">
-        <VBox spacing="16" prefWidth="420" minWidth="390" maxWidth="450">
-            <VBox styleClass="card, form-shell" spacing="14">
-                <Label text="Create Project" styleClass="card-title"/>
-                <Label text="Add a new project without affecting the selected one." styleClass="text-muted" wrapText="true"/>
-
-                <VBox spacing="6">
-                    <Label text="Title" styleClass="form-label"/>
-                    <TextField fx:id="createProjectTitleField" styleClass="form-input" promptText="Capstone sprint" accessibleText="Project title"/>
-                    <Label fx:id="createProjectTitleError" styleClass="field-error" managed="false" visible="false"/>
-                </VBox>
-
-                <HBox spacing="12">
-                    <VBox spacing="6" HBox.hgrow="ALWAYS">
-                        <Label text="Start Date" styleClass="form-label"/>
-                        <DatePicker fx:id="createProjectStartDatePicker" maxWidth="Infinity" styleClass="form-date" accessibleText="Project start date"/>
-                        <Label fx:id="createProjectStartDateError" styleClass="field-error" managed="false" visible="false"/>
-                    </VBox>
-                    <VBox spacing="6" HBox.hgrow="ALWAYS">
-                        <Label text="End Date" styleClass="form-label"/>
-                        <DatePicker fx:id="createProjectEndDatePicker" maxWidth="Infinity" styleClass="form-date" accessibleText="Project end date"/>
-                        <Label fx:id="createProjectEndDateError" styleClass="field-error" managed="false" visible="false"/>
-                    </VBox>
-                </HBox>
-
-                <VBox spacing="8">
-                    <Label text="Status" styleClass="form-label"/>
-                    <ComboBox fx:id="createProjectStatusCombo" maxWidth="Infinity" styleClass="form-combo" accessibleText="Project status"/>
-                </VBox>
-
-                <VBox spacing="8">
-                    <Label text="Description" styleClass="form-label"/>
-                    <TextArea fx:id="createProjectDescriptionArea" styleClass="form-textarea" wrapText="true" promptText="Describe the scope, expected outcomes, and important notes." accessibleText="Project description"/>
-                </VBox>
-
-                <HBox spacing="10">
-                    <Button fx:id="createProjectButton" text="Create Project" onAction="#handleCreateProject" styleClass="btn-primary" HBox.hgrow="ALWAYS" maxWidth="Infinity">
-                        <graphic>
-                            <FontIcon iconLiteral="fth-folder-plus" iconSize="16" iconColor="white"/>
-                        </graphic>
-                    </Button>
-                    <Button fx:id="clearCreateProjectButton" text="Clear" onAction="#handleResetCreateProject" styleClass="btn-secondary"/>
-                </HBox>
-            </VBox>
-
-            <VBox fx:id="updateProjectCard" styleClass="card, form-shell" spacing="14">
-                <Label text="Update Selected Project" styleClass="card-title"/>
-                <Label fx:id="updateProjectHintLabel" text="Select a project from the registry to edit it here." styleClass="text-muted" wrapText="true"/>
-
-                <VBox spacing="6">
-                    <Label text="Title" styleClass="form-label"/>
-                    <TextField fx:id="updateProjectTitleField" styleClass="form-input" promptText="Selected project title" accessibleText="Selected project title"/>
-                    <Label fx:id="updateProjectTitleError" styleClass="field-error" managed="false" visible="false"/>
-                </VBox>
-
-                <HBox spacing="12">
-                    <VBox spacing="6" HBox.hgrow="ALWAYS">
-                        <Label text="Start Date" styleClass="form-label"/>
-                        <DatePicker fx:id="updateProjectStartDatePicker" maxWidth="Infinity" styleClass="form-date" accessibleText="Selected project start date"/>
-                        <Label fx:id="updateProjectStartDateError" styleClass="field-error" managed="false" visible="false"/>
-                    </VBox>
-                    <VBox spacing="6" HBox.hgrow="ALWAYS">
-                        <Label text="End Date" styleClass="form-label"/>
-                        <DatePicker fx:id="updateProjectEndDatePicker" maxWidth="Infinity" styleClass="form-date" accessibleText="Selected project end date"/>
-                        <Label fx:id="updateProjectEndDateError" styleClass="field-error" managed="false" visible="false"/>
-                    </VBox>
-                </HBox>
-
-                <VBox spacing="8">
-                    <Label text="Status" styleClass="form-label"/>
-                    <ComboBox fx:id="updateProjectStatusCombo" maxWidth="Infinity" styleClass="form-combo" accessibleText="Selected project status"/>
-                </VBox>
-
-                <VBox spacing="8">
-                    <Label text="Description" styleClass="form-label"/>
-                    <TextArea fx:id="updateProjectDescriptionArea" styleClass="form-textarea" wrapText="true" promptText="Update the selected project details." accessibleText="Selected project description"/>
-                </VBox>
-
-                <HBox spacing="10">
-                    <Button fx:id="updateProjectButton" text="Update Project" onAction="#handleUpdateProject" styleClass="btn-primary" HBox.hgrow="ALWAYS" maxWidth="Infinity">
-                        <graphic>
-                            <FontIcon iconLiteral="fth-save" iconSize="16" iconColor="white"/>
-                        </graphic>
-                    </Button>
-                    <Button fx:id="clearProjectSelectionButton" text="Unselect" onAction="#handleClearProjectSelection" styleClass="btn-secondary"/>
-                </HBox>
-            </VBox>
-        </VBox>
-
-        <VBox spacing="16" HBox.hgrow="ALWAYS">
-            <VBox styleClass="card" VBox.vgrow="ALWAYS">
-                <HBox styleClass="card-header" alignment="CENTER_LEFT">
-                    <Label text="Project Registry" styleClass="card-title" HBox.hgrow="ALWAYS"/>
-                    <Label text="Search, sort, update, export, or delete any project." styleClass="card-subtitle"/>
-                </HBox>
-                <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS" styleClass="transparent-scroll">
-                    <VBox fx:id="projectList" spacing="12" style="-fx-padding: 14;"/>
-                </ScrollPane>
-            </VBox>
-
-            <VBox styleClass="card" spacing="14" VBox.vgrow="ALWAYS">
-                <HBox styleClass="card-header" alignment="CENTER_LEFT">
-                    <VBox spacing="4" HBox.hgrow="ALWAYS">
-                        <Label fx:id="selectedProjectTitleLabel" text="No project selected" styleClass="card-title"/>
-                        <Label fx:id="selectedProjectMetaLabel" text="Select a project to review its details and assignments." styleClass="card-subtitle"/>
-                    </VBox>
-                    <VBox alignment="CENTER_RIGHT" spacing="4">
-                        <Label fx:id="selectedProjectStatusLabel" text="--" styleClass="badge, secondary"/>
-                        <Label fx:id="selectedProjectCountLabel" text="0 assignments" styleClass="text-muted"/>
-                    </VBox>
-                </HBox>
-                <VBox fx:id="projectAssignmentsList" spacing="10" style="-fx-padding: 14;" VBox.vgrow="ALWAYS"/>
-            </VBox>
-        </VBox>
-    </HBox>
+      spacing="24" style="-fx-background-color: #020617;">
 
     <padding>
         <Insets top="0" right="0" bottom="24" left="0"/>
     </padding>
+
+    <!-- Header -->
+    <HBox alignment="CENTER_LEFT" spacing="16">
+        <VBox spacing="4" HBox.hgrow="ALWAYS">
+            <Label text="Groups &amp; Projects" styleClass="text-heading"/>
+            <Label text="Collaborate and track project progress" styleClass="text-muted"/>
+        </VBox>
+        <HBox spacing="12">
+            <Button text="Invite Member" styleClass="btn-secondary">
+                <graphic>
+                    <FontIcon iconLiteral="fth-user-plus" iconSize="16"/>
+                </graphic>
+            </Button>
+            <Button text="New Project" styleClass="btn-primary" onAction="#showNewProjectDialog">
+                <graphic>
+                    <FontIcon iconLiteral="fth-plus" iconSize="16" iconColor="white"/>
+                </graphic>
+            </Button>
+        </HBox>
+    </HBox>
+
+    <!-- Stats Row -->
+    <HBox spacing="16">
+        <VBox styleClass="stat-card" spacing="8" HBox.hgrow="ALWAYS">
+            <HBox alignment="CENTER_LEFT" spacing="12">
+                <StackPane styleClass="stat-icon-box, primary" prefWidth="40" prefHeight="40">
+                    <FontIcon iconLiteral="fth-folder" iconSize="18"/>
+                </StackPane>
+                <VBox spacing="2">
+                    <Label fx:id="activeProjectsLabel" text="0" styleClass="stat-value"/>
+                    <Label text="Active Projects" styleClass="stat-label"/>
+                </VBox>
+            </HBox>
+        </VBox>
+
+        <VBox styleClass="stat-card" spacing="8" HBox.hgrow="ALWAYS">
+            <HBox alignment="CENTER_LEFT" spacing="12">
+                <StackPane styleClass="stat-icon-box, success" prefWidth="40" prefHeight="40">
+                    <FontIcon iconLiteral="fth-users" iconSize="18"/>
+                </StackPane>
+                <VBox spacing="2">
+                    <Label fx:id="teamMembersLabel" text="0" styleClass="stat-value"/>
+                    <Label text="Team Members" styleClass="stat-label"/>
+                </VBox>
+            </HBox>
+        </VBox>
+
+        <VBox styleClass="stat-card" spacing="8" HBox.hgrow="ALWAYS">
+            <HBox alignment="CENTER_LEFT" spacing="12">
+                <StackPane styleClass="stat-icon-box, warning" prefWidth="40" prefHeight="40">
+                    <FontIcon iconLiteral="fth-list" iconSize="18"/>
+                </StackPane>
+                <VBox spacing="2">
+                    <Label fx:id="totalTasksLabel" text="0" styleClass="stat-value"/>
+                    <Label text="Total Tasks" styleClass="stat-label"/>
+                </VBox>
+            </HBox>
+        </VBox>
+
+        <VBox styleClass="stat-card" spacing="8" HBox.hgrow="ALWAYS">
+            <HBox alignment="CENTER_LEFT" spacing="12">
+                <StackPane styleClass="stat-icon-box, accent" prefWidth="40" prefHeight="40">
+                    <FontIcon iconLiteral="fth-check-circle" iconSize="18"/>
+                </StackPane>
+                <VBox spacing="2">
+                    <Label fx:id="completedTasksLabel" text="0" styleClass="stat-value"/>
+                    <Label text="Completed" styleClass="stat-label"/>
+                </VBox>
+            </HBox>
+        </VBox>
+    </HBox>
+
+    <!-- Project Selector and Kanban -->
+    <VBox spacing="16" VBox.vgrow="ALWAYS">
+        <!-- Project Tabs -->
+        <HBox alignment="CENTER_LEFT" spacing="16">
+            <HBox fx:id="projectTabsBox" styleClass="filter-tabs" spacing="0"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <HBox styleClass="filter-tabs" spacing="0">
+                <Button text="Kanban" styleClass="filter-tab, active"/>
+                <Button text="List" styleClass="filter-tab"/>
+                <Button text="Timeline" styleClass="filter-tab"/>
+            </HBox>
+        </HBox>
+
+        <!-- Kanban Board -->
+        <ScrollPane fitToHeight="true" VBox.vgrow="ALWAYS"
+                    style="-fx-background-color: transparent; -fx-background: transparent;">
+            <HBox fx:id="kanbanBoard" spacing="16"/>
+        </ScrollPane>
+    </VBox>
 </VBox>

@@ -288,19 +288,13 @@ public class DashboardController implements Initializable {
     }
 
     private String getColorHex(String color) {
-        switch (color) {
-            case "primary":
-                return "#A78BFA";
-            case "success":
-                return "#34D399";
-            case "warning":
-                return "#FBBF24";
-            case "danger":
-                return "#FB7185";
-            case "accent":
-                return "#FB923C";
-            default:
-                return "#94A3B8";
-        }
+        return switch (color) {
+            case "primary" -> "#A78BFA";
+            case "success" -> "#34D399";
+            case "warning" -> "#FBBF24";
+            case "danger" -> "#FB7185";
+            case "accent" -> "#FB923C";
+            default -> "#94A3B8";
+        };
     }
 }

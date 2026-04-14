@@ -175,36 +175,24 @@ public class CoursesController implements Initializable {
     }
 
     private String getGradientForColor(String color) {
-        switch (color) {
-            case "primary":
-                return "linear-gradient(to right, #8B5CF6, #A78BFA)";
-            case "success":
-                return "linear-gradient(to right, #10B981, #34D399)";
-            case "warning":
-                return "linear-gradient(to right, #F59E0B, #FBBF24)";
-            case "accent":
-                return "linear-gradient(to right, #F97316, #FB923C)";
-            case "danger":
-                return "linear-gradient(to right, #F43F5E, #FB7185)";
-            default:
-                return "linear-gradient(to right, #64748B, #94A3B8)";
-        }
+        return switch (color) {
+            case "primary" -> "linear-gradient(to right, #8B5CF6, #A78BFA)";
+            case "success" -> "linear-gradient(to right, #10B981, #34D399)";
+            case "warning" -> "linear-gradient(to right, #F59E0B, #FBBF24)";
+            case "accent" -> "linear-gradient(to right, #F97316, #FB923C)";
+            case "danger" -> "linear-gradient(to right, #F43F5E, #FB7185)";
+            default -> "linear-gradient(to right, #64748B, #94A3B8)";
+        };
     }
 
     private String getColorHex(String color) {
-        switch (color) {
-            case "primary":
-                return "#A78BFA";
-            case "success":
-                return "#34D399";
-            case "warning":
-                return "#FBBF24";
-            case "accent":
-                return "#FB923C";
-            case "danger":
-                return "#FB7185";
-            default:
-                return "#94A3B8";
-        }
+        return switch (color) {
+            case "primary" -> "#A78BFA";
+            case "success" -> "#34D399";
+            case "warning" -> "#FBBF24";
+            case "accent" -> "#FB923C";
+            case "danger" -> "#FB7185";
+            default -> "#94A3B8";
+        };
     }
 }

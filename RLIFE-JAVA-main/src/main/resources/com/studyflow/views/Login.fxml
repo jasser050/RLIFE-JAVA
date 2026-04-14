@@ -3,6 +3,8 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.web.*?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.image.Image?>
 <?import javafx.geometry.Insets?>
 <?import org.kordamp.ikonli.javafx.FontIcon?>
 
@@ -16,23 +18,28 @@
           onMousePressed="#onDragStart" onMouseDragged="#onDragged">
         <HBox alignment="CENTER_LEFT" spacing="10" HBox.hgrow="ALWAYS">
             <padding><Insets left="16"/></padding>
-            <StackPane styleClass="title-bar-logo">
-                <FontIcon iconLiteral="fth-layers" iconSize="14" iconColor="white"/>
-            </StackPane>
+            <ImageView fitWidth="28" fitHeight="28" preserveRatio="true">
+                <image><Image url="@../images/logo.png"/></image>
+            </ImageView>
             <Label text="RLife" styleClass="title-bar-title"/>
             <Label text="—" style="-fx-text-fill: #475569;"/>
             <Label text="Sign In" styleClass="title-bar-subtitle"/>
         </HBox>
-        <HBox alignment="CENTER_RIGHT" spacing="0" styleClass="window-controls">
-            <Button styleClass="window-btn, minimize-btn" onAction="#minimizeWindow">
-                <graphic><FontIcon iconLiteral="fth-minus" iconSize="14"/></graphic>
+        <HBox alignment="CENTER_RIGHT" spacing="0">
+            <Button fx:id="themeBtn" styleClass="theme-toggle-btn" onAction="#toggleTheme">
+                <graphic><FontIcon iconLiteral="fth-sun" iconSize="13"/></graphic>
             </Button>
-            <Button styleClass="window-btn, maximize-btn" onAction="#maximizeWindow">
-                <graphic><FontIcon iconLiteral="fth-square" iconSize="12"/></graphic>
-            </Button>
-            <Button styleClass="window-btn, close-btn" onAction="#closeWindow">
-                <graphic><FontIcon iconLiteral="fth-x" iconSize="14"/></graphic>
-            </Button>
+            <HBox styleClass="window-controls" spacing="0">
+                <Button styleClass="window-btn, minimize-btn" onAction="#minimizeWindow">
+                    <graphic><FontIcon iconLiteral="fth-minus" iconSize="14"/></graphic>
+                </Button>
+                <Button styleClass="window-btn, maximize-btn" onAction="#maximizeWindow">
+                    <graphic><FontIcon iconLiteral="fth-square" iconSize="12"/></graphic>
+                </Button>
+                <Button styleClass="window-btn, close-btn" onAction="#closeWindow">
+                    <graphic><FontIcon iconLiteral="fth-x" iconSize="14"/></graphic>
+                </Button>
+            </HBox>
         </HBox>
     </HBox>
 
@@ -40,14 +47,17 @@
     <HBox VBox.vgrow="ALWAYS" spacing="0">
 
         <!-- ─── LEFT: Form ─── -->
-        <VBox styleClass="auth-left-panel" HBox.hgrow="SOMETIMES" minWidth="440" maxWidth="480">
+        <VBox styleClass="auth-left-panel" HBox.hgrow="SOMETIMES" minWidth="520" maxWidth="580">
             <VBox VBox.vgrow="ALWAYS" alignment="CENTER" spacing="0">
                 <padding><Insets top="0" right="48" bottom="0" left="48"/></padding>
 
-                <StackPane styleClass="auth-icon-badge" alignment="CENTER">
-                    <FontIcon iconLiteral="fth-layers" iconSize="24" iconColor="#A78BFA"/>
-                </StackPane>
-                <VBox.margin><Insets bottom="22"/></VBox.margin>
+                <!-- RLife Logo image -->
+                <ImageView fitWidth="80" fitHeight="80" preserveRatio="true" styleClass="auth-logo-img">
+                    <image><Image url="@../images/logo.png"/></image>
+                </ImageView>
+                <VBox.margin><Insets bottom="8"/></VBox.margin>
+                <Label text="RLife" styleClass="auth-brand-label"/>
+                <VBox.margin><Insets bottom="30"/></VBox.margin>
 
                 <Label text="Welcome back" styleClass="auth-title"/>
                 <VBox.margin><Insets bottom="6"/></VBox.margin>
@@ -71,10 +81,12 @@
                     </HBox>
                     <PasswordField fx:id="passwordField" styleClass="auth-field" promptText="Enter your password"/>
                 </VBox>
-                <VBox.margin><Insets bottom="28"/></VBox.margin>
+                <VBox.margin><Insets bottom="40"/></VBox.margin>
 
                 <Button fx:id="loginBtn" text="Sign In" styleClass="auth-btn-primary"
-                        maxWidth="Infinity" onAction="#handleLogin"/>
+                        maxWidth="Infinity" onAction="#handleLogin">
+                    <VBox.margin><Insets top="16"/></VBox.margin>
+                </Button>
                 <VBox.margin><Insets bottom="24"/></VBox.margin>
 
                 <HBox alignment="CENTER" spacing="12">
@@ -96,38 +108,99 @@
             </VBox>
         </VBox>
 
-        <!-- ─── RIGHT: Spline 3D Robot ─── -->
+        <!-- ─── RIGHT: Marketing Panel ─── -->
         <StackPane styleClass="auth-right-panel" HBox.hgrow="ALWAYS">
 
-            <!-- 3D Robot via WebView -->
-            <WebView fx:id="splineView"/>
+            <!-- Background glows -->
+            <StackPane styleClass="auth-right-glow" mouseTransparent="true"/>
+            <StackPane styleClass="mrkt-orb-tr" mouseTransparent="true" StackPane.alignment="TOP_RIGHT"/>
+            <StackPane styleClass="mrkt-orb-bl" mouseTransparent="true" StackPane.alignment="BOTTOM_LEFT"/>
 
-            <!-- Top badge -->
-            <VBox alignment="TOP_CENTER" pickOnBounds="false">
-                <padding><Insets top="32"/></padding>
-                <Label text="★  Rated #1 Student App Worldwide" styleClass="auth-award-badge"/>
-            </VBox>
+            <!-- Marketing content -->
+            <VBox alignment="CENTER" spacing="0" maxWidth="360">
+                <padding><Insets top="32" right="40" bottom="32" left="40"/></padding>
 
-            <!-- Bottom overlay -->
-            <VBox alignment="BOTTOM_CENTER" spacing="14" pickOnBounds="false">
-                <padding><Insets bottom="36"/></padding>
-                <Label text="Study smarter. Live better." styleClass="auth-right-headline"/>
-                <HBox alignment="CENTER" spacing="12">
-                    <VBox styleClass="auth-stat-card" alignment="CENTER" spacing="4">
-                        <Label text="4.9 ★" styleClass="auth-stat-value"/>
-                        <Label text="Rating" styleClass="auth-stat-label"/>
+                <!-- Badge -->
+                <HBox alignment="CENTER">
+                    <Label text="★  Rated #1 Student Platform" styleClass="mrkt-pill"/>
+                </HBox>
+                <VBox.margin><Insets bottom="24"/></VBox.margin>
+
+                <!-- Headline -->
+                <Label text="Study Smarter." styleClass="mrkt-h1" maxWidth="Infinity" alignment="CENTER"/>
+                <VBox.margin><Insets bottom="2"/></VBox.margin>
+                <Label text="Achieve More." styleClass="mrkt-h1 mrkt-h1-purple" maxWidth="Infinity" alignment="CENTER"/>
+                <VBox.margin><Insets bottom="14"/></VBox.margin>
+
+                <!-- Subtitle -->
+                <Label styleClass="mrkt-sub" wrapText="true" textAlignment="CENTER" maxWidth="300"
+                       text="Join 50,000+ students who've transformed their academic life with RLife."/>
+                <VBox.margin><Insets bottom="30"/></VBox.margin>
+
+                <!-- Feature cards -->
+                <VBox spacing="10">
+                    <HBox styleClass="mrkt-card" spacing="14" alignment="CENTER_LEFT">
+                        <StackPane styleClass="mrkt-ic mrkt-ic-purple" prefWidth="42" prefHeight="42" minWidth="42" minHeight="42" maxWidth="42" maxHeight="42">
+                            <FontIcon iconLiteral="fth-book-open" iconSize="17" styleClass="mrkt-ico"/>
+                        </StackPane>
+                        <VBox spacing="2" HBox.hgrow="ALWAYS">
+                            <Label text="AI-Powered Notes" styleClass="mrkt-card-title"/>
+                            <Label text="Capture and organize content intelligently" styleClass="mrkt-card-sub"/>
+                        </VBox>
+                    </HBox>
+                    <HBox styleClass="mrkt-card" spacing="14" alignment="CENTER_LEFT">
+                        <StackPane styleClass="mrkt-ic mrkt-ic-blue" prefWidth="42" prefHeight="42" minWidth="42" minHeight="42" maxWidth="42" maxHeight="42">
+                            <FontIcon iconLiteral="fth-calendar" iconSize="17" styleClass="mrkt-ico"/>
+                        </StackPane>
+                        <VBox spacing="2" HBox.hgrow="ALWAYS">
+                            <Label text="Smart Scheduling" styleClass="mrkt-card-title"/>
+                            <Label text="Never miss a deadline or exam again" styleClass="mrkt-card-sub"/>
+                        </VBox>
+                    </HBox>
+                    <HBox styleClass="mrkt-card" spacing="14" alignment="CENTER_LEFT">
+                        <StackPane styleClass="mrkt-ic mrkt-ic-pink" prefWidth="42" prefHeight="42" minWidth="42" minHeight="42" maxWidth="42" maxHeight="42">
+                            <FontIcon iconLiteral="fth-trending-up" iconSize="17" styleClass="mrkt-ico"/>
+                        </StackPane>
+                        <VBox spacing="2" HBox.hgrow="ALWAYS">
+                            <Label text="Progress Analytics" styleClass="mrkt-card-title"/>
+                            <Label text="Visual insights to maximize performance" styleClass="mrkt-card-sub"/>
+                        </VBox>
+                    </HBox>
+                    <HBox styleClass="mrkt-card" spacing="14" alignment="CENTER_LEFT">
+                        <StackPane styleClass="mrkt-ic mrkt-ic-teal" prefWidth="42" prefHeight="42" minWidth="42" minHeight="42" maxWidth="42" maxHeight="42">
+                            <FontIcon iconLiteral="fth-users" iconSize="17" styleClass="mrkt-ico"/>
+                        </StackPane>
+                        <VBox spacing="2" HBox.hgrow="ALWAYS">
+                            <Label text="Collaborate &amp; Connect" styleClass="mrkt-card-title"/>
+                            <Label text="Study groups and shared resources" styleClass="mrkt-card-sub"/>
+                        </VBox>
+                    </HBox>
+                </VBox>
+                <VBox.margin><Insets bottom="26"/></VBox.margin>
+
+                <!-- Divider -->
+                <StackPane styleClass="mrkt-rule" maxWidth="Infinity" minHeight="1" maxHeight="1"/>
+                <VBox.margin><Insets bottom="22"/></VBox.margin>
+
+                <!-- Stats -->
+                <HBox alignment="CENTER" spacing="0">
+                    <VBox alignment="CENTER" spacing="3" HBox.hgrow="ALWAYS">
+                        <Label text="50K+" styleClass="mrkt-sn"/>
+                        <Label text="Students" styleClass="mrkt-sl"/>
                     </VBox>
-                    <VBox styleClass="auth-stat-card" alignment="CENTER" spacing="4">
-                        <Label text="98%" styleClass="auth-stat-value"/>
-                        <Label text="Exam Success" styleClass="auth-stat-label"/>
+                    <StackPane styleClass="mrkt-sep" minWidth="1" maxWidth="1" minHeight="40" maxHeight="40"/>
+                    <VBox alignment="CENTER" spacing="3" HBox.hgrow="ALWAYS">
+                        <Label text="98%" styleClass="mrkt-sn"/>
+                        <Label text="Exam Success" styleClass="mrkt-sl"/>
                     </VBox>
-                    <VBox styleClass="auth-stat-card" alignment="CENTER" spacing="4">
-                        <Label text="Free" styleClass="auth-stat-value"/>
-                        <Label text="Forever" styleClass="auth-stat-label"/>
+                    <StackPane styleClass="mrkt-sep" minWidth="1" maxWidth="1" minHeight="40" maxHeight="40"/>
+                    <VBox alignment="CENTER" spacing="3" HBox.hgrow="ALWAYS">
+                        <Label text="4.9 ★" styleClass="mrkt-sn"/>
+                        <Label text="Rating" styleClass="mrkt-sl"/>
                     </VBox>
                 </HBox>
-            </VBox>
 
+            </VBox>
         </StackPane>
     </HBox>
 </VBox>
