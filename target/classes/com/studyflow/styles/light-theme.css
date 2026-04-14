@@ -1,0 +1,690 @@
+@import "dark-theme.css";
+
+/* Base surfaces */
+.root,
+.main-content,
+.content-area,
+.app-container {
+    -fx-background-color: #F8FAFC;
+}
+
+.app-container {
+    -fx-border-color: #CBD5E1;
+}
+
+.title-bar {
+    -fx-background-color: #E2E8F0;
+    -fx-border-color: #CBD5E1;
+}
+
+.title-bar-title {
+    -fx-text-fill: #0F172A;
+}
+
+.title-bar-subtitle {
+    -fx-text-fill: #475569;
+}
+
+/* Sidebar */
+.sidebar {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #E2E8F0;
+}
+
+.sidebar-title {
+    -fx-text-fill: #0F172A;
+}
+
+.sidebar-subtitle,
+.nav-section-title {
+    -fx-text-fill: #64748B;
+}
+
+.nav-button {
+    -fx-text-fill: #334155;
+}
+
+.nav-button .ikonli-font-icon {
+    -fx-icon-color: #334155;
+}
+
+.nav-button:hover {
+    -fx-background-color: #EEF2FF;
+    -fx-text-fill: #1E293B;
+}
+
+.nav-button.active {
+    -fx-background-color: rgba(124, 58, 237, 0.16);
+    -fx-text-fill: #6D28D9;
+}
+
+.nav-button.active .ikonli-font-icon {
+    -fx-icon-color: #6D28D9;
+}
+
+/* Top bar and cards */
+.topbar {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #E2E8F0;
+}
+
+.card,
+.stat-card {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #E2E8F0;
+}
+
+.card-header {
+    -fx-border-color: #E2E8F0;
+}
+
+.card-title,
+.text-heading,
+.text-subheading,
+.text-body,
+.stat-value,
+.table-cell,
+.list-cell,
+.sidebar-user-row .sidebar-title {
+    -fx-text-fill: #0F172A;
+}
+
+.text-muted,
+.text-small,
+.card-subtitle,
+.stat-label,
+.axis,
+.axis-label,
+.chart-legend-item {
+    -fx-text-fill: #64748B;
+}
+
+.planning-kpi-row .stat-card {
+    -fx-background-color: linear-gradient(to bottom right, #FFFFFF, #F8FAFC);
+    -fx-border-color: #D6DFEA;
+}
+
+.kpi-trend-chip {
+    -fx-padding: 5 10;
+    -fx-font-size: 11px;
+    -fx-font-weight: 700;
+    -fx-background-radius: 999;
+    -fx-border-radius: 999;
+    -fx-border-width: 1;
+}
+
+.kpi-trend-chip.up {
+    -fx-background-color: rgba(16, 185, 129, 0.12);
+    -fx-border-color: rgba(16, 185, 129, 0.35);
+    -fx-text-fill: #047857;
+}
+
+.kpi-trend-chip.down {
+    -fx-background-color: rgba(244, 63, 94, 0.10);
+    -fx-border-color: rgba(244, 63, 94, 0.30);
+    -fx-text-fill: #BE123C;
+}
+
+.kpi-trend-chip.neutral {
+    -fx-background-color: rgba(148, 163, 184, 0.16);
+    -fx-border-color: rgba(148, 163, 184, 0.34);
+    -fx-text-fill: #334155;
+}
+
+/* Inputs */
+.search-field,
+.text-field,
+.text-area,
+.combo-box,
+.date-picker,
+.spinner {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #CBD5E1;
+    -fx-text-fill: #0F172A;
+    -fx-prompt-text-fill: #94A3B8;
+}
+
+.search-field:focused,
+.text-field:focused,
+.text-area:focused,
+.date-picker:focused {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #7C3AED;
+}
+
+.combo-box-popup .list-view,
+.date-picker-popup,
+.context-menu,
+.tooltip {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #CBD5E1;
+}
+
+.date-picker-popup > .month-year-pane {
+    -fx-background-color: #EEF2FF;
+}
+
+.date-picker-popup > .calendar-grid,
+.date-picker-popup .calendar-grid {
+    -fx-background-color: #FFFFFF;
+}
+
+.date-picker-popup > .month-year-pane .label {
+    -fx-text-fill: #334155;
+    -fx-font-weight: 700;
+}
+
+.date-picker-popup .day-cell {
+    -fx-text-fill: #0F172A;
+    -fx-font-weight: 600;
+    -fx-opacity: 1;
+}
+
+.date-picker-popup .day-cell .text {
+    -fx-fill: #0F172A;
+}
+
+.date-picker-popup .cell {
+    -fx-text-fill: #0F172A;
+}
+
+.date-picker-popup .day-cell.previous-month,
+.date-picker-popup .day-cell.next-month {
+    -fx-text-fill: #94A3B8;
+}
+
+.date-picker-popup .day-cell.previous-month .text,
+.date-picker-popup .day-cell.next-month .text {
+    -fx-fill: #94A3B8;
+}
+
+.date-picker-popup .day-cell:hover {
+    -fx-background-color: #E2E8F0;
+}
+
+.date-picker-popup .selected {
+    -fx-background-color: #7C3AED;
+    -fx-text-fill: #FFFFFF;
+}
+
+.date-picker-popup .selected .text {
+    -fx-fill: #FFFFFF;
+}
+
+.date-picker-popup .today {
+    -fx-border-color: #7C3AED;
+    -fx-border-width: 1;
+}
+
+/* Planning-specific readability */
+.planning-root {
+    -fx-background-color: #F8FAFC;
+}
+
+/* Planning form date picker (light mode override over imported dark theme) */
+.planning-date-picker {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #CBD5E1;
+    -fx-border-width: 1;
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
+    -fx-pref-height: 42;
+}
+
+.planning-date-picker:focused {
+    -fx-border-color: #7C3AED;
+    -fx-effect: dropshadow(gaussian, rgba(124,58,237,0.18), 10, 0, 0, 0);
+}
+
+.planning-date-picker > .text-field {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-text-fill: #0F172A;
+    -fx-prompt-text-fill: #94A3B8;
+    -fx-font-size: 14px;
+}
+
+.planning-date-picker > .arrow-button {
+    -fx-background-color: #EEF2FF;
+    -fx-background-radius: 0 10 10 0;
+    -fx-border-color: #CBD5E1;
+    -fx-border-width: 0 0 0 1;
+    -fx-border-radius: 0 10 10 0;
+}
+
+.planning-date-picker > .arrow-button .arrow {
+    -fx-background-color: #7C3AED;
+}
+
+.planning-calendar-cell {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #CBD5E1;
+}
+
+.planning-calendar-cell-hover,
+.planning-calendar-drop-target {
+    -fx-background-color: #EEF2FF;
+    -fx-border-color: #A78BFA;
+}
+
+.planning-calendar-day-label,
+.planning-calendar-entry-title {
+    -fx-text-fill: #0F172A;
+}
+
+.planning-calendar-entry-time,
+.planning-calendar-more,
+.planning-calendar-day-label-outside {
+    -fx-text-fill: #64748B;
+}
+
+.planning-week-header-grid {
+    -fx-background-color: #EEF2FF;
+}
+
+.planning-calendar-scroll {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-border-color: transparent;
+}
+
+.planning-calendar-scroll > .viewport {
+    -fx-background-color: transparent;
+}
+
+.planning-upcoming-filter-frame {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #CBD5E1;
+}
+
+.planning-upcoming-search,
+.planning-upcoming-combo {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #CBD5E1;
+    -fx-text-fill: #0F172A;
+}
+
+.planning-upcoming-combo .list-cell {
+    -fx-text-fill: #0F172A;
+}
+
+.planning-color-picker {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #CBD5E1;
+    -fx-border-width: 1;
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
+}
+
+.planning-color-picker > .color-picker-label {
+    -fx-text-fill: #0F172A;
+}
+
+.planning-color-picker > .arrow-button {
+    -fx-background-color: #EEF2FF;
+    -fx-border-color: #CBD5E1;
+    -fx-border-width: 0 0 0 1;
+}
+
+.planning-color-picker:focused {
+    -fx-border-color: #7C3AED;
+    -fx-effect: dropshadow(gaussian, rgba(124,58,237,0.18), 10, 0, 0, 0);
+}
+
+.color-palette {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #CBD5E1;
+    -fx-border-width: 1;
+    -fx-background-radius: 12;
+    -fx-border-radius: 12;
+    -fx-padding: 8;
+}
+
+.color-palette .color-picker-grid {
+    -fx-hgap: 6;
+    -fx-vgap: 6;
+}
+
+.color-palette .color-square {
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+    -fx-border-color: rgba(148,163,184,0.45);
+    -fx-border-width: 1;
+}
+
+.color-palette .color-square:hover {
+    -fx-border-color: #7C3AED;
+    -fx-border-width: 2;
+}
+
+.color-palette .hyperlink {
+    -fx-text-fill: #6D28D9;
+}
+
+.planning-feedback-chip {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #CBD5E1;
+    -fx-border-width: 1;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+    -fx-text-fill: #334155;
+    -fx-font-size: 12px;
+    -fx-padding: 8 10;
+}
+
+.planning-feedback-chip:selected {
+    -fx-background-color: rgba(124, 58, 237, 0.16);
+    -fx-border-color: #7C3AED;
+    -fx-text-fill: #6D28D9;
+}
+
+.planning-feedback-picker-box {
+    -fx-background-color: #F8FAFC;
+    -fx-border-color: #CBD5E1;
+    -fx-border-width: 1;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+    -fx-padding: 12;
+}
+
+.planning-feedback-picker-title {
+    -fx-text-fill: #1E293B;
+    -fx-font-size: 13px;
+    -fx-font-weight: 700;
+}
+
+.planning-feedback-chip-large {
+    -fx-min-width: 122;
+    -fx-pref-width: 122;
+    -fx-min-height: 70;
+    -fx-pref-height: 70;
+    -fx-alignment: center;
+    -fx-content-display: text-only;
+    -fx-wrap-text: true;
+    -fx-text-alignment: center;
+    -fx-font-size: 13px;
+    -fx-font-weight: 700;
+}
+
+.planning-feedback-pending-box {
+    -fx-background-color: rgba(245, 158, 11, 0.12);
+    -fx-border-color: rgba(245, 158, 11, 0.35);
+    -fx-border-width: 1;
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
+    -fx-padding: 10 14;
+}
+
+.planning-feedback-pending-text {
+    -fx-text-fill: #B45309;
+    -fx-font-size: 14px;
+    -fx-font-weight: 700;
+}
+
+.planning-feedback-pending-subtitle {
+    -fx-text-fill: #64748B;
+    -fx-font-size: 12px;
+}
+
+.planning-feedback-pending-icon {
+    -fx-icon-color: #B45309;
+}
+
+.planning-feedback-cta {
+    -fx-background-color: linear-gradient(to right, #7C3AED, #6D28D9);
+    -fx-text-fill: #FFFFFF;
+    -fx-font-size: 12px;
+    -fx-font-weight: 700;
+    -fx-padding: 8 14;
+    -fx-background-radius: 999;
+    -fx-border-radius: 999;
+    -fx-border-color: rgba(124, 58, 237, 0.35);
+    -fx-border-width: 1;
+}
+
+.planning-feedback-cta:hover {
+    -fx-background-color: linear-gradient(to right, #8B5CF6, #7C3AED);
+}
+
+.planning-feedback-cta:disabled {
+    -fx-opacity: 0.62;
+}
+
+.planning-feedback-quick-list {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+}
+
+.planning-feedback-quick-list .list-cell {
+    -fx-background-color: transparent;
+    -fx-padding: 0 0 8 0;
+    -fx-cursor: hand;
+}
+
+.planning-feedback-quick-list .list-cell:filled:hover .planning-feedback-item-card {
+    -fx-border-color: #94A3B8;
+    -fx-background-color: #F8FAFC;
+}
+
+.planning-feedback-quick-list .list-cell:filled:selected .planning-feedback-item-card,
+.planning-feedback-quick-list .list-cell:filled:selected:hover .planning-feedback-item-card {
+    -fx-border-color: #7C3AED;
+    -fx-background-color: rgba(124, 58, 237, 0.14);
+}
+
+.planning-feedback-item-card {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #CBD5E1;
+    -fx-border-width: 1;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+}
+
+.planning-feedback-item-title {
+    -fx-text-fill: #0F172A;
+    -fx-font-size: 13px;
+    -fx-font-weight: 700;
+}
+
+.planning-feedback-item-detail {
+    -fx-text-fill: #64748B;
+    -fx-font-size: 11px;
+}
+
+.planning-feedback-links-box {
+    -fx-padding: 2 0 0 0;
+}
+
+.planning-feedback-link-chip {
+    -fx-background-color: rgba(124, 58, 237, 0.10);
+    -fx-border-color: rgba(124, 58, 237, 0.42);
+    -fx-border-width: 1;
+    -fx-border-radius: 999;
+    -fx-background-radius: 999;
+    -fx-text-fill: #6D28D9;
+    -fx-font-size: 12px;
+    -fx-underline: false;
+    -fx-padding: 5 12;
+}
+
+.planning-feedback-link-chip:hover {
+    -fx-background-color: rgba(124, 58, 237, 0.18);
+    -fx-border-color: rgba(124, 58, 237, 0.48);
+    -fx-text-fill: #5B21B6;
+}
+
+.planning-feedback-link-chip-muted {
+    -fx-text-fill: #64748B;
+    -fx-font-size: 11px;
+    -fx-padding: 6 10;
+}
+
+/* Buttons still dark in some screens */
+.btn-secondary {
+    -fx-background-color: #EEF2FF;
+    -fx-text-fill: #1E293B;
+}
+
+.btn-secondary:hover {
+    -fx-background-color: #E2E8F0;
+}
+
+.btn-ghost {
+    -fx-text-fill: #475569;
+}
+
+.btn-ghost:hover {
+    -fx-background-color: #E2E8F0;
+    -fx-text-fill: #0F172A;
+}
+
+/* Session pages */
+.session-sort-combo {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #CBD5E1;
+}
+
+.session-sort-combo .list-cell {
+    -fx-text-fill: #0F172A;
+}
+
+.session-description-area {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #CBD5E1;
+    -fx-text-fill: #0F172A;
+    -fx-prompt-text-fill: #94A3B8;
+    -fx-highlight-fill: rgba(124, 58, 237, 0.25);
+    -fx-highlight-text-fill: #0F172A;
+}
+
+.session-description-area .content {
+    -fx-background-color: #FFFFFF;
+}
+
+.session-description-area .text {
+    -fx-fill: #0F172A;
+}
+
+.session-description-area:focused {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #7C3AED;
+}
+
+.session-description-area:focused .content {
+    -fx-background-color: #FFFFFF;
+}
+
+.session-field-tip {
+    -fx-font-size: 11px;
+    -fx-text-fill: #64748B;
+}
+
+.session-field-error {
+    -fx-font-size: 11px;
+    -fx-text-fill: #E11D48;
+    -fx-padding: 2 0 0 0;
+}
+
+.field-invalid {
+    -fx-border-color: #E11D48;
+    -fx-border-width: 1.4;
+    -fx-effect: dropshadow(gaussian, rgba(225,29,72,0.18), 8, 0, 0, 0);
+}
+
+.session-list-row {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #E2E8F0;
+}
+
+.session-list-row:hover {
+    -fx-background-color: #F8FAFC;
+    -fx-border-color: #CBD5E1;
+}
+
+.session-item-icon-box {
+    -fx-background-color: linear-gradient(to bottom right, rgba(124,58,237,0.14), rgba(99,102,241,0.10));
+    -fx-border-color: rgba(124,58,237,0.24);
+}
+
+.session-item-icon-text {
+    -fx-text-fill: #6D28D9;
+}
+
+.session-item-title {
+    -fx-text-fill: #0F172A;
+}
+
+.session-item-type {
+    -fx-text-fill: #1D4ED8;
+}
+
+.session-item-date,
+.session-item-description,
+.session-field-label,
+.session-toolbar-label {
+    -fx-text-fill: #64748B;
+}
+
+.session-item-divider {
+    -fx-background-color: #E2E8F0;
+}
+
+/* List/table selected states */
+.list-cell:filled:hover {
+    -fx-background-color: #F1F5F9;
+}
+
+.list-cell:filled:selected {
+    -fx-background-color: rgba(124, 58, 237, 0.14);
+    -fx-text-fill: #6D28D9;
+}
+
+.table-view .column-header {
+    -fx-background-color: #EEF2FF;
+    -fx-border-color: transparent transparent #CBD5E1 transparent;
+}
+
+.table-view .column-header .label {
+    -fx-text-fill: #475569;
+}
+
+.table-row-cell {
+    -fx-border-color: transparent transparent #E2E8F0 transparent;
+}
+
+.table-row-cell:hover {
+    -fx-background-color: #F8FAFC;
+}
+
+.table-row-cell:selected {
+    -fx-background-color: rgba(124, 58, 237, 0.12);
+}
+
+/* Planning cards in light mode */
+.planning-calendar-entry-card {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #CBD5E1;
+}
+
+.planning-calendar-entry-card:hover {
+    -fx-background-color: #F8FAFC;
+    -fx-border-color: #A78BFA;
+}
+
+.planning-upcoming-item-card {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #E2E8F0;
+    -fx-border-width: 1;
+    -fx-border-radius: 14;
+    -fx-background-radius: 14;
+}
+
+.planning-upcoming-item-title {
+    -fx-text-fill: #0F172A;
+}
+
+.planning-upcoming-item-time {
+    -fx-text-fill: #64748B;
+}
+

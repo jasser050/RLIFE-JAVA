@@ -6,12 +6,12 @@
 <?import javafx.geometry.Insets?>
 <?import org.kordamp.ikonli.javafx.FontIcon?>
 
-<VBox xmlns="http://javafx.com/javafx/21"
+<VBox xmlns="http://javafx.com/javafx/17"
       xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="com.studyflow.controllers.RegisterController"
       styleClass="app-container">
 
-    <!-- ══════════ TITLE BAR ══════════ -->
+    <!-- â•â•â•â•â•â•â•â•â•â• TITLE BAR â•â•â•â•â•â•â•â•â•â• -->
     <HBox styleClass="title-bar" alignment="CENTER_LEFT" spacing="0"
           onMousePressed="#onDragStart" onMouseDragged="#onDragged">
         <HBox alignment="CENTER_LEFT" spacing="10" HBox.hgrow="ALWAYS">
@@ -20,7 +20,7 @@
                 <FontIcon iconLiteral="fth-layers" iconSize="14" iconColor="white"/>
             </StackPane>
             <Label text="RLife" styleClass="title-bar-title"/>
-            <Label text="—" style="-fx-text-fill: #475569;"/>
+            <Label text="â€”" style="-fx-text-fill: #475569;"/>
             <Label text="Create Account" styleClass="title-bar-subtitle"/>
         </HBox>
         <HBox alignment="CENTER_RIGHT" spacing="0" styleClass="window-controls">
@@ -36,10 +36,10 @@
         </HBox>
     </HBox>
 
-    <!-- ══════════ CONTENT ══════════ -->
+    <!-- â•â•â•â•â•â•â•â•â•â• CONTENT â•â•â•â•â•â•â•â•â•â• -->
     <HBox VBox.vgrow="ALWAYS" spacing="0">
 
-        <!-- ─── LEFT: Form ─── -->
+        <!-- â”€â”€â”€ LEFT: Form â”€â”€â”€ -->
         <VBox styleClass="auth-left-panel" HBox.hgrow="SOMETIMES" minWidth="440" maxWidth="480">
             <ScrollPane fitToWidth="true" hbarPolicy="NEVER" VBox.vgrow="ALWAYS" styleClass="auth-scroll">
                 <VBox spacing="0" alignment="TOP_CENTER">
@@ -113,20 +113,20 @@
                     <VBox.margin><Insets bottom="10"/></VBox.margin>
 
                     <HBox alignment="CENTER">
-                        <Button text="← Back to home" styleClass="auth-link-sm" onAction="#goToLanding"/>
+                        <Button text="â† Back to home" styleClass="auth-link-sm" onAction="#goToLanding"/>
                     </HBox>
                 </VBox>
             </ScrollPane>
         </VBox>
 
-        <!-- ─── RIGHT: Spline 3D Robot ─── -->
+        <!-- â”€â”€â”€ RIGHT: Spline 3D Robot â”€â”€â”€ -->
         <StackPane styleClass="auth-right-panel" HBox.hgrow="ALWAYS">
 
             <WebView fx:id="splineView"/>
 
             <VBox alignment="TOP_CENTER" pickOnBounds="false">
                 <padding><Insets top="32"/></padding>
-                <Label text="✦  Join 50,000+ students worldwide" styleClass="auth-award-badge"/>
+                <Label text="âœ¦  Join 50,000+ students worldwide" styleClass="auth-award-badge"/>
             </VBox>
 
             <VBox alignment="BOTTOM_CENTER" spacing="14" pickOnBounds="false">
@@ -151,3 +151,4 @@
         </StackPane>
     </HBox>
 </VBox>
+
