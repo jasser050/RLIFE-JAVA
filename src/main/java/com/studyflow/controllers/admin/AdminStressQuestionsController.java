@@ -19,15 +19,14 @@ import javafx.fxml.Initializable;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
-import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
-import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.control.TextFormatter;
 import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
@@ -41,11 +40,16 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.stream.Collectors;
 
 public class AdminStressQuestionsController implements Initializable {
+    private static final int MIN_TEXT_LENGTH = 5;
+    private static final int MAX_TEXT_LENGTH = 1000;
+    private static final String QUESTION_VALIDATION_RULE = "Condition: la question est obligatoire, minimum 5 caractères et maximum 1000 caractères.";
+    private static final String INVALID_FIELD_STYLE = "-fx-border-color: #ef4444; -fx-border-width: 1.6; -fx-border-radius: 8;";
+    private static final long DELETE_CONFIRM_WINDOW_MS = 5000;
+
 
     @FXML private ScrollPane listSection;
     @FXML private ScrollPane formSection;
@@ -71,16 +75,20 @@ public class AdminStressQuestionsController implements Initializable {
     @FXML private Label detailStatusLabel;
     @FXML private Label detailQuestionLabel;
     @FXML private Label detailUpdatedLabel;
+    @FXML private Label notificationLabel;
 
     private final ServiceQuestionStress service = new ServiceQuestionStress();
 
     private QuestionStress editingQuestion;
     private QuestionStress detailQuestion;
     private boolean reorderEnabled;
+    private Integer pendingDeleteQuestionId;
+    private long pendingDeleteDeadlineMs;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         questionsListBox.setSpacing(10);
+        enforceTextLimit(questionTextArea, MAX_TEXT_LENGTH);
         initCombos();
         addSearchListener();
         loadQuestions();
@@ -359,6 +367,7 @@ public class AdminStressQuestionsController implements Initializable {
         saveButton.setText("Update Question");
         questionTextArea.setText(q.getQuestionText() == null ? "" : q.getQuestionText());
         activeCheckBox.setSelected(q.isActive());
+        markFieldValid(questionTextArea);
         hideFormError();
         showSection(formSection);
     }
@@ -368,9 +377,21 @@ public class AdminStressQuestionsController implements Initializable {
         hideFormError();
         String text = questionTextArea.getText() == null ? "" : questionTextArea.getText().trim();
         if (text.isEmpty()) {
-            showFormError("Question text is required.");
+            markFieldInvalid(questionTextArea);
+            showFormError(QUESTION_VALIDATION_RULE);
             return;
         }
+        if (text.length() < MIN_TEXT_LENGTH) {
+            markFieldInvalid(questionTextArea);
+            showFormError(QUESTION_VALIDATION_RULE);
+            return;
+        }
+        if (text.length() > MAX_TEXT_LENGTH) {
+            markFieldInvalid(questionTextArea);
+            showFormError(QUESTION_VALIDATION_RULE);
+            return;
+        }
+        markFieldValid(questionTextArea);
 
         boolean active = activeCheckBox.isSelected();
 
@@ -381,13 +402,13 @@ public class AdminStressQuestionsController implements Initializable {
             newQ.setActive(active);
             newQ.setCreatedAt(LocalDateTime.now());
             service.save(newQ);
-            showAlert(Alert.AlertType.INFORMATION, "Question created successfully!");
+            showNotification("Question créée avec succès.", "success");
         } else {
             editingQuestion.setQuestionText(text);
             editingQuestion.setActive(active);
             editingQuestion.setUpdatedAt(LocalDateTime.now());
             service.update(editingQuestion);
-            showAlert(Alert.AlertType.INFORMATION, "Question updated successfully!");
+            showNotification("Question mise à jour avec succès.", "success");
         }
         handleBackToList();
     }
@@ -426,16 +447,17 @@ public class AdminStressQuestionsController implements Initializable {
     }
 
     private void handleDelete(QuestionStress q) {
-        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
-        confirm.setTitle("Delete Question");
-        confirm.setHeaderText("Are you sure?");
-        confirm.setContentText("Question #" + q.getQuestionNumber() + " will be permanently deleted.");
-        Optional<ButtonType> result = confirm.showAndWait();
-        if (result.isPresent() && result.get() == ButtonType.OK) {
-            service.delete(q.getId());
-            showAlert(Alert.AlertType.INFORMATION, "Question deleted successfully!");
-            handleBackToList();
+        long now = System.currentTimeMillis();
+        if (pendingDeleteQuestionId == null || pendingDeleteQuestionId != q.getId() || now > pendingDeleteDeadlineMs) {
+            pendingDeleteQuestionId = q.getId();
+            pendingDeleteDeadlineMs = now + DELETE_CONFIRM_WINDOW_MS;
+            showNotification("Cliquez encore sur Delete dans 5 secondes pour confirmer la suppression.", "warning");
+            return;
         }
+        service.delete(q.getId());
+        pendingDeleteQuestionId = null;
+        showNotification("Question supprimée avec succès.", "success");
+        handleBackToList();
     }
 
     @FXML
@@ -450,9 +472,9 @@ public class AdminStressQuestionsController implements Initializable {
         }
         try {
             generatePdf(file, service.findAll());
-            showAlert(Alert.AlertType.INFORMATION, "PDF exported!\n" + file.getAbsolutePath());
+            showNotification("PDF exporté: " + file.getAbsolutePath(), "success");
         } catch (Exception ex) {
-            showAlert(Alert.AlertType.ERROR, "Export failed: " + ex.getMessage());
+            showNotification("Échec export PDF: " + ex.getMessage(), "error");
         }
     }
 
@@ -510,6 +532,7 @@ public class AdminStressQuestionsController implements Initializable {
 
     private void clearForm() {
         questionTextArea.clear();
+        markFieldValid(questionTextArea);
         activeCheckBox.setSelected(false);
     }
 
@@ -524,10 +547,37 @@ public class AdminStressQuestionsController implements Initializable {
         formErrorLabel.setManaged(false);
     }
 
-    private void showAlert(Alert.AlertType type, String message) {
-        Alert alert = new Alert(type);
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
+    private void showNotification(String message, String type) {
+        if (notificationLabel == null) {
+            return;
+        }
+        String background = switch (type) {
+            case "success" -> "#16a34a";
+            case "warning" -> "#d97706";
+            default -> "#dc2626";
+        };
+        notificationLabel.setText(message);
+        notificationLabel.setStyle(
+                "-fx-background-color: " + background + ";" +
+                "-fx-text-fill: white;" +
+                "-fx-padding: 10 14 10 14;" +
+                "-fx-background-radius: 8;"
+        );
+        notificationLabel.setVisible(true);
+        notificationLabel.setManaged(true);
     }
+
+    private void enforceTextLimit(TextArea area, int maxLength) {
+        area.setTextFormatter(new TextFormatter<String>(change ->
+                change.getControlNewText().length() <= maxLength ? change : null));
+    }
+
+    private void markFieldInvalid(TextArea area) {
+        area.setStyle(INVALID_FIELD_STYLE);
+    }
+
+    private void markFieldValid(TextArea area) {
+        area.setStyle("");
+    }
+
 }

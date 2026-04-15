@@ -8,15 +8,14 @@ import javafx.fxml.Initializable;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
-import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
-import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.control.TextFormatter;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
@@ -27,8 +26,21 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.ResourceBundle;
+import java.util.regex.Pattern;
 
 public class AdminRecommendationsController implements Initializable {
+    private static final int TITLE_MIN_LENGTH = 10;
+    private static final int TITLE_MAX_LENGTH = 100;
+    private static final int CONTENT_MIN_LENGTH = 11;
+    private static final Pattern TITLE_ONLY_DIGITS_PATTERN = Pattern.compile("^\\d+$");
+    private static final String TITLE_REQUIRED_MESSAGE = "Le titre est obligatoire.";
+    private static final String TITLE_MIN_MESSAGE = "Le titre doit contenir au minimum 10 caractères.";
+    private static final String TITLE_MAX_MESSAGE = "Le titre ne doit pas dépasser 100 caractères.";
+    private static final String TITLE_DIGITS_ONLY_MESSAGE = "Le titre ne peut pas contenir uniquement des chiffres.";
+    private static final String CONTENT_REQUIRED_MESSAGE = "Le contenu est obligatoire.";
+    private static final String CONTENT_MIN_MESSAGE = "Le contenu doit contenir plus de 10 caractères.";
+    private static final String INVALID_FIELD_STYLE = "-fx-border-color: #ef4444; -fx-border-width: 1.6; -fx-border-radius: 8;";
+    private static final long DELETE_CONFIRM_WINDOW_MS = 5000;
 
     @FXML private ScrollPane listSection;
     @FXML private ScrollPane formSection;
@@ -51,10 +63,13 @@ public class AdminRecommendationsController implements Initializable {
     @FXML private Label detailContentLabel;
     @FXML private Label detailStatusLabel;
     @FXML private Label detailUpdatedLabel;
+    @FXML private Label notificationLabel;
 
     private ServiceRecommendationStress service;
     private RecommendationStress editingItem;
     private RecommendationStress selectedItem;
+    private Integer pendingDeleteRecommendationId;
+    private long pendingDeleteDeadlineMs;
     private final DateTimeFormatter shortDateFormatter = DateTimeFormatter.ofPattern("MMM d, yyyy");
     private final DateTimeFormatter longDateFormatter = DateTimeFormatter.ofPattern("MMMM d, yyyy 'at' HH:mm");
 
@@ -62,6 +77,7 @@ public class AdminRecommendationsController implements Initializable {
     public void initialize(URL location, ResourceBundle resources) {
         service = new ServiceRecommendationStress();
         recommendationsListBox.setSpacing(10);
+        enforceTextLimit(titleField, TITLE_MAX_LENGTH);
         levelCombo.setItems(FXCollections.observableArrayList("low", "medium", "high"));
         levelCombo.setValue("low");
         showListMode();
@@ -147,6 +163,8 @@ public class AdminRecommendationsController implements Initializable {
         saveButton.setText("Create Recommendation");
         titleField.clear();
         contentArea.clear();
+        markFieldValid(titleField);
+        markFieldValid(contentArea);
         levelCombo.setValue("low");
         activeCheckBox.setSelected(true);
         hideFormError();
@@ -159,6 +177,8 @@ public class AdminRecommendationsController implements Initializable {
         saveButton.setText("Update Recommendation");
         titleField.setText(item.getTitle());
         contentArea.setText(item.getContent());
+        markFieldValid(titleField);
+        markFieldValid(contentArea);
         levelCombo.setValue(item.getLevel());
         activeCheckBox.setSelected(item.isActive());
         hideFormError();
@@ -169,11 +189,11 @@ public class AdminRecommendationsController implements Initializable {
         try {
             selectedItem = service.findById(item.getId());
             if (selectedItem == null) {
-                showAlert(Alert.AlertType.WARNING, "Recommendation", "The selected recommendation could not be reloaded.");
+                showNotification("La recommandation sélectionnée est introuvable.", "warning");
                 return;
             }
         } catch (RuntimeException e) {
-            showAlert(Alert.AlertType.ERROR, "Recommendation", e.getMessage() == null ? "Failed to load recommendation details." : e.getMessage());
+            showNotification(e.getMessage() == null ? "Échec du chargement de la recommandation." : e.getMessage(), "error");
             return;
         }
 
@@ -198,13 +218,43 @@ public class AdminRecommendationsController implements Initializable {
         String level = levelCombo.getValue();
 
         if (title.isBlank()) {
-            showFormError("Title is required.");
+            markFieldInvalid(titleField);
+            markFieldValid(contentArea);
+            showFormError(TITLE_REQUIRED_MESSAGE);
+            return;
+        }
+        if (title.length() < TITLE_MIN_LENGTH) {
+            markFieldInvalid(titleField);
+            markFieldValid(contentArea);
+            showFormError(TITLE_MIN_MESSAGE);
+            return;
+        }
+        if (title.length() > TITLE_MAX_LENGTH) {
+            markFieldInvalid(titleField);
+            markFieldValid(contentArea);
+            showFormError(TITLE_MAX_MESSAGE);
+            return;
+        }
+        if (TITLE_ONLY_DIGITS_PATTERN.matcher(title).matches()) {
+            markFieldInvalid(titleField);
+            markFieldValid(contentArea);
+            showFormError(TITLE_DIGITS_ONLY_MESSAGE);
             return;
         }
         if (content.isBlank()) {
-            showFormError("Content is required.");
+            markFieldValid(titleField);
+            markFieldInvalid(contentArea);
+            showFormError(CONTENT_REQUIRED_MESSAGE);
             return;
         }
+        if (content.length() < CONTENT_MIN_LENGTH) {
+            markFieldValid(titleField);
+            markFieldInvalid(contentArea);
+            showFormError(CONTENT_MIN_MESSAGE);
+            return;
+        }
+        markFieldValid(titleField);
+        markFieldValid(contentArea);
         if (level == null || level.isBlank()) {
             showFormError("Stress level is required.");
             return;
@@ -232,20 +282,22 @@ public class AdminRecommendationsController implements Initializable {
     }
 
     private void deleteRecommendation(RecommendationStress item) {
-        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
-        confirm.setHeaderText("Delete Recommendation");
-        confirm.setContentText("Are you sure you want to delete this recommendation?");
-        confirm.showAndWait().ifPresent(result -> {
-            if (result == ButtonType.OK) {
-                try {
-                    service.delete(item.getId());
-                    loadRecommendations();
-                    showListMode();
-                } catch (RuntimeException e) {
-                    showAlert(Alert.AlertType.ERROR, "Delete failed", e.getMessage() == null ? "Failed to delete recommendation." : e.getMessage());
-                }
-            }
-        });
+        long now = System.currentTimeMillis();
+        if (pendingDeleteRecommendationId == null || pendingDeleteRecommendationId != item.getId() || now > pendingDeleteDeadlineMs) {
+            pendingDeleteRecommendationId = item.getId();
+            pendingDeleteDeadlineMs = now + DELETE_CONFIRM_WINDOW_MS;
+            showNotification("Cliquez encore sur Delete dans 5 secondes pour confirmer la suppression.", "warning");
+            return;
+        }
+        try {
+            service.delete(item.getId());
+            pendingDeleteRecommendationId = null;
+            showNotification("Recommandation supprimée avec succès.", "success");
+            loadRecommendations();
+            showListMode();
+        } catch (RuntimeException e) {
+            showNotification(e.getMessage() == null ? "Échec de suppression." : e.getMessage(), "error");
+        }
     }
 
     @FXML private void handleBackToList() { showListMode(); loadRecommendations(); }
@@ -336,10 +388,45 @@ public class AdminRecommendationsController implements Initializable {
         formErrorLabel.setManaged(false);
     }
 
-    private void showAlert(Alert.AlertType type, String title, String message) {
-        Alert alert = new Alert(type);
-        alert.setHeaderText(title);
-        alert.setContentText(message);
-        alert.showAndWait();
+    private void showNotification(String message, String type) {
+        if (notificationLabel == null) {
+            return;
+        }
+        String background = switch (type) {
+            case "success" -> "#16a34a";
+            case "warning" -> "#d97706";
+            default -> "#dc2626";
+        };
+        notificationLabel.setText(message);
+        notificationLabel.setStyle(
+                "-fx-background-color: " + background + ";" +
+                "-fx-text-fill: white;" +
+                "-fx-padding: 10 14 10 14;" +
+                "-fx-background-radius: 8;"
+        );
+        notificationLabel.setVisible(true);
+        notificationLabel.setManaged(true);
     }
+
+    private void enforceTextLimit(TextField field, int maxLength) {
+        field.setTextFormatter(new TextFormatter<String>(change ->
+                change.getControlNewText().length() <= maxLength ? change : null));
+    }
+
+    private void markFieldInvalid(TextField field) {
+        field.setStyle(INVALID_FIELD_STYLE);
+    }
+
+    private void markFieldInvalid(TextArea area) {
+        area.setStyle(INVALID_FIELD_STYLE);
+    }
+
+    private void markFieldValid(TextField field) {
+        field.setStyle("");
+    }
+
+    private void markFieldValid(TextArea area) {
+        area.setStyle("");
+    }
+
 }
