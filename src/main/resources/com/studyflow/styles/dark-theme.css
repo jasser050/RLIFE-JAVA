@@ -2141,21 +2141,79 @@
     -fx-border-color: #2d3d61;
     -fx-border-width: 1.5;
     -fx-font-size: 14px;
+    -fx-text-fill: #E2E8F0;
+    -fx-font-weight: 700;
 }
 .wellbeing-choice-card.selected {
     -fx-border-color: #22C55E;
     -fx-background-color: rgba(34,197,94,0.16);
 }
+.wellbeing-choice-card.mood-great {
+    -fx-text-fill: #22C55E;
+}
+.wellbeing-choice-card.mood-good {
+    -fx-text-fill: #38BDF8;
+}
+.wellbeing-choice-card.mood-okay {
+    -fx-text-fill: #FBBF24;
+}
+.wellbeing-choice-card.mood-stressed {
+    -fx-text-fill: #FB7185;
+}
+.wellbeing-choice-card.mood-tired {
+    -fx-text-fill: #A78BFA;
+}
+.wellbeing-choice-card.selected.mood-great {
+    -fx-text-fill: #4ADE80;
+}
+.wellbeing-choice-card.selected.mood-good {
+    -fx-text-fill: #7DD3FC;
+}
+.wellbeing-choice-card.selected.mood-okay {
+    -fx-text-fill: #FCD34D;
+}
+.wellbeing-choice-card.selected.mood-stressed {
+    -fx-text-fill: #FDA4AF;
+}
+.wellbeing-choice-card.selected.mood-tired {
+    -fx-text-fill: #C4B5FD;
+}
 .wellbeing-sleep-card {
-    -fx-pref-width: 82;
-    -fx-pref-height: 54;
+    -fx-min-width: 104;
+    -fx-pref-width: 118;
+    -fx-pref-height: 60;
     -fx-background-color: linear-gradient(to bottom, #151E33, #18243d);
     -fx-border-color: #2d3d61;
     -fx-border-width: 1.5;
+    -fx-alignment: center;
+    -fx-font-size: 12px;
+    -fx-font-weight: 700;
 }
 .wellbeing-sleep-card.selected {
     -fx-border-color: #60A5FA;
     -fx-background-color: rgba(96,165,250,0.16);
+}
+
+/* Wellbeing - Notes textarea visual fix */
+.wellbeing-notes-area {
+    -fx-background-color: #111b31;
+    -fx-control-inner-background: #111b31;
+    -fx-text-fill: #EAF2FF;
+    -fx-prompt-text-fill: #7FA0C8;
+    -fx-border-color: #2B3D63;
+    -fx-border-width: 1.4;
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
+}
+
+.wellbeing-notes-area .content {
+    -fx-background-color: #111b31;
+}
+
+.wellbeing-notes-area:focused {
+    -fx-background-color: #101a2d;
+    -fx-control-inner-background: #101a2d;
+    -fx-border-color: #5D7CB8;
 }
 .wellbeing-mood-card {
     -fx-background-color: linear-gradient(to bottom, #141e33, #17243b);
@@ -3044,5 +3102,219 @@
 .reco-actions .button {
     -fx-padding: 6 10;
     -fx-font-size: 12px;
+    -fx-font-weight: 700;
+}
+
+/* ============================================
+   VIBRANT COLOR BOOST (non-breaking overrides)
+   Keeps layout intact, amplifies color energy
+   ============================================ */
+
+* {
+    -fx-primary-400: #9B7BFF;
+    -fx-primary-500: #7C4DFF;
+    -fx-primary-600: #6A3DFF;
+    -fx-success-500: #00C389;
+    -fx-warning-500: #FFB020;
+    -fx-danger-500: #FF4D6D;
+    -fx-accent-500: #FF7A18;
+}
+
+.root,
+.main-content,
+.content-area {
+    -fx-background-color: linear-gradient(to bottom right, #060A17, #0C1530);
+}
+
+.sidebar,
+.topbar {
+    -fx-background-color: #111B33;
+    -fx-border-color: rgba(124, 77, 255, 0.20);
+}
+
+.nav-button:hover {
+    -fx-background-color: rgba(124, 77, 255, 0.18);
+    -fx-text-fill: #F8F7FF;
+}
+
+.nav-button.active {
+    -fx-background-color: rgba(124, 77, 255, 0.28);
+    -fx-text-fill: #DCD1FF;
+}
+
+.nav-button.active .ikonli-font-icon {
+    -fx-icon-color: #C8B7FF;
+}
+
+.card,
+.stat-card {
+    -fx-background-color: linear-gradient(to bottom right, rgba(17, 27, 51, 0.96), rgba(22, 32, 60, 0.92));
+    -fx-border-color: rgba(124, 77, 255, 0.22);
+}
+
+.card:hover,
+.stat-card:hover {
+    -fx-border-color: rgba(124, 77, 255, 0.48);
+}
+
+.card-header {
+    -fx-border-color: rgba(0, 195, 137, 0.55);
+}
+
+.btn-primary {
+    -fx-background-color: linear-gradient(to bottom right, #7C4DFF, #FF4DA6);
+    -fx-text-fill: white;
+}
+
+.btn-primary:hover {
+    -fx-background-color: linear-gradient(to bottom right, #8E63FF, #FF62B2);
+}
+
+.btn-secondary {
+    -fx-background-color: #243354;
+    -fx-text-fill: #F1F5F9;
+}
+
+.btn-secondary:hover {
+    -fx-background-color: #2B3D64;
+}
+
+.badge.primary {
+    -fx-background-color: rgba(124, 77, 255, 0.28);
+    -fx-text-fill: #E1D9FF;
+}
+
+.badge.success {
+    -fx-background-color: rgba(0, 195, 137, 0.24);
+    -fx-text-fill: #8DF2D0;
+}
+
+.badge.warning {
+    -fx-background-color: rgba(255, 176, 32, 0.24);
+    -fx-text-fill: #FFD57A;
+}
+
+.badge.danger {
+    -fx-background-color: rgba(255, 77, 109, 0.24);
+    -fx-text-fill: #FFC0CC;
+}
+
+.search-field:focused,
+.text-field:focused,
+.text-area:focused {
+    -fx-border-color: #7C4DFF;
+}
+
+.progress-bar.primary > .bar {
+    -fx-background-color: linear-gradient(to right, #7C4DFF, #FF4DA6);
+}
+
+.progress-bar.success > .bar {
+    -fx-background-color: linear-gradient(to right, #00C389, #35D8A2);
+}
+
+.progress-bar.warning > .bar {
+    -fx-background-color: linear-gradient(to right, #FF9F1A, #FFD166);
+}
+
+.progress-bar.danger > .bar {
+    -fx-background-color: linear-gradient(to right, #FF4D6D, #FF8DA1);
+}
+
+.default-color0.chart-series-line,
+.default-color0.chart-bar,
+.default-color0.chart-pie {
+    -fx-stroke: #7C4DFF;
+    -fx-bar-fill: #7C4DFF;
+    -fx-pie-color: #7C4DFF;
+}
+
+.default-color1.chart-series-line,
+.default-color1.chart-bar,
+.default-color1.chart-pie {
+    -fx-stroke: #00C389;
+    -fx-bar-fill: #00C389;
+    -fx-pie-color: #00C389;
+}
+
+.default-color2.chart-series-line,
+.default-color2.chart-bar,
+.default-color2.chart-pie {
+    -fx-stroke: #FF7A18;
+    -fx-bar-fill: #FF7A18;
+    -fx-pie-color: #FF7A18;
+}
+
+.default-color3.chart-pie {
+    -fx-pie-color: #FFB020;
+}
+
+.default-color4.chart-pie {
+    -fx-pie-color: #FF4D6D;
+}
+
+/* ============================================
+   WELLBEING MOOD CARDS (emoji vibrant style)
+   ============================================ */
+
+.wellbeing-choice-card {
+    -fx-min-width: 210;
+    -fx-pref-width: 240;
+    -fx-pref-height: 92;
+    -fx-background-color: linear-gradient(to bottom, #142449, #172947);
+    -fx-border-color: #2F4C82;
+    -fx-border-width: 1.6;
+    -fx-border-radius: 14;
+    -fx-background-radius: 14;
+    -fx-alignment: center;
+    -fx-padding: 10 8;
+    -fx-cursor: hand;
+}
+
+.wellbeing-choice-card:hover {
+    -fx-background-color: linear-gradient(to bottom, #1A2E59, #1C345D);
+    -fx-border-color: #3E63A8;
+}
+
+.wellbeing-choice-card.selected {
+    -fx-background-color: linear-gradient(to bottom, rgba(16, 110, 95, 0.78), rgba(12, 86, 77, 0.86));
+    -fx-border-color: #00D084;
+    -fx-effect: dropshadow(gaussian, rgba(0, 208, 132, 0.22), 16, 0, 0, 0);
+}
+
+.wellbeing-choice-card.mood-great.selected {
+    -fx-border-color: #22D3A6;
+}
+
+.wellbeing-choice-card.mood-good.selected {
+    -fx-border-color: #00D084;
+}
+
+.wellbeing-choice-card.mood-okay.selected {
+    -fx-border-color: #FBBF24;
+    -fx-background-color: linear-gradient(to bottom, rgba(113, 87, 16, 0.78), rgba(90, 69, 12, 0.86));
+    -fx-effect: dropshadow(gaussian, rgba(251, 191, 36, 0.22), 16, 0, 0, 0);
+}
+
+.wellbeing-choice-card.mood-stressed.selected {
+    -fx-border-color: #FB7185;
+    -fx-background-color: linear-gradient(to bottom, rgba(103, 46, 61, 0.80), rgba(83, 38, 50, 0.88));
+    -fx-effect: dropshadow(gaussian, rgba(251, 113, 133, 0.22), 16, 0, 0, 0);
+}
+
+.wellbeing-choice-card.mood-tired.selected {
+    -fx-border-color: #A78BFA;
+    -fx-background-color: linear-gradient(to bottom, rgba(70, 58, 105, 0.80), rgba(58, 47, 90, 0.88));
+    -fx-effect: dropshadow(gaussian, rgba(167, 139, 250, 0.22), 16, 0, 0, 0);
+}
+
+.mood-choice-emoji {
+    -fx-font-size: 29px;
+    -fx-font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", "Segoe UI Symbol";
+}
+
+.mood-choice-label {
+    -fx-text-fill: #F8FAFC;
+    -fx-font-size: 20px;
     -fx-font-weight: 700;
 }

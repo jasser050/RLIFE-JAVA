@@ -1,5 +1,6 @@
 package com.studyflow;
 
+import com.studyflow.api.WellbeingRecommendationsApiServer;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -18,6 +19,7 @@ public class App extends Application {
 
     private static Scene scene;
     private static Stage primaryStage;
+    private static final WellbeingRecommendationsApiServer recommendationsApiServer = new WellbeingRecommendationsApiServer();
 
     @Override
     public void start(Stage stage) throws IOException {
@@ -42,6 +44,11 @@ public class App extends Application {
 
         // Show the stage
         stage.show();
+
+        // Start local recommendations API
+        if (!recommendationsApiServer.start(8085)) {
+            System.err.println("[Warning] Recommendations API could not start on port 8085. The UI is running normally.");
+        }
     }
 
     /**
@@ -75,5 +82,10 @@ public class App extends Application {
 
     public static void main(String[] args) {
         launch(args);
+    }
+
+    @Override
+    public void stop() {
+        recommendationsApiServer.stop();
     }
 }

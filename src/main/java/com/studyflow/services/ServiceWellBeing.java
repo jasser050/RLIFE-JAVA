@@ -24,6 +24,9 @@ public class ServiceWellBeing implements IService<WellBeing> {
 
     @Override
     public void add(WellBeing wellBeing) {
+        if (wellBeing.getUserId() == null) {
+            throw new RuntimeException("User is required for wellbeing check-in.");
+        }
         String sql = """
                 INSERT INTO well_being
                 (entry_date_well, mood_well, stress_level_well, energy_level_well, sleep_hours_well, note_well, created_at_well, user_id)
@@ -55,11 +58,14 @@ public class ServiceWellBeing implements IService<WellBeing> {
 
     @Override
     public void update(WellBeing wellBeing) {
+        if (wellBeing.getUserId() == null) {
+            throw new RuntimeException("User is required for wellbeing update.");
+        }
         String sql = """
                 UPDATE well_being
                 SET entry_date_well = ?, mood_well = ?, stress_level_well = ?, energy_level_well = ?, sleep_hours_well = ?,
                     note_well = ?, updated_at_well = ?, user_id = ?
-                WHERE id = ?
+                WHERE id = ? AND user_id = ?
                 """;
         try (PreparedStatement pstm = cnx.prepareStatement(sql)) {
             pstm.setTimestamp(1, Timestamp.valueOf(wellBeing.getEntryDate()));
@@ -75,7 +81,11 @@ public class ServiceWellBeing implements IService<WellBeing> {
                 pstm.setNull(8, java.sql.Types.INTEGER);
             }
             pstm.setInt(9, wellBeing.getId());
-            pstm.executeUpdate();
+            pstm.setInt(10, wellBeing.getUserId());
+            int affectedRows = pstm.executeUpdate();
+            if (affectedRows == 0) {
+                throw new RuntimeException("Check-in not found for current user.");
+            }
         } catch (SQLException e) {
             throw new RuntimeException("Failed to update wellbeing check-in", e);
         }
@@ -83,9 +93,16 @@ public class ServiceWellBeing implements IService<WellBeing> {
 
     @Override
     public void delete(WellBeing wellBeing) {
-        try (PreparedStatement pstm = cnx.prepareStatement("DELETE FROM well_being WHERE id = ?")) {
+        if (wellBeing.getUserId() == null) {
+            throw new RuntimeException("User is required for wellbeing delete.");
+        }
+        try (PreparedStatement pstm = cnx.prepareStatement("DELETE FROM well_being WHERE id = ? AND user_id = ?")) {
             pstm.setInt(1, wellBeing.getId());
-            pstm.executeUpdate();
+            pstm.setInt(2, wellBeing.getUserId());
+            int affectedRows = pstm.executeUpdate();
+            if (affectedRows == 0) {
+                throw new RuntimeException("Check-in not found for current user.");
+            }
         } catch (SQLException e) {
             throw new RuntimeException("Failed to delete wellbeing check-in", e);
         }
@@ -93,22 +110,23 @@ public class ServiceWellBeing implements IService<WellBeing> {
 
     @Override
     public List<WellBeing> getAll() {
-        return findAllForUser(null);
+        return new ArrayList<>();
     }
 
     public List<WellBeing> findAllForUser(Integer userId) {
+        if (userId == null) {
+            return new ArrayList<>();
+        }
         String sql = """
                 SELECT id, entry_date_well, mood_well, stress_level_well, energy_level_well, sleep_hours_well,
                        note_well, created_at_well, updated_at_well, user_id
                 FROM well_being
-                %s
+                WHERE user_id = ?
                 ORDER BY entry_date_well DESC
-                """.formatted(userId == null ? "" : "WHERE user_id = ?");
+                """;
 
         try (PreparedStatement pstm = cnx.prepareStatement(sql)) {
-            if (userId != null) {
-                pstm.setInt(1, userId);
-            }
+            pstm.setInt(1, userId);
             ResultSet rs = pstm.executeQuery();
             List<WellBeing> items = new ArrayList<>();
             while (rs.next()) {

@@ -22,7 +22,7 @@ public class ServiceQuestionStress {
 
     private String tableName;
     private String idColumn;
-    private String numberColumn;
+    private String positionColumn;
     private String textColumn;
     private String activeColumn;
     private String createdColumn;
@@ -44,7 +44,7 @@ public class ServiceQuestionStress {
         List<QuestionStress> list = new ArrayList<>();
         String sql = """
                 SELECT %s AS id,
-                       %s AS question_number,
+                       %s AS position,
                        %s AS question_text,
                        %s AS is_active,
                        %s AS created_at,
@@ -52,7 +52,7 @@ public class ServiceQuestionStress {
                 FROM %s
                 """.formatted(
                 q(idColumn),
-                q(numberColumn),
+                q(positionColumn),
                 q(textColumn),
                 q(activeColumn),
                 nullableColumn(createdColumn),
@@ -62,11 +62,9 @@ public class ServiceQuestionStress {
 
         try (PreparedStatement ps = cnx.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
-
             while (rs.next()) {
                 list.add(mapRow(rs));
             }
-
         } catch (SQLException e) {
             System.err.println("[ServiceQuestionStress] findAll error: " + e.getMessage());
         }
@@ -82,7 +80,7 @@ public class ServiceQuestionStress {
 
         String sql = """
                 SELECT %s AS id,
-                       %s AS question_number,
+                       %s AS position,
                        %s AS question_text,
                        %s AS is_active,
                        %s AS created_at,
@@ -91,7 +89,7 @@ public class ServiceQuestionStress {
                 WHERE %s = ?
                 """.formatted(
                 q(idColumn),
-                q(numberColumn),
+                q(positionColumn),
                 q(textColumn),
                 q(activeColumn),
                 nullableColumn(createdColumn),
@@ -120,16 +118,20 @@ public class ServiceQuestionStress {
             return;
         }
 
+        if (question.getPosition() <= 0) {
+            question.setPosition(nextPosition());
+        }
+
         boolean hasCreated = createdColumn != null;
         String sql = hasCreated
                 ? "INSERT INTO %s (%s, %s, %s, %s) VALUES (?, ?, ?, ?)".formatted(
-                        q(tableName), q(numberColumn), q(textColumn), q(activeColumn), q(createdColumn))
+                q(tableName), q(positionColumn), q(textColumn), q(activeColumn), q(createdColumn))
                 : "INSERT INTO %s (%s, %s, %s) VALUES (?, ?, ?)".formatted(
-                        q(tableName), q(numberColumn), q(textColumn), q(activeColumn));
+                q(tableName), q(positionColumn), q(textColumn), q(activeColumn));
 
         try (PreparedStatement ps = cnx.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             int i = 1;
-            ps.setInt(i++, question.getQuestionNumber());
+            ps.setInt(i++, question.getPosition());
             ps.setString(i++, question.getQuestionText());
             ps.setBoolean(i++, question.isActive());
             if (hasCreated) {
@@ -158,13 +160,13 @@ public class ServiceQuestionStress {
         boolean hasUpdated = updatedColumn != null;
         String sql = hasUpdated
                 ? "UPDATE %s SET %s = ?, %s = ?, %s = ?, %s = ? WHERE %s = ?".formatted(
-                        q(tableName), q(numberColumn), q(textColumn), q(activeColumn), q(updatedColumn), q(idColumn))
+                q(tableName), q(positionColumn), q(textColumn), q(activeColumn), q(updatedColumn), q(idColumn))
                 : "UPDATE %s SET %s = ?, %s = ?, %s = ? WHERE %s = ?".formatted(
-                        q(tableName), q(numberColumn), q(textColumn), q(activeColumn), q(idColumn));
+                q(tableName), q(positionColumn), q(textColumn), q(activeColumn), q(idColumn));
 
         try (PreparedStatement ps = cnx.prepareStatement(sql)) {
             int i = 1;
-            ps.setInt(i++, question.getQuestionNumber());
+            ps.setInt(i++, question.getPosition());
             ps.setString(i++, question.getQuestionText());
             ps.setBoolean(i++, question.isActive());
             if (hasUpdated) {
@@ -172,7 +174,6 @@ public class ServiceQuestionStress {
                         question.getUpdatedAt() != null ? question.getUpdatedAt() : LocalDateTime.now()));
             }
             ps.setInt(i, question.getId());
-
             ps.executeUpdate();
         } catch (SQLException e) {
             System.err.println("[ServiceQuestionStress] update error: " + e.getMessage());
@@ -194,10 +195,78 @@ public class ServiceQuestionStress {
         }
     }
 
+    public int nextPosition() {
+        ensureConnectionAvailable();
+        if (!schemaReady()) {
+            return 1;
+        }
+
+        String sql = "SELECT COALESCE(MAX(%s), 0) + 1 AS next_position FROM %s"
+                .formatted(q(positionColumn), q(tableName));
+        try (PreparedStatement ps = cnx.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            if (rs.next()) {
+                return rs.getInt("next_position");
+            }
+        } catch (SQLException e) {
+            System.err.println("[ServiceQuestionStress] nextPosition error: " + e.getMessage());
+        }
+
+        return 1;
+    }
+
+    public void reorderByIds(List<Integer> orderedIds) {
+        ensureConnectionAvailable();
+        if (!schemaReady() || orderedIds == null || orderedIds.isEmpty()) {
+            return;
+        }
+
+        String sql = updatedColumn != null
+                ? "UPDATE %s SET %s = ?, %s = ? WHERE %s = ?"
+                .formatted(q(tableName), q(positionColumn), q(updatedColumn), q(idColumn))
+                : "UPDATE %s SET %s = ? WHERE %s = ?"
+                .formatted(q(tableName), q(positionColumn), q(idColumn));
+
+        boolean previousAutoCommit;
+        try {
+            previousAutoCommit = cnx.getAutoCommit();
+        } catch (SQLException e) {
+            previousAutoCommit = true;
+        }
+
+        try {
+            cnx.setAutoCommit(false);
+            try (PreparedStatement ps = cnx.prepareStatement(sql)) {
+                for (int i = 0; i < orderedIds.size(); i++) {
+                    int index = 1;
+                    ps.setInt(index++, i + 1);
+                    if (updatedColumn != null) {
+                        ps.setTimestamp(index++, Timestamp.valueOf(LocalDateTime.now()));
+                    }
+                    ps.setInt(index, orderedIds.get(i));
+                    ps.addBatch();
+                }
+                ps.executeBatch();
+            }
+            cnx.commit();
+        } catch (SQLException e) {
+            try {
+                cnx.rollback();
+            } catch (SQLException ignored) {
+            }
+            System.err.println("[ServiceQuestionStress] reorderByIds error: " + e.getMessage());
+        } finally {
+            try {
+                cnx.setAutoCommit(previousAutoCommit);
+            } catch (SQLException ignored) {
+            }
+        }
+    }
+
     private QuestionStress mapRow(ResultSet rs) throws SQLException {
         QuestionStress item = new QuestionStress();
         item.setId(rs.getInt("id"));
-        item.setQuestionNumber(rs.getInt("question_number"));
+        item.setPosition(rs.getInt("position"));
         item.setQuestionText(rs.getString("question_text"));
         item.setActive(rs.getBoolean("is_active"));
 
@@ -215,9 +284,9 @@ public class ServiceQuestionStress {
     }
 
     private void resolveSchema() {
-        String[] tableCandidates = {"question", "question_stress"};
+        String[] tableCandidates = {"question_stress", "question"};
         String[] idCandidates = {"id", "id_ques"};
-        String[] numberCandidates = {"question_number_ques", "question_number"};
+        String[] positionCandidates = {"position", "question_number_ques", "question_number"};
         String[] textCandidates = {"question_text_ques", "question_text"};
         String[] activeCandidates = {"is_active_ques", "is_active"};
         String[] createdCandidates = {"created_at_ques", "created_at"};
@@ -230,16 +299,16 @@ public class ServiceQuestionStress {
             }
 
             String id = pick(columns, idCandidates);
-            String number = pick(columns, numberCandidates);
+            String position = pick(columns, positionCandidates);
             String text = pick(columns, textCandidates);
             String active = pick(columns, activeCandidates);
             String created = pick(columns, createdCandidates);
             String updated = pick(columns, updatedCandidates);
 
-            if (id != null && number != null && text != null && active != null) {
+            if (id != null && position != null && text != null && active != null) {
                 tableName = table;
                 idColumn = id;
-                numberColumn = number;
+                positionColumn = position;
                 textColumn = text;
                 activeColumn = active;
                 createdColumn = created;
@@ -248,7 +317,7 @@ public class ServiceQuestionStress {
             }
         }
 
-        System.err.println("[ServiceQuestionStress] No compatible schema found in table question/question_stress.");
+        System.err.println("[ServiceQuestionStress] No compatible schema found in table question_stress/question.");
     }
 
     private Set<String> listColumns(String table) {
@@ -283,7 +352,7 @@ public class ServiceQuestionStress {
     private boolean schemaReady() {
         return tableName != null
                 && idColumn != null
-                && numberColumn != null
+                && positionColumn != null
                 && textColumn != null
                 && activeColumn != null;
     }

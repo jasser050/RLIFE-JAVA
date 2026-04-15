@@ -62,6 +62,26 @@ public class ServiceRecommendationStress {
         }
     }
 
+    public List<RecommendationStress> findAllActive() {
+        ensureConnectionAvailable();
+        String sql = """
+                SELECT id, title, content, level, is_active, created_at, updated_at
+                FROM recommendation_stress
+                WHERE is_active = 1
+                ORDER BY id ASC
+                """;
+        try (PreparedStatement pstm = cnx.prepareStatement(sql)) {
+            ResultSet rs = pstm.executeQuery();
+            List<RecommendationStress> items = new ArrayList<>();
+            while (rs.next()) {
+                items.add(map(rs));
+            }
+            return items;
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to fetch active recommendations", e);
+        }
+    }
+
     public RecommendationStress findById(int id) {
         ensureConnectionAvailable();
         String sql = "SELECT id, title, content, level, is_active, created_at, updated_at FROM recommendation_stress WHERE id = ?";

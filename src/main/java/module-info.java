@@ -6,6 +6,7 @@ module com.studyflow {
     requires org.kordamp.ikonli.feather;
     requires java.sql;
     requires javafx.web;
+    requires jdk.httpserver;
 
     // iText 7 - PDF Export
     requires kernel;

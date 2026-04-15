@@ -47,7 +47,7 @@ public class WellBeing {
     public String getMoodEmoji() {
         return switch (mood == null ? "" : mood.toLowerCase()) {
             case "great" -> "\uD83D\uDE0A";
-            case "good" -> "\uD83D\uDE42";
+            case "good" -> "\uD83D\uDE0A";
             case "okay" -> "\uD83D\uDE10";
             case "stressed" -> "\uD83D\uDE1F";
             default -> "\uD83D\uDE34";

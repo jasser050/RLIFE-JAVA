@@ -2,64 +2,87 @@ package com.studyflow.models;
 
 import java.time.LocalDateTime;
 
-/**
- * Entité QuestionStress — équivalent de App\Entity\QuestionStress (Symfony).
- *
- * Attributs mappés depuis la table question_stress :
- *   id                  → id
- *   question_number_ques → questionNumber
- *   question_text_ques   → questionText
- *   is_active_ques       → isActive
- *   created_at_ques      → createdAt
- *   updated_at_ques      → updatedAt
- */
 public class QuestionStress {
 
-    private int           id;
-    private int           questionNumber;
-    private String        questionText;
-    private boolean       isActive;
+    private int id;
+    private int position;
+    private String questionText;
+    private boolean active;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    // ── Constructeurs ────────────────────────────────────────────────────────
-
-    public QuestionStress() {}
-
-    public QuestionStress(int id, int questionNumber, String questionText,
-                          boolean isActive, LocalDateTime createdAt,
-                          LocalDateTime updatedAt) {
-        this.id             = id;
-        this.questionNumber = questionNumber;
-        this.questionText   = questionText;
-        this.isActive       = isActive;
-        this.createdAt      = createdAt;
-        this.updatedAt      = updatedAt;
+    public QuestionStress() {
     }
 
-    // ── Getters / Setters ────────────────────────────────────────────────────
+    public QuestionStress(int id, int position, String questionText, boolean active,
+                          LocalDateTime createdAt, LocalDateTime updatedAt) {
+        this.id = id;
+        this.position = position;
+        this.questionText = questionText;
+        this.active = active;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
+    }
 
-    public int getId()                          { return id; }
-    public void setId(int id)                   { this.id = id; }
+    public int getId() {
+        return id;
+    }
 
-    public int getQuestionNumber()              { return questionNumber; }
-    public void setQuestionNumber(int n)        { this.questionNumber = n; }
+    public void setId(int id) {
+        this.id = id;
+    }
 
-    public String getQuestionText()             { return questionText; }
-    public void setQuestionText(String t)       { this.questionText = t; }
+    public int getPosition() {
+        return position;
+    }
 
-    public boolean isActive()                   { return isActive; }
-    public void setActive(boolean active)       { this.isActive = active; }
+    public void setPosition(int position) {
+        this.position = position;
+    }
 
-    public LocalDateTime getCreatedAt()         { return createdAt; }
-    public void setCreatedAt(LocalDateTime d)   { this.createdAt = d; }
+    // Compatibility for existing code that still uses "questionNumber"
+    public int getQuestionNumber() {
+        return position;
+    }
 
-    public LocalDateTime getUpdatedAt()         { return updatedAt; }
-    public void setUpdatedAt(LocalDateTime d)   { this.updatedAt = d; }
+    public void setQuestionNumber(int number) {
+        this.position = number;
+    }
+
+    public String getQuestionText() {
+        return questionText;
+    }
+
+    public void setQuestionText(String questionText) {
+        this.questionText = questionText;
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
 
     @Override
     public String toString() {
-        return "QuestionStress{id=" + id + ", number=" + questionNumber +
-                ", active=" + isActive + "}";
+        return "QuestionStress{id=" + id + ", position=" + position + ", active=" + active + "}";
     }
 }

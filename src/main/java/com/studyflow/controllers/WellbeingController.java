@@ -10,6 +10,7 @@ import com.studyflow.services.ServiceQuizStress;
 import com.studyflow.services.ServiceRecommendationStress;
 import com.studyflow.services.ServiceWellBeing;
 import com.studyflow.utils.UserSession;
+import com.studyflow.utils.EmojiUtils;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
@@ -20,9 +21,9 @@ import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.chart.BarChart;
 import javafx.scene.chart.XYChart;
-import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.Control;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
@@ -32,6 +33,7 @@ import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.control.Toggle;
 import javafx.scene.control.ToggleGroup;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -91,7 +93,7 @@ public class WellbeingController implements Initializable {
     @FXML private Button saveButton;
     @FXML private Button cancelEditButton;
     @FXML private HBox statsSection;
-    @FXML private HBox overviewSection;
+    @FXML private VBox overviewSection;
     @FXML private VBox formSection;
     @FXML private VBox historySection;
     @FXML private VBox toolsSection;
@@ -114,7 +116,8 @@ public class WellbeingController implements Initializable {
     @FXML private Label quizResultLevelLabel;
     @FXML private Label quizResultInterpretationLabel;
     @FXML private VBox quizRecommendationsBox;
-
+    @FXML private Label globalMessageLabel;
+    @FXML private Label notesErrorLabel;
     private final ServiceWellBeing serviceWellBeing = new ServiceWellBeing();
     private final ServiceQuestionStress serviceQuestionStress = new ServiceQuestionStress();
     private final ServiceQuizStress serviceQuizStress = new ServiceQuizStress();
@@ -127,6 +130,10 @@ public class WellbeingController implements Initializable {
     private final List<QuestionStress> quizQuestions = new ArrayList<>();
     private final Map<Integer, Integer> quizAnswers = new HashMap<>();
     private int currentQuizIndex = 0;
+    private static final int MIN_NOTE_LENGTH = 6;
+    private static final int MAX_NOTE_LENGTH = 1000;
+    private static final int MOOD_EMOJI_SIZE = 56;
+    private static final int MOOD_EMOJI_FALLBACK_FONT_SIZE = 50;
     private record MoodEntry(String day, String mood, String icon, String color) {}
     private record HabitData(String name, String icon, String color, boolean[] weekProgress) {}
     private record MindfulnessSession(String title, String duration, String icon, String color) {}
@@ -134,6 +141,7 @@ public class WellbeingController implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+        hideGlobalMessage();
         setupFilters();
         setupForm();
         loadData();
@@ -175,14 +183,54 @@ public class WellbeingController implements Initializable {
         energySlider.valueProperty().addListener((obs, oldVal, newVal) -> energyValueLabel.setText(String.valueOf(newVal.intValue())));
         stressValueLabel.setText(String.valueOf((int) stressSlider.getValue()));
         energyValueLabel.setText(String.valueOf((int) energySlider.getValue()));
+        configureMoodButtons();
         cancelEditButton.setVisible(false);
         cancelEditButton.setManaged(false);
         updateChoiceSelection(moodButtonsBox, selectedMood);
         updateChoiceSelection(sleepButtonsBox, String.valueOf((int) selectedSleepHours));
     }
 
+    private void configureMoodButtons() {
+        if (moodButtonsBox == null) {
+            return;
+        }
+
+        for (Node child : moodButtonsBox.getChildren()) {
+            if (!(child instanceof Button button) || button.getUserData() == null) {
+                continue;
+            }
+            String moodKey = String.valueOf(button.getUserData()).toLowerCase().trim();
+            String label = EmojiUtils.getMoodLabelMap().getOrDefault(moodKey, capitalize(moodKey));
+            String emojiUnicode = EmojiUtils.getMoodEmojiUnicode(moodKey);
+
+            button.setText(label);
+            button.setContentDisplay(ContentDisplay.TOP);
+            button.setGraphicTextGap(12);
+            button.setMaxWidth(Double.MAX_VALUE);
+            button.setMinWidth(210);
+
+            ImageView emojiImage = EmojiUtils.loadMoodEmojiImage(moodKey, MOOD_EMOJI_SIZE);
+            if (emojiImage != null) {
+                button.setGraphic(emojiImage);
+            } else {
+                Label fallbackEmoji = new Label(emojiUnicode);
+                fallbackEmoji.setStyle("-fx-font-size: " + MOOD_EMOJI_FALLBACK_FONT_SIZE + "px; -fx-font-family: 'Segoe UI Emoji';");
+                button.setGraphic(fallbackEmoji);
+            }
+        }
+
+        // On applique juste la sélection initiale (le "Good" en vert)
+        updateChoiceSelection(moodButtonsBox, selectedMood);
+    }
+
     private void loadData() {
-        allCheckins.setAll(serviceWellBeing.findAllForUser(getCurrentUserId()));
+        Integer currentUserId = getCurrentUserId();
+        if (currentUserId == null || currentUserId <= 0) {
+            allCheckins.clear();
+            showError("Please log in with a valid account to access your wellbeing data.");
+            return;
+        }
+        allCheckins.setAll(serviceWellBeing.findAllForUser(currentUserId));
         refreshOverview();
         refreshHistoryTable();
     }
@@ -198,6 +246,9 @@ public class WellbeingController implements Initializable {
         }
 
         populateStressChart(sorted.stream().limit(10).collect(Collectors.toList()));
+        populateRecentCheckins(sorted.stream().limit(6).collect(Collectors.toList()));
+        populateCopingTools();
+        populateMoodDistribution(sorted);
         loadMoodWeek(sorted);
         loadHabits();
         loadMindfulnessSessions();
@@ -240,7 +291,24 @@ public class WellbeingController implements Initializable {
         List<WellBeing> chronological = new ArrayList<>(sortedCheckins);
         chronological.sort(Comparator.comparing(WellBeing::getEntryDate));
         for (WellBeing item : chronological) {
-            series.getData().add(new XYChart.Data<>(item.getEntryDate().format(DateTimeFormatter.ofPattern("MMM d")), item.getStressLevel()));
+            XYChart.Data<String, Number> point = new XYChart.Data<>(
+                    item.getEntryDate().format(DateTimeFormatter.ofPattern("MMM d")),
+                    item.getStressLevel()
+            );
+            point.nodeProperty().addListener((obs, oldNode, newNode) -> {
+                if (newNode == null) {
+                    return;
+                }
+                int value = point.getYValue().intValue();
+                if (value <= 4) {
+                    newNode.setStyle("-fx-bar-fill: #22C55E;");
+                } else if (value <= 6) {
+                    newNode.setStyle("-fx-bar-fill: #F59E0B;");
+                } else {
+                    newNode.setStyle("-fx-bar-fill: #EF4444;");
+                }
+            });
+            series.getData().add(point);
         }
         stressChart.getData().add(series);
     }
@@ -259,15 +327,26 @@ public class WellbeingController implements Initializable {
             HBox row = new HBox(14);
             row.getStyleClass().add("wellbeing-list-item");
 
-            Label emoji = new Label(item.getMoodEmoji());
-            emoji.getStyleClass().add("wellbeing-list-emoji");
+            String moodKey = item.getMood() == null ? "okay" : item.getMood().toLowerCase().trim();
+            String emojiUnicode = EmojiUtils.getMoodEmojiUnicode(moodKey);
+            ImageView emojiImage = EmojiUtils.loadMoodEmojiImage(moodKey, MOOD_EMOJI_SIZE);
+            Node emojiNode;
+            if (emojiImage != null) {
+                emojiNode = emojiImage;
+            } else {
+                Label emojiFallback = new Label(emojiUnicode);
+                emojiFallback.getStyleClass().add("wellbeing-list-emoji");
+                emojiFallback.setStyle("-fx-font-size: " + MOOD_EMOJI_FALLBACK_FONT_SIZE + "px; -fx-font-family: 'Segoe UI Emoji';");
+                emojiNode = emojiFallback;
+            }
 
             VBox content = new VBox(4);
             Label mood = new Label(capitalize(item.getMood()));
             mood.getStyleClass().add("text-body");
-            mood.setStyle("-fx-font-weight: 600;");
+            mood.setStyle("-fx-font-weight: 700; -fx-text-fill: " + moodColor(item.getMood()) + ";");
             Label date = new Label(formatDate(item.getEntryDate()));
             date.getStyleClass().add("text-small");
+            date.setStyle("-fx-text-fill: #14B8A6;");
             content.getChildren().addAll(mood, date);
             HBox.setHgrow(content, Priority.ALWAYS);
 
@@ -275,11 +354,13 @@ public class WellbeingController implements Initializable {
             metrics.setAlignment(Pos.CENTER_RIGHT);
             Label stress = new Label("Stress: " + item.getStressLevel() + "/10");
             stress.getStyleClass().add("text-small");
+            stress.setStyle("-fx-text-fill: " + stressColor(item.getStressLevel()) + "; -fx-font-weight: 700;");
             Label sleep = new Label("Sleep: " + item.getFormattedSleep());
             sleep.getStyleClass().add("text-small");
+            sleep.setStyle("-fx-text-fill: #93C5FD; -fx-font-weight: 700;");
             metrics.getChildren().addAll(stress, sleep);
 
-            row.getChildren().addAll(emoji, content, metrics);
+            row.getChildren().addAll(emojiNode, content, metrics);
             recentCheckinsBox.getChildren().add(row);
         }
     }
@@ -311,7 +392,7 @@ public class WellbeingController implements Initializable {
             HBox.setHgrow(main, Priority.ALWAYS);
             Label title = new Label(capitalize(item.getMood()) + "  •  " + formatDate(item.getEntryDate()));
             title.getStyleClass().add("text-body");
-            title.setStyle("-fx-font-weight: 600;");
+            title.setStyle("-fx-font-weight: 700; -fx-text-fill: " + moodColor(item.getMood()) + ";");
             Label note = new Label(item.getNote() == null || item.getNote().isBlank() ? "No notes" : item.getNote());
             note.getStyleClass().add("text-small");
             note.setWrapText(true);
@@ -404,19 +485,39 @@ public class WellbeingController implements Initializable {
 
     @FXML
     private void handleSaveCheckin() {
-        if (selectedMood == null) {
-            showError("Mood and sleep are required.");
+        Integer currentUserId = getCurrentUserId();
+        if (currentUserId == null || currentUserId <= 0) {
+            showError("Please log in with a valid account to save check-ins.");
             return;
         }
 
+        String note = notesArea.getText() == null ? "" : notesArea.getText().trim();
+
+        // Réinitialiser l'erreur avant chaque vérification
+        resetNotesError();
+
+        if (note.isBlank()) {
+            showNotesError("Note is required.");
+            return;
+        }
+        if (note.length() < MIN_NOTE_LENGTH) {
+            showNotesError("Note must be more than 5 characters.");
+            return;
+        }
+        if (note.length() > MAX_NOTE_LENGTH) {
+            showNotesError("Note must be 1000 characters or less.");
+            return;
+        }
+
+        // Si tout est correct → on sauvegarde
         WellBeing item = editingItem != null ? editingItem : new WellBeing();
         item.setEntryDate(LocalDateTime.now());
         item.setMood(selectedMood);
         item.setStressLevel((int) Math.round(stressSlider.getValue()));
         item.setEnergyLevel((int) Math.round(energySlider.getValue()));
         item.setSleepHours(selectedSleepHours);
-        item.setNote(notesArea.getText() == null ? "" : notesArea.getText().trim());
-        item.setUserId(getCurrentUserId());
+        item.setNote(note);
+        item.setUserId(currentUserId);
 
         try {
             if (editingItem == null) {
@@ -426,14 +527,58 @@ public class WellbeingController implements Initializable {
                 item.setUpdatedAt(LocalDateTime.now());
                 serviceWellBeing.update(item);
             }
+
             resetForm();
             loadData();
             showOverviewMode();
+
         } catch (RuntimeException e) {
             showError(e.getMessage());
         }
     }
 
+    private void resetNotesError() {
+        if (notesErrorLabel != null) {
+            notesErrorLabel.setVisible(false);
+            notesErrorLabel.setManaged(false);
+        }
+
+        if (notesArea != null) {
+            notesArea.setStyle("-fx-background-color: #1E293B; " +
+                    "-fx-control-inner-background: #1E293B; " +
+                    "-fx-text-fill: #F1F5F9; " +
+                    "-fx-prompt-text-fill: #64748B; " +
+                    "-fx-border-color: #334155; " +
+                    "-fx-border-width: 2; " +
+                    "-fx-border-radius: 12; " +
+                    "-fx-background-radius: 12; " +
+                    "-fx-padding: 14; " +
+                    "-fx-font-size: 14px;");
+        }
+    }
+
+    private void showNotesError(String message) {
+        if (notesErrorLabel != null) {
+            notesErrorLabel.setText(message);
+            notesErrorLabel.setVisible(true);
+            notesErrorLabel.setManaged(true);
+        }
+
+        if (notesArea != null) {
+            notesArea.setStyle("-fx-background-color: #1E293B; " +
+                    "-fx-control-inner-background: #1E293B; " +
+                    "-fx-text-fill: #F1F5F9; " +
+                    "-fx-prompt-text-fill: #64748B; " +
+                    "-fx-border-color: #EF4444; " +
+                    "-fx-border-width: 2.5; " +
+                    "-fx-border-radius: 12; " +
+                    "-fx-background-radius: 12; " +
+                    "-fx-padding: 14; " +
+                    "-fx-font-size: 14px;");
+
+            notesArea.requestFocus();
+        }
+    }
     @FXML
     private void handleCancelEdit() {
         resetForm();
@@ -524,7 +669,12 @@ public class WellbeingController implements Initializable {
         quiz.setInterpretation(interpretation);
         quiz.setCreatedWithAi(false);
         quiz.setCreatedAt(LocalDateTime.now());
-        quiz.setUserId(getCurrentUserId());
+        Integer currentUserId = getCurrentUserId();
+        if (currentUserId == null || currentUserId <= 0) {
+            showError("Please log in with a valid account to save quiz results.");
+            return;
+        }
+        quiz.setUserId(currentUserId);
 
         try {
             serviceQuizStress.add(quiz);
@@ -637,13 +787,14 @@ public class WellbeingController implements Initializable {
         quizProgressPercentLabel.setText(percent + "%");
     }
 
-    private boolean isCurrentQuestionAnswered() {
-        if (quizQuestions.isEmpty()) {
-            return false;
-        }
-        QuestionStress question = quizQuestions.get(currentQuizIndex);
-        return quizAnswers.containsKey(question.getId());
-    }
+     @SuppressWarnings({"unused", "all"})
+     private boolean isCurrentQuestionAnswered() {
+         if (quizQuestions.isEmpty()) {
+             return false;
+         }
+         QuestionStress question = quizQuestions.get(currentQuizIndex);
+         return quizAnswers.containsKey(question.getId());
+     }
 
     private void showQuizResults(QuizStress quiz) {
         quizResultScoreLabel.setText(quiz.getTotalScore() + " / " + (quizQuestions.size() * 3));
@@ -732,6 +883,11 @@ public class WellbeingController implements Initializable {
     }
 
     private void deleteItem(WellBeing item) {
+        Integer currentUserId = getCurrentUserId();
+        if (currentUserId == null || currentUserId <= 0 || item.getUserId() == null || !item.getUserId().equals(currentUserId)) {
+            showError("You can only delete your own check-ins.");
+            return;
+        }
         try {
             serviceWellBeing.delete(item);
             if (editingItem != null && editingItem.getId() == item.getId()) {
@@ -794,18 +950,19 @@ public class WellbeingController implements Initializable {
         items.sort(comparator);
     }
 
-    private Node createEmptyCard(String titleText, String subtitleText) {
-        VBox box = new VBox(8);
-        box.getStyleClass().add("wellbeing-empty-card");
-        Label title = new Label(titleText);
-        title.getStyleClass().add("text-body");
-        title.setStyle("-fx-font-weight: 600;");
-        Label subtitle = new Label(subtitleText);
-        subtitle.getStyleClass().add("text-small");
-        subtitle.setWrapText(true);
-        box.getChildren().addAll(title, subtitle);
-        return box;
-    }
+     @SuppressWarnings("SameParameterValue")
+     private Node createEmptyCard(String titleText, String subtitleText) {
+         VBox box = new VBox(8);
+         box.getStyleClass().add("wellbeing-empty-card");
+         Label title = new Label(titleText);
+         title.getStyleClass().add("text-body");
+         title.setStyle("-fx-font-weight: 600;");
+         Label subtitle = new Label(subtitleText);
+         subtitle.getStyleClass().add("text-small");
+         subtitle.setWrapText(true);
+         box.getChildren().addAll(title, subtitle);
+         return box;
+     }
 
     private boolean containsIgnoreCase(String value, String search) {
         return value != null && value.toLowerCase().contains(search);
@@ -837,24 +994,76 @@ public class WellbeingController implements Initializable {
     }
 
     private void updateChoiceSelection(HBox container, String selectedValue) {
-        for (Node child : container.getChildren()) {
-            if (child instanceof Control control) {
-                control.getStyleClass().remove("selected");
-                Object userData = control.getUserData();
-                if (userData != null && selectedValue.equalsIgnoreCase(String.valueOf(userData))) {
-                    if (!control.getStyleClass().contains("selected")) {
-                        control.getStyleClass().add("selected");
+        if (container == null || selectedValue == null) return;
+
+        if (container != moodButtonsBox) {
+            for (Node child : container.getChildren()) {
+                if (child instanceof Control control) {
+                    control.getStyleClass().remove("selected");
+                    Object userData = control.getUserData();
+                    if (userData != null && selectedValue.equalsIgnoreCase(String.valueOf(userData))) {
+                        if (!control.getStyleClass().contains("selected")) {
+                            control.getStyleClass().add("selected");
+                        }
                     }
+                }
+            }
+            return;
+        }
+
+        for (Node child : container.getChildren()) {
+            if (child instanceof Button btn) {
+                Object userData = btn.getUserData();
+                if (userData == null) continue;
+
+                String btnMood = userData.toString().toLowerCase().trim();
+
+                if (btnMood.equals(selectedValue.toLowerCase().trim())) {
+                    // Bouton sélectionné (vert)
+                    btn.setStyle("-fx-background-color: #10B981; " +
+                            "-fx-background-radius: 18; " +
+                            "-fx-border-radius: 18; " +
+                            "-fx-border-color: #34D399; " +
+                            "-fx-padding: 20 10 16 10; " +
+                            "-fx-cursor: hand;");
+                } else {
+                    // Bouton normal (sombre)
+                    btn.setStyle("-fx-background-color: #1E293B; " +
+                            "-fx-background-radius: 18; " +
+                            "-fx-border-radius: 18; " +
+                            "-fx-border-color: transparent; " +
+                            "-fx-padding: 20 10 16 10; " +
+                            "-fx-cursor: hand;");
                 }
             }
         }
     }
 
     private void showError(String message) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setHeaderText("Wellbeing");
-        alert.setContentText(message);
-        alert.showAndWait();
+        showGlobalMessage(message, true);
+    }
+
+    private void showGlobalMessage(String message, boolean error) {
+        if (globalMessageLabel == null) {
+            return;
+        }
+        globalMessageLabel.setText(message == null ? "" : message);
+        globalMessageLabel.setStyle(
+                "-fx-background-color: " + (error ? "#dc2626" : "#16a34a") + ";" +
+                "-fx-text-fill: white;" +
+                "-fx-padding: 10 14 10 14;" +
+                "-fx-background-radius: 8;"
+        );
+        globalMessageLabel.setVisible(true);
+        globalMessageLabel.setManaged(true);
+    }
+
+    private void hideGlobalMessage() {
+        if (globalMessageLabel == null) {
+            return;
+        }
+        globalMessageLabel.setVisible(false);
+        globalMessageLabel.setManaged(false);
     }
 
     private void showOverviewMode() {
@@ -1011,7 +1220,7 @@ public class WellbeingController implements Initializable {
                     new MoodEntry("Thu", "Stressed", "fth-frown", "danger"),
                     new MoodEntry("Fri", "Good", "fth-smile", "success"),
                     new MoodEntry("Sat", "Great", "fth-smile", "success"),
-                    new MoodEntry("Sun", "Good", "fth-smile", "success")
+                    new MoodEntry("Sun", "Good", "😊", "success")
             );
         } else {
             moods = recent.stream()
@@ -1321,5 +1530,25 @@ public class WellbeingController implements Initializable {
             case "accent" -> "rgba(249, 115, 22, 0.2)";
             default -> "rgba(148, 163, 184, 0.2)";
         };
+    }
+
+    private String moodColor(String mood) {
+        return switch (mood == null ? "" : mood.toLowerCase()) {
+            case "great" -> "#22C55E";
+            case "good" -> "#3B82F6";
+            case "okay" -> "#F59E0B";
+            case "stressed" -> "#EF4444";
+            default -> "#A78BFA";
+        };
+    }
+
+    private String stressColor(int stressLevel) {
+        if (stressLevel <= 4) {
+            return "#22C55E";
+        }
+        if (stressLevel <= 6) {
+            return "#F59E0B";
+        }
+        return "#EF4444";
     }
 }

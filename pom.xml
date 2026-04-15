@@ -17,7 +17,7 @@
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <javafx.version>21.0.1</javafx.version>
-        <ikonli.version>12.3.1</ikonli.version>
+        <ikonli.version>12.0.0</ikonli.version>
     </properties>
 
     <dependencies>
@@ -57,6 +57,7 @@
             <version>${ikonli.version}</version>
         </dependency>
 
+
         <!-- MySQL Connector -->
         <dependency>
             <groupId>com.mysql</groupId>
@@ -64,6 +65,14 @@
             <version>8.0.33</version>
             <scope>compile</scope>
         </dependency>
+
+        <!-- Emoji Support -->
+        <dependency>
+            <groupId>com.vdurmont</groupId>
+            <artifactId>emoji-java</artifactId>
+            <version>5.1.1</version>
+        </dependency>
+
 
         <!-- iText 7 - Export PDF -->
         <dependency>

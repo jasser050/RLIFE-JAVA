@@ -27,217 +27,222 @@
             fitToWidth="true"
             styleClass="landing-scroll">
     <content>
-        <VBox spacing="24" styleClass="wellbeing-page">
+        <VBox spacing="22" styleClass="wellbeing-page">
             <padding>
                 <Insets top="0" right="0" bottom="24" left="0"/>
             </padding>
 
             <HBox alignment="CENTER_LEFT" spacing="16" styleClass="wellbeing-hero">
-                <VBox spacing="6" HBox.hgrow="ALWAYS">
+                <VBox spacing="4" HBox.hgrow="ALWAYS">
                     <Label text="Stress &amp; Wellbeing" styleClass="text-heading"/>
-                    <Label text="Track your mood, stress, and energy. Take the assessment quiz for personalized recommendations." styleClass="text-muted"/>
+                    <Label text="Track your mental health and find ways to relax" styleClass="wellbeing-subtitle"/>
                 </VBox>
                 <Button text="Take Assessment" styleClass="btn-secondary" onAction="#handleOpenQuiz">
                     <graphic>
                         <FontIcon iconLiteral="fth-clipboard" iconSize="15" iconColor="#E2E8F0"/>
                     </graphic>
                 </Button>
-                <Button text="Log Mood" styleClass="btn-primary" onAction="#handleOpenCheckin">
+                <Button text="Coping Tools" styleClass="btn-secondary" onAction="#handleViewAllHistory">
                     <graphic>
-                        <FontIcon iconLiteral="fth-smile" iconSize="15" iconColor="white"/>
+                        <FontIcon iconLiteral="fth-heart" iconSize="15" iconColor="#E2E8F0"/>
+                    </graphic>
+                </Button>
+                <Button text="Daily Check-in" styleClass="btn-primary" onAction="#handleOpenCheckin">
+                    <graphic>
+                        <FontIcon iconLiteral="fth-plus" iconSize="15" iconColor="white"/>
                     </graphic>
                 </Button>
             </HBox>
+            <Label fx:id="globalMessageLabel"
+                   text=""
+                   visible="false"
+                   managed="false"
+                   styleClass="text-small"/>
 
             <HBox fx:id="statsSection" spacing="16">
-                <VBox styleClass="stat-card, wellbeing-summary-card" spacing="10" HBox.hgrow="ALWAYS">
+                <VBox styleClass="wellbeing-kpi-card, stress" spacing="8" HBox.hgrow="ALWAYS">
                     <HBox alignment="CENTER_LEFT" spacing="12">
-                        <StackPane styleClass="stat-icon-box, success wellbeing-summary-icon" prefWidth="36" prefHeight="36">
-                            <FontIcon iconLiteral="fth-smile" iconSize="15"/>
+                        <StackPane styleClass="wellbeing-kpi-icon, stress-icon">
+                            <FontIcon iconLiteral="fth-smile" iconSize="16"/>
                         </StackPane>
                         <VBox spacing="2">
-                            <Label fx:id="moodLabel" text="Good" styleClass="stat-value, wellbeing-summary-value"/>
-                            <Label text="Today's Mood" styleClass="stat-label"/>
+                            <Label fx:id="avgStressLabel" text="0/10" styleClass="wellbeing-kpi-value"/>
+                            <Label text="Avg. Stress Level" styleClass="wellbeing-kpi-label"/>
                         </VBox>
                     </HBox>
                 </VBox>
 
-                <VBox styleClass="stat-card, wellbeing-summary-card" spacing="10" HBox.hgrow="ALWAYS">
+                <VBox styleClass="wellbeing-kpi-card, energy" spacing="8" HBox.hgrow="ALWAYS">
                     <HBox alignment="CENTER_LEFT" spacing="12">
-                        <StackPane styleClass="stat-icon-box, primary wellbeing-summary-icon" prefWidth="36" prefHeight="36">
-                            <FontIcon iconLiteral="fth-moon" iconSize="15"/>
+                        <StackPane styleClass="wellbeing-kpi-icon, energy-icon">
+                            <FontIcon iconLiteral="fth-zap" iconSize="16"/>
                         </StackPane>
                         <VBox spacing="2">
-                            <Label fx:id="sleepLabel" text="7.5h" styleClass="stat-value, wellbeing-summary-value"/>
-                            <Label text="Sleep Last Night" styleClass="stat-label"/>
+                            <Label fx:id="avgEnergyLabel" text="0/10" styleClass="wellbeing-kpi-value"/>
+                            <Label text="Avg. Energy Level" styleClass="wellbeing-kpi-label"/>
                         </VBox>
                     </HBox>
                 </VBox>
 
-                <VBox styleClass="stat-card, wellbeing-summary-card" spacing="10" HBox.hgrow="ALWAYS">
+                <VBox styleClass="wellbeing-kpi-card, sleep" spacing="8" HBox.hgrow="ALWAYS">
                     <HBox alignment="CENTER_LEFT" spacing="12">
-                        <StackPane styleClass="stat-icon-box, warning wellbeing-summary-icon" prefWidth="36" prefHeight="36">
-                            <FontIcon iconLiteral="fth-activity" iconSize="15"/>
+                        <StackPane styleClass="wellbeing-kpi-icon, sleep-icon">
+                            <FontIcon iconLiteral="fth-moon" iconSize="16"/>
                         </StackPane>
                         <VBox spacing="2">
-                            <Label fx:id="stressLabel" text="Low" styleClass="stat-value, wellbeing-summary-value"/>
-                            <Label text="Stress Level" styleClass="stat-label"/>
-                        </VBox>
-                    </HBox>
-                </VBox>
-
-                <VBox styleClass="stat-card, wellbeing-summary-card" spacing="10" HBox.hgrow="ALWAYS">
-                    <HBox alignment="CENTER_LEFT" spacing="12">
-                        <StackPane styleClass="stat-icon-box, accent wellbeing-summary-icon" prefWidth="36" prefHeight="36">
-                            <FontIcon iconLiteral="fth-zap" iconSize="15"/>
-                        </StackPane>
-                        <VBox spacing="2">
-                            <Label fx:id="energyLabel" text="High" styleClass="stat-value, wellbeing-summary-value"/>
-                            <Label text="Energy Level" styleClass="stat-label"/>
+                            <Label fx:id="avgSleepLabel" text="0h" styleClass="wellbeing-kpi-value"/>
+                            <Label text="Avg. Sleep" styleClass="wellbeing-kpi-label"/>
                         </VBox>
                     </HBox>
                 </VBox>
             </HBox>
 
-            <HBox fx:id="overviewSection" spacing="20" VBox.vgrow="ALWAYS">
-                <VBox spacing="20" HBox.hgrow="ALWAYS">
-                    <VBox styleClass="card, wellbeing-panel" spacing="0">
-                        <HBox styleClass="card-header, wellbeing-panel-header" alignment="CENTER_LEFT" spacing="12">
-                            <StackPane styleClass="stat-icon-box, success" prefWidth="36" prefHeight="36">
+            <Label fx:id="totalCheckinsLabel" visible="false" managed="false" text="0"/>
+            <Label fx:id="moodLabel" visible="false" managed="false" text="Good"/>
+            <Label fx:id="sleepLabel" visible="false" managed="false" text="7.5h"/>
+            <Label fx:id="stressLabel" visible="false" managed="false" text="Low"/>
+            <Label fx:id="energyLabel" visible="false" managed="false" text="High"/>
+            <FlowPane fx:id="moodDistributionPane" visible="false" managed="false"/>
+            <VBox fx:id="moodWeekBox" visible="false" managed="false"/>
+            <VBox fx:id="habitsBox" visible="false" managed="false"/>
+            <VBox fx:id="mindfulnessBox" visible="false" managed="false"/>
+            <VBox fx:id="sleepLogBox" visible="false" managed="false"/>
+
+            <VBox fx:id="overviewSection" spacing="20" VBox.vgrow="ALWAYS">
+                <HBox spacing="20">
+                    <VBox styleClass="card, wellbeing-panel" spacing="0" HBox.hgrow="ALWAYS" maxWidth="Infinity">
+                        <HBox styleClass="card-header, wellbeing-panel-header" alignment="CENTER_LEFT" spacing="10">
+                            <StackPane styleClass="wellbeing-header-icon">
                                 <FontIcon iconLiteral="fth-trending-up" iconSize="16"/>
                             </StackPane>
                             <VBox spacing="2" HBox.hgrow="ALWAYS">
-                                <Label text="Mood This Week" styleClass="card-title"/>
-                                <Label text="Track your emotional wellbeing" styleClass="text-small"/>
+                                <Label text="Stress Trend (Last 10 Days)" styleClass="card-title"/>
+                                <Label text="Your latest stress evolution from check-ins" styleClass="text-small"/>
                             </VBox>
                         </HBox>
-                        <HBox styleClass="card-body" spacing="12" alignment="CENTER_LEFT">
-                            <VBox fx:id="moodWeekBox" spacing="8" HBox.hgrow="ALWAYS"/>
-                        </HBox>
+                        <VBox styleClass="card-body" spacing="10" prefHeight="320" minHeight="320">
+                            <BarChart fx:id="stressChart" legendVisible="false" animated="false" categoryGap="10" barGap="4" prefHeight="280">
+                                <xAxis>
+                                    <CategoryAxis/>
+                                </xAxis>
+                                <yAxis>
+                                    <NumberAxis lowerBound="0" upperBound="10" tickUnit="1"/>
+                                </yAxis>
+                            </BarChart>
+                        </VBox>
                     </VBox>
 
-                    <VBox styleClass="card, wellbeing-panel" spacing="0" VBox.vgrow="ALWAYS">
-                        <HBox styleClass="card-header, wellbeing-panel-header" alignment="CENTER_LEFT" spacing="12">
-                            <StackPane styleClass="stat-icon-box, primary" prefWidth="36" prefHeight="36">
-                                <FontIcon iconLiteral="fth-check-square" iconSize="16"/>
+                    <VBox styleClass="card, wellbeing-panel" spacing="0" HBox.hgrow="ALWAYS" maxWidth="Infinity">
+                        <HBox styleClass="card-header, wellbeing-panel-header" alignment="CENTER_LEFT" spacing="10">
+                            <StackPane styleClass="wellbeing-header-icon">
+                                <FontIcon iconLiteral="fth-clipboard" iconSize="16"/>
                             </StackPane>
                             <VBox spacing="2" HBox.hgrow="ALWAYS">
-                                <Label text="Daily Habits" styleClass="card-title"/>
-                                <Label text="Build healthy routines" styleClass="text-small"/>
+                                <Label text="Recent Check-ins" styleClass="card-title"/>
+                                <Label text="Latest mood records with stress and sleep" styleClass="text-small"/>
                             </VBox>
+                            <ComboBox fx:id="overviewSortCombo" prefWidth="160"/>
                             <Button text="View All" styleClass="btn-ghost" onAction="#handleViewAllHistory"/>
                         </HBox>
-                        <VBox styleClass="card-body" spacing="0" VBox.vgrow="ALWAYS">
-                            <VBox fx:id="habitsBox" spacing="0"/>
+                        <VBox styleClass="card-body" spacing="10" prefHeight="320" minHeight="320">
+                            <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" styleClass="wellbeing-inner-scroll" VBox.vgrow="ALWAYS">
+                                <content>
+                                    <VBox fx:id="recentCheckinsBox" spacing="10"/>
+                                </content>
+                            </ScrollPane>
                         </VBox>
+                    </VBox>
+                </HBox>
+
+                <VBox fx:id="toolsSection" styleClass="card, wellbeing-panel" spacing="0">
+                    <HBox styleClass="card-header, wellbeing-panel-header" alignment="CENTER_LEFT" spacing="10">
+                        <StackPane styleClass="wellbeing-header-icon">
+                            <FontIcon iconLiteral="fth-heart" iconSize="16"/>
+                        </StackPane>
+                        <VBox spacing="2" HBox.hgrow="ALWAYS">
+                            <Label text="Coping Tools" styleClass="card-title"/>
+                            <Label text="Quick exercises to help you relax" styleClass="text-small"/>
+                        </VBox>
+                        <Button text="View All" styleClass="btn-ghost" onAction="#handleViewAllHistory"/>
+                    </HBox>
+                    <VBox styleClass="card-body" spacing="12">
+                        <FlowPane fx:id="copingToolsPane" hgap="12" vgap="12" prefWrapLength="1200"/>
                     </VBox>
                 </VBox>
-
-                <VBox spacing="20" prefWidth="420">
-                    <VBox fx:id="toolsSection" styleClass="card, wellbeing-panel" spacing="0">
-                        <HBox styleClass="card-header, wellbeing-panel-header" alignment="CENTER_LEFT" spacing="12">
-                            <StackPane styleClass="stat-icon-box, warning" prefWidth="36" prefHeight="36">
-                                <FontIcon iconLiteral="fth-sunrise" iconSize="16"/>
-                            </StackPane>
-                            <VBox spacing="2" HBox.hgrow="ALWAYS">
-                                <Label text="Mindfulness" styleClass="card-title"/>
-                                <Label text="Quick meditation sessions" styleClass="text-small"/>
-                            </VBox>
-                        </HBox>
-                        <VBox styleClass="card-body" spacing="12">
-                            <VBox fx:id="mindfulnessBox" spacing="10"/>
-                        </VBox>
-                    </VBox>
-
-                    <VBox styleClass="card, wellbeing-panel" spacing="0" VBox.vgrow="ALWAYS">
-                        <HBox styleClass="card-header, wellbeing-panel-header" alignment="CENTER_LEFT" spacing="12">
-                            <StackPane styleClass="stat-icon-box, primary" prefWidth="36" prefHeight="36">
-                                <FontIcon iconLiteral="fth-moon" iconSize="16"/>
-                            </StackPane>
-                            <VBox spacing="2" HBox.hgrow="ALWAYS">
-                                <Label text="Sleep Log" styleClass="card-title"/>
-                                <Label text="This week's sleep pattern" styleClass="text-small"/>
-                            </VBox>
-                            <Button text="View All" styleClass="btn-ghost" onAction="#handleViewAllHistory"/>
-                        </HBox>
-                        <VBox styleClass="card-body" spacing="0" VBox.vgrow="ALWAYS">
-                            <VBox fx:id="sleepLogBox" spacing="8"/>
-                        </VBox>
-                    </VBox>
-                </VBox>
-            </HBox>
+            </VBox>
 
             <VBox fx:id="formSection" styleClass="card, wellbeing-form-shell" visible="false" managed="false" spacing="0">
                 <HBox styleClass="card-header, wellbeing-panel-header" alignment="CENTER_LEFT" spacing="12">
-                    <StackPane styleClass="stat-icon-box, success" prefWidth="36" prefHeight="36">
+                    <StackPane styleClass="wellbeing-header-icon">
                         <FontIcon iconLiteral="fth-edit-3" iconSize="16"/>
                     </StackPane>
                     <VBox spacing="2" HBox.hgrow="ALWAYS">
                         <Label fx:id="formTitleLabel" text="Daily Check-in" styleClass="card-title"/>
-                        <Label text="Saisissez votre etat du jour, puis enregistrez." styleClass="text-small"/>
+                        <Label text="How are you feeling today?" styleClass="text-small"/>
                     </VBox>
                     <Button text="Back" styleClass="btn-secondary" onAction="#handleBackToOverview"/>
                 </HBox>
 
-                <VBox styleClass="card-body" spacing="22">
-                    <VBox spacing="10">
-                        <Label text="Mood" styleClass="text-subheading" style="-fx-font-size: 16px;"/>
-                        <Label text="Choisissez l'humeur qui correspond le mieux a votre journee." styleClass="text-small"/>
-                        <HBox fx:id="moodButtonsBox" spacing="12">
-                            <Button text="Great" userData="great" onAction="#handleMoodSelection" styleClass="wellbeing-choice-card"/>
-                            <Button text="Good" userData="good" onAction="#handleMoodSelection" styleClass="wellbeing-choice-card, selected"/>
-                            <Button text="Okay" userData="okay" onAction="#handleMoodSelection" styleClass="wellbeing-choice-card"/>
-                            <Button text="Stressed" userData="stressed" onAction="#handleMoodSelection" styleClass="wellbeing-choice-card"/>
-                            <Button text="Tired" userData="tired" onAction="#handleMoodSelection" styleClass="wellbeing-choice-card"/>
+                <VBox styleClass="card-body" spacing="20">
+                    <VBox spacing="8" styleClass="wellbeing-input-card">
+                        <Label text="Mood" styleClass="text-subheading" style="-fx-font-size: 22px;"/>
+                        <Label text="Select the emoji that best represents how you're feeling" styleClass="text-small"/>
+                        <HBox fx:id="moodButtonsBox" spacing="12" maxWidth="Infinity">
+                            <Button text="😃&#10;Great" userData="great" onAction="#handleMoodSelection" styleClass="wellbeing-choice-card, mood-great" HBox.hgrow="ALWAYS"/>
+                            <Button text="😊&#10;Good" userData="good" onAction="#handleMoodSelection" styleClass="wellbeing-choice-card, mood-good, selected" HBox.hgrow="ALWAYS"/>
+                            <Button text="😐&#10;Okay" userData="okay" onAction="#handleMoodSelection" styleClass="wellbeing-choice-card, mood-okay" HBox.hgrow="ALWAYS"/>
+                            <Button text="😰&#10;Stressed" userData="stressed" onAction="#handleMoodSelection" styleClass="wellbeing-choice-card, mood-stressed" HBox.hgrow="ALWAYS"/>
+                            <Button text="😪&#10;Tired" userData="tired" onAction="#handleMoodSelection" styleClass="wellbeing-choice-card, mood-tired" HBox.hgrow="ALWAYS"/>
                         </HBox>
                     </VBox>
 
-                    <HBox spacing="20">
+                    <HBox spacing="18">
                         <VBox spacing="10" HBox.hgrow="ALWAYS" styleClass="wellbeing-input-card">
-                            <Label text="Stress Level" styleClass="text-subheading" style="-fx-font-size: 16px;"/>
-                            <Label text="1 = calme, 10 = tres stresse" styleClass="text-small"/>
+                            <Label text="Stress Level" styleClass="text-subheading" style="-fx-font-size: 18px;"/>
+                            <Label text="Rate your current stress (1 = very relaxed, 10 = very stressed)" styleClass="text-small"/>
                             <Slider fx:id="stressSlider" min="1" max="10" value="5" majorTickUnit="1" minorTickCount="0" snapToTicks="true" showTickLabels="true"/>
                             <HBox alignment="CENTER_LEFT">
-                                <Label text="Calme" styleClass="text-small"/>
+                                <Label text="Relaxed" styleClass="wellbeing-slider-low"/>
                                 <Region HBox.hgrow="ALWAYS"/>
-                                <Label fx:id="stressValueLabel" text="5" styleClass="stat-value" style="-fx-font-size: 20px;"/>
+                                <Label fx:id="stressValueLabel" text="5" styleClass="wellbeing-slider-value"/>
                                 <Region HBox.hgrow="ALWAYS"/>
-                                <Label text="Stress" styleClass="text-small"/>
+                                <Label text="Stressed" styleClass="wellbeing-slider-high"/>
                             </HBox>
                         </VBox>
 
                         <VBox spacing="10" HBox.hgrow="ALWAYS" styleClass="wellbeing-input-card">
-                            <Label text="Energy Level" styleClass="text-subheading" style="-fx-font-size: 16px;"/>
-                            <Label text="1 = fatigue, 10 = pleine energie" styleClass="text-small"/>
+                            <Label text="Energy Level" styleClass="text-subheading" style="-fx-font-size: 18px;"/>
+                            <Label text="Rate your energy (1 = exhausted, 10 = full of energy)" styleClass="text-small"/>
                             <Slider fx:id="energySlider" min="1" max="10" value="7" majorTickUnit="1" minorTickCount="0" snapToTicks="true" showTickLabels="true"/>
                             <HBox alignment="CENTER_LEFT">
-                                <Label text="Fatigue" styleClass="text-small"/>
+                                <Label text="Exhausted" styleClass="wellbeing-slider-high"/>
                                 <Region HBox.hgrow="ALWAYS"/>
-                                <Label fx:id="energyValueLabel" text="7" styleClass="stat-value" style="-fx-font-size: 20px;"/>
+                                <Label fx:id="energyValueLabel" text="7" styleClass="wellbeing-slider-value"/>
                                 <Region HBox.hgrow="ALWAYS"/>
-                                <Label text="Energie" styleClass="text-small"/>
+                                <Label text="Energized" styleClass="wellbeing-slider-low"/>
                             </HBox>
                         </VBox>
                     </HBox>
 
-                    <VBox spacing="10">
-                        <Label text="Sleep" styleClass="text-subheading" style="-fx-font-size: 16px;"/>
-                        <Label text="Combien d'heures avez-vous dormi ?" styleClass="text-small"/>
+                    <VBox spacing="10" styleClass="wellbeing-input-card">
+                        <Label text="Sleep" styleClass="text-subheading" style="-fx-font-size: 18px;"/>
+                        <Label text="How many hours did you sleep last night?" styleClass="text-small"/>
                         <HBox fx:id="sleepButtonsBox" spacing="10">
-                            <Button text="4 h" userData="4" onAction="#handleSleepSelection" styleClass="wellbeing-sleep-card"/>
-                            <Button text="5 h" userData="5" onAction="#handleSleepSelection" styleClass="wellbeing-sleep-card"/>
-                            <Button text="6 h" userData="6" onAction="#handleSleepSelection" styleClass="wellbeing-sleep-card"/>
-                            <Button text="7 h" userData="7" onAction="#handleSleepSelection" styleClass="wellbeing-sleep-card, selected"/>
-                            <Button text="8 h" userData="8" onAction="#handleSleepSelection" styleClass="wellbeing-sleep-card"/>
-                            <Button text="9 h" userData="9" onAction="#handleSleepSelection" styleClass="wellbeing-sleep-card"/>
-                            <Button text="10 h" userData="10" onAction="#handleSleepSelection" styleClass="wellbeing-sleep-card"/>
-                            <Button text="10+ h" userData="11" onAction="#handleSleepSelection" styleClass="wellbeing-sleep-card"/>
+                            <Button text="4&#10;hrs" userData="4" onAction="#handleSleepSelection" styleClass="wellbeing-sleep-card" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                            <Button text="5&#10;hrs" userData="5" onAction="#handleSleepSelection" styleClass="wellbeing-sleep-card" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                            <Button text="6&#10;hrs" userData="6" onAction="#handleSleepSelection" styleClass="wellbeing-sleep-card" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                            <Button text="7&#10;hrs" userData="7" onAction="#handleSleepSelection" styleClass="wellbeing-sleep-card, selected" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                            <Button text="8&#10;hrs" userData="8" onAction="#handleSleepSelection" styleClass="wellbeing-sleep-card" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                            <Button text="9&#10;hrs" userData="9" onAction="#handleSleepSelection" styleClass="wellbeing-sleep-card" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                            <Button text="10&#10;hrs" userData="10" onAction="#handleSleepSelection" styleClass="wellbeing-sleep-card" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                            <Button text="10+&#10;hrs" userData="11" onAction="#handleSleepSelection" styleClass="wellbeing-sleep-card" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
                         </HBox>
                     </VBox>
 
-                    <VBox spacing="8">
-                        <Label text="Notes" styleClass="text-subheading" style="-fx-font-size: 16px;"/>
-                        <TextArea fx:id="notesArea" promptText="Comment vous sentez-vous aujourd'hui ?" prefRowCount="4" wrapText="true"/>
+                    <VBox spacing="8" styleClass="wellbeing-input-card">
+                        <Label text="Notes" styleClass="text-subheading" style="-fx-font-size: 18px;"/>
+                        <TextArea fx:id="notesArea" promptText="How are you feeling? What's on your mind?" prefRowCount="4" wrapText="true" styleClass="wellbeing-notes-area"/>
+                        <Label fx:id="notesErrorLabel" text="" styleClass="auth-error" visible="false" managed="false"/>
                     </VBox>
 
                     <HBox spacing="12">
@@ -250,30 +255,30 @@
             <VBox fx:id="historySection" spacing="18" visible="false" managed="false">
                 <HBox alignment="CENTER_LEFT" spacing="12" styleClass="wellbeing-hero">
                     <VBox spacing="2" HBox.hgrow="ALWAYS">
-                        <Label text="Wellbeing / History" styleClass="text-small"/>
+                        <Label text="Wellbeing / Check-ins" styleClass="text-small"/>
                         <Label text="Check-in History" styleClass="text-heading"/>
-                        <Label text="Tous les enregistrements restent modifiables et supprimables." styleClass="text-muted"/>
+                        <Label text="Track your mood, stress, and energy over time" styleClass="text-muted"/>
                     </VBox>
                     <Button text="Back" styleClass="btn-secondary" onAction="#handleBackToOverview"/>
                     <Button text="New Check-in" styleClass="btn-primary" onAction="#handleOpenCheckin"/>
                 </HBox>
 
                 <HBox spacing="16">
-                    <VBox styleClass="stat-card, wellbeing-summary-card" spacing="8" HBox.hgrow="ALWAYS" alignment="CENTER">
-                        <Label fx:id="historyTotalLabel" text="0" styleClass="stat-value, wellbeing-summary-value"/>
-                        <Label text="Total Check-ins" styleClass="stat-label"/>
+                    <VBox styleClass="wellbeing-kpi-card, neutral" spacing="8" HBox.hgrow="ALWAYS" alignment="CENTER">
+                        <Label fx:id="historyTotalLabel" text="0" styleClass="wellbeing-kpi-value"/>
+                        <Label text="Total Check-ins" styleClass="wellbeing-kpi-label"/>
                     </VBox>
-                    <VBox styleClass="stat-card, wellbeing-summary-card" spacing="8" HBox.hgrow="ALWAYS" alignment="CENTER">
-                        <Label fx:id="historyAvgStressLabel" text="0/10" styleClass="stat-value, wellbeing-summary-value"/>
-                        <Label text="Stress Moyen" styleClass="stat-label"/>
+                    <VBox styleClass="wellbeing-kpi-card, stress" spacing="8" HBox.hgrow="ALWAYS" alignment="CENTER">
+                        <Label fx:id="historyAvgStressLabel" text="0/10" styleClass="wellbeing-kpi-value"/>
+                        <Label text="Avg. Stress" styleClass="wellbeing-kpi-label"/>
                     </VBox>
-                    <VBox styleClass="stat-card, wellbeing-summary-card" spacing="8" HBox.hgrow="ALWAYS" alignment="CENTER">
-                        <Label fx:id="historyAvgEnergyLabel" text="0/10" styleClass="stat-value, wellbeing-summary-value"/>
-                        <Label text="Energie Moyenne" styleClass="stat-label"/>
+                    <VBox styleClass="wellbeing-kpi-card, energy" spacing="8" HBox.hgrow="ALWAYS" alignment="CENTER">
+                        <Label fx:id="historyAvgEnergyLabel" text="0/10" styleClass="wellbeing-kpi-value"/>
+                        <Label text="Avg. Energy" styleClass="wellbeing-kpi-label"/>
                     </VBox>
-                    <VBox styleClass="stat-card, wellbeing-summary-card" spacing="8" HBox.hgrow="ALWAYS" alignment="CENTER">
-                        <Label fx:id="historyAvgSleepLabel" text="0h" styleClass="stat-value, wellbeing-summary-value"/>
-                        <Label text="Sommeil Moyen" styleClass="stat-label"/>
+                    <VBox styleClass="wellbeing-kpi-card, sleep" spacing="8" HBox.hgrow="ALWAYS" alignment="CENTER">
+                        <Label fx:id="historyAvgSleepLabel" text="0h" styleClass="wellbeing-kpi-value"/>
+                        <Label text="Avg. Sleep" styleClass="wellbeing-kpi-label"/>
                     </VBox>
                 </HBox>
 
@@ -290,12 +295,12 @@
 
                 <VBox styleClass="card, wellbeing-panel" spacing="0">
                     <HBox styleClass="card-header, wellbeing-panel-header" alignment="CENTER_LEFT" spacing="12">
-                        <StackPane styleClass="stat-icon-box, primary" prefWidth="36" prefHeight="36">
+                        <StackPane styleClass="wellbeing-header-icon">
                             <FontIcon iconLiteral="fth-file-text" iconSize="16"/>
                         </StackPane>
                         <VBox spacing="2" HBox.hgrow="ALWAYS">
                             <Label text="Entries" styleClass="card-title"/>
-                            <Label text="Edition et suppression disponibles sur chaque ligne." styleClass="text-small"/>
+                            <Label text="Edit or delete each check-in line." styleClass="text-small"/>
                         </VBox>
                     </HBox>
                     <VBox fx:id="historyListBox" styleClass="card-body" spacing="10"/>
@@ -304,7 +309,7 @@
 
             <VBox fx:id="quizSection" styleClass="card, wellbeing-form-shell" visible="false" managed="false" spacing="0">
                 <HBox styleClass="card-header, wellbeing-panel-header" alignment="CENTER_LEFT" spacing="12">
-                    <StackPane styleClass="stat-icon-box, warning" prefWidth="36" prefHeight="36">
+                    <StackPane styleClass="wellbeing-header-icon">
                         <FontIcon iconLiteral="fth-clipboard" iconSize="16"/>
                     </StackPane>
                     <VBox spacing="2" HBox.hgrow="ALWAYS">
@@ -343,7 +348,7 @@
 
             <VBox fx:id="quizResultsSection" styleClass="card, wellbeing-form-shell" visible="false" managed="false" spacing="0">
                 <HBox styleClass="card-header, wellbeing-panel-header" alignment="CENTER_LEFT" spacing="12">
-                    <StackPane styleClass="stat-icon-box, success" prefWidth="36" prefHeight="36">
+                    <StackPane styleClass="wellbeing-header-icon">
                         <FontIcon iconLiteral="fth-check-circle" iconSize="16"/>
                     </StackPane>
                     <VBox spacing="2" HBox.hgrow="ALWAYS">
@@ -361,13 +366,13 @@
                     </VBox>
 
                     <HBox spacing="16">
-                        <VBox styleClass="stat-card, stress-stat-card, blue" spacing="8" HBox.hgrow="ALWAYS">
-                            <Label text="Total Score" styleClass="stress-stat-label"/>
-                            <Label fx:id="quizResultScoreLabel" text="0 / 40" styleClass="stress-stat-number"/>
+                        <VBox styleClass="wellbeing-kpi-card, energy" spacing="8" HBox.hgrow="ALWAYS">
+                            <Label text="Total Score" styleClass="wellbeing-kpi-label"/>
+                            <Label fx:id="quizResultScoreLabel" text="0 / 40" styleClass="wellbeing-kpi-value"/>
                         </VBox>
-                        <VBox styleClass="stat-card, stress-stat-card, warning" spacing="8" HBox.hgrow="ALWAYS">
-                            <Label text="Stress Level" styleClass="stress-stat-label"/>
-                            <Label fx:id="quizResultLevelLabel" text="Mild" styleClass="stress-stat-number"/>
+                        <VBox styleClass="wellbeing-kpi-card, stress" spacing="8" HBox.hgrow="ALWAYS">
+                            <Label text="Stress Level" styleClass="wellbeing-kpi-label"/>
+                            <Label fx:id="quizResultLevelLabel" text="Mild" styleClass="wellbeing-kpi-value"/>
                         </VBox>
                     </HBox>
 

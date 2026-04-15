@@ -4,6 +4,10 @@ import com.studyflow.interfaces.IService;
 import com.studyflow.models.User;
 import com.studyflow.utils.MyDataBase;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -111,10 +115,63 @@ public class ServiceUser implements IService<User> {
 
     public User authenticate(String email, String password) {
         User user = findByEmail(email);
-        if (user != null && password.equals(user.getPassword())) {
+        if (user != null && verifyPassword(password, user.getPassword())) {
             return user;
         }
         return null;
+    }
+
+    private boolean verifyPassword(String rawPassword, String storedPassword) {
+        if (rawPassword == null || storedPassword == null || storedPassword.isBlank()) {
+            return false;
+        }
+
+        if (rawPassword.equals(storedPassword)) {
+            return true;
+        }
+
+        // Symfony bcrypt hashes are usually stored with "$2y$".
+        if (storedPassword.startsWith("$2y$") || storedPassword.startsWith("$2a$") || storedPassword.startsWith("$2b$")) {
+            return verifyBcryptWithPhp(rawPassword, storedPassword);
+        }
+
+        return false;
+    }
+
+    private boolean verifyBcryptWithPhp(String rawPassword, String hash) {
+        String[] phpCandidates = {"C:\\xampp\\php\\php.exe", "php"};
+        for (String php : phpCandidates) {
+            List<String> command = List.of(
+                    php,
+                    "-r",
+                    "$p=$argv[1]??'';$h=$argv[2]??'';echo password_verify($p,$h)?'1':'0';",
+                    rawPassword,
+                    hash
+            );
+
+            try {
+                ProcessBuilder processBuilder = new ProcessBuilder(command);
+                processBuilder.redirectErrorStream(true);
+                Process process = processBuilder.start();
+
+                String output;
+                try (BufferedReader reader = new BufferedReader(
+                        new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
+                    output = reader.readLine();
+                }
+
+                int exitCode = process.waitFor();
+                if (exitCode == 0 && output != null && output.trim().startsWith("1")) {
+                    return true;
+                }
+            } catch (IOException | InterruptedException e) {
+                if (e instanceof InterruptedException) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+        }
+
+        return false;
     }
 
     private User mapUser(ResultSet rs) throws SQLException {
