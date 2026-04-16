@@ -165,6 +165,25 @@ public class ServiceUser implements IService<User> {
         }
     }
 
+    /**
+     * Search users dynamically using Java Stream API.
+     * Filters by name, email, or username (case-insensitive).
+     * Excludes admin accounts from results.
+     */
+    public List<User> searchUsers(String query) {
+        return getAll().stream()
+                .filter(u -> !"admin@rlife.com".equalsIgnoreCase(u.getEmail()))
+                .filter(u -> {
+                    String q = query.toLowerCase();
+                    String name = u.getFullName() != null ? u.getFullName().toLowerCase() : "";
+                    String email = u.getEmail() != null ? u.getEmail().toLowerCase() : "";
+                    String username = u.getUsername() != null ? u.getUsername().toLowerCase() : "";
+                    String university = u.getUniversity() != null ? u.getUniversity().toLowerCase() : "";
+                    return name.contains(q) || email.contains(q) || username.contains(q) || university.contains(q);
+                })
+                .collect(java.util.stream.Collectors.toList());
+    }
+
     // ── Admin methods ────────────────────────────────────────────────
 
     public int countUsers() {

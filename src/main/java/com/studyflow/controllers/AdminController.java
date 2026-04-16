@@ -5,16 +5,16 @@ import com.studyflow.models.User;
 import com.studyflow.services.ServiceUser;
 import com.studyflow.utils.UserSession;
 import javafx.application.Platform;
-import javafx.beans.property.SimpleStringProperty;
-import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Parent;
 import javafx.scene.control.*;
 import javafx.scene.input.MouseEvent;
-import javafx.scene.layout.StackPane;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.*;
+import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import org.kordamp.ikonli.javafx.FontIcon;
 
@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.List;
 import java.util.ResourceBundle;
-import java.util.stream.Collectors;
 
 public class AdminController implements Initializable {
 
@@ -39,21 +38,17 @@ public class AdminController implements Initializable {
     private boolean isMaximized = false;
     private double savedX, savedY, savedWidth, savedHeight;
 
-    private List<User> cachedUsers;
+    private final ServiceUser serviceUser = new ServiceUser();
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         activeButton = btnAdminDash;
         showDashboard();
 
-        // Pre-load users for search
-        cachedUsers = new ServiceUser().getAll();
-
-        // Dynamic search — filter as the user types
+        // Dynamic search — uses stream-based filtering in ServiceUser
         searchField.textProperty().addListener((obs, oldVal, newVal) -> {
-            String q = newVal.trim().toLowerCase();
+            String q = newVal.trim();
             if (q.isEmpty()) {
-                // Restore whatever page was active
                 if (activeButton == btnAdminDash) showDashboard();
                 else if (activeButton == btnAdminUsers) showUsers();
                 else if (activeButton == btnAdminAudit) showAuditLog();
@@ -89,84 +84,120 @@ public class AdminController implements Initializable {
 
     @FXML
     private void onSearchSubmit() {
-        String q = searchField.getText().trim().toLowerCase();
+        String q = searchField.getText().trim();
         if (!q.isEmpty()) showSearchResults(q);
     }
 
-    @SuppressWarnings("unchecked")
-    private void showSearchResults(String q) {
-        List<User> results = cachedUsers.stream()
-                .filter(u -> u.getFullName().toLowerCase().contains(q)
-                        || u.getEmail().toLowerCase().contains(q)
-                        || u.getUsername().toLowerCase().contains(q))
-                .collect(Collectors.toList());
+    private void showSearchResults(String query) {
+        // Stream-based search in the service layer
+        List<User> results = serviceUser.searchUsers(query);
 
         VBox container = new VBox(16);
-        container.setStyle("-fx-padding: 24;");
+        container.setPadding(new Insets(24));
 
-        Label title = new Label("Search Results — \"" + q + "\" (" + results.size() + " found)");
+        Label title = new Label("Search Results — \"" + query + "\" (" + results.size() + " found)");
         title.getStyleClass().add("text-heading");
+
+        container.getChildren().add(title);
 
         if (results.isEmpty()) {
             Label empty = new Label("No users matching your search.");
             empty.getStyleClass().add("text-muted");
             empty.setStyle("-fx-font-size: 15px; -fx-padding: 32 0;");
-            container.getChildren().addAll(title, empty);
+            container.getChildren().add(empty);
         } else {
-            TableView<User> table = new TableView<>();
-            table.getStyleClass().add("admin-table");
-            table.setPrefHeight(Math.min(60 + results.size() * 36, 500));
-
-            TableColumn<User, String> idCol = new TableColumn<>("ID");
-            idCol.setCellValueFactory(c -> new SimpleStringProperty(String.valueOf(c.getValue().getId())));
-            idCol.setPrefWidth(50);
-
-            TableColumn<User, String> nameCol = new TableColumn<>("Name");
-            nameCol.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getFullName().trim()));
-            nameCol.setPrefWidth(180);
-
-            TableColumn<User, String> emailCol = new TableColumn<>("Email");
-            emailCol.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getEmail()));
-            emailCol.setPrefWidth(240);
-
-            TableColumn<User, String> genderCol = new TableColumn<>("Gender");
-            genderCol.setCellValueFactory(c -> new SimpleStringProperty(
-                    c.getValue().getGender() != null ? c.getValue().getGender() : "N/A"));
-            genderCol.setPrefWidth(80);
-
-            TableColumn<User, String> statusCol = new TableColumn<>("Status");
-            statusCol.setCellValueFactory(c -> new SimpleStringProperty(
-                    c.getValue().isBanned() ? "Banned" : "Active"));
-            statusCol.setPrefWidth(100);
-            statusCol.setCellFactory(col -> new TableCell<>() {
-                @Override
-                protected void updateItem(String item, boolean empty) {
-                    super.updateItem(item, empty);
-                    if (empty || item == null) { setText(null); setStyle(""); return; }
-                    setText(item);
-                    setStyle("Banned".equals(item)
-                        ? "-fx-text-fill: #F43F5E; -fx-font-weight: bold;"
-                        : "-fx-text-fill: #34D399; -fx-font-weight: bold;");
-                }
-            });
-
-            TableColumn<User, String> dateCol = new TableColumn<>("Joined");
-            dateCol.setCellValueFactory(c -> new SimpleStringProperty(
-                    c.getValue().getCreatedAt() != null
-                        ? c.getValue().getCreatedAt().substring(0, Math.min(16, c.getValue().getCreatedAt().length()))
-                        : "N/A"));
-            dateCol.setPrefWidth(150);
-
-            table.getColumns().addAll(idCol, nameCol, emailCol, genderCol, statusCol, dateCol);
-            table.setItems(FXCollections.observableArrayList(results));
-
-            container.getChildren().addAll(title, table);
+            VBox cardsBox = new VBox(10);
+            cardsBox.setPadding(new Insets(4));
+            for (User user : results) {
+                cardsBox.getChildren().add(buildSearchUserCard(user));
+            }
+            ScrollPane scroll = new ScrollPane(cardsBox);
+            scroll.setFitToWidth(true);
+            scroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+            scroll.getStyleClass().add("auth-scroll");
+            VBox.setVgrow(scroll, Priority.ALWAYS);
+            container.getChildren().add(scroll);
         }
 
         if (activeButton != null) activeButton.getStyleClass().remove("active");
-
         contentArea.getChildren().clear();
         contentArea.getChildren().add(container);
+    }
+
+    private HBox buildSearchUserCard(User user) {
+        HBox card = new HBox(16);
+        card.getStyleClass().add("admin-user-card");
+        card.setAlignment(Pos.CENTER_LEFT);
+        card.setPadding(new Insets(14, 20, 14, 20));
+
+        // Avatar
+        StackPane avatar = new StackPane();
+        avatar.getStyleClass().add("admin-user-avatar");
+        if (user.isBanned()) avatar.getStyleClass().add("admin-user-avatar-banned");
+        String initials = user.getInitials().isEmpty() ? "??" : user.getInitials();
+        Label avatarLabel = new Label(initials);
+        avatarLabel.getStyleClass().add("admin-user-avatar-text");
+        avatar.getChildren().add(avatarLabel);
+
+        // Info
+        VBox info = new VBox(4);
+        HBox.setHgrow(info, Priority.ALWAYS);
+
+        Label nameLabel = new Label(user.getFullName().trim());
+        nameLabel.getStyleClass().add("admin-user-name");
+
+        HBox details = new HBox(10);
+        details.setAlignment(Pos.CENTER_LEFT);
+
+        // Email pill
+        HBox emailPill = buildPill("fth-mail", user.getEmail());
+        details.getChildren().add(emailPill);
+
+        // Username pill
+        if (user.getUsername() != null && !user.getUsername().isEmpty()) {
+            details.getChildren().add(buildPill("fth-at-sign", user.getUsername()));
+        }
+
+        // University pill
+        if (user.getUniversity() != null && !user.getUniversity().isEmpty()) {
+            details.getChildren().add(buildPill("fth-book-open", user.getUniversity()));
+        }
+
+        info.getChildren().addAll(nameLabel, details);
+
+        // Status badge
+        Label statusBadge = new Label(user.isBanned() ? "Banned" : "Active");
+        statusBadge.getStyleClass().add("admin-status-badge");
+        statusBadge.getStyleClass().add(user.isBanned() ? "admin-status-banned" : "admin-status-active");
+
+        // Joined date
+        VBox dateBox = new VBox(2);
+        dateBox.setAlignment(Pos.CENTER_RIGHT);
+        FontIcon clockIcon = new FontIcon("fth-clock");
+        clockIcon.setIconSize(12);
+        clockIcon.setIconColor(Color.web("#475569"));
+        String dateStr = user.getCreatedAt() != null
+                ? user.getCreatedAt().substring(0, Math.min(10, user.getCreatedAt().length()))
+                : "N/A";
+        Label dateLabel = new Label(dateStr);
+        dateLabel.getStyleClass().add("admin-log-date");
+        dateBox.getChildren().addAll(clockIcon, dateLabel);
+
+        card.getChildren().addAll(avatar, info, statusBadge, dateBox);
+        return card;
+    }
+
+    private HBox buildPill(String iconLiteral, String text) {
+        HBox pill = new HBox(5);
+        pill.setAlignment(Pos.CENTER_LEFT);
+        pill.getStyleClass().add("admin-user-pill");
+        FontIcon icon = new FontIcon(iconLiteral);
+        icon.setIconSize(11);
+        icon.setIconColor(Color.web("#64748B"));
+        Label label = new Label(text);
+        label.getStyleClass().add("admin-user-detail");
+        pill.getChildren().addAll(icon, label);
+        return pill;
     }
 
     @FXML
