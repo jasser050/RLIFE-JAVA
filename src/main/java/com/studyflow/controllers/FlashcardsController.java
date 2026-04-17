@@ -1,6 +1,7 @@
 package com.studyflow.controllers;
 
 import com.studyflow.models.Flashcard;
+import com.studyflow.services.AIFlashcardService;
 import javafx.animation.FadeTransition;
 import javafx.animation.PauseTransition;
 import javafx.animation.SequentialTransition;
@@ -14,7 +15,12 @@ import javafx.scene.layout.HBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Popup;
 import javafx.util.Duration;
+import javafx.fxml.FXMLLoader;
 
+import javafx.scene.Scene;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
+import javafx.stage.StageStyle;
 import java.io.File;
 import java.util.HashMap;
 import java.util.List;
@@ -168,9 +174,9 @@ public class FlashcardsController extends FlashcardsFeaturesController {
         if (formCompletionLabel == null) return;
         int total = 5; // titre, question, réponse, difficulty, status
         int done  = 0;
-        if (fieldTitre   != null && fieldTitre.getText().trim().length()   >= Flashcard.TITRE_MIN)    done++;
-        if (fieldQuestion != null && fieldQuestion.getText().trim().length() >= Flashcard.QUESTION_MIN) done++;
-        if (fieldReponse  != null && fieldReponse.getText().trim().length()  >= Flashcard.REPONSE_MIN)  done++;
+        if (fieldTitre    != null && fieldTitre.getText().trim().length()    >= Flashcard.TITRE_MIN)    done++;
+        if (fieldQuestion != null && fieldQuestion.getText().trim().length()  >= Flashcard.QUESTION_MIN) done++;
+        if (fieldReponse  != null && fieldReponse.getText().trim().length()   >= Flashcard.REPONSE_MIN)  done++;
         if (combDifficulte != null && combDifficulte.getValue() != null)  done++;
         if (combEtat       != null && combEtat.getValue() != null)         done++;
         int pct = (done * 100) / total;
@@ -558,7 +564,7 @@ public class FlashcardsController extends FlashcardsFeaturesController {
        ══════════════════════════════════════════════════════════════════════ */
     private void showSuccessPopup(String message) {
         Platform.runLater(() -> {
-            javafx.scene.Node anchor = fieldTitre;
+            javafx.scene.Node anchor = (flashcardsView != null) ? flashcardsView : fieldTitre;
             if (anchor == null || anchor.getScene() == null) {
                 new Alert(Alert.AlertType.INFORMATION, message, ButtonType.OK).showAndWait();
                 return;
@@ -589,6 +595,93 @@ public class FlashcardsController extends FlashcardsFeaturesController {
             fade.setOnFinished(e -> popup.hide());
             new SequentialTransition(new PauseTransition(Duration.seconds(2.5)), fade).play();
         });
+    }
+
+    /* ══════════════════════════════════════════════════════════════════════
+       AI GENERATOR  ✅ FIXED
+       ══════════════════════════════════════════════════════════════════════ */
+    @FXML
+    public void showAIGenerator() {
+        try {
+            FXMLLoader loader = new FXMLLoader(
+                    getClass().getResource("/com/studyflow/views/AIGenerator.fxml"));
+            javafx.scene.Parent root = loader.load();
+
+            AIGeneratorController ctrl = loader.getController();
+            ctrl.setOnSuccess(generatedCards -> {
+                // Ce callback est déjà sur le FX thread (Platform.runLater dans AIGeneratorController)
+
+                if (generatedCards == null || generatedCards.isEmpty()) {
+                    showCriticalError("No flashcards were generated.");
+                    return;
+                }
+
+                if (currentDeck == null) {
+                    showCriticalError("No deck is currently open. Open a deck before using AI generation.");
+                    return;
+                }
+
+                int saved = 0;
+                String firstSaveError = null;
+                for (Flashcard fc : generatedCards) {
+                    fc.setIdDeck(currentDeck.getIdDeck());
+                    fc.setCreatedBy(currentUserId);
+
+                    // Valeurs par défaut de sécurité
+                    if (fc.getEtat() == null || fc.getEtat().isEmpty()) fc.setEtat("new");
+                    if (fc.getTitre() == null || fc.getTitre().isEmpty()) fc.setTitre("Generated Card");
+
+                    try {
+                        flashcardService.add(fc);
+                        saved++;
+                    } catch (Exception ex) {
+                        System.err.println("[AI] Could not save card \"" + fc.getTitre() + "\": " + ex.getMessage());
+                        if (firstSaveError == null) firstSaveError = ex.getMessage();
+                    }
+                }
+
+                System.out.println("[AI] Saved " + saved + "/" + generatedCards.size()
+                        + " cards to deck " + (currentDeck != null ? currentDeck.getIdDeck() : "null"));
+
+                if (saved == 0) {
+                    String details = firstSaveError != null ? firstSaveError : "Unknown database error.";
+                    showCriticalError("AI generated cards, but none were saved.\nReason: " + details);
+                    return;
+                }
+
+                // Remet les filtres à zéro pour afficher immédiatement les nouvelles cartes "new"
+                resetFcFilters();
+                goToFlashcards();
+                refreshFlashcards();
+
+                if (saved < generatedCards.size()) {
+                    String details = firstSaveError != null ? firstSaveError : "Some cards failed to save.";
+                    showCriticalError(saved + " flashcard(s) saved, but "
+                            + (generatedCards.size() - saved) + " failed.\nReason: " + details);
+                    return;
+                }
+
+                showSuccessPopup("✨ " + saved + " flashcard(s) generated and saved!");
+            });
+
+            Stage dialog = new Stage(StageStyle.TRANSPARENT);
+            dialog.initModality(Modality.APPLICATION_MODAL);
+
+            if (flashcardsView != null && flashcardsView.getScene() != null)
+                dialog.initOwner(flashcardsView.getScene().getWindow());
+            else if (fieldTitre != null && fieldTitre.getScene() != null)
+                dialog.initOwner(fieldTitre.getScene().getWindow());
+
+            Scene scene = new Scene(root);
+            scene.setFill(javafx.scene.paint.Color.TRANSPARENT);
+            dialog.setScene(scene);
+            dialog.showAndWait();
+
+        } catch (Exception e) {
+            System.err.println("[AI] Could not open AI Generator: " + e.getMessage());
+            e.printStackTrace();
+            showCriticalError("Could not open AI Generator: " + e.getMessage());
+        }
     }
 
     private void showCriticalError(String msg) {

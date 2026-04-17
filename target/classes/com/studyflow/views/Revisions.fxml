@@ -49,7 +49,7 @@
             </Button>
 
             <!-- Create Button -->
-            <Button text="Create Deck" onAction="#showAddView"
+            <Button text=" Create Deck" onAction="#showAddView"
                     style="-fx-background-color:linear-gradient(to right,#7C3AED,#6D28D9);-fx-text-fill:white;-fx-font-size:13px;-fx-font-weight:700;-fx-background-radius:12;-fx-cursor:hand;-fx-padding:9 20;">
                 <graphic>
                     <FontIcon iconLiteral="fth-plus" iconSize="14" iconColor="white"/>
@@ -108,8 +108,9 @@
             </VBox>
         </HBox>
 
-        <!-- Main Content -->
-        <HBox spacing="20" VBox.vgrow="ALWAYS">
+        <!-- Main Content — spacing réduit de 20 → 8 -->
+        <HBox spacing="8" VBox.vgrow="ALWAYS">
+
             <!-- Decks Grid -->
             <VBox spacing="16" HBox.hgrow="ALWAYS">
                 <HBox alignment="CENTER_LEFT" spacing="12">
@@ -127,9 +128,10 @@
                 </ScrollPane>
             </VBox>
 
-            <!-- Right Sidebar -->
-            <VBox prefWidth="320" spacing="16">
-                <!-- Success Rate -->
+            <!-- Right Sidebar — prefWidth augmenté de 320 → 380 -->
+            <VBox prefWidth="380" spacing="16">
+
+                <!-- Global Success Rate -->
                 <VBox style="-fx-background-color:#0F172A;-fx-background-radius:16;-fx-border-color:#1E293B;-fx-border-radius:16;-fx-border-width:1;-fx-padding:16 18;" spacing="10">
                     <HBox alignment="CENTER_LEFT" spacing="8">
                         <StackPane prefWidth="28" prefHeight="28" style="-fx-background-color:linear-gradient(to bottom right,#7C3AED,#8B5CF6);-fx-background-radius:8;">
@@ -137,7 +139,8 @@
                         </StackPane>
                         <Label text="Global Success Rate" style="-fx-text-fill:#F8FAFC;-fx-font-size:13px;-fx-font-weight:700;"/>
                     </HBox>
-                    <StackPane fx:id="donutChartPane" prefHeight="140" prefWidth="280"/>
+                    <!-- prefWidth augmenté de 280 → 340 -->
+                    <StackPane fx:id="donutChartPane" prefHeight="140" prefWidth="340"/>
                 </VBox>
 
                 <!-- Weekly Progress -->
@@ -148,7 +151,8 @@
                         </StackPane>
                         <Label text="Weekly Progress" style="-fx-text-fill:#F8FAFC;-fx-font-size:13px;-fx-font-weight:700;"/>
                     </HBox>
-                    <StackPane fx:id="lineChartPane" prefHeight="140" prefWidth="280" VBox.vgrow="ALWAYS"/>
+                    <!-- prefWidth augmenté de 280 → 340 -->
+                    <StackPane fx:id="lineChartPane" prefHeight="140" prefWidth="340" VBox.vgrow="ALWAYS"/>
                 </VBox>
 
                 <!-- Mastery Distribution -->
@@ -159,8 +163,10 @@
                         </StackPane>
                         <Label text="Mastery Distribution" style="-fx-text-fill:#F8FAFC;-fx-font-size:13px;-fx-font-weight:700;"/>
                     </HBox>
-                    <StackPane fx:id="barChartPane" prefHeight="120" prefWidth="280"/>
+                    <!-- prefWidth augmenté de 280 → 340 -->
+                    <StackPane fx:id="barChartPane" prefHeight="120" prefWidth="340"/>
                 </VBox>
+
             </VBox>
         </HBox>
     </VBox>
@@ -186,6 +192,7 @@
 
         <!-- Form Card -->
         <VBox style="-fx-background-color:#0F172A;-fx-background-radius:20;-fx-border-color:#1E293B;-fx-border-radius:20;-fx-border-width:1;">
+
             <!-- Card Header -->
             <HBox alignment="CENTER_LEFT" spacing="12" style="-fx-padding:20 24 20 24;-fx-border-color:#1E293B;-fx-border-width:0 0 1 0;">
                 <StackPane prefWidth="40" prefHeight="40" style="-fx-background-color:linear-gradient(to bottom right,#7C3AED,#8B5CF6);-fx-background-radius:12;">
@@ -199,6 +206,7 @@
 
             <!-- Form Fields -->
             <VBox spacing="18" style="-fx-padding:24 24 20 24;">
+
                 <!-- Title -->
                 <VBox spacing="6">
                     <HBox alignment="CENTER_LEFT" spacing="5">
@@ -267,25 +275,31 @@
                     <Label fx:id="imagePreviewLabel" text="" style="-fx-text-fill:#34D399;-fx-font-size:10px;" visible="false" managed="false"/>
                 </VBox>
 
-                <!-- PDF Document -->
+                <!-- PDF Documents (multi) -->
                 <VBox spacing="6">
                     <HBox alignment="CENTER_LEFT" spacing="5">
                         <FontIcon iconLiteral="fth-file-text" iconSize="12" iconColor="#F472B6"/>
-                        <Label text="PDF Document" style="-fx-text-fill:#CBD5E1;-fx-font-size:12px;-fx-font-weight:600;"/>
+                        <Label text="PDF Documents" style="-fx-text-fill:#CBD5E1;-fx-font-size:12px;-fx-font-weight:600;"/>
                         <Label text="*" style="-fx-text-fill:#FB7185;-fx-font-weight:700;"/>
                     </HBox>
-                    <HBox spacing="10" alignment="CENTER_LEFT">
-                        <TextField fx:id="fieldPdf" promptText="No PDF selected..." editable="false" HBox.hgrow="ALWAYS"
-                                   style="-fx-background-color:#1E293B;-fx-text-fill:#94A3B8;-fx-prompt-text-fill:#475569;-fx-border-color:#334155;-fx-border-radius:10;-fx-background-radius:10;-fx-padding:11 16;-fx-font-size:12px;"/>
-                        <Button text=" Browse" onAction="#pickPdf"
-                                style="-fx-background-color:#1E293B;-fx-text-fill:#F472B6;-fx-font-size:12px;-fx-font-weight:600;-fx-background-radius:10;-fx-cursor:hand;-fx-padding:10 16;-fx-border-color:#334155;-fx-border-radius:10;-fx-border-width:1;">
+
+                    <!-- Dynamic list of PDF rows populated by controller -->
+                    <VBox fx:id="pdfListContainer" spacing="8"/>
+
+                    <!-- Add PDF button -->
+                    <HBox>
+                        <Button fx:id="addPdfBtn" text=" Add PDF" onAction="#pickPdf" prefHeight="36"
+                                style="-fx-background-color:rgba(244,114,182,0.08);-fx-text-fill:#F472B6;-fx-font-size:12px;-fx-font-weight:600;-fx-background-radius:8;-fx-cursor:hand;-fx-padding:8 16;-fx-border-color:#F472B6;-fx-border-radius:8;-fx-border-width:1;">
                             <graphic>
-                                <FontIcon iconLiteral="fth-upload" iconSize="13" iconColor="#F472B6"/>
+                                <FontIcon iconLiteral="fth-plus" iconSize="12" iconColor="#F472B6"/>
                             </graphic>
                         </Button>
                     </HBox>
+
                     <Label fx:id="errPdf" text="" style="-fx-text-fill:#FB7185;-fx-font-size:10px;-fx-font-weight:600;" visible="false" managed="false"/>
                     <Label fx:id="pdfPreviewLabel" text="" style="-fx-text-fill:#34D399;-fx-font-size:10px;" visible="false" managed="false"/>
+                    <!-- hidden legacy field for backward compat -->
+                    <TextField fx:id="fieldPdf" visible="false" managed="false" editable="false"/>
                 </VBox>
             </VBox>
 

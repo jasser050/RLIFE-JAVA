@@ -9,7 +9,6 @@ import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 
 import java.io.IOException;
-import java.net.URL;
 
 /**
  * StudyFlow - Modern Student Productivity Dashboard
@@ -23,6 +22,7 @@ public class App extends Application {
     @Override
     public void start(Stage stage) throws IOException {
         primaryStage = stage;
+        LocalServer.start();
 
         // Load the main layout
         Parent root = loadFXML("views/Landing");
@@ -32,7 +32,7 @@ public class App extends Application {
         scene.setFill(Color.TRANSPARENT);
 
         // Load stylesheets
-        scene.getStylesheets().add(getClass().getResource("/com/studyflow/styles/dark-theme.css").toExternalForm());
+        scene.getStylesheets().add(getClass().getResource("styles/dark-theme.css").toExternalForm());
 
         // Configure stage - UNDECORATED for custom title bar
         stage.initStyle(StageStyle.TRANSPARENT);
@@ -46,15 +46,10 @@ public class App extends Application {
     }
 
     /**
-     * Load an FXML file using an absolute classpath path.
+     * Load an FXML file
      */
     public static Parent loadFXML(String fxml) throws IOException {
-        String path = "/com/studyflow/" + fxml + ".fxml";
-        URL resource = App.class.getResource(path);
-        if (resource == null) {
-            throw new IOException("FXML not found on classpath: " + path);
-        }
-        FXMLLoader fxmlLoader = new FXMLLoader(resource);
+        FXMLLoader fxmlLoader = new FXMLLoader(App.class.getResource(fxml + ".fxml"));
         return fxmlLoader.load();
     }
 
@@ -80,6 +75,9 @@ public class App extends Application {
     }
 
     public static void main(String[] args) {
+        // Enable hardware acceleration and WebGL for WebView (Spline + Three.js)
+        System.setProperty("prism.forceGPU", "true");
+        System.setProperty("prism.vsync", "false");
         launch(args);
     }
 }

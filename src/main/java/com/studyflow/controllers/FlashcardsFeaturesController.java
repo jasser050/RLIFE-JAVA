@@ -2,15 +2,19 @@ package com.studyflow.controllers;
 
 import com.studyflow.models.Deck;
 import com.studyflow.models.Flashcard;
+import com.studyflow.services.AITranslationService;
 import com.studyflow.services.DeckService;
 import com.studyflow.services.FlashcardService;
+import com.studyflow.services.SpeechService;
 import com.studyflow.utils.UserSession;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -24,6 +28,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 public abstract class FlashcardsFeaturesController implements Initializable {
@@ -101,11 +106,23 @@ public abstract class FlashcardsFeaturesController implements Initializable {
     // ── Global state ──────────────────────────────────────────────────────
     protected final DeckService      deckService      = new DeckService();
     protected final FlashcardService flashcardService = new FlashcardService();
+    protected final AITranslationService translationService = new AITranslationService();
+    protected final SpeechService speechService = new SpeechService();
     protected List<Deck>      allDecks;
     protected Deck            currentDeck;
     protected List<Flashcard> currentFlashcards;
     protected Flashcard       selectedFlashcard = null;
     protected int             currentUserId;
+
+    private final Map<String, AITranslationService.TranslationResult> translationCache = new ConcurrentHashMap<>();
+    private static final LinkedHashMap<String, String> SUPPORTED_LANGUAGES = new LinkedHashMap<>();
+    static {
+        SUPPORTED_LANGUAGES.put("en", "English");
+        SUPPORTED_LANGUAGES.put("fr", "Francais");
+        SUPPORTED_LANGUAGES.put("ar", "Arabic");
+        SUPPORTED_LANGUAGES.put("es", "Spanish");
+        SUPPORTED_LANGUAGES.put("de", "German");
+    }
 
     private String  activeDeckTab  = "all";
     private boolean isDeckGridMode = true;
@@ -404,13 +421,15 @@ public abstract class FlashcardsFeaturesController implements Initializable {
         refreshFlashcards();
     }
 
-    private void resetFcFilters() {
+    protected void resetFcFilters() {
         if (searchFcField    != null) searchFcField.clear();
         if (filterEtat       != null) filterEtat.setValue("All Status");
         if (filterDifficulty != null) filterDifficulty.setValue("All Levels");
         if (sortFcCombo      != null) sortFcCombo.setValue("Default");
     }
 
+    // ✅ FIX PRINCIPAL : utilise getByDeck() au lieu de getByDeckAndUser()
+    // pour afficher TOUTES les flashcards du deck, y compris celles générées par l'IA
     protected void refreshFlashcards() {
         if (currentDeck == null) return;
         String kw    = searchFcField    != null ? searchFcField.getText().trim()    : "";
@@ -418,7 +437,11 @@ public abstract class FlashcardsFeaturesController implements Initializable {
         String etat  = filterEtat       != null ? safe(filterEtat.getValue())       : "All Status";
         String diff  = filterDifficulty != null ? safe(filterDifficulty.getValue()) : "All Levels";
 
-        List<Flashcard> base = flashcardService.getByDeckAndUser(currentDeck.getIdDeck(), currentUserId);
+        // ✅ CORRECTION : getByDeck() au lieu de getByDeckAndUser()
+        // Les cartes AI sont sauvegardées avec created_by=currentUserId mais
+        // getByDeckAndUser filtrait et cachait parfois les cartes si l'userId
+        // ne correspondait pas exactement. On affiche maintenant toutes les cartes du deck.
+        List<Flashcard> base = flashcardService.getByDeck(currentDeck.getIdDeck());
         Stream<Flashcard> stream = base.stream();
 
         if (!kw.isBlank()) {
@@ -844,9 +867,8 @@ public abstract class FlashcardsFeaturesController implements Initializable {
                 ImageView iv = new ImageView(img);
                 iv.setFitWidth(130); iv.setFitHeight(130); iv.setPreserveRatio(false);
                 Rectangle clip = new Rectangle(130, 130);
-                clip.setArcWidth(36); clip.setArcHeight(36); // left corners rounded
+                clip.setArcWidth(36); clip.setArcHeight(36);
                 iv.setClip(clip);
-                // dark overlay
                 Region overlay = new Region();
                 overlay.setStyle("-fx-background-color:rgba(0,0,0,0.25);-fx-background-radius:18 0 0 18;");
                 thumbPane.getChildren().addAll(iv, overlay);
@@ -878,7 +900,6 @@ public abstract class FlashcardsFeaturesController implements Initializable {
                         "-fx-padding:3 10;-fx-background-radius:20;"
         );
 
-        // Description courte
         if (deck.getDescription() != null && !deck.getDescription().isEmpty()) {
             Label descLbl = new Label(deck.getDescription());
             descLbl.setStyle("-fx-text-fill:#64748B;-fx-font-size:11px;");
@@ -889,7 +910,6 @@ public abstract class FlashcardsFeaturesController implements Initializable {
             centerBox.getChildren().addAll(titleLbl, subLbl);
         }
 
-        // Stats compactes
         HBox statsBar = new HBox(8);
         statsBar.setAlignment(Pos.CENTER_LEFT);
         statsBar.getChildren().addAll(
@@ -950,7 +970,29 @@ public abstract class FlashcardsFeaturesController implements Initializable {
         ));
         addBtn.setOnAction(e -> showAddFlashcardForm());
 
-        // PDF badge si disponible
+        Button aiBtn = new Button("AI");
+        aiBtn.setGraphic(makeIcon("fth-cpu", 13, "white"));
+        aiBtn.setStyle(
+                "-fx-background-color:linear-gradient(to right,#059669,#10B981);" +
+                        "-fx-text-fill:white;-fx-font-size:12px;-fx-font-weight:700;" +
+                        "-fx-background-radius:10;-fx-cursor:hand;-fx-padding:8 18;" +
+                        "-fx-effect:dropshadow(gaussian,rgba(16,185,129,0.45),10,0,0,3);"
+        );
+        aiBtn.setOnMouseEntered(e -> aiBtn.setStyle(
+                "-fx-background-color:linear-gradient(to right,#059669,#10B981);" +
+                        "-fx-text-fill:white;-fx-font-size:12px;-fx-font-weight:700;" +
+                        "-fx-background-radius:10;-fx-cursor:hand;-fx-padding:8 18;" +
+                        "-fx-effect:dropshadow(gaussian,rgba(16,185,129,0.45),16,0,0,5);" +
+                        "-fx-scale-x:1.03;-fx-scale-y:1.03;"
+        ));
+        aiBtn.setOnMouseExited(e -> aiBtn.setStyle(
+                "-fx-background-color:linear-gradient(to right,#059669,#10B981);" +
+                        "-fx-text-fill:white;-fx-font-size:12px;-fx-font-weight:700;" +
+                        "-fx-background-radius:10;-fx-cursor:hand;-fx-padding:8 18;" +
+                        "-fx-effect:dropshadow(gaussian,rgba(16,185,129,0.45),10,0,0,3);"
+        ));
+        aiBtn.setOnAction(e -> showAIGenerator());
+
         String pdfPath = deck.getPdf();
         if (pdfPath != null && !pdfPath.trim().isEmpty()) {
             Button pdfBtn = new Button("PDF");
@@ -967,7 +1009,7 @@ public abstract class FlashcardsFeaturesController implements Initializable {
             btnBox.getChildren().add(pdfBtn);
         }
 
-        btnBox.getChildren().addAll(backBtn, addBtn);
+        btnBox.getChildren().addAll(backBtn, addBtn, aiBtn);
         deckHeroPane.getChildren().addAll(thumbPane, centerBox, btnBox);
     }
 
@@ -1018,12 +1060,10 @@ public abstract class FlashcardsFeaturesController implements Initializable {
             iv.setPreserveRatio(false);
             iv.setSmooth(true);
 
-            // Clip arrondi
             Rectangle clip = new Rectangle(680, 180);
             clip.setArcWidth(28); clip.setArcHeight(28);
             iv.setClip(clip);
 
-            // Overlay gradient bas (fondu vers la couleur du hero)
             Region overlay = new Region();
             overlay.setMaxWidth(680);
             overlay.setPrefHeight(180);
@@ -1036,7 +1076,6 @@ public abstract class FlashcardsFeaturesController implements Initializable {
                             "-fx-background-radius:14;"
             );
 
-            // Badge "COVER" en haut à droite
             Label coverBadge = new Label("📸 COVER");
             coverBadge.setStyle(
                     "-fx-background-color:rgba(0,0,0,0.55);" +
@@ -1076,7 +1115,6 @@ public abstract class FlashcardsFeaturesController implements Initializable {
                         "-fx-effect:dropshadow(gaussian,rgba(0,0,0,0.4),12,0,0,3);"
         );
 
-        // Icône PDF
         StackPane pdfIcon = new StackPane();
         pdfIcon.setPrefSize(42, 42);
         pdfIcon.setStyle(
@@ -1088,7 +1126,6 @@ public abstract class FlashcardsFeaturesController implements Initializable {
         pdfIco.setIconSize(20); pdfIco.setIconColor(Color.web("#FB7185"));
         pdfIcon.getChildren().add(pdfIco);
 
-        // Texte
         VBox pdfText = new VBox(3);
         Label pdfTitle = new Label("PDF Document");
         pdfTitle.setStyle("-fx-text-fill:#CBD5E1;-fx-font-size:11px;-fx-font-weight:700;");
@@ -1099,7 +1136,6 @@ public abstract class FlashcardsFeaturesController implements Initializable {
         pdfStatus.setStyle("-fx-text-fill:" + (exists ? "#34D399" : "#FB7185") + ";-fx-font-size:9px;-fx-font-weight:700;");
         pdfText.getChildren().addAll(pdfTitle, pdfName, pdfStatus);
 
-        // Bouton ouvrir
         Button openPdf = new Button("Open");
         openPdf.setStyle(
                 "-fx-background-color:rgba(251,113,133,0.15);" +
@@ -1196,6 +1232,9 @@ public abstract class FlashcardsFeaturesController implements Initializable {
     }
 
     private VBox buildFlashcardCard(Flashcard fc) {
+        if (System.nanoTime() >= 0) {
+            return buildInteractiveFlashcardCard(fc);
+        }
         String etatColor = switch (fc.getEtat()) {
             case "mastered" -> "#34D399"; case "learning" -> "#FBBF24"; default -> "#94A3B8"; };
         String diffColor = switch (fc.getNiveauDifficulte()) {
@@ -1251,17 +1290,259 @@ public abstract class FlashcardsFeaturesController implements Initializable {
         return card;
     }
 
+    private VBox buildInteractiveFlashcardCard(Flashcard fc) {
+        String etatColor = switch (fc.getEtat()) {
+            case "mastered" -> "#34D399";
+            case "learning" -> "#FBBF24";
+            default -> "#94A3B8";
+        };
+        String diffColor = switch (fc.getNiveauDifficulte()) {
+            case 3 -> "#FB7185";
+            case 2 -> "#FBBF24";
+            default -> "#34D399";
+        };
+
+        VBox card = new VBox(0);
+        card.setPrefWidth(300);
+        card.setMaxWidth(300);
+        String normalStyle = "-fx-background-color:#0F172A;-fx-background-radius:14;-fx-cursor:hand;" +
+                "-fx-effect:dropshadow(gaussian,rgba(0,0,0,0.3),10,0,0,3);";
+        String hoverStyle = "-fx-background-color:#1E293B;-fx-background-radius:14;-fx-cursor:hand;" +
+                "-fx-effect:dropshadow(gaussian,rgba(0,0,0,0.5),18,0,0,6);";
+        card.setStyle(normalStyle);
+        card.setOnMouseEntered(e -> card.setStyle(hoverStyle));
+        card.setOnMouseExited(e -> card.setStyle(normalStyle));
+
+        Region stripe = new Region();
+        stripe.setPrefHeight(4);
+        stripe.setStyle("-fx-background-color:" + etatColor + ";-fx-background-radius:14 14 0 0;");
+
+        VBox body = new VBox(10);
+        body.setPadding(new Insets(14));
+
+        HBox titleRow = new HBox(8);
+        titleRow.setAlignment(Pos.CENTER_LEFT);
+        Label title = new Label(fc.getTitre());
+        title.setStyle("-fx-text-fill:#F8FAFC;-fx-font-weight:700;-fx-font-size:13px;");
+        title.setWrapText(true);
+        HBox.setHgrow(title, Priority.ALWAYS);
+
+        Label diffBadge = new Label(fc.getDifficultyLabel());
+        diffBadge.setStyle("-fx-background-color:rgba(0,0,0,0.3);-fx-text-fill:" + diffColor +
+                ";-fx-font-size:9px;-fx-font-weight:700;-fx-padding:2 7;-fx-background-radius:20;");
+        titleRow.getChildren().addAll(title, diffBadge);
+
+        Label qLabel = new Label("Q: " + fc.getQuestion());
+        qLabel.setStyle("-fx-text-fill:#CBD5E1;-fx-font-size:11px;");
+        qLabel.setWrapText(true);
+        qLabel.setMaxHeight(42);
+
+        Label aLabel = new Label("A: " + fc.getReponse());
+        aLabel.setStyle("-fx-text-fill:#94A3B8;-fx-font-size:11px;");
+        aLabel.setWrapText(true);
+        aLabel.setMaxHeight(42);
+
+        Label etatBadge = new Label(fc.getEtat().toUpperCase());
+        etatBadge.setStyle("-fx-background-color:rgba(0,0,0,0.25);-fx-text-fill:" + etatColor +
+                ";-fx-font-size:9px;-fx-font-weight:700;-fx-padding:2 7;-fx-background-radius:20;");
+
+        HBox utilityActions = new HBox(8);
+        utilityActions.setAlignment(Pos.CENTER_LEFT);
+        Button translateBtn = chipBtn("Translate", "rgba(124,58,237,0.15)", "#A78BFA", "rgba(124,58,237,0.28)");
+        Button speakQBtn = chipBtn("Listen Q", "rgba(14,165,233,0.15)", "#38BDF8", "rgba(14,165,233,0.28)");
+        Button speakABtn = chipBtn("Listen A", "rgba(16,185,129,0.15)", "#34D399", "rgba(16,185,129,0.28)");
+        utilityActions.getChildren().addAll(translateBtn, speakQBtn, speakABtn);
+
+        VBox translationPanel = new VBox(8);
+        translationPanel.setPadding(new Insets(10));
+        translationPanel.setStyle(
+                "-fx-background-color:rgba(15,23,42,0.75);" +
+                        "-fx-border-color:#334155;-fx-border-radius:12;-fx-background-radius:12;"
+        );
+        setNodeVisible(translationPanel, false);
+
+        Label translationStatus = new Label("Choose a language to translate this flashcard.");
+        translationStatus.setWrapText(true);
+        translationStatus.setStyle("-fx-text-fill:#94A3B8;-fx-font-size:10px;");
+
+        FlowPane languageButtons = new FlowPane();
+        languageButtons.setHgap(6);
+        languageButtons.setVgap(6);
+
+        Label translatedTitle = new Label();
+        translatedTitle.setWrapText(true);
+        translatedTitle.setStyle("-fx-text-fill:#F8FAFC;-fx-font-size:12px;-fx-font-weight:700;");
+        setNodeVisible(translatedTitle, false);
+
+        Label translatedQuestion = new Label();
+        translatedQuestion.setWrapText(true);
+        translatedQuestion.setStyle("-fx-text-fill:#E2E8F0;-fx-font-size:11px;");
+        setNodeVisible(translatedQuestion, false);
+
+        Label translatedAnswer = new Label();
+        translatedAnswer.setWrapText(true);
+        translatedAnswer.setStyle("-fx-text-fill:#A5B4FC;-fx-font-size:11px;");
+        setNodeVisible(translatedAnswer, false);
+
+        final String[] activeLanguageCode = {null};
+        for (Map.Entry<String, String> entry : SUPPORTED_LANGUAGES.entrySet()) {
+            String languageCode = entry.getKey();
+            String languageLabel = entry.getValue();
+            Button langBtn = chipBtn(languageCode.toUpperCase(),
+                    "rgba(30,41,59,0.95)", "#E2E8F0", "rgba(51,65,85,0.95)");
+            langBtn.setOnAction(e -> {
+                activeLanguageCode[0] = languageCode;
+                loadTranslation(fc, languageCode, languageLabel, translationStatus,
+                        translatedTitle, translatedQuestion, translatedAnswer);
+            });
+            languageButtons.getChildren().add(langBtn);
+        }
+
+        translateBtn.setOnAction(e -> {
+            boolean show = !translationPanel.isVisible();
+            setNodeVisible(translationPanel, show);
+            if (show && activeLanguageCode[0] == null) {
+                translationStatus.setText("Choose a language to translate this flashcard.");
+            }
+        });
+
+        speakQBtn.setOnAction(e -> {
+            String languageCode = activeLanguageCode[0];
+            String text = fc.getQuestion();
+            if (languageCode != null) {
+                AITranslationService.TranslationResult translated = translationCache.get(translationCacheKey(fc, languageCode));
+                if (translated != null) {
+                    text = translated.question();
+                }
+            }
+            speechService.speakAsync(text, speechLanguageTag(languageCode));
+        });
+
+        speakABtn.setOnAction(e -> {
+            String languageCode = activeLanguageCode[0];
+            String text = fc.getReponse();
+            if (languageCode != null) {
+                AITranslationService.TranslationResult translated = translationCache.get(translationCacheKey(fc, languageCode));
+                if (translated != null) {
+                    text = translated.answer();
+                }
+            }
+            speechService.speakAsync(text, speechLanguageTag(languageCode));
+        });
+
+        translationPanel.getChildren().addAll(
+                languageButtons,
+                translationStatus,
+                translatedTitle,
+                translatedQuestion,
+                translatedAnswer
+        );
+
+        HBox actions = new HBox(8);
+        actions.setAlignment(Pos.CENTER_RIGHT);
+        actions.setPadding(new Insets(6, 0, 0, 0));
+        Button editBtn = chipBtn("Edit", "rgba(99,102,241,0.15)", "#818CF8", "rgba(99,102,241,0.3)");
+        Button delBtn = chipBtn("Delete", "rgba(244,63,94,0.15)", "#FB7185", "rgba(244,63,94,0.3)");
+        Button mastBtn;
+        if ("mastered".equals(fc.getEtat())) {
+            mastBtn = chipBtn("Unlearn", "rgba(251,191,36,0.15)", "#FBBF24", "rgba(251,191,36,0.3)");
+            mastBtn.setOnAction(e -> {
+                flashcardService.updateEtat(fc.getIdFlashcard(), "learning");
+                refreshFlashcards();
+            });
+        } else {
+            mastBtn = chipBtn("Mastered", "rgba(52,211,153,0.15)", "#34D399", "rgba(52,211,153,0.3)");
+            mastBtn.setOnAction(e -> {
+                flashcardService.updateEtat(fc.getIdFlashcard(), "mastered");
+                refreshFlashcards();
+            });
+        }
+        editBtn.setOnAction(e -> openEditForm(fc));
+        delBtn.setOnAction(e -> handleDelete(fc));
+        actions.getChildren().addAll(mastBtn, editBtn, delBtn);
+
+        body.getChildren().addAll(titleRow, qLabel, aLabel, etatBadge, utilityActions, translationPanel, actions);
+        card.getChildren().addAll(stripe, body);
+        return card;
+    }
+
     // ═════════════════════════════════════════════════════════════════════
     //  VIEW 3 — FORM (abstract)
     // ═════════════════════════════════════════════════════════════════════
 
     @FXML public abstract void showAddFlashcardForm();
+    @FXML public void showAIGenerator() { showInfo("AI generator is not available on this screen."); }
     @FXML public abstract void handleSave();
     @FXML public abstract void handleCancel();
     protected abstract void handleDelete(Flashcard fc);
     protected abstract void openEditForm(Flashcard fc);
     protected abstract boolean validateForm();
     protected abstract void clearForm();
+
+    private void loadTranslation(Flashcard fc, String languageCode, String languageLabel,
+                                 Label statusLabel, Label titleLabel, Label questionLabel, Label answerLabel) {
+        String cacheKey = translationCacheKey(fc, languageCode);
+        AITranslationService.TranslationResult cached = translationCache.get(cacheKey);
+        if (cached != null) {
+            applyTranslation(cached, statusLabel, titleLabel, questionLabel, answerLabel);
+            return;
+        }
+
+        statusLabel.setText("Translating to " + languageLabel + "...");
+        setNodeVisible(titleLabel, false);
+        setNodeVisible(questionLabel, false);
+        setNodeVisible(answerLabel, false);
+
+        Thread worker = new Thread(() -> {
+            try {
+                AITranslationService.TranslationResult result =
+                        translationService.translateFlashcard(fc, languageCode, languageLabel);
+                translationCache.put(cacheKey, result);
+                Platform.runLater(() -> applyTranslation(result, statusLabel, titleLabel, questionLabel, answerLabel));
+            } catch (Exception e) {
+                Platform.runLater(() -> {
+                    statusLabel.setText("Translation failed: " + e.getMessage());
+                    setNodeVisible(titleLabel, false);
+                    setNodeVisible(questionLabel, false);
+                    setNodeVisible(answerLabel, false);
+                });
+            }
+        }, "flashcard-translation");
+        worker.setDaemon(true);
+        worker.start();
+    }
+
+    private void applyTranslation(AITranslationService.TranslationResult result,
+                                  Label statusLabel, Label titleLabel, Label questionLabel, Label answerLabel) {
+        statusLabel.setText(result.languageLabel() + " ready.");
+        titleLabel.setText(result.title());
+        questionLabel.setText("Q: " + result.question());
+        answerLabel.setText("A: " + result.answer());
+        setNodeVisible(titleLabel, true);
+        setNodeVisible(questionLabel, true);
+        setNodeVisible(answerLabel, true);
+    }
+
+    private void setNodeVisible(Node node, boolean visible) {
+        if (node == null) return;
+        node.setVisible(visible);
+        node.setManaged(visible);
+    }
+
+    private String translationCacheKey(Flashcard fc, String languageCode) {
+        return fc.getIdFlashcard() + "|" + safe(fc.getTitre()) + "|" + languageCode;
+    }
+
+    private String speechLanguageTag(String languageCode) {
+        if (languageCode == null || languageCode.isBlank()) return "en-US";
+        return switch (languageCode) {
+            case "fr" -> "fr-FR";
+            case "ar" -> "ar-SA";
+            case "es" -> "es-ES";
+            case "de" -> "de-DE";
+            default -> "en-US";
+        };
+    }
 
     // ═════════════════════════════════════════════════════════════════════
     //  HELPERS

@@ -54,7 +54,7 @@
             </HBox>
 
             <!-- Fields -->
-            <VBox spacing="20" style="-fx-padding:28 32 24 32;">
+            <VBox fx:id="formView" spacing="20" style="-fx-padding:28 32 24 32;">
 
                 <!-- ═══ TITLE ═══ -->
                 <VBox spacing="6">
@@ -182,38 +182,41 @@
                            visible="false" managed="false"/>
                 </VBox>
 
-                <!-- ═══ PDF DOCUMENT ═══ -->
+                <!-- ═══ PDF DOCUMENTS (multiple) ═══ -->
                 <VBox spacing="6">
                     <HBox alignment="CENTER_LEFT" spacing="6">
                         <FontIcon iconLiteral="fth-file-text" iconSize="13" iconColor="#F472B6"/>
-                        <Label text="PDF Document" style="-fx-text-fill:#CBD5E1;-fx-font-size:13px;-fx-font-weight:600;"/>
+                        <Label text="PDF Documents" style="-fx-text-fill:#CBD5E1;-fx-font-size:13px;-fx-font-weight:600;"/>
                         <Label text=" *" style="-fx-text-fill:#FB7185;-fx-font-size:14px;-fx-font-weight:700;"/>
                     </HBox>
-                    <Label fx:id="tipPdf" text="💡 Obligatoire. Joignez un PDF de référence (cours, résumé, exercices…). Max : 10 Mo."
+                    <Label fx:id="tipPdf" text="💡 Obligatoire. Ajoutez un ou plusieurs PDFs (cours, résumé, exercices…). Max : 10 Mo chacun."
                            style="-fx-text-fill:#64748B;-fx-font-size:11px;-fx-font-style:italic;"
                            visible="true" managed="true"/>
-                    <HBox spacing="10" alignment="CENTER_LEFT">
-                        <TextField fx:id="fieldPdf" promptText="Aucun PDF sélectionné…"
-                                   HBox.hgrow="ALWAYS" editable="false"
-                                   style="-fx-background-color:#1E293B;-fx-text-fill:#94A3B8;
-                                          -fx-prompt-text-fill:#475569;-fx-border-color:#334155;
-                                          -fx-border-width:2;-fx-border-radius:10;
-                                          -fx-background-radius:10;-fx-padding:12 16;-fx-font-size:12px;"/>
-                        <Button text=" Browse…" onAction="#pickPdf" prefHeight="44"
-                                style="-fx-background-color:rgba(244,114,182,0.1);
+
+                    <!-- Dynamic list of PDF rows — populated by controller -->
+                    <VBox fx:id="pdfListContainer" spacing="8"/>
+
+                    <!-- "Add PDF" button -->
+                    <HBox>
+                        <Button fx:id="addPdfBtn" text=" Add PDF" onAction="#pickPdf" prefHeight="36"
+                                style="-fx-background-color:rgba(244,114,182,0.08);
                                        -fx-text-fill:#F472B6;-fx-font-size:12px;-fx-font-weight:600;
-                                       -fx-background-radius:10;-fx-cursor:hand;-fx-padding:12 20;
-                                       -fx-border-color:#F472B6;-fx-border-radius:10;-fx-border-width:1;">
-                            <graphic><FontIcon iconLiteral="fth-upload" iconSize="13" iconColor="#F472B6"/></graphic>
+                                       -fx-background-radius:8;-fx-cursor:hand;-fx-padding:8 16;
+                                       -fx-border-color:#F472B6;-fx-border-radius:8;-fx-border-width:1;">
+                            <graphic><FontIcon iconLiteral="fth-plus" iconSize="12" iconColor="#F472B6"/></graphic>
                         </Button>
                     </HBox>
+
                     <Label fx:id="errPdf"
-                           text="⚠  Un PDF est obligatoire."
+                           text="⚠  Au moins un PDF est obligatoire."
                            style="-fx-text-fill:#FB7185;-fx-font-size:11px;-fx-font-weight:600;"
                            visible="false" managed="false"/>
+                    <!-- kept for compatibility but hidden; status shown per-row -->
                     <Label fx:id="pdfPreviewLabel" text=""
                            style="-fx-text-fill:#34D399;-fx-font-size:11px;"
                            visible="false" managed="false"/>
+                    <!-- hidden legacy field used internally by the controller -->
+                    <TextField fx:id="fieldPdf" visible="false" managed="false" editable="false"/>
                 </VBox>
 
             </VBox>

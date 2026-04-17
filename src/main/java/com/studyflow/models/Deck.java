@@ -114,9 +114,13 @@ public class Deck {
         if (image != null && !image.trim().isEmpty())
             validateFile(image.trim(), IMAGE_EXTENSIONS, "image");
 
-        // PDF (optionnel)
-        if (pdf != null && !pdf.trim().isEmpty())
-            validateFile(pdf.trim(), PDF_EXTENSIONS, "PDF");
+        // PDF (optionnel) — supports multiple pipe-separated paths
+        if (pdf != null && !pdf.trim().isEmpty()) {
+            for (String p : pdf.split("\\|")) {
+                String trimmed = p.trim();
+                if (!trimmed.isEmpty()) validateFile(trimmed, PDF_EXTENSIONS, "PDF");
+            }
+        }
     }
 
     // ── Validation fichier ────────────────────────────────────────────────

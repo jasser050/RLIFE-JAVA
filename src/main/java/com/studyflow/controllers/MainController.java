@@ -8,13 +8,15 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.scene.Parent;
-import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import org.kordamp.ikonli.javafx.FontIcon;
 
@@ -22,35 +24,38 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.ResourceBundle;
 
+/**
+ * Main controller for the application layout
+ * Handles navigation, content switching, and window controls
+ */
 public class MainController implements Initializable {
 
     @FXML private StackPane contentArea;
     @FXML private TextField searchField;
+    @FXML private HBox titleBar;
+    @FXML private FontIcon maximizeIcon;
 
-    // === Labels de la sidebar (User Info) ===
     @FXML private Label sidebarUserName;
     @FXML private Label sidebarUserSub;
     @FXML private Label sidebarAvatar;
+    @FXML private ImageView sidebarLogo;
 
-    // === Boutons de navigation ===
+    @FXML private HBox userProfileRow;
+    @FXML private VBox userInfoBox;
+
     @FXML private Button btnDashboard;
-    @FXML private Button btnRevisions;
     @FXML private Button btnCourses;
     @FXML private Button btnAssignments;
     @FXML private Button btnPlanning;
-    @FXML private Button btnNotes;
+    @FXML private Button btnRevisions;
     @FXML private Button btnProjects;
+    @FXML private Button btnNotes;
     @FXML private Button btnWellbeing;
     @FXML private Button btnStats;
-    @FXML private Button btnThemeToggle;
-    @FXML private FontIcon themeToggleIcon;
 
     private Button activeButton;
-    private boolean lightThemeEnabled = false;
 
-    private static final String DARK_THEME = "/com/studyflow/styles/dark-theme.css";
-    private static final String LIGHT_THEME = "/com/studyflow/styles/light-theme.css";
-
+    // Window dragging
     private double xOffset = 0;
     private double yOffset = 0;
     private boolean isMaximized = false;
@@ -61,21 +66,28 @@ public class MainController implements Initializable {
         activeButton = btnDashboard;
         showDashboard();
 
-        // Mise à jour des informations utilisateur dans la sidebar
+        // Load sidebar logo
+        Image logoImage = new Image(getClass().getResourceAsStream("/com/studyflow/images/logo.png"));
+        sidebarLogo.setImage(logoImage);
+
+        // Populate sidebar user info from session
         User user = UserSession.getInstance().getCurrentUser();
         if (user != null) {
-            String fullName = user.getFullName().trim();
-            sidebarUserName.setText(fullName.isEmpty() ? (user.getUsername() != null ? user.getUsername() : "Student") : fullName);
-            sidebarUserSub.setText("Student");
+            sidebarUserName.setText(user.getFullName().trim().isEmpty() ? user.getUsername() : user.getFullName().trim());
+            sidebarUserSub.setText(user.getUniversity() != null && !user.getUniversity().isEmpty()
+                    ? user.getUniversity() : user.getEmail());
             sidebarAvatar.setText(user.getInitials().isEmpty() ? "??" : user.getInitials());
         }
-        if (searchField != null && searchField.getParent() != null) {
-            searchField.getParent().setOnMouseClicked(event -> searchField.requestFocus());
-        }
-        applyThemeOnScene();
+        
+        // Add click handler for user profile row
+        userProfileRow.setOnMouseClicked(event -> showProfile());
+        userInfoBox.setOnMouseClicked(event -> showProfile());
     }
 
-    // ====================== WINDOW CONTROLS ======================
+    // ============================================
+    // WINDOW CONTROL METHODS
+    // ============================================
+
     @FXML
     private void onTitleBarPressed(MouseEvent event) {
         Stage stage = App.getPrimaryStage();
@@ -92,84 +104,67 @@ public class MainController implements Initializable {
         }
     }
 
-    @FXML private void minimizeWindow() {
+    @FXML
+    private void minimizeWindow() {
         App.getPrimaryStage().setIconified(true);
     }
 
-    @FXML private void maximizeWindow() {
+    @FXML
+    private void maximizeWindow() {
         Stage stage = App.getPrimaryStage();
+
         if (isMaximized) {
+            // Restore to previous size
             stage.setX(savedX);
             stage.setY(savedY);
             stage.setWidth(savedWidth);
             stage.setHeight(savedHeight);
             isMaximized = false;
+            maximizeIcon.setIconLiteral("fth-square");
         } else {
+            // Save current size and position
             savedX = stage.getX();
             savedY = stage.getY();
             savedWidth = stage.getWidth();
             savedHeight = stage.getHeight();
-            var screen = javafx.stage.Screen.getPrimary().getVisualBounds();
-            stage.setX(screen.getMinX());
-            stage.setY(screen.getMinY());
-            stage.setWidth(screen.getWidth());
-            stage.setHeight(screen.getHeight());
-            isMaximized = true;
-        }
-    }
 
-    @FXML private void closeWindow() {
-        Platform.exit();
+            // Maximize to screen
+            javafx.geometry.Rectangle2D screenBounds = javafx.stage.Screen.getPrimary().getVisualBounds();
+            stage.setX(screenBounds.getMinX());
+            stage.setY(screenBounds.getMinY());
+            stage.setWidth(screenBounds.getWidth());
+            stage.setHeight(screenBounds.getHeight());
+            isMaximized = true;
+            maximizeIcon.setIconLiteral("fth-copy");
+        }
     }
 
     @FXML
-    private void toggleTheme() {
-        lightThemeEnabled = !lightThemeEnabled;
-        applyThemeOnScene();
+    private void closeWindow() {
+        Platform.exit();
     }
 
-    private void applyThemeOnScene() {
-        Scene scene = App.getScene();
-        if (scene == null) return;
+    // ============================================
+    // NAVIGATION METHODS
+    // ============================================
 
-        String darkUrl = App.class.getResource(DARK_THEME).toExternalForm();
-        String lightUrl = App.class.getResource(LIGHT_THEME).toExternalForm();
-
-        if (!scene.getStylesheets().contains(darkUrl)) {
-            scene.getStylesheets().add(darkUrl);
-        }
-
-        scene.getStylesheets().remove(lightUrl);
-        if (lightThemeEnabled) {
-            scene.getStylesheets().add(lightUrl);
-        }
-        updateThemeToggleIcon();
-    }
-
-    private void updateThemeToggleIcon() {
-        if (themeToggleIcon == null) return;
-        themeToggleIcon.setIconLiteral(lightThemeEnabled ? "fth-sun" : "fth-moon");
-    }
-
-    // ====================== NAVIGATION ======================
+    /**
+     * Load content into the main content area
+     */
     private void loadContent(String fxmlPath) {
-        String fullPath = "/com/studyflow/" + fxmlPath;
-        URL resource = App.class.getResource(fullPath);
-        if (resource == null) {
-            System.err.println("❌ FXML not found: " + fullPath);
-            return;
-        }
         try {
-            FXMLLoader loader = new FXMLLoader(resource);
+            FXMLLoader loader = new FXMLLoader(App.class.getResource(fxmlPath));
             Parent content = loader.load();
             contentArea.getChildren().clear();
             contentArea.getChildren().add(content);
         } catch (IOException e) {
-            System.err.println("❌ Failed to load: " + fullPath);
             e.printStackTrace();
         }
     }
 
+    /**
+     * Update active navigation button
+     */
     private void setActiveButton(Button button) {
         if (activeButton != null) {
             activeButton.getStyleClass().remove("active");
@@ -178,62 +173,73 @@ public class MainController implements Initializable {
         activeButton.getStyleClass().add("active");
     }
 
-    @FXML private void showDashboard() {
+    @FXML
+    private void showDashboard() {
         setActiveButton(btnDashboard);
         loadContent("views/Dashboard.fxml");
     }
 
-    @FXML private void showRevisions() {
-        setActiveButton(btnRevisions);
-        loadContent("views/Flashcards.fxml");
-    }
-
-    @FXML private void showCourses() {
+    @FXML
+    private void showCourses() {
         setActiveButton(btnCourses);
         loadContent("views/Courses.fxml");
     }
 
-    @FXML private void showAssignments() {
+    @FXML
+    private void showAssignments() {
         setActiveButton(btnAssignments);
         loadContent("views/Assignments.fxml");
     }
 
-    @FXML private void showPlanning() {
+    @FXML
+    private void showPlanning() {
         setActiveButton(btnPlanning);
         loadContent("views/Planning.fxml");
     }
 
-    @FXML private void showNotes() {
-        setActiveButton(btnNotes);
-        loadContent("views/Notes.fxml");
+    @FXML
+    private void showRevisions() {
+        setActiveButton(btnRevisions);
+        loadContent("views/Revisions.fxml");
     }
 
-    @FXML private void showProjects() {
+    @FXML
+    private void showProjects() {
         setActiveButton(btnProjects);
         loadContent("views/Projects.fxml");
     }
 
-    @FXML private void showWellbeing() {
+    @FXML
+    private void showNotes() {
+        setActiveButton(btnNotes);
+        loadContent("views/Notes.fxml");
+    }
+
+    @FXML
+    private void showWellbeing() {
         setActiveButton(btnWellbeing);
         loadContent("views/Wellbeing.fxml");
     }
 
-    @FXML private void showStats() {
+    @FXML
+    private void showStats() {
         setActiveButton(btnStats);
-        loadContent("views/Stats.fxml");
+        loadContent("views/Statistics.fxml");
     }
 
-    @FXML private void showProfile() {
+    @FXML
+    private void showProfile() {
         if (activeButton != null) activeButton.getStyleClass().remove("active");
         activeButton = null;
         loadContent("views/Profile.fxml");
     }
 
-    @FXML private void handleLogout() {
+    @FXML
+    private void handleLogout() {
         UserSession.getInstance().logout();
         try {
             App.setRoot("views/Landing");
-        } catch (IOException e) {
+        } catch (java.io.IOException e) {
             e.printStackTrace();
         }
     }

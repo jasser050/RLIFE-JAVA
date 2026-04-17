@@ -257,7 +257,7 @@
                 </HBox>
             </VBox>
 
-            <!-- Droite : Back + Add -->
+            <!-- Droite : Back + Add + AI -->
             <VBox spacing="8" alignment="CENTER" style="-fx-padding:12 16 12 0;">
                 <Button onAction="#goBackToList"
                         style="-fx-background-color:#1E293B;-fx-text-fill:#94A3B8;
@@ -272,6 +272,12 @@
                                -fx-background-radius:10;-fx-cursor:hand;-fx-padding:8 18;
                                -fx-effect:dropshadow(gaussian,rgba(124,58,237,0.45),10,0,0,3);">
                     <graphic><FontIcon iconLiteral="fth-plus" iconSize="13" iconColor="white"/></graphic>
+                </Button>
+                <Button text="✨ AI" onAction="#showAIGenerator"
+                        style="-fx-background-color:linear-gradient(to right,#059669,#10B981);
+                               -fx-text-fill:white;-fx-font-size:12px;-fx-font-weight:700;
+                               -fx-background-radius:10;-fx-cursor:hand;-fx-padding:8 14;
+                               -fx-effect:dropshadow(gaussian,rgba(16,185,129,0.45),10,0,0,3);">
                 </Button>
             </VBox>
         </HBox>
