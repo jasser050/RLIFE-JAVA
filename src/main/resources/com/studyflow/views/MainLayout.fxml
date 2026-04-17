@@ -120,7 +120,7 @@
                             <graphic>
                                 <FontIcon iconLiteral="fth-layers" iconSize="18"/>
                             </graphic>
-                            <text>Flashcards</text>
+                            <text>Decks</text>
                         </Button>
 
                         <Button fx:id="btnProjects" styleClass="nav-button"

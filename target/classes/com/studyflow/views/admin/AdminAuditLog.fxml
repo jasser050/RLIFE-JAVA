@@ -16,31 +16,14 @@
             <Label text="Audit Log" styleClass="text-heading"/>
             <Label text="Track all user registrations and moderation actions" styleClass="text-muted"/>
         </VBox>
-        <Button text="Refresh" styleClass="btn-secondary" onAction="#refresh">
-            <graphic><FontIcon iconLiteral="fth-refresh-cw" iconSize="14"/></graphic>
-        </Button>
+        <Label fx:id="logCountLabel" text="0 entries" styleClass="font-size-preview"/>
     </HBox>
 
-    <VBox styleClass="card" VBox.vgrow="ALWAYS">
-        <HBox styleClass="card-header" alignment="CENTER_LEFT" spacing="12">
-            <StackPane styleClass="stat-icon-box, warning" prefWidth="36" prefHeight="36">
-                <FontIcon iconLiteral="fth-file-text" iconSize="16"/>
-            </StackPane>
-            <VBox spacing="2" HBox.hgrow="ALWAYS">
-                <Label text="Activity Log" styleClass="card-title"/>
-                <Label fx:id="logCountLabel" text="0 entries" styleClass="text-small"/>
-            </VBox>
-        </HBox>
-        <VBox styleClass="card-body" VBox.vgrow="ALWAYS">
-            <TableView fx:id="auditTable" VBox.vgrow="ALWAYS" styleClass="admin-table" prefHeight="500">
-                <columns>
-                    <TableColumn fx:id="colLogId" text="User ID" prefWidth="70"/>
-                    <TableColumn fx:id="colLogEmail" text="Email" prefWidth="220"/>
-                    <TableColumn fx:id="colLogName" text="Name" prefWidth="160"/>
-                    <TableColumn fx:id="colLogAction" text="Action" prefWidth="250"/>
-                    <TableColumn fx:id="colLogDate" text="Date" prefWidth="180"/>
-                </columns>
-            </TableView>
+    <!-- Audit Log Cards Container -->
+    <ScrollPane fitToWidth="true" hbarPolicy="NEVER" VBox.vgrow="ALWAYS"
+                styleClass="auth-scroll">
+        <VBox fx:id="logCardsContainer" spacing="8">
+            <padding><Insets top="4" right="4" bottom="4" left="4"/></padding>
         </VBox>
-    </VBox>
+    </ScrollPane>
 </VBox>

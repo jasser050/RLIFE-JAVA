@@ -20,7 +20,7 @@
         </VBox>
 
         <!-- PDF Export dropdown -->
-        <MenuButton text="Export PDF" styleClass="btn-primary" style="-fx-font-size: 13px;">
+        <MenuButton text="Export PDF" styleClass="admin-export-btn">
             <graphic><FontIcon iconLiteral="fth-download" iconSize="14" iconColor="white"/></graphic>
             <items>
                 <MenuItem text="User List" onAction="#exportUserListPdf">

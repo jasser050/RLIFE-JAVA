@@ -15,9 +15,13 @@ module com.studyflow {
     requires com.google.zxing;
     requires com.google.zxing.javase;
     requires java.net.http;
+    requires com.fasterxml.jackson.databind;       // ← ajouté
+    requires com.fasterxml.jackson.core;           // ← ajouté
+    requires com.fasterxml.jackson.annotation;     // ← ajouté
 
     opens com.studyflow to javafx.fxml;
     opens com.studyflow.controllers to javafx.fxml;
+    opens com.studyflow.models to com.fasterxml.jackson.databind; // ← ajouté
 
     exports com.studyflow;
     exports com.studyflow.controllers;

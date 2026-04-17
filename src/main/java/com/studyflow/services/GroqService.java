@@ -12,7 +12,7 @@ import java.time.Duration;
  */
 public class GroqService {
 
-    
+
 
     private final HttpClient client;
 
@@ -37,9 +37,9 @@ public class GroqService {
                 + "}";
 
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(API_URL))
+                .uri(URI.create("API_URL"))
                 .header("Content-Type", "application/json")
-                .header("Authorization", "Bearer " + API_KEY)
+                .header("Authorization", "Bearer " + "API_KEY")
                 .POST(HttpRequest.BodyPublishers.ofString(requestBody))
                 .timeout(Duration.ofSeconds(30))
                 .build();
