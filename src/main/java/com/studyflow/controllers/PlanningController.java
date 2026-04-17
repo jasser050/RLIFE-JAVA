@@ -1,11 +1,19 @@
 package com.studyflow.controllers;
 
 import com.studyflow.App;
+import com.studyflow.models.Planning;
 import com.studyflow.models.Seance;
+import com.studyflow.models.TypeSeance;
 import com.studyflow.models.User;
 import com.studyflow.services.ServicePlanning;
 import com.studyflow.services.ServiceSeance;
+import com.studyflow.services.AIPlanningService;
+import com.studyflow.services.ServiceTypeSeance;
 import com.studyflow.utils.UserSession;
+import javafx.application.Platform;
+import javafx.animation.Animation;
+import javafx.animation.PauseTransition;
+import javafx.animation.ScaleTransition;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -24,12 +32,14 @@ import javafx.scene.control.DateCell;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
 import javafx.scene.control.Toggle;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.Dragboard;
+import javafx.scene.input.KeyCode;
 import javafx.scene.input.TransferMode;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
@@ -41,24 +51,34 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
+import javafx.util.Duration;
 import javafx.util.StringConverter;
 import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.io.IOException;
 import java.net.URL;
+import java.text.Normalizer;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.ResourceBundle;
+import java.util.HashSet;
+import java.util.Random;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class PlanningController implements Initializable {
 
@@ -98,6 +118,19 @@ public class PlanningController implements Initializable {
     private static final String UPCOMING_MODE_COLOR = "Color search - nearest";
     private static final String UPCOMING_MODE_FEEDBACK = "Feedback search - nearest";
 
+    private static final String ASSISTANT_MODE_CHAT = "Chat mode";
+    private static final String ASSISTANT_MODE_TERMINAL = "Terminal mode";
+    private static final String ANTHROPIC_API_KEY_ENV = "ANTHROPIC_API_KEY";
+    private static final Pattern ASSISTANT_TIME_PATTERN = Pattern.compile("(?<!\\d)([01]?\\d|2[0-3])(?:[:h]([0-5]\\d))?(?!\\d)");
+    private static final Pattern ASSISTANT_ISO_DATE_PATTERN = Pattern.compile("(\\d{4})-(\\d{2})-(\\d{2})");
+    private static final Pattern ASSISTANT_SHORT_DATE_PATTERN = Pattern.compile("(?<!\\d)(\\d{1,2})[/-](\\d{1,2})(?:[/-](\\d{2,4}))?(?!\\d)");
+    private static final Pattern ASSISTANT_TIME_RANGE_PATTERN = Pattern.compile(
+            "(?i)\\b(?:from\\s+)?([0-2]?\\d(?:[:h.]\\d{1,2})?\\s*(?:am|pm)?)\\s*(?:to|-|until|jusqu(?:'| )a|a|à)\\s*([0-2]?\\d(?:[:h.]\\d{1,2})?\\s*(?:am|pm)?)\\b"
+    );
+    private static final LocalTime ASSISTANT_MIN_TIME = LocalTime.of(6, 0);
+    private static final LocalTime ASSISTANT_MAX_TIME = LocalTime.of(23, 30);
+    private static final int ASSISTANT_TIME_STEP_MINUTES = 30;
+
     @FXML private Label currentMonthLabel;
     @FXML private Label todayDateLabel;
     @FXML private Label pageMessageLabel;
@@ -115,7 +148,7 @@ public class PlanningController implements Initializable {
     @FXML private VBox feedbackPage;
     @FXML private VBox feedbackPickerPage;
     @FXML private VBox feedbackPendingListContainer;
-    @FXML private ListView<PlanningEntry> feedbackPendingListView;
+    @FXML private ListView<Planning> feedbackPendingListView;
     @FXML private Label feedbackSelectedSessionLabel;
     @FXML private Label formMessageLabel;
     @FXML private Label planningFormTitleLabel;
@@ -132,6 +165,8 @@ public class PlanningController implements Initializable {
     @FXML private Label endTimeErrorLabel;
     @FXML private ColorPicker colorPicker;
     @FXML private Label colorErrorLabel;
+    @FXML private VBox planningEditFeedbackBox;
+    @FXML private ComboBox<String> planningEditFeedbackComboBox;
     @FXML private ToggleButton feedbackVeryBadButton;
     @FXML private ToggleButton feedbackBadButton;
     @FXML private ToggleButton feedbackMediumButton;
@@ -140,13 +175,19 @@ public class PlanningController implements Initializable {
     @FXML private Label feedbackErrorLabel;
     @FXML private Button saveFeedbackButton;
     @FXML private Button savePlanningButton;
-    @FXML private ListView<PlanningEntry> todayEventsListView;
-    @FXML private ListView<PlanningEntry> upcomingEventsListView;
+    @FXML private ListView<Planning> todayEventsListView;
+    @FXML private ListView<Planning> upcomingEventsListView;
     @FXML private TextField upcomingSearchField;
     @FXML private ComboBox<String> upcomingUnifiedFilterComboBox;
+    @FXML private ScrollPane chatScrollPane;
+    @FXML private VBox chatBox;
+    @FXML private TextField assistantInputField;
+    @FXML private Label assistantHintLabel;
 
     private final ServicePlanning servicePlanning = new ServicePlanning();
     private final ServiceSeance serviceSeance = new ServiceSeance();
+    private final ServiceTypeSeance serviceTypeSeance = new ServiceTypeSeance();
+    private final AIPlanningService claudePlanningService = new AIPlanningService();
     private final DateTimeFormatter monthFormatter = DateTimeFormatter.ofPattern("MMMM yyyy");
     private final DateTimeFormatter fullDateFormatter = DateTimeFormatter.ofPattern("EEEE, MMM d");
     private final DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
@@ -155,21 +196,32 @@ public class PlanningController implements Initializable {
 
     private YearMonth currentYearMonth;
     private final ToggleGroup feedbackToggleGroup = new ToggleGroup();
-    private PlanningEntry selectedFeedbackEntry;
-    private PlanningEntry editingPlanning;
-    private List<PlanningEntry> allPlanningEntries = new ArrayList<>();
-    private Map<LocalDate, List<PlanningEntry>> planningByDate = new HashMap<>();
+    private Planning selectedFeedbackEntry;
+    private Planning editingPlanning;
+    private List<Planning> allPlanningEntries = new ArrayList<>();
+    private Map<LocalDate, List<Planning>> planningByDate = new HashMap<>();
+    private final Map<Label, PauseTransition> messageTimers = new HashMap<>();
+    private final List<String> assistantUserHistory = new ArrayList<>();
+    private final Set<Integer> aiGeneratedPlanningIds = new HashSet<>();
+    private final Random assistantRandom = new Random();
+    private int assistantHistoryIndex = 0;
+    private String assistantDraftInput = "";
+    private String assistantSessionResolutionError;
+    private HBox assistantTypingRow;
+    private AssistantCommand pendingAssistantCommand;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         currentYearMonth = YearMonth.now();
         configureSessionComboBox();
         configureTimeComboBoxes();
+        configurePlanningEditFeedbackField();
         configurePlanningDatePickerReadability();
         configureListViews();
         configureFormInteractions();
         configureFeedbackControls();
         configureUpcomingControls();
+        configureAssistantControls();
         loadSessions();
         refreshPlanningData();
         resetForm();
@@ -182,6 +234,7 @@ public class PlanningController implements Initializable {
             feedbackPickerPage.setManaged(false);
             feedbackPickerPage.setVisible(false);
         }
+        addMessage("Hello! Ask me to plan or remove sessions. Example: \"Plan a math session tomorrow at 14:00\".", false);
     }
 
     // Force explicit day-number colors to keep DatePicker readable in both themes.
@@ -312,7 +365,7 @@ public class PlanningController implements Initializable {
             return;
         }
 
-        PlanningEntry planningEntry = editingPlanning == null ? new PlanningEntry() : editingPlanning;
+        Planning planningEntry = editingPlanning == null ? new Planning() : editingPlanning;
         planningEntry.setUserId(currentUser.getId());
         planningEntry.setSeanceId(selectedSeance.getId());
         planningEntry.setSeanceTitle(selectedSeance.getTitre());
@@ -320,6 +373,9 @@ public class PlanningController implements Initializable {
         planningEntry.setStartTime(startTime);
         planningEntry.setEndTime(endTime);
         planningEntry.setColorHex(selectedColor);
+        if (editingPlanning != null && planningEditFeedbackBox != null && planningEditFeedbackBox.isManaged()) {
+            planningEntry.setFeedback(toFeedbackCode(planningEditFeedbackComboBox == null ? null : planningEditFeedbackComboBox.getValue()));
+        }
 
         boolean isCreation = editingPlanning == null;
         if (isCreation) {
@@ -362,6 +418,27 @@ public class PlanningController implements Initializable {
         endTimeComboBox.setItems(FXCollections.observableArrayList(timeSlots));
         configureTimeCell(startTimeComboBox);
         configureTimeCell(endTimeComboBox);
+    }
+
+    private void configurePlanningEditFeedbackField() {
+        if (planningEditFeedbackComboBox == null) {
+            return;
+        }
+        planningEditFeedbackComboBox.setItems(FXCollections.observableArrayList(
+                "Very Bad",
+                "Bad",
+                "Medium",
+                "Good",
+                "Excellent"
+        ));
+        showPlanningEditFeedbackEditor(false);
+    }
+
+    @FXML
+    private void handleClearPlanningFeedback() {
+        if (planningEditFeedbackComboBox != null) {
+            planningEditFeedbackComboBox.setValue(null);
+        }
     }
 
     private void configureTimeCell(ComboBox<LocalTime> comboBox) {
@@ -517,7 +594,7 @@ public class PlanningController implements Initializable {
                 .anyMatch(this::isAwaitingFeedback);
     }
 
-    private void openFeedbackPickerFor(PlanningEntry entry) {
+    private void openFeedbackPickerFor(Planning entry) {
         selectedFeedbackEntry = entry;
         feedbackSelectedSessionLabel.setText(entry.getSeanceTitle() + " - " + formatEntryDateTime(entry));
         selectFeedback(entry.getFeedback());
@@ -555,6 +632,1346 @@ public class PlanningController implements Initializable {
         upcomingUnifiedFilterComboBox.valueProperty().addListener((observable, oldValue, newValue) -> updateUpcomingPanel());
     }
 
+    private void configureAssistantControls() {
+        if (chatScrollPane != null) {
+            chatScrollPane.setFitToWidth(true);
+            chatScrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        }
+
+        if (assistantInputField != null) {
+            assistantInputField.setOnAction(event -> handleAssistantSend());
+            assistantInputField.setOnKeyPressed(event -> {
+                if (event.getCode() == KeyCode.UP) {
+                    navigateAssistantInputHistory(-1);
+                    event.consume();
+                } else if (event.getCode() == KeyCode.DOWN) {
+                    navigateAssistantInputHistory(1);
+                    event.consume();
+                }
+            });
+        }
+
+        updateAssistantHint();
+    }
+
+    @FXML
+    private void handleAssistantSend() {
+        if (assistantInputField == null) {
+            return;
+        }
+        String rawInput = assistantInputField.getText();
+        String input = rawInput == null ? "" : rawInput.trim();
+        if (input.isEmpty()) {
+            addMessage("Type a command first.", false);
+            return;
+        }
+
+        addMessage(input, true);
+        if (assistantUserHistory.isEmpty() || !assistantUserHistory.get(assistantUserHistory.size() - 1).equals(input)) {
+            assistantUserHistory.add(input);
+        }
+        assistantHistoryIndex = assistantUserHistory.size();
+        assistantDraftInput = "";
+        assistantInputField.clear();
+        showAssistantTypingIndicator();
+
+        try {
+            if (pendingAssistantCommand != null) {
+                if (containsAny(normalizeAssistant(input), "cancel", "annule", "stop")) {
+                    pendingAssistantCommand = null;
+                    addMessage("Okay, I cancelled the pending planning request.", false);
+                    return;
+                }
+
+                AssistantCommand completedCommand = completePendingAssistantCommand(input);
+                if (completedCommand == null) {
+                    addMessage("I still need a valid time. Example: from 14:00 to 16:00.", false);
+                    return;
+                }
+
+                String response = executeAssistantCommand(completedCommand);
+                addMessage(response, false);
+                return;
+            }
+
+            AssistantCommand command;
+            if (input.startsWith("/")) {
+                command = parseTerminalCommand(input);
+            } else {
+                command = parseAssistantCommandWithClaude(input);
+            }
+            String response = executeAssistantCommand(command);
+            addMessage(response, false);
+        } catch (Exception exception) {
+            addMessage("I could not process that command: " + exception.getMessage(), false);
+        } finally {
+            hideAssistantTypingIndicator();
+        }
+    }
+
+    private AssistantCommand completePendingAssistantCommand(String input) {
+        if (pendingAssistantCommand == null) {
+            return null;
+        }
+
+        String normalizedInput = normalizeAssistant(input);
+        LocalTime start = extractAssistantStartTime(normalizedInput);
+        if (start == null) {
+            return null;
+        }
+
+        LocalTime end = extractAssistantEndTime(normalizedInput, start);
+        if (end == null) {
+            end = start.plusHours(1);
+        }
+
+        return AssistantCommand.create(
+                pendingAssistantCommand.title,
+                pendingAssistantCommand.sessionType,
+                pendingAssistantCommand.date,
+                start,
+                end
+        );
+    }
+
+    @FXML
+    private void handleAssistantQuickPlan() {
+        insertAssistantPrompt("Plan a focus session for today from 14:00 to 16:00");
+    }
+
+    @FXML
+    private void handleAssistantQuickRevision() {
+        insertAssistantPrompt("Plan a revision Java session tomorrow from 10:00 to 12:00");
+    }
+
+    @FXML
+    private void handleAssistantQuickDelete() {
+        insertAssistantPrompt("Delete the Java session on 2026-04-21");
+    }
+
+    private void insertAssistantPrompt(String prompt) {
+        if (assistantInputField == null) {
+            return;
+        }
+        assistantInputField.setText(prompt == null ? "" : prompt);
+        assistantInputField.positionCaret(assistantInputField.getText().length());
+        assistantInputField.requestFocus();
+    }
+
+    private void navigateAssistantInputHistory(int direction) {
+        if (assistantInputField == null || assistantUserHistory.isEmpty()) {
+            return;
+        }
+
+        if (assistantHistoryIndex < 0 || assistantHistoryIndex > assistantUserHistory.size()) {
+            assistantHistoryIndex = assistantUserHistory.size();
+        }
+
+        if (direction < 0 && assistantHistoryIndex == assistantUserHistory.size()) {
+            assistantDraftInput = assistantInputField.getText() == null ? "" : assistantInputField.getText();
+        }
+
+        int nextIndex = assistantHistoryIndex + direction;
+        if (nextIndex < 0) {
+            nextIndex = 0;
+        }
+        if (nextIndex > assistantUserHistory.size()) {
+            nextIndex = assistantUserHistory.size();
+        }
+        assistantHistoryIndex = nextIndex;
+
+        String textToShow = assistantHistoryIndex == assistantUserHistory.size()
+                ? assistantDraftInput
+                : assistantUserHistory.get(assistantHistoryIndex);
+        assistantInputField.setText(textToShow == null ? "" : textToShow);
+        assistantInputField.positionCaret(assistantInputField.getText().length());
+    }
+
+    private AssistantCommand parseAssistantCommandWithClaude(String input) {
+        String apiKey = System.getenv(ANTHROPIC_API_KEY_ENV);
+        if (apiKey == null || apiKey.isBlank()) {
+            return parseNaturalLanguageCommand(input);
+        }
+
+        AIPlanningService.ClaudeResult result = claudePlanningService.interpretPlanningCommand(
+                apiKey,
+                input,
+                LocalDate.now(),
+                getKnownSessionTitles(),
+                getKnownSessionTypes()
+        );
+
+        if (!result.isSuccess() || result.getCommand() == null) {
+            return parseNaturalLanguageCommand(input);
+        }
+
+        AssistantCommand mapped = mapClaudeToAssistantCommand(result.getCommand());
+        if (mapped.type == AssistantCommandType.ERROR) {
+            return parseNaturalLanguageCommand(input);
+        }
+
+        AssistantCommand localParsed = parseNaturalLanguageCommand(input);
+        if (mapped.type == AssistantCommandType.CREATE && localParsed.type == AssistantCommandType.CREATE) {
+            String mergedTitle = isSuspiciousAssistantTitle(mapped.title) ? localParsed.title : mapped.title;
+            LocalDate mergedDate = localParsed.date != null ? localParsed.date : mapped.date;
+            LocalTime mergedStart = localParsed.startTime != null ? localParsed.startTime : mapped.startTime;
+            LocalTime mergedEnd = localParsed.endTime != null ? localParsed.endTime : mapped.endTime;
+            String mergedType = mapped.sessionType != null ? mapped.sessionType : localParsed.sessionType;
+
+            if (mergedStart != null && mergedEnd != null && !mergedEnd.isAfter(mergedStart)) {
+                mergedEnd = mergedStart.plusHours(1);
+            }
+
+            return AssistantCommand.create(mergedTitle, mergedType, mergedDate, mergedStart, mergedEnd);
+        }
+        return mapped;
+    }
+
+    private boolean isSuspiciousAssistantTitle(String title) {
+        if (title == null || title.isBlank()) {
+            return true;
+        }
+        String normalizedTitle = normalizeAssistant(title);
+        return normalizedTitle.matches(".*\\d{1,2}[/-]\\d{1,2}([/-]\\d{2,4})?.*")
+                || normalizedTitle.startsWith("in ")
+                || normalizedTitle.startsWith("on ")
+                || normalizedTitle.startsWith("at ")
+                || normalizedTitle.length() < 2;
+    }
+
+    private AssistantCommand mapClaudeToAssistantCommand(AIPlanningService.ClaudeCommand command) {
+        if (command == null) {
+            return AssistantCommand.error("Claude returned no command.");
+        }
+
+        String action = normalizeAssistant(command.action());
+        if ("help".equals(action)) {
+            return AssistantCommand.help();
+        }
+        if ("unknown".equals(action)) {
+            return AssistantCommand.error(command.message() == null
+                    ? "I did not understand the request."
+                    : command.message());
+        }
+
+        if ("create".equals(action)) {
+            String title = command.title();
+            String sessionType = command.sessionType();
+            LocalDate date = parseIsoDate(command.date());
+            LocalTime start = parseClock(command.startTime());
+            LocalTime end = command.endTime() == null ? (start == null ? null : start.plusHours(1)) : parseClock(command.endTime());
+
+            if (title == null || title.isBlank()) {
+                return AssistantCommand.error("Claude did not provide a session title.");
+            }
+            if (date == null) {
+                return AssistantCommand.error("Claude did not provide a valid date.");
+            }
+            if (start == null) {
+                return AssistantCommand.awaitingTime(title, sessionType, date);
+            }
+            if (end == null) {
+                return AssistantCommand.error("Claude did not provide a valid end time.");
+            }
+            return AssistantCommand.create(title, sessionType, date, start, end);
+        }
+
+        if ("delete".equals(action)) {
+            LocalDate date = parseIsoDate(command.date());
+            if (date == null) {
+                return AssistantCommand.error("Claude did not provide a valid date for deletion.");
+            }
+            return AssistantCommand.delete(command.title(), date);
+        }
+
+        if ("update".equals(action) || "modify".equals(action) || "change".equals(action)) {
+            LocalDate targetDate = parseIsoDate(command.targetDate());
+            LocalDate newDate = parseIsoDate(command.date());
+            LocalTime start = parseClock(command.startTime());
+            LocalTime end = command.endTime() == null ? null : parseClock(command.endTime());
+            boolean keepTime = containsAny(normalizeAssistant(command.message()), "same time", "same hour", "same schedule", "meme heure");
+            return AssistantCommand.update(command.title(), command.sessionType(), targetDate, newDate, start, end, keepTime);
+        }
+
+        return AssistantCommand.error("Unsupported Claude action.");
+    }
+
+    private List<String> getKnownSessionTitles() {
+        List<String> titles = new ArrayList<>();
+        if (sessionComboBox == null || sessionComboBox.getItems() == null) {
+            return titles;
+        }
+        for (Seance seance : sessionComboBox.getItems()) {
+            if (seance != null && seance.getTitre() != null && !seance.getTitre().isBlank()) {
+                titles.add(seance.getTitre());
+            }
+        }
+        return titles;
+    }
+
+    private List<String> getKnownSessionTypes() {
+        List<String> types = new ArrayList<>();
+        for (TypeSeance typeSeance : serviceTypeSeance.getAvailableTypes()) {
+            if (typeSeance != null && typeSeance.getName() != null && !typeSeance.getName().isBlank()) {
+                types.add(typeSeance.getName());
+            }
+        }
+        return types;
+    }
+
+    @FXML
+    private void handleAssistantClear() {
+        if (chatBox != null) {
+            chatBox.getChildren().clear();
+        }
+        assistantTypingRow = null;
+        pendingAssistantCommand = null;
+        addMessage("Conversation cleared.", false);
+    }
+
+    private void updateAssistantHint() {
+        if (assistantHintLabel == null) {
+            return;
+        }
+        assistantHintLabel.setText("");
+        assistantHintLabel.setVisible(false);
+        assistantHintLabel.setManaged(false);
+    }
+
+    private void addMessage(String text, boolean isUser) {
+        if (chatBox == null) {
+            return;
+        }
+
+        Label bubble = new Label(text == null ? "" : text);
+        bubble.setWrapText(true);
+        bubble.setMaxWidth(305);
+        bubble.getStyleClass().addAll("assistant-bubble", isUser ? "assistant-user" : "assistant-bot");
+
+        Label avatarLabel = new Label(isUser ? "ME" : "🤖");
+        avatarLabel.getStyleClass().addAll("assistant-avatar", isUser ? "assistant-avatar-user" : "assistant-avatar-bot");
+        StackPane avatar = new StackPane(avatarLabel);
+        avatar.getStyleClass().add("assistant-avatar-wrap");
+        if (!isUser) {
+            animateAssistantAvatar(avatar);
+        }
+
+        HBox row = isUser ? new HBox(bubble, avatar) : new HBox(avatar, bubble);
+        row.getStyleClass().add("assistant-message-row");
+        row.setSpacing(8);
+        row.setAlignment(isUser ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
+        row.setFillHeight(false);
+
+        chatBox.getChildren().add(row);
+        scrollChatToBottom();
+    }
+
+    private void animateAssistantAvatar(StackPane avatar) {
+        if (avatar == null) {
+            return;
+        }
+        ScaleTransition pulse = new ScaleTransition(Duration.seconds(1.35), avatar);
+        pulse.setFromX(1.0);
+        pulse.setFromY(1.0);
+        pulse.setToX(1.08);
+        pulse.setToY(1.08);
+        pulse.setCycleCount(Animation.INDEFINITE);
+        pulse.setAutoReverse(true);
+        pulse.play();
+    }
+
+    private void showAssistantTypingIndicator() {
+        if (chatBox == null || assistantTypingRow != null) {
+            return;
+        }
+
+        Label bubble = new Label("AI is thinking...");
+        bubble.setWrapText(true);
+        bubble.setMaxWidth(320);
+        bubble.getStyleClass().addAll("assistant-bubble", "assistant-bot", "assistant-typing");
+
+        assistantTypingRow = new HBox(bubble);
+        assistantTypingRow.setAlignment(Pos.CENTER_LEFT);
+        assistantTypingRow.setFillHeight(false);
+        chatBox.getChildren().add(assistantTypingRow);
+        scrollChatToBottom();
+    }
+
+    private void hideAssistantTypingIndicator() {
+        if (chatBox == null || assistantTypingRow == null) {
+            return;
+        }
+        chatBox.getChildren().remove(assistantTypingRow);
+        assistantTypingRow = null;
+        scrollChatToBottom();
+    }
+
+    private void scrollChatToBottom() {
+        if (chatScrollPane == null || chatBox == null) {
+            return;
+        }
+
+        // Two UI cycles ensure the ScrollPane has measured the new bubble height.
+        Platform.runLater(() -> {
+            chatBox.applyCss();
+            chatBox.layout();
+            chatScrollPane.layout();
+            chatScrollPane.setVvalue(1.0);
+            Platform.runLater(() -> {
+                chatScrollPane.layout();
+                chatScrollPane.setVvalue(1.0);
+            });
+        });
+    }
+
+    private AssistantCommand parseAssistantCommand(String input) {
+        if (input == null || input.isBlank()) {
+            return AssistantCommand.help();
+        }
+        String trimmed = input.trim();
+        if (trimmed.startsWith("/")) {
+            return parseTerminalCommand(trimmed);
+        }
+        return parseNaturalLanguageCommand(trimmed);
+    }
+
+    private AssistantCommand parseTerminalCommand(String input) {
+        String normalized = input.trim();
+        if ("/help".equalsIgnoreCase(normalized)) {
+            return AssistantCommand.help();
+        }
+
+        if (normalized.toLowerCase(Locale.ROOT).startsWith("/plan ")) {
+            String payload = normalized.substring(6).trim();
+            String[] parts = payload.split("\\|");
+            if (parts.length < 3) {
+                return AssistantCommand.error("Use: /plan title|yyyy-MM-dd|HH:mm|HH:mm (end optional)");
+            }
+            String title = parts[0].trim();
+            String sessionType = parts.length >= 5 ? parts[1].trim() : null;
+            int dateIndex = parts.length >= 5 ? 2 : 1;
+            int startIndex = parts.length >= 5 ? 3 : 2;
+            int endIndex = parts.length >= 5 ? 4 : 3;
+            LocalDate date = parseIsoDate(parts[dateIndex].trim());
+            LocalTime start = parseClock(parts[startIndex].trim());
+            LocalTime end = parts.length > endIndex ? parseClock(parts[endIndex].trim()) : (start == null ? null : start.plusHours(1));
+            if (title.isBlank() || date == null || start == null || end == null) {
+                return AssistantCommand.error("Invalid /plan values. Expected title, valid date and time.");
+            }
+            return AssistantCommand.create(title, sessionType, date, start, end);
+        }
+
+        if (normalized.toLowerCase(Locale.ROOT).startsWith("/delete ")) {
+            String payload = normalized.substring(8).trim();
+            String[] parts = payload.split("\\|");
+            LocalDate date = parseIsoDate(parts[0].trim());
+            if (date == null) {
+                return AssistantCommand.error("Use: /delete yyyy-MM-dd [|title]");
+            }
+            String title = parts.length >= 2 ? parts[1].trim() : null;
+            return AssistantCommand.delete(title, date);
+        }
+
+        if (normalized.toLowerCase(Locale.ROOT).startsWith("/update ")) {
+            String payload = normalized.substring(8).trim();
+            String[] parts = payload.split("\\|");
+            if (parts.length < 2) {
+                return AssistantCommand.error("Use: /update yyyy-MM-dd|title [|newDate] [|start] [|end]");
+            }
+            LocalDate targetDate = parseIsoDate(parts[0].trim());
+            String title = parts[1].trim();
+            LocalDate newDate = parts.length >= 3 ? parseIsoDate(parts[2].trim()) : null;
+            LocalTime start = parts.length >= 4 ? parseClock(parts[3].trim()) : null;
+            LocalTime end = parts.length >= 5 ? parseClock(parts[4].trim()) : null;
+            if (targetDate == null) {
+                return AssistantCommand.error("/update requires a valid target date (yyyy-MM-dd).");
+            }
+            return AssistantCommand.update(title, null, targetDate, newDate, start, end, false);
+        }
+
+        return AssistantCommand.error("Unknown command. Use /help.");
+    }
+
+    private AssistantCommand parseNaturalLanguageCommand(String input) {
+        String lowered = normalizeAssistant(input);
+        if (lowered.contains("help") || lowered.contains("aide")) {
+            return AssistantCommand.help();
+        }
+
+        boolean isDelete = containsAny(lowered, "delete", "remove", "supprime", "annule");
+        boolean isUpdate = containsAny(lowered,
+                "modify", "change", "update", "reschedule", "move", "shift", "edit",
+                "modifier", "changer", "deplacer", "decal");
+        boolean isCreate = containsAny(lowered, "add", "create", "plan", "schedule", "ajoute", "planifie", "planifier");
+
+        LocalDate date = extractAssistantDate(lowered);
+        List<LocalDate> detectedDates = extractAssistantDates(lowered);
+        LocalTime start = extractAssistantStartTime(lowered);
+        LocalTime end = extractAssistantEndTime(lowered, start);
+        String sessionType = extractAssistantSessionType(lowered);
+        String title = extractAssistantTitle(lowered, input, sessionType);
+
+        if (isDelete) {
+            if (date == null) {
+                return AssistantCommand.error("I need a date to delete planning. Example: delete Tuesday session.");
+            }
+            return AssistantCommand.delete(title, date);
+        }
+
+        if (isUpdate) {
+            String updateTitle = extractAssistantUpdateTitle(lowered, input, sessionType);
+            boolean keepTime = containsAny(lowered, "same time", "same hour", "same schedule", "meme heure", "meme horaire");
+            LocalDate targetDate = detectedDates.isEmpty() ? null : detectedDates.get(0);
+            LocalDate newDate = null;
+            if (detectedDates.size() >= 2) {
+                newDate = detectedDates.get(1);
+            }
+
+            boolean changesTime = start != null || end != null || containsAny(lowered, "change the time", "set it from", "from", "at");
+            boolean changesDate = newDate != null || (detectedDates.size() == 1 && containsAny(lowered, "to ", "into ", "for "));
+            if (changesDate && newDate == null && detectedDates.size() == 1 && !containsAny(lowered, "today", "tomorrow", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")) {
+                newDate = detectedDates.get(0);
+                targetDate = null;
+            }
+
+            if (updateTitle == null && targetDate == null) {
+                return AssistantCommand.error("I need at least a session title or date to modify planning.");
+            }
+            if (!changesTime && newDate == null) {
+                return AssistantCommand.error("Tell me what to change: date, time, or both.");
+            }
+            return AssistantCommand.update(updateTitle, sessionType, targetDate, newDate, start, end, keepTime);
+        }
+
+        if (isCreate) {
+            if (title == null || title.isBlank()) {
+                return AssistantCommand.error("I need a session title. Example: add a math session tomorrow at 14:00.");
+            }
+            if (date == null) {
+                return AssistantCommand.error("I need a date. Example: tomorrow or 2026-04-20.");
+            }
+            if (start == null) {
+                return AssistantCommand.awaitingTime(title, sessionType, date);
+            }
+            if (end == null) {
+                end = start.plusHours(1);
+            }
+            return AssistantCommand.create(title, sessionType, date, start, end);
+        }
+
+        return AssistantCommand.error("I did not understand. Ask me to add/plan/delete, or use /help.");
+    }
+
+    private String executeAssistantCommand(AssistantCommand command) {
+        if (command.type == AssistantCommandType.AWAITING_TIME) {
+            pendingAssistantCommand = command;
+            return "Got it. Please provide the time for " + command.title + " on "
+                    + command.date + ". Example: from 14:00 to 16:00.";
+        }
+        if (command.type == AssistantCommandType.HELP) {
+            return "Commands: /plan title|yyyy-MM-dd|HH:mm|HH:mm, /delete yyyy-MM-dd|title. In chat mode, you can say: Add a math session tomorrow at 14:00.";
+        }
+        if (command.type == AssistantCommandType.ERROR) {
+            return command.errorMessage;
+        }
+
+        if (command.type == AssistantCommandType.CREATE) {
+            return executeAssistantCreate(command);
+        }
+
+        if (command.type == AssistantCommandType.DELETE) {
+            return executeAssistantDelete(command);
+        }
+
+        if (command.type == AssistantCommandType.UPDATE) {
+            return executeAssistantUpdate(command);
+        }
+
+        return "Unsupported command.";
+    }
+
+    private String executeAssistantCreate(AssistantCommand command) {
+        User currentUser = UserSession.getInstance().getCurrentUser();
+        if (currentUser == null) {
+            return "No logged-in user found.";
+        }
+
+        LocalTime normalizedStart = normalizeAssistantTime(command.startTime, false);
+        if (normalizedStart == null) {
+            return "Invalid start time. Use a time between 06:00 and 23:30.";
+        }
+
+        LocalTime rawEnd = command.endTime == null ? command.startTime.plusHours(1) : command.endTime;
+        LocalTime normalizedEnd = normalizeAssistantTime(rawEnd, true);
+        if (normalizedEnd == null || !normalizedEnd.isAfter(normalizedStart)) {
+            normalizedEnd = normalizeAssistantTime(normalizedStart.plusHours(1), true);
+        }
+
+        if (normalizedEnd == null || !normalizedEnd.isAfter(normalizedStart)) {
+            return "Invalid time range. Planning hours are from 06:00 to 23:30.";
+        }
+
+        Seance seance = resolveSessionForAssistant(currentUser.getId(), command.title, command.sessionType);
+        if (seance == null) {
+            return assistantSessionResolutionError == null
+                    ? "Unable to resolve a session title."
+                    : assistantSessionResolutionError;
+        }
+
+        if (servicePlanning.hasTimeOverlap(currentUser.getId(), command.date, normalizedStart, normalizedEnd, null)) {
+            return "Cannot create planning: this time overlaps another session on that day.";
+        }
+
+        Planning entry = new Planning();
+        entry.setUserId(currentUser.getId());
+        entry.setSeanceId(seance.getId());
+        entry.setSeanceTitle(seance.getTitre());
+        entry.setPlanningDate(command.date);
+        entry.setStartTime(normalizedStart);
+        entry.setEndTime(normalizedEnd);
+        entry.setColorHex(pickRandomAssistantColor(currentUser.getId(), command.date));
+
+        servicePlanning.add(entry);
+        refreshPlanningData();
+        trackAssistantGeneratedEntry(entry);
+        pendingAssistantCommand = null;
+
+        boolean timeAdjusted = !normalizedStart.equals(command.startTime)
+                || (command.endTime != null && !normalizedEnd.equals(command.endTime));
+        String adjustmentNote = timeAdjusted ? " (time adjusted to planning slots)" : "";
+        return "Planning created: " + seance.getTitre() + " on " + command.date.format(shortDateFormatter) + " at "
+                + normalizedStart.format(timeFormatter) + " - " + normalizedEnd.format(timeFormatter) + adjustmentNote + ".";
+    }
+
+    private String executeAssistantDelete(AssistantCommand command) {
+        User currentUser = UserSession.getInstance().getCurrentUser();
+        if (currentUser == null) {
+            return "No logged-in user found.";
+        }
+
+        String titleFilter = normalize(command.title);
+        List<Planning> matching = allPlanningEntries.stream()
+                .filter(entry -> entry.getUserId() == currentUser.getId())
+                .filter(entry -> command.date.equals(entry.getPlanningDate()))
+                .filter(entry -> titleFilter.isBlank() || normalize(entry.getSeanceTitle()).contains(titleFilter))
+                .toList();
+
+        if (matching.isEmpty()) {
+            return "No matching planning found for that date.";
+        }
+
+        for (Planning entry : matching) {
+            servicePlanning.delete(entry);
+        }
+        refreshPlanningData();
+
+        return "Deleted " + matching.size() + " planning entr" + (matching.size() == 1 ? "y" : "ies")
+                + " for " + command.date.format(shortDateFormatter) + ".";
+    }
+
+    private String executeAssistantUpdate(AssistantCommand command) {
+        User currentUser = UserSession.getInstance().getCurrentUser();
+        if (currentUser == null) {
+            return "No logged-in user found.";
+        }
+
+        Planning selected = resolvePlanningEntryForUpdate(currentUser.getId(), command);
+        if (selected == null) {
+            return assistantSessionResolutionError == null
+                    ? "I could not find a matching planning to modify."
+                    : assistantSessionResolutionError;
+        }
+
+        LocalDate targetDate = command.newDate != null ? command.newDate : selected.getPlanningDate();
+        LocalTime targetStart = command.startTime == null
+                ? selected.getStartTime()
+                : normalizeAssistantTime(command.startTime, false);
+
+        LocalTime targetEnd;
+        if (command.endTime != null) {
+            targetEnd = normalizeAssistantTime(command.endTime, true);
+        } else if (command.startTime != null) {
+            int durationMinutes = Math.max(30, (selected.getEndTime().toSecondOfDay() - selected.getStartTime().toSecondOfDay()) / 60);
+            targetEnd = normalizeAssistantTime(targetStart.plusMinutes(durationMinutes), true);
+        } else {
+            targetEnd = selected.getEndTime();
+        }
+
+        if (targetStart == null || targetEnd == null || !targetEnd.isAfter(targetStart)) {
+            return "Invalid updated time range. Use HH:mm from 06:00 to 23:30.";
+        }
+
+        if (servicePlanning.hasTimeOverlap(currentUser.getId(), targetDate, targetStart, targetEnd, selected.getId())) {
+            return "Cannot update planning: this time overlaps another session on that day.";
+        }
+
+        String adjustedColorNote = "";
+        if (servicePlanning.isColorUsedOnDate(currentUser.getId(), targetDate, selected.getColorHex(), selected.getId())) {
+            selected.setColorHex(findAvailableColor(targetDate, selected.getId()));
+            adjustedColorNote = " Color adjusted to keep uniqueness on that day.";
+        }
+
+        selected.setPlanningDate(targetDate);
+        selected.setStartTime(targetStart);
+        selected.setEndTime(targetEnd);
+        servicePlanning.update(selected);
+        refreshPlanningData();
+
+        return "Planning updated: " + selected.getSeanceTitle() + " -> "
+                + selected.getPlanningDate().format(shortDateFormatter) + " "
+                + selected.getStartTime().format(timeFormatter) + " - "
+                + selected.getEndTime().format(timeFormatter) + "." + adjustedColorNote;
+    }
+
+    private Planning resolvePlanningEntryForUpdate(int userId, AssistantCommand command) {
+        assistantSessionResolutionError = null;
+        String titleFilter = normalize(command.title);
+        List<Planning> candidates = allPlanningEntries.stream()
+                .filter(entry -> entry.getUserId() == userId)
+                .filter(entry -> command.date == null || command.date.equals(entry.getPlanningDate()))
+                .filter(entry -> titleFilter.isBlank() || normalize(entry.getSeanceTitle()).contains(titleFilter))
+                .sorted(Comparator.comparing(Planning::getPlanningDate).thenComparing(Planning::getStartTime))
+                .toList();
+
+        if (candidates.isEmpty() && !titleFilter.isBlank()) {
+            candidates = allPlanningEntries.stream()
+                    .filter(entry -> entry.getUserId() == userId)
+                    .filter(entry -> normalize(entry.getSeanceTitle()).contains(titleFilter))
+                    .sorted(Comparator.comparing(Planning::getPlanningDate).thenComparing(Planning::getStartTime))
+                    .toList();
+        }
+
+        if (candidates.isEmpty()) {
+            assistantSessionResolutionError = "No matching planning found. Try adding a more specific date or title.";
+            return null;
+        }
+
+        if (candidates.size() > 1) {
+            List<Planning> exactTitle = candidates.stream()
+                    .filter(entry -> !titleFilter.isBlank() && normalize(entry.getSeanceTitle()).equals(titleFilter))
+                    .toList();
+            if (exactTitle.size() == 1) {
+                return exactTitle.get(0);
+            }
+            assistantSessionResolutionError = buildAmbiguousPlanningMessage(candidates);
+            return null;
+        }
+
+        return candidates.get(0);
+    }
+
+    private String buildAmbiguousPlanningMessage(List<Planning> candidates) {
+        if (candidates == null || candidates.isEmpty()) {
+            return "Multiple sessions found. Please be more specific.";
+        }
+        StringBuilder builder = new StringBuilder("I found multiple matching sessions. Please specify date or title. Examples: ");
+        int limit = Math.min(3, candidates.size());
+        for (int i = 0; i < limit; i++) {
+            Planning entry = candidates.get(i);
+            if (i > 0) {
+                builder.append(" | ");
+            }
+            builder.append(entry.getSeanceTitle())
+                    .append(" on ")
+                    .append(entry.getPlanningDate())
+                    .append(" at ")
+                    .append(entry.getStartTime().format(timeFormatter));
+        }
+        return builder.toString();
+    }
+
+    private Seance resolveSessionForAssistant(int userId, String requestedTitle, String requestedType) {
+        assistantSessionResolutionError = null;
+        String normalizedRequested = normalize(requestedTitle);
+        TypeSeance resolvedType = resolveAssistantType(requestedType);
+        if (resolvedType == null) {
+            assistantSessionResolutionError = "Please specify a valid session type (for example: revision).";
+            return null;
+        }
+
+        for (Seance seance : sessionComboBox.getItems()) {
+            if (normalize(seance.getTitre()).equals(normalizedRequested) && isSessionTypeValid(seance)) {
+                return seance;
+            }
+        }
+        for (Seance seance : sessionComboBox.getItems()) {
+            if ((normalize(seance.getTitre()).contains(normalizedRequested)
+                    || normalizedRequested.contains(normalize(seance.getTitre())))
+                    && isSessionTypeValid(seance)) {
+                return seance;
+            }
+        }
+
+        String cleanTitle = toTitleCase(requestedTitle);
+        if (cleanTitle.isBlank()) {
+            assistantSessionResolutionError = "Please provide a valid session title.";
+            return null;
+        }
+
+        Seance created = new Seance();
+        created.setUserId(userId);
+        created.setTitre(cleanTitle);
+        created.setTypeSeanceId(resolvedType.getId());
+        created.setTypeSeanceName(resolvedType.getName());
+        created.setTypeSeance(resolvedType.getName());
+        created.setDescription("Created from planning assistant");
+        serviceSeance.add(created);
+        loadSessions();
+
+        for (Seance seance : sessionComboBox.getItems()) {
+            if (seance.getId() == created.getId()) {
+                return seance;
+            }
+        }
+        return created;
+    }
+
+    private TypeSeance resolveAssistantType(String requestedType) {
+        String normalizedRequestedType = normalizeAssistantTypeForSearch(requestedType);
+        if (normalizedRequestedType.isBlank()) {
+            return null;
+        }
+        List<TypeSeance> availableTypes = serviceTypeSeance.getAvailableTypes();
+        for (TypeSeance typeSeance : availableTypes) {
+            String normalizedTypeName = normalizeAssistantTypeForSearch(typeSeance.getName());
+            if (normalizedTypeName.equals(normalizedRequestedType)) {
+                return typeSeance;
+            }
+        }
+        for (TypeSeance typeSeance : availableTypes) {
+            String normalizedName = normalizeAssistantTypeForSearch(typeSeance.getName());
+            if (normalizedName.contains(normalizedRequestedType) || normalizedRequestedType.contains(normalizedName)) {
+                return typeSeance;
+            }
+        }
+        return null;
+    }
+
+    private String extractAssistantSessionType(String normalizedInput) {
+        String bestMatch = null;
+        int bestLength = -1;
+        String normalizedText = normalizeAssistantTypeForSearch(normalizedInput);
+        for (TypeSeance typeSeance : serviceTypeSeance.getAvailableTypes()) {
+            String typeName = typeSeance == null ? null : typeSeance.getName();
+            String normalizedType = normalizeAssistantTypeForSearch(typeName);
+            if (normalizedType.isBlank()) {
+                continue;
+            }
+            if (normalizedText.contains(normalizedType) && normalizedType.length() > bestLength) {
+                bestMatch = typeName;
+                bestLength = normalizedType.length();
+            }
+        }
+        return bestMatch;
+    }
+
+    private boolean isSessionTypeValid(Seance seance) {
+        return seance != null
+                && seance.getTypeSeanceId() != null
+                && seance.getTypeSeanceId() > 0;
+    }
+
+    private String toTitleCase(String input) {
+        if (input == null || input.isBlank()) {
+            return "Session";
+        }
+        String[] words = input.trim().split("\\s+");
+        StringBuilder builder = new StringBuilder();
+        for (String word : words) {
+            if (word.isBlank()) {
+                continue;
+            }
+            if (builder.length() > 0) {
+                builder.append(' ');
+            }
+            builder.append(Character.toUpperCase(word.charAt(0)));
+            if (word.length() > 1) {
+                builder.append(word.substring(1).toLowerCase(Locale.ROOT));
+            }
+        }
+        return builder.toString();
+    }
+
+    private LocalDate extractAssistantDate(String normalizedInput) {
+        List<LocalDate> dates = extractAssistantDates(normalizedInput);
+        if (!dates.isEmpty()) {
+            return dates.get(0);
+        }
+
+        LocalDate today = LocalDate.now();
+        Map<String, DayOfWeek> dayAliases = Map.ofEntries(
+                Map.entry("monday", DayOfWeek.MONDAY),
+                Map.entry("lundi", DayOfWeek.MONDAY),
+                Map.entry("tuesday", DayOfWeek.TUESDAY),
+                Map.entry("mardi", DayOfWeek.TUESDAY),
+                Map.entry("wednesday", DayOfWeek.WEDNESDAY),
+                Map.entry("mercredi", DayOfWeek.WEDNESDAY),
+                Map.entry("thursday", DayOfWeek.THURSDAY),
+                Map.entry("jeudi", DayOfWeek.THURSDAY),
+                Map.entry("friday", DayOfWeek.FRIDAY),
+                Map.entry("vendredi", DayOfWeek.FRIDAY),
+                Map.entry("saturday", DayOfWeek.SATURDAY),
+                Map.entry("samedi", DayOfWeek.SATURDAY),
+                Map.entry("sunday", DayOfWeek.SUNDAY),
+                Map.entry("dimanche", DayOfWeek.SUNDAY)
+        );
+
+        for (Map.Entry<String, DayOfWeek> alias : dayAliases.entrySet()) {
+            if (normalizedInput.contains(alias.getKey())) {
+                return today.with(TemporalAdjusters.nextOrSame(alias.getValue()));
+            }
+        }
+        return null;
+    }
+
+    private List<LocalDate> extractAssistantDates(String normalizedInput) {
+        List<LocalDate> dates = new ArrayList<>();
+
+        Matcher isoMatcher = ASSISTANT_ISO_DATE_PATTERN.matcher(normalizedInput);
+        while (isoMatcher.find()) {
+            LocalDate parsedIso = parseIsoDate(isoMatcher.group());
+            if (parsedIso != null && !dates.contains(parsedIso)) {
+                dates.add(parsedIso);
+            }
+        }
+
+        Matcher shortMatcher = ASSISTANT_SHORT_DATE_PATTERN.matcher(normalizedInput);
+        while (shortMatcher.find()) {
+            LocalDate parsedShort = parseIsoDate(shortMatcher.group());
+            if (parsedShort != null && !dates.contains(parsedShort)) {
+                dates.add(parsedShort);
+            }
+        }
+
+        LocalDate today = LocalDate.now();
+        if (containsAny(normalizedInput, "today", "aujourd", "auj")) {
+            if (!dates.contains(today)) {
+                dates.add(today);
+            }
+        }
+        if (containsAny(normalizedInput, "tomorrow", "demain")) {
+            LocalDate tomorrow = today.plusDays(1);
+            if (!dates.contains(tomorrow)) {
+                dates.add(tomorrow);
+            }
+        }
+
+        Map<String, DayOfWeek> dayAliases = Map.ofEntries(
+                Map.entry("monday", DayOfWeek.MONDAY),
+                Map.entry("lundi", DayOfWeek.MONDAY),
+                Map.entry("tuesday", DayOfWeek.TUESDAY),
+                Map.entry("mardi", DayOfWeek.TUESDAY),
+                Map.entry("wednesday", DayOfWeek.WEDNESDAY),
+                Map.entry("mercredi", DayOfWeek.WEDNESDAY),
+                Map.entry("thursday", DayOfWeek.THURSDAY),
+                Map.entry("jeudi", DayOfWeek.THURSDAY),
+                Map.entry("friday", DayOfWeek.FRIDAY),
+                Map.entry("vendredi", DayOfWeek.FRIDAY),
+                Map.entry("saturday", DayOfWeek.SATURDAY),
+                Map.entry("samedi", DayOfWeek.SATURDAY),
+                Map.entry("sunday", DayOfWeek.SUNDAY),
+                Map.entry("dimanche", DayOfWeek.SUNDAY)
+        );
+
+        for (Map.Entry<String, DayOfWeek> alias : dayAliases.entrySet()) {
+            if (normalizedInput.contains(alias.getKey())) {
+                LocalDate weekdayDate = today.with(TemporalAdjusters.nextOrSame(alias.getValue()));
+                if (!dates.contains(weekdayDate)) {
+                    dates.add(weekdayDate);
+                }
+            }
+        }
+        return dates;
+    }
+
+    private String extractAssistantUpdateTitle(String normalizedInput, String rawInput, String sessionType) {
+        String knownTitle = findKnownSessionTitleMention(normalizedInput);
+        if (knownTitle != null && !knownTitle.isBlank()) {
+            return knownTitle;
+        }
+
+        Pattern changePattern = Pattern.compile(
+                "(?i)(?:modify|change|update|reschedule|move|edit|modifier|changer)\\s+(?:the\\s+)?(?:session\\s+)?(?:of\\s+)?(.+)$"
+        );
+        Matcher matcher = changePattern.matcher(rawInput == null ? "" : rawInput);
+        if (matcher.find()) {
+            String candidate = sanitizeAssistantTitle(matcher.group(1));
+            candidate = removeLeadingSessionType(candidate, sessionType);
+            candidate = stripLeadingKnownSessionType(candidate);
+            if (!candidate.isBlank()) {
+                return candidate;
+            }
+        }
+
+        return extractAssistantTitle(normalizedInput, rawInput, sessionType);
+    }
+
+    private LocalTime extractAssistantStartTime(String normalizedInput) {
+        String safeInput = removeDateTokensForTimeParsing(normalizedInput);
+
+        Matcher rangeMatcher = ASSISTANT_TIME_RANGE_PATTERN.matcher(safeInput);
+        if (rangeMatcher.find()) {
+            LocalTime startFromRange = parseClock(rangeMatcher.group(1));
+            if (startFromRange != null) {
+                return startFromRange;
+            }
+        }
+
+        Matcher matcher = ASSISTANT_TIME_PATTERN.matcher(safeInput);
+        while (matcher.find()) {
+            LocalTime parsed = parseClock(matcher.group());
+            if (parsed != null) {
+                return parsed;
+            }
+        }
+        return null;
+    }
+
+    private LocalTime extractAssistantEndTime(String normalizedInput, LocalTime start) {
+        String safeInput = removeDateTokensForTimeParsing(normalizedInput);
+
+        Matcher rangeMatcher = ASSISTANT_TIME_RANGE_PATTERN.matcher(safeInput);
+        if (rangeMatcher.find()) {
+            LocalTime endFromRange = parseClock(rangeMatcher.group(2));
+            if (endFromRange != null) {
+                return endFromRange;
+            }
+        }
+
+        Matcher matcher = ASSISTANT_TIME_PATTERN.matcher(safeInput);
+        LocalTime first = null;
+        LocalTime second = null;
+        while (matcher.find()) {
+            LocalTime parsed = parseClock(matcher.group());
+            if (parsed == null) {
+                continue;
+            }
+            if (first == null) {
+                first = parsed;
+            } else {
+                second = parsed;
+                break;
+            }
+        }
+        if (second != null) {
+            return second;
+        }
+        if (start != null) {
+            return start.plusHours(1);
+        }
+        return null;
+    }
+
+    private String removeDateTokensForTimeParsing(String input) {
+        if (input == null || input.isBlank()) {
+            return "";
+        }
+        String withoutIso = ASSISTANT_ISO_DATE_PATTERN.matcher(input).replaceAll(" ");
+        return ASSISTANT_SHORT_DATE_PATTERN.matcher(withoutIso).replaceAll(" ");
+    }
+
+    private String extractAssistantTitle(String normalizedInput, String rawInput, String sessionType) {
+        Pattern nounBeforeSessionPattern = Pattern.compile(
+                "(?i)(?:add|create|plan|schedule|ajoute|planifie|planifier)\\s+(?:a|an|the|une|un)?\\s*([a-zA-Z][a-zA-Z0-9 _-]{1,40}?)\\s+session\\b"
+        );
+        Matcher nounBeforeSessionMatcher = nounBeforeSessionPattern.matcher(rawInput);
+        if (nounBeforeSessionMatcher.find()) {
+            String candidate = sanitizeAssistantTitle(nounBeforeSessionMatcher.group(1));
+            candidate = removeLeadingSessionType(candidate, sessionType);
+            candidate = stripLeadingKnownSessionType(candidate);
+            if (!candidate.isBlank()) {
+                return candidate;
+            }
+        }
+
+        String[] startTokens = {"session of", "session", "seance de", "seance d", "seance", "cours de", "cours d"};
+        int start = -1;
+        int startTokenLength = 0;
+        for (String token : startTokens) {
+            int index = normalizedInput.indexOf(token);
+            if (index >= 0) {
+                start = index;
+                startTokenLength = token.length();
+                break;
+            }
+        }
+
+        if (start >= 0) {
+            int from = Math.min(rawInput.length(), start + startTokenLength);
+            String candidate = sanitizeAssistantTitle(rawInput.substring(from));
+            candidate = removeLeadingSessionType(candidate, sessionType);
+            candidate = stripLeadingKnownSessionType(candidate);
+            if (!candidate.isBlank()) {
+                return candidate;
+            }
+        }
+
+        Pattern genericActionTailPattern = Pattern.compile(
+                "(?i)(?:add|create|plan|schedule|ajoute|planifie|planifier)\\s+(?:a|an|the|une|un)?\\s*(.+)$"
+        );
+        Matcher genericActionTailMatcher = genericActionTailPattern.matcher(rawInput);
+        if (genericActionTailMatcher.find()) {
+            String fallbackCandidate = sanitizeAssistantTitle(genericActionTailMatcher.group(1));
+            fallbackCandidate = removeLeadingSessionType(fallbackCandidate, sessionType);
+            fallbackCandidate = stripLeadingKnownSessionType(fallbackCandidate);
+            if (!fallbackCandidate.isBlank()) {
+                return fallbackCandidate;
+            }
+        }
+
+        return findKnownSessionTitleMention(normalizedInput);
+    }
+
+    private String removeLeadingSessionType(String titleCandidate, String sessionType) {
+        if (titleCandidate == null || titleCandidate.isBlank() || sessionType == null || sessionType.isBlank()) {
+            return titleCandidate == null ? "" : titleCandidate;
+        }
+
+        String trimmed = titleCandidate.trim();
+        String normalizedTitle = normalizeAssistantTypeToken(trimmed);
+        String normalizedType = normalizeAssistantTypeToken(sessionType);
+
+        if (normalizedTitle.equals(normalizedType)) {
+            return "";
+        }
+
+        String[] words = trimmed.split("\\s+");
+        if (words.length > 0) {
+            String firstWordNormalized = normalizeAssistantTypeToken(words[0]);
+            if (firstWordNormalized.equals(normalizedType) && words.length > 1) {
+                StringBuilder remainder = new StringBuilder();
+                for (int i = 1; i < words.length; i++) {
+                    if (remainder.length() > 0) {
+                        remainder.append(' ');
+                    }
+                    remainder.append(words[i]);
+                }
+                return stripLeadingSessionKeyword(remainder.toString().trim());
+            }
+        }
+
+        if (normalizedTitle.startsWith(normalizedType + " ")) {
+            int typeWordCount = sessionType.trim().split("\\s+").length;
+            if (words.length > typeWordCount) {
+                StringBuilder remainder = new StringBuilder();
+                for (int i = typeWordCount; i < words.length; i++) {
+                    if (remainder.length() > 0) {
+                        remainder.append(' ');
+                    }
+                    remainder.append(words[i]);
+                }
+                return stripLeadingSessionKeyword(remainder.toString().trim());
+            }
+            return "";
+        }
+
+        return stripLeadingSessionKeyword(trimmed);
+    }
+
+    private String stripLeadingKnownSessionType(String titleCandidate) {
+        if (titleCandidate == null || titleCandidate.isBlank()) {
+            return "";
+        }
+
+        String current = titleCandidate.trim();
+        for (TypeSeance typeSeance : serviceTypeSeance.getAvailableTypes()) {
+            String typeName = typeSeance == null ? null : typeSeance.getName();
+            if (typeName == null || typeName.isBlank()) {
+                continue;
+            }
+            String stripped = removeLeadingSessionType(current, typeName);
+            if (!normalizeAssistant(stripped).equals(normalizeAssistant(current))) {
+                current = stripped;
+                break;
+            }
+        }
+        return current.trim();
+    }
+
+    private String sanitizeAssistantTitle(String rawTitle) {
+        if (rawTitle == null) {
+            return "";
+        }
+        String candidate = rawTitle.trim();
+        candidate = candidate.replaceAll("(?i)\\b(today|tomorrow|monday|tuesday|wednesday|thursday|friday|saturday|sunday|lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche|at|to|from|on|in|le)\\b.*$", "").trim();
+        candidate = candidate.replaceAll("(?i)\\b\\d{1,2}[:h.]?\\d{0,2}\\b.*$", "").trim();
+        candidate = candidate.replaceAll("(?i)\\b\\d{1,2}[/-]\\d{1,2}([/-]\\d{2,4})?\\b.*$", "").trim();
+        candidate = candidate.replaceAll("^[^a-zA-Z]+", "").trim();
+        candidate = stripLeadingSessionKeyword(candidate);
+        candidate = candidate.replaceAll("[.,;:]+$", "").trim();
+        return candidate;
+    }
+
+    private String stripLeadingSessionKeyword(String value) {
+        if (value == null || value.isBlank()) {
+            return "";
+        }
+        return value.replaceFirst("(?i)^(session|seance|séance)\\s+", "").trim();
+    }
+
+    private String normalizeAssistantTypeToken(String value) {
+        String normalized = normalizeAssistant(value);
+        if (normalized.isBlank()) {
+            return "";
+        }
+        return switch (normalized) {
+            case "review", "revise", "revisions", "rev" -> "revision";
+            case "course", "cours", "class" -> "course";
+            case "tp", "practical" -> "tp";
+            default -> normalized;
+        };
+    }
+
+    private String normalizeAssistantTypeForSearch(String value) {
+        String normalized = normalizeAssistant(value);
+        if (normalized.isBlank()) {
+            return "";
+        }
+
+        String[] words = normalized.split("\\s+");
+        StringBuilder builder = new StringBuilder();
+        for (String word : words) {
+            if (word == null || word.isBlank()) {
+                continue;
+            }
+            if (builder.length() > 0) {
+                builder.append(' ');
+            }
+            builder.append(normalizeAssistantTypeToken(word));
+        }
+        return builder.toString().trim();
+    }
+
+    private String findKnownSessionTitleMention(String normalizedInput) {
+        Seance bestMatch = null;
+        int bestLength = -1;
+        for (Seance seance : sessionComboBox.getItems()) {
+            String title = normalizeAssistant(seance.getTitre());
+            if (title.isBlank()) {
+                continue;
+            }
+            if (normalizedInput.contains(title) && title.length() > bestLength) {
+                bestMatch = seance;
+                bestLength = title.length();
+            }
+        }
+        return bestMatch == null ? null : bestMatch.getTitre();
+    }
+
+    private boolean containsAny(String source, String... tokens) {
+        if (source == null) {
+            return false;
+        }
+        for (String token : tokens) {
+            if (source.contains(token)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private String normalizeAssistant(String value) {
+        if (value == null) {
+            return "";
+        }
+        String normalized = Normalizer.normalize(value, Normalizer.Form.NFD)
+                .replaceAll("\\p{M}+", "");
+        return normalized.toLowerCase(Locale.ROOT).trim();
+    }
+
+    private LocalDate parseIsoDate(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        String raw = value.trim();
+
+        List<DateTimeFormatter> formatters = List.of(
+                DateTimeFormatter.ISO_LOCAL_DATE,
+                DateTimeFormatter.ofPattern("d/M/uuuu"),
+                DateTimeFormatter.ofPattern("dd/MM/uuuu"),
+                DateTimeFormatter.ofPattern("d-M-uuuu"),
+                DateTimeFormatter.ofPattern("dd-MM-uuuu"),
+                DateTimeFormatter.ofPattern("d/M/uu"),
+                DateTimeFormatter.ofPattern("d-M-uu")
+        );
+
+        for (DateTimeFormatter formatter : formatters) {
+            try {
+                LocalDate parsed = LocalDate.parse(raw, formatter);
+                if (parsed.getYear() < 100) {
+                    parsed = parsed.plusYears(2000);
+                }
+                return parsed;
+            } catch (DateTimeParseException ignored) {
+                // Try next accepted format.
+            }
+        }
+
+        try {
+            return LocalDate.parse(raw);
+        } catch (Exception exception) {
+            return null;
+        }
+    }
+
+    private LocalTime parseClock(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        String raw = value.trim().toLowerCase(Locale.ROOT).replace('h', ':').replace('.', ':');
+        boolean pm = raw.endsWith("pm");
+        boolean am = raw.endsWith("am");
+        if (pm || am) {
+            raw = raw.replace("pm", "").replace("am", "").trim();
+        }
+        String[] parts = raw.split(":");
+        try {
+            int hour = Integer.parseInt(parts[0]);
+            int minute = parts.length > 1 ? Integer.parseInt(parts[1]) : 0;
+            if (pm && hour < 12) {
+                hour += 12;
+            } else if (am && hour == 12) {
+                hour = 0;
+            }
+            if (hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+                return null;
+            }
+            return LocalTime.of(hour, minute);
+        } catch (NumberFormatException exception) {
+            return null;
+        }
+    }
+
+    private LocalTime normalizeAssistantTime(LocalTime time, boolean isEnd) {
+        if (time == null) {
+            return null;
+        }
+
+        int totalMinutes = time.getHour() * 60 + time.getMinute();
+        int minMinutes = ASSISTANT_MIN_TIME.getHour() * 60 + ASSISTANT_MIN_TIME.getMinute();
+        int maxMinutes = ASSISTANT_MAX_TIME.getHour() * 60 + ASSISTANT_MAX_TIME.getMinute();
+
+        if (isEnd) {
+            totalMinutes = Math.min(maxMinutes, totalMinutes);
+        }
+        if (totalMinutes < minMinutes) {
+            totalMinutes = minMinutes;
+        }
+        if (totalMinutes > maxMinutes) {
+            totalMinutes = maxMinutes;
+        }
+
+        int remainder = totalMinutes % ASSISTANT_TIME_STEP_MINUTES;
+        if (remainder != 0) {
+            totalMinutes += (ASSISTANT_TIME_STEP_MINUTES - remainder);
+            if (totalMinutes > maxMinutes) {
+                totalMinutes = maxMinutes;
+            }
+        }
+
+        return LocalTime.of(totalMinutes / 60, totalMinutes % 60);
+    }
+
     private void loadSessions() {
         sessionComboBox.setItems(FXCollections.observableArrayList(serviceSeance.getAll()));
     }
@@ -562,7 +1979,7 @@ public class PlanningController implements Initializable {
     private void refreshPlanningData() {
         allPlanningEntries = servicePlanning.getAll();
         planningByDate = new HashMap<>();
-        for (PlanningEntry entry : allPlanningEntries) {
+        for (Planning entry : allPlanningEntries) {
             planningByDate.computeIfAbsent(entry.getPlanningDate(), key -> new ArrayList<>()).add(entry);
         }
         updateCalendar();
@@ -611,7 +2028,7 @@ public class PlanningController implements Initializable {
     }
 
     private double computeCompletionRateBetween(LocalDate startInclusive, LocalDate endInclusive) {
-        List<PlanningEntry> periodEntries = allPlanningEntries.stream()
+        List<Planning> periodEntries = allPlanningEntries.stream()
                 .filter(entry -> isDateBetween(entry.getPlanningDate(), startInclusive, endInclusive))
                 .toList();
         if (periodEntries.isEmpty()) {
@@ -626,7 +2043,7 @@ public class PlanningController implements Initializable {
     private double computeFeedbackAverageBetween(LocalDate startInclusive, LocalDate endInclusive) {
         List<Integer> scores = allPlanningEntries.stream()
                 .filter(entry -> isDateBetween(entry.getPlanningDate(), startInclusive, endInclusive))
-                .map(PlanningEntry::getFeedback)
+                .map(Planning::getFeedback)
                 .map(this::toFeedbackCode)
                 .filter(code -> code != null && !code.isBlank())
                 .map(Integer::parseInt)
@@ -649,7 +2066,7 @@ public class PlanningController implements Initializable {
 
     private int computeBestPlanningStreak() {
         List<LocalDate> dates = allPlanningEntries.stream()
-                .map(PlanningEntry::getPlanningDate)
+                .map(Planning::getPlanningDate)
                 .distinct()
                 .sorted()
                 .toList();
@@ -679,7 +2096,7 @@ public class PlanningController implements Initializable {
         return !value.isBefore(startInclusive) && !value.isAfter(endInclusive);
     }
 
-    private double durationHours(PlanningEntry entry) {
+    private double durationHours(Planning entry) {
         if (entry == null || entry.getStartTime() == null || entry.getEndTime() == null || !entry.getEndTime().isAfter(entry.getStartTime())) {
             return 0;
         }
@@ -794,10 +2211,10 @@ public class PlanningController implements Initializable {
         }
         cell.getChildren().add(dayLabel);
 
-        List<PlanningEntry> entries = planningByDate.getOrDefault(date, List.of()).stream()
-                .sorted(Comparator.comparing(PlanningEntry::getStartTime))
+        List<Planning> entries = planningByDate.getOrDefault(date, List.of()).stream()
+                .sorted(Comparator.comparing(Planning::getStartTime))
                 .toList();
-        for (PlanningEntry entry : entries) {
+        for (Planning entry : entries) {
             cell.getChildren().add(createCalendarEntryCard(entry));
         }
 
@@ -840,9 +2257,12 @@ public class PlanningController implements Initializable {
         return BASE_CALENDAR_ROW_HEIGHT + (rowMaxEntries * CALENDAR_ENTRY_HEIGHT_STEP);
     }
 
-    private HBox createCalendarEntryCard(PlanningEntry entry) {
+    private HBox createCalendarEntryCard(Planning entry) {
         HBox card = new HBox(6);
         card.getStyleClass().add("planning-calendar-entry-card");
+        if (isAssistantGeneratedEntry(entry)) {
+            card.getStyleClass().add("planning-ai-calendar-entry-card");
+        }
         card.setMaxWidth(Double.MAX_VALUE);
 
         Region colorStrip = new Region();
@@ -859,6 +2279,9 @@ public class PlanningController implements Initializable {
 
         Label titleLabel = new Label(sessionTitle);
         titleLabel.getStyleClass().add("planning-calendar-entry-title");
+        if (isAssistantGeneratedEntry(entry)) {
+            titleLabel.getStyleClass().add("planning-ai-calendar-entry-title");
+        }
         Label timeLabel = new Label(entry.getStartTime().format(calendarEntryFormatter) + " - " + entry.getEndTime().format(calendarEntryFormatter));
         timeLabel.getStyleClass().add("planning-calendar-entry-time");
         infoBox.getChildren().addAll(titleLabel, timeLabel);
@@ -881,11 +2304,92 @@ public class PlanningController implements Initializable {
         return card;
     }
 
+    private boolean isAssistantGeneratedEntry(Planning entry) {
+        if (entry == null) {
+            return false;
+        }
+
+        if (aiGeneratedPlanningIds.contains(entry.getId())) {
+            return true;
+        }
+
+        if (sessionComboBox == null || sessionComboBox.getItems() == null) {
+            return false;
+        }
+        for (Seance seance : sessionComboBox.getItems()) {
+            if (seance == null || seance.getId() != entry.getSeanceId()) {
+                continue;
+            }
+            String description = seance.getDescription();
+            return description != null && normalizeAssistant(description).contains("created from planning assistant");
+        }
+        return false;
+    }
+
+    private String pickRandomAssistantColor(int userId, LocalDate date) {
+        List<String> availableColors = new ArrayList<>();
+        for (String colorHex : COLOR_PALETTE) {
+            if (!servicePlanning.isColorUsedOnDate(userId, date, colorHex, null)) {
+                availableColors.add(colorHex);
+            }
+        }
+
+        if (!availableColors.isEmpty()) {
+            return availableColors.get(assistantRandom.nextInt(availableColors.size()));
+        }
+
+        // If palette is exhausted for the day, generate a random unique color.
+        for (int attempt = 0; attempt < 60; attempt++) {
+            String randomColor = String.format("#%02X%02X%02X",
+                    assistantRandom.nextInt(256),
+                    assistantRandom.nextInt(256),
+                    assistantRandom.nextInt(256));
+            if (!servicePlanning.isColorUsedOnDate(userId, date, randomColor, null)) {
+                return randomColor;
+            }
+        }
+
+        return COLOR_PALETTE.get(assistantRandom.nextInt(COLOR_PALETTE.size()));
+    }
+
+    private void trackAssistantGeneratedEntry(Planning createdEntry) {
+        if (createdEntry == null) {
+            return;
+        }
+
+        if (createdEntry.getId() > 0) {
+            aiGeneratedPlanningIds.add(createdEntry.getId());
+            return;
+        }
+
+        Planning bestMatch = null;
+        for (Planning entry : allPlanningEntries) {
+            if (entry == null) {
+                continue;
+            }
+            if (entry.getSeanceId() == createdEntry.getSeanceId()
+                    && createdEntry.getPlanningDate() != null
+                    && createdEntry.getPlanningDate().equals(entry.getPlanningDate())
+                    && createdEntry.getStartTime() != null
+                    && createdEntry.getStartTime().equals(entry.getStartTime())
+                    && createdEntry.getEndTime() != null
+                    && createdEntry.getEndTime().equals(entry.getEndTime())) {
+                if (bestMatch == null || entry.getId() > bestMatch.getId()) {
+                    bestMatch = entry;
+                }
+            }
+        }
+
+        if (bestMatch != null && bestMatch.getId() > 0) {
+            aiGeneratedPlanningIds.add(bestMatch.getId());
+        }
+    }
+
     private void configureCalendarCellDragAndDrop(VBox cell, LocalDate targetDate) {
         cell.setOnDragOver(event -> {
             Integer draggedId = extractDraggedPlanningId(event.getDragboard());
             if (draggedId != null) {
-                PlanningEntry draggedEntry = findPlanningEntryById(draggedId);
+                Planning draggedEntry = findPlanningEntryById(draggedId);
                 if (draggedEntry != null && !targetDate.equals(draggedEntry.getPlanningDate())) {
                     event.acceptTransferModes(TransferMode.MOVE);
                 }
@@ -910,7 +2414,7 @@ public class PlanningController implements Initializable {
             boolean success = false;
             Integer draggedId = extractDraggedPlanningId(event.getDragboard());
             if (draggedId != null) {
-                PlanningEntry draggedEntry = findPlanningEntryById(draggedId);
+                Planning draggedEntry = findPlanningEntryById(draggedId);
                 if (draggedEntry != null && !targetDate.equals(draggedEntry.getPlanningDate())) {
                     movePlanningEntryToDate(draggedEntry, targetDate);
                     success = true;
@@ -936,8 +2440,8 @@ public class PlanningController implements Initializable {
         }
     }
 
-    private PlanningEntry findPlanningEntryById(int planningId) {
-        for (PlanningEntry entry : allPlanningEntries) {
+    private Planning findPlanningEntryById(int planningId) {
+        for (Planning entry : allPlanningEntries) {
             if (entry.getId() == planningId) {
                 return entry;
             }
@@ -945,7 +2449,7 @@ public class PlanningController implements Initializable {
         return null;
     }
 
-    private void movePlanningEntryToDate(PlanningEntry entry, LocalDate targetDate) {
+    private void movePlanningEntryToDate(Planning entry, LocalDate targetDate) {
         if (servicePlanning.hasTimeOverlap(entry.getUserId(), targetDate, entry.getStartTime(), entry.getEndTime(), entry.getId())) {
             showErrorOn(pageMessageLabel,
                     "Move cancelled: another session already uses this time range on " + targetDate.format(shortDateFormatter) + ".");
@@ -975,7 +2479,7 @@ public class PlanningController implements Initializable {
     private void updateTodayPanel() {
         LocalDate today = LocalDate.now();
         todayDateLabel.setText(today.format(fullDateFormatter));
-        List<PlanningEntry> todayEntries = planningByDate.getOrDefault(today, List.of());
+        List<Planning> todayEntries = planningByDate.getOrDefault(today, List.of());
         todayEventsListView.setItems(FXCollections.observableArrayList(todayEntries));
     }
 
@@ -987,7 +2491,7 @@ public class PlanningController implements Initializable {
         String periodFilter = resolvePeriodFilterFromMode(selectedMode);
         String sortOption = resolveSortFromMode(selectedMode);
 
-        List<PlanningEntry> upcomingEntries = allPlanningEntries.stream()
+        List<Planning> upcomingEntries = allPlanningEntries.stream()
                 .filter(entry -> !entry.getPlanningDate().isBefore(today))
                 .filter(entry -> matchesPeriodFilter(entry, today, periodFilter))
                 .filter(entry -> matchesSearch(entry, query, searchScope))
@@ -1041,7 +2545,7 @@ public class PlanningController implements Initializable {
         return UPCOMING_SORT_NEAREST;
     }
 
-    private boolean matchesPeriodFilter(PlanningEntry entry, LocalDate today, String selectedFilter) {
+    private boolean matchesPeriodFilter(Planning entry, LocalDate today, String selectedFilter) {
         if (selectedFilter == null || UPCOMING_FILTER_ALL.equals(selectedFilter)) {
             return true;
         }
@@ -1060,7 +2564,7 @@ public class PlanningController implements Initializable {
         return true;
     }
 
-    private boolean matchesSearch(PlanningEntry entry, String query, String selectedScope) {
+    private boolean matchesSearch(Planning entry, String query, String selectedScope) {
         if (query == null || query.isBlank()) {
             return true;
         }
@@ -1094,35 +2598,35 @@ public class PlanningController implements Initializable {
                 || feedbackValue.contains(query);
     }
 
-    private Comparator<PlanningEntry> resolveUpcomingComparator(String sortOption) {
-        Comparator<PlanningEntry> byDateAsc = Comparator.comparing(PlanningEntry::getPlanningDate)
-                .thenComparing(PlanningEntry::getStartTime);
+    private Comparator<Planning> resolveUpcomingComparator(String sortOption) {
+        Comparator<Planning> byDateAsc = Comparator.comparing(Planning::getPlanningDate)
+                .thenComparing(Planning::getStartTime);
         if (UPCOMING_SORT_LATEST.equals(sortOption)) {
             return byDateAsc.reversed();
         }
         if (UPCOMING_SORT_START_TIME.equals(sortOption)) {
-            return Comparator.comparing(PlanningEntry::getStartTime)
-                    .thenComparing(PlanningEntry::getPlanningDate)
+            return Comparator.comparing(Planning::getStartTime)
+                    .thenComparing(Planning::getPlanningDate)
                     .thenComparing(entry -> normalize(entry.getSeanceTitle()));
         }
         if (UPCOMING_SORT_TITLE_AZ.equals(sortOption)) {
-            return Comparator.comparing((PlanningEntry entry) -> normalize(entry.getSeanceTitle()))
-                    .thenComparing(PlanningEntry::getPlanningDate)
-                    .thenComparing(PlanningEntry::getStartTime);
+            return Comparator.comparing((Planning entry) -> normalize(entry.getSeanceTitle()))
+                    .thenComparing(Planning::getPlanningDate)
+                    .thenComparing(Planning::getStartTime);
         }
         if (UPCOMING_SORT_TITLE_ZA.equals(sortOption)) {
-            return Comparator.comparing((PlanningEntry entry) -> normalize(entry.getSeanceTitle()), Comparator.reverseOrder())
-                    .thenComparing(PlanningEntry::getPlanningDate)
-                    .thenComparing(PlanningEntry::getStartTime);
+            return Comparator.comparing((Planning entry) -> normalize(entry.getSeanceTitle()), Comparator.reverseOrder())
+                    .thenComparing(Planning::getPlanningDate)
+                    .thenComparing(Planning::getStartTime);
         }
         return byDateAsc;
     }
 
     private String normalize(String value) {
-        return value == null ? "" : value.toLowerCase().trim();
+        return normalizeAssistant(value);
     }
 
-    private void startEdit(PlanningEntry planningEntry) {
+    private void startEdit(Planning planningEntry) {
         editingPlanning = planningEntry;
         planningFormTitleLabel.setText("Edit Planning");
         for (Seance seance : sessionComboBox.getItems()) {
@@ -1135,12 +2639,18 @@ public class PlanningController implements Initializable {
         startTimeComboBox.setValue(planningEntry.getStartTime());
         endTimeComboBox.setValue(planningEntry.getEndTime());
         colorPicker.setValue(Color.web(planningEntry.getColorHex()));
+        boolean hasEditableFeedback = hasFeedback(planningEntry);
+        showPlanningEditFeedbackEditor(hasEditableFeedback);
+        if (planningEditFeedbackComboBox != null) {
+            String feedbackCode = toFeedbackCode(planningEntry.getFeedback());
+            planningEditFeedbackComboBox.setValue(feedbackCode == null ? null : toFeedbackLabel(feedbackCode));
+        }
         clearPlanningValidationErrors();
         showForm(true);
         hideMessage();
     }
 
-    private void deletePlanning(PlanningEntry planningEntry) {
+    private void deletePlanning(Planning planningEntry) {
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
         alert.setTitle("Delete Planning");
         alert.setHeaderText("Delete planned session?");
@@ -1167,8 +2677,20 @@ public class PlanningController implements Initializable {
         startTimeComboBox.setValue(null);
         endTimeComboBox.setValue(null);
         colorPicker.setValue(Color.web(COLOR_PALETTE.get(0)));
+        if (planningEditFeedbackComboBox != null) {
+            planningEditFeedbackComboBox.setValue(null);
+        }
+        showPlanningEditFeedbackEditor(false);
         clearPlanningValidationErrors();
         hideMessage();
+    }
+
+    private void showPlanningEditFeedbackEditor(boolean visible) {
+        if (planningEditFeedbackBox == null) {
+            return;
+        }
+        planningEditFeedbackBox.setVisible(visible);
+        planningEditFeedbackBox.setManaged(visible);
     }
 
 
@@ -1417,13 +2939,13 @@ public class PlanningController implements Initializable {
             return;
         }
 
-        List<PlanningEntry> completedEntries = allPlanningEntries.stream()
+        List<Planning> completedEntries = allPlanningEntries.stream()
                 .filter(entry -> isSessionCompleted(entry.getPlanningDate(), entry.getEndTime()))
-                .sorted(Comparator.comparing(PlanningEntry::getPlanningDate).reversed()
-                        .thenComparing(PlanningEntry::getStartTime).reversed())
+                .sorted(Comparator.comparing(Planning::getPlanningDate).reversed()
+                        .thenComparing(Planning::getStartTime).reversed())
                 .toList();
 
-        List<PlanningEntry> pendingEntries = completedEntries.stream()
+        List<Planning> pendingEntries = completedEntries.stream()
                 .filter(this::isAwaitingFeedback)
                 .toList();
 
@@ -1445,7 +2967,7 @@ public class PlanningController implements Initializable {
         }
 
         if (selectedFeedbackEntry != null) {
-            for (PlanningEntry entry : pendingEntries) {
+            for (Planning entry : pendingEntries) {
                 if (entry.getId() == selectedFeedbackEntry.getId()) {
                     feedbackPendingListView.getSelectionModel().select(entry);
                     return;
@@ -1481,11 +3003,11 @@ public class PlanningController implements Initializable {
         return trimmed.isEmpty() ? null : trimmed;
     }
 
-    private boolean isAwaitingFeedback(PlanningEntry entry) {
+    private boolean isAwaitingFeedback(Planning entry) {
         return !hasFeedback(entry);
     }
 
-    private boolean hasFeedback(PlanningEntry entry) {
+    private boolean hasFeedback(Planning entry) {
         if (entry == null) {
             return false;
         }
@@ -1603,11 +3125,11 @@ public class PlanningController implements Initializable {
                 alpha);
     }
 
-    private String formatEntryTime(PlanningEntry entry) {
+    private String formatEntryTime(Planning entry) {
         return entry.getStartTime().format(timeFormatter) + " - " + entry.getEndTime().format(timeFormatter);
     }
 
-    private String formatEntryDateTime(PlanningEntry entry) {
+    private String formatEntryDateTime(Planning entry) {
         return entry.getPlanningDate().format(shortDateFormatter) + " • " + formatEntryTime(entry);
     }
 
@@ -1632,6 +3154,7 @@ public class PlanningController implements Initializable {
         label.setStyle("");
         label.setVisible(true);
         label.setManaged(true);
+        scheduleMessageHide(label, 6.0);
     }
 
     private void showStyledMessage(Label label, String message, String style) {
@@ -1640,11 +3163,16 @@ public class PlanningController implements Initializable {
         label.setStyle(style);
         label.setVisible(true);
         label.setManaged(true);
+        scheduleMessageHide(label, 4.5);
     }
 
     private void hideLabelMessage(Label label) {
         if (label == null) {
             return;
+        }
+        PauseTransition transition = messageTimers.remove(label);
+        if (transition != null) {
+            transition.stop();
         }
         label.setText("");
         label.setVisible(false);
@@ -1652,13 +3180,28 @@ public class PlanningController implements Initializable {
         label.setStyle("");
     }
 
-    private final class PlanningEntryCell extends ListCell<PlanningEntry> {
+    private void scheduleMessageHide(Label label, double seconds) {
+        if (label == null) {
+            return;
+        }
+        PauseTransition previous = messageTimers.remove(label);
+        if (previous != null) {
+            previous.stop();
+        }
+        PauseTransition timer = new PauseTransition(Duration.seconds(seconds));
+        timer.setOnFinished(event -> hideLabelMessage(label));
+        messageTimers.put(label, timer);
+        timer.play();
+    }
+
+    private final class PlanningEntryCell extends ListCell<Planning> {
         private final VBox root = new VBox(8);
         private final HBox topRow = new HBox(10);
         private final Region colorBar = new Region();
         private final VBox content = new VBox(4);
         private final Label titleLabel = new Label();
         private final Label dateTimeLabel = new Label();
+        private final Label aiBadgeLabel = new Label("AI");
         private final HBox actionBox = new HBox(8);
         private final Button editButton = new Button("Edit");
         private final Button deleteButton = new Button("Delete");
@@ -1671,23 +3214,26 @@ public class PlanningController implements Initializable {
 
             titleLabel.getStyleClass().add("planning-upcoming-item-title");
             dateTimeLabel.getStyleClass().add("planning-upcoming-item-time");
+            aiBadgeLabel.getStyleClass().add("planning-ai-badge");
+            aiBadgeLabel.setManaged(false);
+            aiBadgeLabel.setVisible(false);
 
             editButton.getStyleClass().add("btn-secondary");
             deleteButton.getStyleClass().add("btn-danger");
             editButton.setOnAction(event -> {
-                PlanningEntry entry = getItem();
+                Planning entry = getItem();
                 if (entry != null) {
                     PlanningController.this.startEdit(entry);
                 }
             });
             deleteButton.setOnAction(event -> {
-                PlanningEntry entry = getItem();
+                Planning entry = getItem();
                 if (entry != null) {
                     PlanningController.this.deletePlanning(entry);
                 }
             });
 
-            actionBox.getChildren().addAll(editButton, deleteButton);
+            actionBox.getChildren().addAll(aiBadgeLabel, editButton, deleteButton);
             actionBox.setAlignment(Pos.CENTER_RIGHT);
 
             content.getChildren().addAll(titleLabel, dateTimeLabel);
@@ -1701,7 +3247,7 @@ public class PlanningController implements Initializable {
         }
 
         @Override
-        protected void updateItem(PlanningEntry item, boolean empty) {
+        protected void updateItem(Planning item, boolean empty) {
             super.updateItem(item, empty);
             if (empty || item == null) {
                 setGraphic(null);
@@ -1711,11 +3257,19 @@ public class PlanningController implements Initializable {
             colorBar.setStyle("-fx-background-color: " + item.getColorHex() + "; -fx-background-radius: 4;");
             titleLabel.setText(item.getSeanceTitle());
             dateTimeLabel.setText(item.getPlanningDate().format(DateTimeFormatter.ofPattern("EEE, MMM d")) + "  •  " + formatEntryTime(item));
+
+            boolean aiGenerated = isAssistantGeneratedEntry(item);
+            aiBadgeLabel.setVisible(aiGenerated);
+            aiBadgeLabel.setManaged(aiGenerated);
+            root.getStyleClass().remove("planning-ai-upcoming-item-card");
+            if (aiGenerated) {
+                root.getStyleClass().add("planning-ai-upcoming-item-card");
+            }
             setGraphic(root);
         }
     }
 
-    private final class FeedbackPendingCell extends ListCell<PlanningEntry> {
+    private final class FeedbackPendingCell extends ListCell<Planning> {
         private final VBox root = new VBox(4);
         private final Label titleLabel = new Label();
         private final Label detailLabel = new Label();
@@ -1724,7 +3278,7 @@ public class PlanningController implements Initializable {
             root.getStyleClass().add("planning-feedback-item-card");
             root.setPadding(new Insets(10, 12, 10, 12));
             root.setOnMouseClicked(event -> {
-                PlanningEntry entry = getItem();
+                Planning entry = getItem();
                 if (entry == null) {
                     return;
                 }
@@ -1744,7 +3298,7 @@ public class PlanningController implements Initializable {
         }
 
         @Override
-        protected void updateItem(PlanningEntry item, boolean empty) {
+        protected void updateItem(Planning item, boolean empty) {
             super.updateItem(item, empty);
             if (empty || item == null) {
                 setGraphic(null);
@@ -1759,4 +3313,66 @@ public class PlanningController implements Initializable {
             setGraphic(root);
         }
     }
+
+    private enum AssistantCommandType {
+        CREATE,
+        DELETE,
+        UPDATE,
+        AWAITING_TIME,
+        HELP,
+        ERROR
+    }
+
+    private static final class AssistantCommand {
+        private final AssistantCommandType type;
+        private final String title;
+        private final String sessionType;
+        private final LocalDate date;
+        private final LocalDate newDate;
+        private final LocalTime startTime;
+        private final LocalTime endTime;
+        private final boolean keepTime;
+        private final String errorMessage;
+
+        private AssistantCommand(AssistantCommandType type, String title, String sessionType, LocalDate date,
+                                 LocalDate newDate, LocalTime startTime, LocalTime endTime,
+                                 boolean keepTime, String errorMessage) {
+            this.type = type;
+            this.title = title;
+            this.sessionType = sessionType;
+            this.date = date;
+            this.newDate = newDate;
+            this.startTime = startTime;
+            this.endTime = endTime;
+            this.keepTime = keepTime;
+            this.errorMessage = errorMessage;
+        }
+
+        private static AssistantCommand create(String title, String sessionType, LocalDate date, LocalTime startTime, LocalTime endTime) {
+            return new AssistantCommand(AssistantCommandType.CREATE, title, sessionType, date, null, startTime, endTime, false, null);
+        }
+
+        private static AssistantCommand delete(String title, LocalDate date) {
+            return new AssistantCommand(AssistantCommandType.DELETE, title, null, date, null, null, null, false, null);
+        }
+
+        private static AssistantCommand update(String title, String sessionType, LocalDate targetDate, LocalDate newDate,
+                                               LocalTime startTime, LocalTime endTime, boolean keepTime) {
+            return new AssistantCommand(AssistantCommandType.UPDATE, title, sessionType, targetDate, newDate, startTime, endTime, keepTime, null);
+        }
+
+        private static AssistantCommand awaitingTime(String title, String sessionType, LocalDate date) {
+            return new AssistantCommand(AssistantCommandType.AWAITING_TIME, title, sessionType, date, null, null, null, false, null);
+        }
+
+        private static AssistantCommand help() {
+            return new AssistantCommand(AssistantCommandType.HELP, null, null, null, null, null, null, false, null);
+        }
+
+        private static AssistantCommand error(String message) {
+            return new AssistantCommand(AssistantCommandType.ERROR, null, null, null, null, null, null, false, message);
+        }
+    }
+
+    // Assistant chat now uses simple ScrollPane + VBox bubbles.
 }
