@@ -32,6 +32,7 @@ public class AdminController implements Initializable {
     @FXML private Button btnAdminDash;
     @FXML private Button btnAdminUsers;
     @FXML private Button btnAdminAudit;
+    @FXML private Button btnAdminAI;
 
     private Button activeButton;
     private double xOffset = 0, yOffset = 0;
@@ -81,6 +82,7 @@ public class AdminController implements Initializable {
     @FXML private void showDashboard()  { setActiveButton(btnAdminDash);  loadContent("views/admin/AdminDashboard.fxml"); }
     @FXML private void showUsers()      { setActiveButton(btnAdminUsers); loadContent("views/admin/AdminUsers.fxml"); }
     @FXML private void showAuditLog()   { setActiveButton(btnAdminAudit); loadContent("views/admin/AdminAuditLog.fxml"); }
+    @FXML private void showAI()         { setActiveButton(btnAdminAI);    loadContent("views/admin/AdminAI.fxml"); }
 
     @FXML
     private void onSearchSubmit() {

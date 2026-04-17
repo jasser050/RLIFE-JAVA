@@ -14,6 +14,7 @@ module com.studyflow {
     requires jakarta.mail;
     requires com.google.zxing;
     requires com.google.zxing.javase;
+    requires java.net.http;
 
     opens com.studyflow to javafx.fxml;
     opens com.studyflow.controllers to javafx.fxml;

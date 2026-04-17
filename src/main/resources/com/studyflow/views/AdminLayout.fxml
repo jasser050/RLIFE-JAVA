@@ -80,6 +80,16 @@
                             <graphic><FontIcon iconLiteral="fth-file-text" iconSize="18"/></graphic>
                             <text>Audit Log</text>
                         </Button>
+
+                        <Label text="AI TOOLS" styleClass="nav-section-title">
+                            <VBox.margin><Insets top="16"/></VBox.margin>
+                        </Label>
+
+                        <Button fx:id="btnAdminAI" styleClass="nav-button"
+                                onAction="#showAI" maxWidth="Infinity">
+                            <graphic><FontIcon iconLiteral="fth-cpu" iconSize="18"/></graphic>
+                            <text>AI Agent</text>
+                        </Button>
                     </VBox>
                 </ScrollPane>
 
