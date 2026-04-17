@@ -1,7 +1,6 @@
 package com.studyflow.controllers;
 
 import com.studyflow.App;
-import com.studyflow.models.PlanningEntry;
 import com.studyflow.models.Seance;
 import com.studyflow.models.User;
 import com.studyflow.services.ServicePlanning;

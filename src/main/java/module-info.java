@@ -7,9 +7,11 @@ module com.studyflow {
     requires java.sql;
     requires javafx.web;
     requires java.desktop;
+    requires java.net.http;
     requires org.apache.poi.poi;
     requires org.apache.poi.ooxml;
     requires org.apache.pdfbox;
+    requires com.google.gson;
 
     opens com.studyflow to javafx.fxml;
     opens com.studyflow.controllers to javafx.fxml;

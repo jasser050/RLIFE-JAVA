@@ -1,7 +1,6 @@
 package com.studyflow.services;
 
 import com.studyflow.interfaces.IService;
-import com.studyflow.models.PlanningEntry;
 import com.studyflow.models.User;
 import com.studyflow.utils.MyDataBase;
 import com.studyflow.utils.UserSession;
