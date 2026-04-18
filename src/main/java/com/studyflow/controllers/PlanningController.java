@@ -8,6 +8,7 @@ import com.studyflow.models.User;
 import com.studyflow.services.ServicePlanning;
 import com.studyflow.services.ServiceSeance;
 import com.studyflow.services.AIPlanningService;
+import com.studyflow.services.PlanningEmailNotificationService;
 import com.studyflow.services.ServiceTypeSeance;
 import com.studyflow.utils.UserSession;
 import javafx.application.Platform;
@@ -77,6 +78,7 @@ import java.util.ResourceBundle;
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -187,12 +189,13 @@ public class PlanningController implements Initializable {
     private final ServicePlanning servicePlanning = new ServicePlanning();
     private final ServiceSeance serviceSeance = new ServiceSeance();
     private final ServiceTypeSeance serviceTypeSeance = new ServiceTypeSeance();
+    private final PlanningEmailNotificationService planningEmailNotificationService = new PlanningEmailNotificationService();
     private final AIPlanningService claudePlanningService = new AIPlanningService();
-    private final DateTimeFormatter monthFormatter = DateTimeFormatter.ofPattern("MMMM yyyy");
-    private final DateTimeFormatter fullDateFormatter = DateTimeFormatter.ofPattern("EEEE, MMM d");
+    private final DateTimeFormatter monthFormatter = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ENGLISH);
+    private final DateTimeFormatter fullDateFormatter = DateTimeFormatter.ofPattern("EEEE, MMM d", Locale.ENGLISH);
     private final DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
     private final DateTimeFormatter calendarEntryFormatter = DateTimeFormatter.ofPattern("HH:mm");
-    private final DateTimeFormatter shortDateFormatter = DateTimeFormatter.ofPattern("EEE, MMM d");
+    private final DateTimeFormatter shortDateFormatter = DateTimeFormatter.ofPattern("EEE, MMM d", Locale.ENGLISH);
 
     private YearMonth currentYearMonth;
     private final ToggleGroup feedbackToggleGroup = new ToggleGroup();
@@ -380,6 +383,7 @@ public class PlanningController implements Initializable {
         boolean isCreation = editingPlanning == null;
         if (isCreation) {
             servicePlanning.add(planningEntry);
+            sendPlanningCreationEmailAsync(currentUser, planningEntry);
         } else {
             servicePlanning.update(planningEntry);
         }
@@ -1232,6 +1236,7 @@ public class PlanningController implements Initializable {
         entry.setColorHex(pickRandomAssistantColor(currentUser.getId(), command.date));
 
         servicePlanning.add(entry);
+        sendPlanningCreationEmailAsync(currentUser, entry);
         refreshPlanningData();
         trackAssistantGeneratedEntry(entry);
         pendingAssistantCommand = null;
@@ -2570,7 +2575,7 @@ public class PlanningController implements Initializable {
         }
 
         String titleValue = normalize(entry.getSeanceTitle());
-        String dateValue = normalize(entry.getPlanningDate().toString() + " " + entry.getPlanningDate().format(DateTimeFormatter.ofPattern("EEE, MMM d")));
+        String dateValue = normalize(entry.getPlanningDate().toString() + " " + entry.getPlanningDate().format(shortDateFormatter));
         String timeValue = normalize(formatEntryTime(entry));
         String colorValue = normalize(entry.getColorHex());
         String feedbackValue = normalize(entry.getFeedback());
@@ -3133,6 +3138,17 @@ public class PlanningController implements Initializable {
         return entry.getPlanningDate().format(shortDateFormatter) + " • " + formatEntryTime(entry);
     }
 
+    private void sendPlanningCreationEmailAsync(User user, Planning planningEntry) {
+        CompletableFuture
+                .supplyAsync(() -> planningEmailNotificationService.sendPlanningCreatedEmail(user, planningEntry))
+                .thenAccept(error -> {
+                    if (error == null || error.isBlank()) {
+                        return;
+                    }
+                    Platform.runLater(() -> showInfo("Planning saved, but email was not sent: " + error));
+                });
+    }
+
     private void showError(String message) {
         showErrorOn(formMessageLabel, message);
     }
@@ -3256,7 +3272,7 @@ public class PlanningController implements Initializable {
 
             colorBar.setStyle("-fx-background-color: " + item.getColorHex() + "; -fx-background-radius: 4;");
             titleLabel.setText(item.getSeanceTitle());
-            dateTimeLabel.setText(item.getPlanningDate().format(DateTimeFormatter.ofPattern("EEE, MMM d")) + "  •  " + formatEntryTime(item));
+            dateTimeLabel.setText(item.getPlanningDate().format(shortDateFormatter) + "  •  " + formatEntryTime(item));
 
             boolean aiGenerated = isAssistantGeneratedEntry(item);
             aiBadgeLabel.setVisible(aiGenerated);

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="420" height="140" viewBox="0 0 420 140" role="img" aria-label="Rlife logo">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1d4ed8"/>
+      <stop offset="100%" stop-color="#7c3aed"/>
+    </linearGradient>
+  </defs>
+  <rect x="8" y="8" rx="26" ry="26" width="404" height="124" fill="#ffffff"/>
+  <rect x="8" y="8" rx="26" ry="26" width="404" height="124" fill="none" stroke="url(#g)" stroke-width="8"/>
+  <circle cx="72" cy="70" r="28" fill="url(#g)"/>
+  <path d="M63 57h9c8 0 14 5 14 13 0 6-4 10-8 12l9 12h-10l-8-10h-6v10h-8V57zm9 19c4 0 7-2 7-6s-3-6-7-6h-9v12h9z" fill="#ffffff"/>
+  <text x="118" y="82" font-family="Segoe UI, Arial, sans-serif" font-size="46" font-weight="700" fill="#0f172a">Rlife</text>
+</svg>
+
