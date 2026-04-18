@@ -42,7 +42,7 @@
                         <FontIcon iconLiteral="fth-clipboard" iconSize="15" iconColor="#E2E8F0"/>
                     </graphic>
                 </Button>
-                <Button text="Coping Tools" styleClass="btn-secondary" onAction="#handleViewAllHistory">
+                <Button text="Coping Tools" styleClass="btn-secondary" onAction="#handleOpenCopingTools">
                     <graphic>
                         <FontIcon iconLiteral="fth-heart" iconSize="15" iconColor="#E2E8F0"/>
                     </graphic>
