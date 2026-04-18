@@ -81,6 +81,8 @@ public class SessionsController implements Initializable {
             "/com/studyflow/assets/logo.jpeg"
     };
     private static final Pattern TITLE_PATTERN = Pattern.compile("^(?=.{3,80}$)(?=.*\\p{L})[\\p{L} _-]+$");
+    private static final Pattern DESCRIPTION_PATTERN = Pattern.compile("^[\\p{L}\\p{N}\\s.,;:!?()_\"'\\-+/@#%&]*$");
+    private static final int DESCRIPTION_MAX_LENGTH = 1200;
 
     @FXML private Label sessionsCountLabel;
     @FXML private Label sessionsTotalValueLabel;
@@ -103,6 +105,8 @@ public class SessionsController implements Initializable {
     @FXML private ComboBox<TypeSeance> typeComboBox;
     @FXML private Label typeErrorLabel;
     @FXML private TextArea descriptionArea;
+    @FXML private Label descriptionErrorLabel;
+    @FXML private Label descriptionCounterLabel;
     @FXML private Button saveButton;
     @FXML private Button cancelButton;
     @FXML private TextField searchField;
@@ -146,7 +150,9 @@ public class SessionsController implements Initializable {
         TypeSeance selectedType = typeComboBox.getValue();
 
         clearValidationErrors();
-        boolean hasValidationErrors = !validateTitle(title, true) | !validateType(selectedType, true);
+        boolean hasValidationErrors = !validateTitle(title, true)
+                | !validateType(selectedType, true)
+                | !validateDescription(descriptionArea.getText(), true);
         if (hasValidationErrors) {
             showError("Please fix the highlighted fields.");
             return;
@@ -352,6 +358,16 @@ public class SessionsController implements Initializable {
                 validateType(newValue, false);
             }
         });
+
+        descriptionArea.textProperty().addListener((observable, oldValue, newValue) -> {
+            String description = newValue == null ? "" : newValue;
+            updateDescriptionCounter(description);
+            if (descriptionErrorLabel != null && descriptionErrorLabel.isVisible()) {
+                validateDescription(description, true);
+            } else {
+                validateDescription(description, false);
+            }
+        });
     }
 
     private boolean validateTitle(String title, boolean showMessage) {
@@ -385,9 +401,60 @@ public class SessionsController implements Initializable {
         return true;
     }
 
+    private boolean validateDescription(String description, boolean showMessage) {
+        String normalized = description == null ? "" : description.trim();
+        if (normalized.isEmpty()) {
+            if (showMessage) {
+                markFieldInvalid(descriptionArea, descriptionErrorLabel, "Description is required.");
+            }
+            return false;
+        }
+
+        if (normalized.length() > DESCRIPTION_MAX_LENGTH) {
+            if (showMessage) {
+                markFieldInvalid(descriptionArea, descriptionErrorLabel,
+                        "Description is too long. Maximum " + DESCRIPTION_MAX_LENGTH + " characters.");
+            }
+            return false;
+        }
+
+        if (!DESCRIPTION_PATTERN.matcher(normalized).matches()) {
+            if (showMessage) {
+                markFieldInvalid(descriptionArea, descriptionErrorLabel,
+                        "Description contains unsupported characters.");
+            }
+            return false;
+        }
+
+        boolean hasLetterOrDigit = normalized.chars().anyMatch(ch -> Character.isLetterOrDigit(ch));
+        if (!hasLetterOrDigit) {
+            if (showMessage) {
+                markFieldInvalid(descriptionArea, descriptionErrorLabel,
+                        "Description cannot contain symbols only.");
+            }
+            return false;
+        }
+
+        clearFieldValidation(descriptionArea, descriptionErrorLabel);
+        return true;
+    }
+
+    private void updateDescriptionCounter(String description) {
+        if (descriptionCounterLabel == null) {
+            return;
+        }
+        int length = description == null ? 0 : description.length();
+        descriptionCounterLabel.setText(length + " / " + DESCRIPTION_MAX_LENGTH + " characters");
+        descriptionCounterLabel.getStyleClass().remove("session-field-counter-overlimit");
+        if (length > DESCRIPTION_MAX_LENGTH) {
+            descriptionCounterLabel.getStyleClass().add("session-field-counter-overlimit");
+        }
+    }
+
     private void clearValidationErrors() {
         clearFieldValidation(titleField, titleErrorLabel);
         clearFieldValidation(typeComboBox, typeErrorLabel);
+        clearFieldValidation(descriptionArea, descriptionErrorLabel);
     }
 
     private void markFieldInvalid(Control field, Label errorLabel, String message) {
@@ -638,6 +705,7 @@ public class SessionsController implements Initializable {
         titleField.clear();
         typeComboBox.setValue(null);
         descriptionArea.clear();
+        updateDescriptionCounter("");
         clearValidationErrors();
         hideMessage();
     }

@@ -586,6 +586,16 @@
     -fx-padding: 2 0 0 0;
 }
 
+.session-field-counter {
+    -fx-font-size: 11px;
+    -fx-text-fill: #64748B;
+}
+
+.session-field-counter-overlimit {
+    -fx-text-fill: #E11D48;
+    -fx-font-weight: 700;
+}
+
 .field-invalid {
     -fx-border-color: #E11D48;
     -fx-border-width: 1.4;

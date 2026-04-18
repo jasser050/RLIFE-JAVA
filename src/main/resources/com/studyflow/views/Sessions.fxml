@@ -71,10 +71,17 @@
                     <Label fx:id="typeErrorLabel" managed="false" styleClass="session-field-error" visible="false" />
                 </VBox>
 
-                <Label styleClass="text-body" text="Description" GridPane.columnIndex="0" GridPane.rowIndex="2" />
+                <HBox alignment="CENTER_LEFT" spacing="4" GridPane.columnIndex="0" GridPane.rowIndex="2">
+                    <Label styleClass="text-body" text="Description" />
+                    <Label style="-fx-text-fill: #FB7185; -fx-font-size: 15px; -fx-font-weight: 700;" text="*" />
+                </HBox>
                 <VBox spacing="5" GridPane.columnIndex="1" GridPane.rowIndex="2">
                     <TextArea fx:id="descriptionArea" maxWidth="1.7976931348623157E308" prefHeight="220" prefRowCount="8" promptText="Add a short description" styleClass="text-area session-description-area" wrapText="true" />
-                    <Label styleClass="session-field-tip" text="Tip: description is optional but helps planning clarity." />
+                    <Label styleClass="session-field-tip" text="Tip: description is required and must include meaningful text (not symbols only)." />
+                    <Label fx:id="descriptionErrorLabel" managed="false" styleClass="session-field-error" visible="false" />
+                    <HBox alignment="CENTER_RIGHT">
+                        <Label fx:id="descriptionCounterLabel" styleClass="session-field-counter" text="0 / 1200 characters" />
+                    </HBox>
                 </VBox>
             <rowConstraints>
                <RowConstraints />
