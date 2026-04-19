@@ -1,9 +1,11 @@
 package com.studyflow;
 
+import com.studyflow.api.WellbeingRecommendationsApiServer;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
@@ -18,6 +20,7 @@ public class App extends Application {
 
     private static Scene scene;
     private static Stage primaryStage;
+    private static final WellbeingRecommendationsApiServer recommendationsApiServer = new WellbeingRecommendationsApiServer();
 
     @Override
     public void start(Stage stage) throws IOException {
@@ -43,6 +46,14 @@ public class App extends Application {
 
         // Show the stage
         stage.show();
+
+        // Start local recommendations API
+        if (!recommendationsApiServer.start(8085)) {
+            Alert alert = new Alert(Alert.AlertType.WARNING);
+            alert.setHeaderText("API Startup Warning");
+            alert.setContentText("Recommendations API could not start on port 8085.\nThe UI is running normally.");
+            alert.show();
+        }
     }
 
     /**
@@ -79,5 +90,10 @@ public class App extends Application {
         System.setProperty("prism.forceGPU", "true");
         System.setProperty("prism.vsync", "false");
         launch(args);
+    }
+
+    @Override
+    public void stop() {
+        recommendationsApiServer.stop();
     }
 }

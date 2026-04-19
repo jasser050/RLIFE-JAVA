@@ -6,23 +6,25 @@ import java.sql.SQLException;
 
 public class MyDataBase {
 
-    final String URL = "jdbc:mysql://localhost:3306/rlife7";
-    final String USER = "root";
-    final String PASSWORD = "";
+    private static final String URL = "jdbc:mysql://localhost:3306/rlife?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC";
+    private static final String USER = "root";
+    private static final String PASSWORD = "";
 
-    
     private Connection connection;
     private static MyDataBase instance;
 
     private MyDataBase() {
+        openConnection();
+    }
+
+    private void openConnection() {
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
             connection = DriverManager.getConnection(URL, USER, PASSWORD);
-            System.out.println("Connected to database successfully");
-        } catch (ClassNotFoundException e) {
-            System.err.println("MySQL driver not found: " + e.getMessage());
-        } catch (SQLException e) {
-            System.err.println("Database connection failed: " + e.getMessage());
+            System.out.println("Connected");
+        } catch (SQLException | ClassNotFoundException e) {
+            connection = null;
+            System.err.println(e.getMessage());
         }
     }
 
@@ -32,14 +34,14 @@ public class MyDataBase {
         return instance;
     }
 
-    public Connection getConnection() {
+    public synchronized Connection getConnection() {
         try {
             if (connection == null || connection.isClosed() || !connection.isValid(2)) {
-                connection = DriverManager.getConnection(URL, USER, PASSWORD);
-                System.out.println("Reconnected to database");
+                openConnection();
             }
         } catch (SQLException e) {
-            System.err.println("DB reconnect failed: " + e.getMessage());
+            connection = null;
+            openConnection();
         }
         return connection;
     }

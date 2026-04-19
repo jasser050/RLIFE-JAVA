@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Priority?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import org.kordamp.ikonli.javafx.FontIcon?>
+
+<BorderPane xmlns="http://javafx.com/javafx/21"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.studyflow.controllers.admin.AdminMainController"
+            styleClass="admin-shell">
+
+    <left>
+        <VBox styleClass="admin-sidebar-2" prefWidth="254">
+            <HBox alignment="CENTER_LEFT" spacing="12" styleClass="admin-brand-row">
+                <padding>
+                    <Insets top="22" right="20" bottom="18" left="20"/>
+                </padding>
+                <StackPane styleClass="admin-brand-logo">
+                    <Label text="R" styleClass="admin-brand-logo-text"/>
+                </StackPane>
+                <VBox spacing="2">
+                    <Label text="RLIFE" styleClass="admin-brand-title"/>
+                    <Label text="Admin Panel" styleClass="admin-brand-subtitle"/>
+                </VBox>
+            </HBox>
+
+            <VBox spacing="10" VBox.vgrow="ALWAYS">
+                <VBox spacing="6" styleClass="admin-nav-group">
+                    <padding>
+                        <Insets top="10" right="12" bottom="0" left="12"/>
+                    </padding>
+                    <Label text="ADMINISTRATION" styleClass="admin-nav-section"/>
+                    <Button fx:id="btnDashboard" styleClass="admin-nav-btn, active" onAction="#showDashboard" maxWidth="Infinity">
+                        <graphic>
+                            <FontIcon iconLiteral="fth-grid" iconSize="17"/>
+                        </graphic>
+                        <text>Dashboard</text>
+                    </Button>
+                    <Button fx:id="btnUsers" styleClass="admin-nav-btn" onAction="#showUsers" maxWidth="Infinity">
+                        <graphic>
+                            <FontIcon iconLiteral="fth-users" iconSize="17"/>
+                        </graphic>
+                        <text>User Management</text>
+                    </Button>
+                    <Button fx:id="btnStats" styleClass="admin-nav-btn" onAction="#showStats" maxWidth="Infinity">
+                        <graphic>
+                            <FontIcon iconLiteral="fth-bar-chart-2" iconSize="17"/>
+                        </graphic>
+                        <text>Analytics</text>
+                    </Button>
+                </VBox>
+
+                <VBox spacing="6" styleClass="admin-nav-group">
+                    <padding>
+                        <Insets top="8" right="12" bottom="0" left="12"/>
+                    </padding>
+                    <Label text="CONTENT" styleClass="admin-nav-section"/>
+                    <Button fx:id="btnMatieres" styleClass="admin-nav-btn" onAction="#showMatieres" maxWidth="Infinity">
+                        <graphic>
+                            <FontIcon iconLiteral="fth-layers" iconSize="17"/>
+                        </graphic>
+                        <text>Deck Management</text>
+                    </Button>
+                </VBox>
+
+                <VBox spacing="6" styleClass="admin-nav-group">
+                    <padding>
+                        <Insets top="8" right="12" bottom="0" left="12"/>
+                    </padding>
+                    <Label text="WELLBEING" styleClass="admin-nav-section"/>
+                    <Button fx:id="btnStressQuestions" styleClass="admin-nav-btn" onAction="#showStressQuestions" maxWidth="Infinity">
+                        <graphic>
+                            <FontIcon iconLiteral="fth-heart" iconSize="17"/>
+                        </graphic>
+                        <text>Stress Questions</text>
+                    </Button>
+                    <Button fx:id="btnRecommendations" styleClass="admin-nav-btn" onAction="#showRecommendations" maxWidth="Infinity">
+                        <graphic>
+                            <FontIcon iconLiteral="fth-activity" iconSize="17"/>
+                        </graphic>
+                        <text>Recommendations</text>
+                    </Button>
+                </VBox>
+
+                <VBox spacing="6" styleClass="admin-nav-group">
+                    <padding>
+                        <Insets top="8" right="12" bottom="0" left="12"/>
+                    </padding>
+                    <Label text="SYSTEM" styleClass="admin-nav-section"/>
+                    <Button fx:id="btnSettings" styleClass="admin-nav-btn" onAction="#showSettings" maxWidth="Infinity">
+                        <graphic>
+                            <FontIcon iconLiteral="fth-settings" iconSize="17"/>
+                        </graphic>
+                        <text>Settings</text>
+                    </Button>
+                </VBox>
+            </VBox>
+
+            <HBox styleClass="admin-profile-card" alignment="CENTER_LEFT" spacing="12">
+                <padding>
+                    <Insets top="14" right="14" bottom="14" left="14"/>
+                </padding>
+                <StackPane styleClass="admin-profile-avatar">
+                    <Label fx:id="sidebarAvatar" text="AR" styleClass="admin-profile-avatar-text"/>
+                </StackPane>
+                <VBox spacing="2" HBox.hgrow="ALWAYS">
+                    <Label fx:id="sidebarUserName" text="Admin RLife" styleClass="admin-profile-name"/>
+                    <Label fx:id="sidebarUserSub" text="Admin" styleClass="admin-profile-role"/>
+                </VBox>
+                <Button styleClass="btn-ghost" onAction="#handleLogout">
+                    <graphic>
+                        <FontIcon iconLiteral="fth-log-out" iconSize="16"/>
+                    </graphic>
+                </Button>
+            </HBox>
+        </VBox>
+    </left>
+
+    <center>
+        <VBox styleClass="admin-main-shell">
+            <HBox fx:id="topBar" styleClass="admin-topbar-2" alignment="CENTER_LEFT"
+                  onMousePressed="#onTitleBarPressed" onMouseDragged="#onTitleBarDragged">
+                <padding>
+                    <Insets top="18" right="22" bottom="18" left="22"/>
+                </padding>
+                <Label fx:id="workspaceBadge" text="Admin Panel" styleClass="admin-topbar-title"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <HBox alignment="CENTER_RIGHT" spacing="10">
+                    <Button styleClass="admin-top-icon" onAction="#minimizeWindow">
+                        <graphic>
+                            <FontIcon iconLiteral="fth-minus" iconSize="14"/>
+                        </graphic>
+                    </Button>
+                    <Button styleClass="admin-top-icon" onAction="#maximizeWindow">
+                        <graphic>
+                            <FontIcon fx:id="maximizeIcon" iconLiteral="fth-square" iconSize="12"/>
+                        </graphic>
+                    </Button>
+                    <Button styleClass="admin-top-icon danger" onAction="#closeWindow">
+                        <graphic>
+                            <FontIcon iconLiteral="fth-x" iconSize="14"/>
+                        </graphic>
+                    </Button>
+                </HBox>
+            </HBox>
+
+            <StackPane fx:id="contentArea" styleClass="admin-content-shell" VBox.vgrow="ALWAYS"/>
+        </VBox>
+    </center>
+</BorderPane>

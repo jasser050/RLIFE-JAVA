@@ -157,7 +157,8 @@ public class MainController implements Initializable {
             Parent content = loader.load();
             contentArea.getChildren().clear();
             contentArea.getChildren().add(content);
-        } catch (IOException e) {
+        } catch (Exception e) {
+            System.err.println("Failed to load content: " + fxmlPath);
             e.printStackTrace();
         }
     }
