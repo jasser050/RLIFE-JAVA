@@ -3,7 +3,9 @@ com\studyflow\utils\RobotScene3D.class
 com\studyflow\controllers\NotesController.class
 com\studyflow\controllers\PlanningController$EventData.class
 com\studyflow\controllers\AdminController.class
+com\studyflow\models\EvaluationMatiere.class
 com\studyflow\services\GroqService.class
+com\studyflow\models\EvalMat.class
 com\studyflow\models\Assignment.class
 com\studyflow\utils\SplineRobotPanel.class
 com\studyflow\controllers\PlanningController.class
@@ -18,6 +20,7 @@ com\studyflow\models\User.class
 com\studyflow\controllers\ProfileController$1.class
 com\studyflow\utils\UserSession.class
 com\studyflow\controllers\ProjectsController.class
+com\studyflow\services\EvalMatService.class
 com\studyflow\controllers\ProjectsController$TaskData.class
 com\studyflow\utils\RobotScene3D$1.class
 com\studyflow\models\Course.class
@@ -31,6 +34,7 @@ com\studyflow\services\DeckService.class
 com\studyflow\controllers\AdminDashboardController$1.class
 com\studyflow\services\SpeechService.class
 com\studyflow\models\Deck.class
+com\studyflow\utils\PdfExporter$PdfStream.class
 com\studyflow\controllers\AdminUsersController.class
 com\studyflow\controllers\AdminAuditLogController.class
 com\studyflow\controllers\AdminDashboardController.class
@@ -42,14 +46,20 @@ com\studyflow\services\AITranslationService.class
 com\studyflow\utils\GlbLoader.class
 com\studyflow\utils\MyDataBase.class
 com\studyflow\controllers\AdminStatisticsController$1.class
+com\studyflow\controllers\AdminMatieresController.class
 com\studyflow\controllers\CourseCardController.class
 com\studyflow\controllers\FlashcardsFeaturesController.class
 com\studyflow\models\Assignment$Priority.class
+com\studyflow\utils\PdfExporter.class
+com\studyflow\controllers\CoursesController$1.class
 com\studyflow\utils\GlbTest.class
+com\studyflow\utils\PdfExporter$SubjectNameResolver.class
 com\studyflow\controllers\ForgotPasswordController.class
 com\studyflow\controllers\RevisionsController.class
 com\studyflow\controllers\AIGeneratorController.class
 com\studyflow\utils\AvatarCard.class
+com\studyflow\services\AIQuizService$ParsedQuestion.class
+com\studyflow\services\AIQuizService.class
 com\studyflow\controllers\NotesController$NoteData.class
 com\studyflow\controllers\MainController.class
 com\studyflow\models\Assignment$Status.class
@@ -66,5 +76,9 @@ com\studyflow\utils\EmailService.class
 com\studyflow\controllers\WellbeingController$SleepEntry.class
 com\studyflow\models\Flashcard.class
 com\studyflow\LocalServer.class
+com\studyflow\services\MatiereService.class
 com\studyflow\controllers\WellbeingController.class
+com\studyflow\models\Matiere.class
+com\studyflow\services\EvaluationMatiereService.class
+com\studyflow\controllers\CoursesController$QuizQuestion.class
 com\studyflow\controllers\WellbeingController$HabitData.class

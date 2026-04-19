@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns="http://javafx.com/javafx/21"
+      xmlns:fx="http://javafx.com/fxml/1"
+      spacing="24" styleClass="courses-page">
+    <padding><Insets top="0" right="0" bottom="24" left="0"/></padding>
+    <Label text="Global Statistics" styleClass="text-heading"/>
+    <Label text="This page is under construction. Connect your data here." styleClass="text-muted"/>
+</VBox>
