@@ -14,8 +14,10 @@ import com.studyflow.services.ServiceTypeSeance;
 import com.studyflow.utils.UserSession;
 import javafx.application.Platform;
 import javafx.animation.Animation;
+import javafx.animation.KeyFrame;
 import javafx.animation.PauseTransition;
 import javafx.animation.ScaleTransition;
+import javafx.animation.Timeline;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -34,11 +36,15 @@ import javafx.scene.control.DateCell;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
+import javafx.scene.control.OverrunStyle;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
+import javafx.scene.control.Tooltip;
 import javafx.scene.control.Toggle;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.control.ToggleGroup;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.KeyCode;
@@ -88,8 +94,8 @@ import java.util.regex.Pattern;
 
 public class PlanningController implements Initializable {
 
-    private static final double BASE_CALENDAR_ROW_HEIGHT = 108;
-    private static final double CALENDAR_ENTRY_HEIGHT_STEP = 30;
+    private static final double BASE_CALENDAR_ROW_HEIGHT = 136;
+    private static final double CALENDAR_ENTRY_HEIGHT_STEP = 62;
 
     private static final List<String> COLOR_PALETTE = List.of(
             "#8B5CF6", "#10B981", "#F59E0B", "#F43F5E", "#F97316", "#3B82F6", "#14B8A6", "#EAB308"
@@ -124,6 +130,29 @@ public class PlanningController implements Initializable {
     private static final String UPCOMING_MODE_COLOR = "Color search - nearest";
     private static final String UPCOMING_MODE_FEEDBACK = "Feedback search - nearest";
     private static final String SESSION_TYPE_MATCH = "match";
+    private static final String SESSION_TYPE_DAY_OFF = "day off";
+    private static final String SESSION_TYPE_DAYOFF = "dayoff";
+    private static final Map<String, String> KNOWN_TEAM_ACRONYMS = Map.ofEntries(
+            Map.entry("atletico madrid", "ATM"),
+            Map.entry("bayern munich", "FCB"),
+            Map.entry("bayern munchen", "FCB"),
+            Map.entry("fc barcelona", "FCB"),
+            Map.entry("barcelona", "FCB"),
+            Map.entry("real madrid", "RMA"),
+            Map.entry("manchester city", "MCI"),
+            Map.entry("manchester united", "MUN"),
+            Map.entry("paris saint germain", "PSG"),
+            Map.entry("paris saint-germain", "PSG"),
+            Map.entry("juventus", "JUV"),
+            Map.entry("arsenal", "ARS"),
+            Map.entry("liverpool", "LIV"),
+            Map.entry("chelsea", "CHE"),
+            Map.entry("inter", "INT"),
+            Map.entry("ac milan", "MIL")
+    );
+    private static final LocalTime DAY_OFF_START_TIME = LocalTime.of(0, 0);
+    private static final LocalTime DAY_OFF_END_TIME = LocalTime.of(23, 59);
+    private static final String DAY_OFF_COLOR_HEX = "#10B981";
 
     private static final String ASSISTANT_MODE_CHAT = "Chat mode";
     private static final String ASSISTANT_MODE_TERMINAL = "Terminal mode";
@@ -149,6 +178,8 @@ public class PlanningController implements Initializable {
     @FXML private Label planningFeedbackScoreTrendLabel;
     @FXML private Label planningStreakValueLabel;
     @FXML private Label planningStreakTrendLabel;
+    @FXML private Label liveClockLabel;
+    @FXML private Label liveClockDateLabel;
     @FXML private VBox feedbackPendingBox;
     @FXML private Label feedbackPendingLabel;
     @FXML private Button feedbackOpenQueueButton;
@@ -191,6 +222,10 @@ public class PlanningController implements Initializable {
     @FXML private Label matchSummaryLabel;
     @FXML private Label matchCompetitionLabel;
     @FXML private Label matchKickoffLabel;
+    @FXML private ImageView matchHomeLogoImageView;
+    @FXML private ImageView matchAwayLogoImageView;
+    @FXML private Label matchHomeTeamLabel;
+    @FXML private Label matchAwayTeamLabel;
     @FXML private Button matchPrefillButton;
     @FXML private ScrollPane chatScrollPane;
     @FXML private VBox chatBox;
@@ -206,6 +241,8 @@ public class PlanningController implements Initializable {
     private final Preferences planningPreferences = Preferences.userNodeForPackage(PlanningController.class);
     private final DateTimeFormatter monthFormatter = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ENGLISH);
     private final DateTimeFormatter fullDateFormatter = DateTimeFormatter.ofPattern("EEEE, MMM d", Locale.ENGLISH);
+    private final DateTimeFormatter liveClockTimeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss", Locale.ENGLISH);
+    private final DateTimeFormatter liveClockDateFormatter = DateTimeFormatter.ofPattern("EEE, MMM d yyyy", Locale.ENGLISH);
     private final DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
     private final DateTimeFormatter calendarEntryFormatter = DateTimeFormatter.ofPattern("HH:mm");
     private final DateTimeFormatter shortDateFormatter = DateTimeFormatter.ofPattern("EEE, MMM d", Locale.ENGLISH);
@@ -226,6 +263,7 @@ public class PlanningController implements Initializable {
     private HBox assistantTypingRow;
     private AssistantCommand pendingAssistantCommand;
     private FootballDataService.NextMatch selectedNextMatch;
+    private Timeline liveClockTimeline;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -240,6 +278,7 @@ public class PlanningController implements Initializable {
         configureUpcomingControls();
         configureMatchPlannerControls();
         configureAssistantControls();
+        configureLiveClock();
         loadSessions();
         refreshPlanningData();
         resetForm();
@@ -253,6 +292,23 @@ public class PlanningController implements Initializable {
             feedbackPickerPage.setVisible(false);
         }
         addMessage("Hello! Ask me to plan or remove sessions. Example: \"Plan a math session tomorrow at 14:00\".", false);
+    }
+
+    private void configureLiveClock() {
+        if (liveClockLabel == null || liveClockDateLabel == null) {
+            return;
+        }
+
+        Runnable refreshClock = () -> {
+            LocalDateTime now = LocalDateTime.now();
+            liveClockLabel.setText(now.format(liveClockTimeFormatter));
+            liveClockDateLabel.setText(now.format(liveClockDateFormatter));
+        };
+        refreshClock.run();
+
+        liveClockTimeline = new Timeline(new KeyFrame(Duration.seconds(1), event -> refreshClock.run()));
+        liveClockTimeline.setCycleCount(Animation.INDEFINITE);
+        liveClockTimeline.play();
     }
 
     // Force explicit day-number colors to keep DatePicker readable in both themes.
@@ -366,16 +422,17 @@ public class PlanningController implements Initializable {
 
         Seance selectedSeance = sessionComboBox.getValue();
         LocalDate planningDate = planningDatePicker.getValue();
-        LocalTime startTime = startTimeComboBox.getValue();
-        LocalTime endTime = endTimeComboBox.getValue();
-        String selectedColor = toHex(colorPicker.getValue());
+        boolean dayOffSelection = isDayOffSeance(selectedSeance);
+        LocalTime startTime = dayOffSelection ? DAY_OFF_START_TIME : startTimeComboBox.getValue();
+        LocalTime endTime = dayOffSelection ? DAY_OFF_END_TIME : endTimeComboBox.getValue();
+        String selectedColor = dayOffSelection ? DAY_OFF_COLOR_HEX : toHex(colorPicker.getValue());
 
         clearPlanningValidationErrors();
 
         boolean hasError = !validateSession(selectedSeance, true)
                 | !validateDate(planningDate, true)
-                | !validateTimeRange(startTime, endTime, true)
-                | !validateTimeOverlap(currentUser.getId(), planningDate, startTime, endTime, true)
+                | (!dayOffSelection && !validateTimeRange(startTime, endTime, true))
+                | !validateTimeOverlap(currentUser.getId(), planningDate, startTime, endTime, selectedSeance, true)
                 | !validateColorForDate(planningDate, selectedColor, true);
 
         if (hasError) {
@@ -494,6 +551,7 @@ public class PlanningController implements Initializable {
     private void configureListViews() {
         todayEventsListView.setCellFactory(list -> new PlanningEntryCell());
         upcomingEventsListView.setCellFactory(list -> new PlanningEntryCell());
+        upcomingEventsListView.setFixedCellSize(72);
         if (feedbackPendingListView != null) {
             feedbackPendingListView.setCellFactory(list -> new FeedbackPendingCell());
         }
@@ -513,6 +571,7 @@ public class PlanningController implements Initializable {
         });
 
         sessionComboBox.valueProperty().addListener((observable, oldValue, newValue) -> {
+            updateDayOffTimeMode(newValue);
             if (sessionErrorLabel != null && sessionErrorLabel.isVisible()) {
                 validateSession(newValue, true);
             }
@@ -675,7 +734,8 @@ public class PlanningController implements Initializable {
         FootballDataService.TeamOption savedFavorite = resolveFavoriteTeam();
         if (savedFavorite != null) {
             matchTeamComboBox.getSelectionModel().select(savedFavorite);
-            setMatchStatus("Favorite team loaded. Click 'Load Next Match'.", false);
+            setMatchStatus("Loading next match for your saved favorite team...", false);
+            handleLoadNextMatch();
         } else {
             setMatchStatus("Select a team to load its next match.", false);
         }
@@ -683,7 +743,19 @@ public class PlanningController implements Initializable {
         if (matchPrefillButton != null) {
             matchPrefillButton.setDisable(true);
         }
+        setMatchTeams("Home", "Away", "", "");
         selectedNextMatch = null;
+
+        // Auto-load next match when user changes selected team.
+        matchTeamComboBox.valueProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue == null) {
+                return;
+            }
+            if (oldValue != null && oldValue.id() == newValue.id()) {
+                return;
+            }
+            handleLoadNextMatch();
+        });
     }
 
     @FXML
@@ -701,6 +773,7 @@ public class PlanningController implements Initializable {
         saveFavoriteTeam(selectedTeam);
         setMatchStatus("Loading next match for " + selectedTeam.name() + "...", false);
         setMatchDetails("No match loaded yet", "Competition: -", "Kickoff: -");
+        setMatchTeams("Home", "Away", "", "");
         setMatchPrefillEnabled(false);
 
         CompletableFuture.supplyAsync(() -> {
@@ -717,6 +790,7 @@ public class PlanningController implements Initializable {
                     "Competition: " + nextMatch.competition(),
                     "Kickoff: " + localKickoff
             );
+            setMatchTeams(nextMatch.homeTeam(), nextMatch.awayTeam(), nextMatch.homeLogoUrl(), nextMatch.awayLogoUrl());
             setMatchStatus("Next match loaded successfully.", false);
             setMatchPrefillEnabled(true);
         })).exceptionally(error -> {
@@ -726,6 +800,7 @@ public class PlanningController implements Initializable {
                         ? "Unable to load the next match."
                         : error.getCause().getMessage();
                 setMatchStatus(message, true);
+                setMatchTeams("Home", "Away", "", "");
                 setMatchPrefillEnabled(false);
             });
             return null;
@@ -751,10 +826,6 @@ public class PlanningController implements Initializable {
         }
 
         Seance matchSession = resolveOrCreateMatchSession(currentUser.getId(), selectedNextMatch, matchType);
-        if (matchSession == null) {
-            showError("Unable to prepare the match session.");
-            return;
-        }
 
         LocalDate matchDate = selectedNextMatch.kickoffUtc().atZoneSameInstant(ZoneId.systemDefault()).toLocalDate();
         LocalTime matchStart = selectedNextMatch.kickoffUtc().atZoneSameInstant(ZoneId.systemDefault()).toLocalTime();
@@ -767,27 +838,50 @@ public class PlanningController implements Initializable {
             endSlot = startSlot.plusHours(1);
         }
 
-        resetForm();
-        planningFormTitleLabel.setText("Add Match Planning");
-        showForm(true);
-        sessionComboBox.setValue(matchSession);
-        planningDatePicker.setValue(matchDate);
-        startTimeComboBox.setValue(startSlot);
-        endTimeComboBox.setValue(endSlot);
-        colorPicker.setValue(Color.web(findAvailableColor(matchDate, null)));
-        showInfo("Match planning pre-filled. Review and click Save Planning.");
+        if (!canApplyPlanningTime(currentUser.getId(), matchDate, startSlot, endSlot, null, matchSession, true)) {
+            showError("This match time overlaps another planning on the same day.");
+            return;
+        }
+
+        Planning planningEntry = new Planning();
+        planningEntry.setUserId(currentUser.getId());
+        planningEntry.setSeanceId(matchSession.getId());
+        planningEntry.setSeanceTitle(matchSession.getTitre());
+        planningEntry.setPlanningDate(matchDate);
+        planningEntry.setStartTime(startSlot);
+        planningEntry.setEndTime(endSlot);
+        planningEntry.setColorHex(findAvailableColor(matchDate, null));
+
+        servicePlanning.add(planningEntry);
+        sendPlanningCreationEmailAsync(currentUser, planningEntry);
+        refreshPlanningData();
+        showForm(false);
+        showInfo("Match planned directly in your calendar.");
     }
 
     private Seance resolveOrCreateMatchSession(int userId,
                                                FootballDataService.NextMatch nextMatch,
                                                TypeSeance matchType) {
-        String matchTitle = nextMatch.team().name() + " vs " + nextMatch.opponent();
+        String matchTitle = buildMatchAcronymTitle(nextMatch.homeTeam(), nextMatch.awayTeam());
+        String legacyTitle = nextMatch.homeTeam() + " vs " + nextMatch.awayTeam();
         String normalizedTitle = normalize(matchTitle);
+        String normalizedLegacyTitle = normalize(legacyTitle);
         for (Seance seance : sessionComboBox.getItems()) {
             if (seance != null
                     && seance.getTypeSeanceId() != null
                     && seance.getTypeSeanceId() == matchType.getId()
-                    && normalize(seance.getTitre()).equals(normalizedTitle)) {
+                    && (normalize(seance.getTitre()).equals(normalizedTitle)
+                    || normalize(seance.getTitre()).equals(normalizedLegacyTitle))) {
+                if (!normalize(seance.getTitre()).equals(normalizedTitle)) {
+                    seance.setTitre(matchTitle);
+                    serviceSeance.update(seance);
+                    loadSessions();
+                    for (Seance reloaded : sessionComboBox.getItems()) {
+                        if (reloaded != null && reloaded.getId() == seance.getId()) {
+                            return reloaded;
+                        }
+                    }
+                }
                 return seance;
             }
         }
@@ -798,7 +892,7 @@ public class PlanningController implements Initializable {
         created.setTypeSeanceId(matchType.getId());
         created.setTypeSeanceName(matchType.getName());
         created.setTypeSeance(matchType.getName());
-        created.setDescription("Auto-created from football next match card");
+        created.setDescription("Auto-created from football next match card: " + legacyTitle);
         serviceSeance.add(created);
         loadSessions();
 
@@ -808,6 +902,54 @@ public class PlanningController implements Initializable {
             }
         }
         return created;
+    }
+
+    private String buildMatchAcronymTitle(String homeTeam, String awayTeam) {
+        return toTeamAcronym(homeTeam) + " VS " + toTeamAcronym(awayTeam);
+    }
+
+    private String toTeamAcronym(String teamName) {
+        if (teamName == null || teamName.isBlank()) {
+            return "TEAM";
+        }
+        String cleaned = teamName.trim().replaceAll("[^A-Za-z0-9 ]", " ").replaceAll("\\s+", " ").trim();
+        if (cleaned.isBlank()) {
+            return "TEAM";
+        }
+
+        String normalizedName = normalizeAssistant(cleaned);
+        String knownAcronym = KNOWN_TEAM_ACRONYMS.get(normalizedName);
+        if (knownAcronym != null && !knownAcronym.isBlank()) {
+            return knownAcronym;
+        }
+
+        String[] words = cleaned.split(" ");
+        StringBuilder acronymBuilder = new StringBuilder();
+        for (String word : words) {
+            if (word == null || word.isBlank()) {
+                continue;
+            }
+            acronymBuilder.append(Character.toUpperCase(word.charAt(0)));
+            if (acronymBuilder.length() >= 3) {
+                break;
+            }
+        }
+
+        if (acronymBuilder.length() < 3) {
+            String compact = cleaned.replace(" ", "").toUpperCase(Locale.ENGLISH);
+            int index = 0;
+            while (acronymBuilder.length() < 3 && index < compact.length()) {
+                char candidate = compact.charAt(index++);
+                if (Character.isLetterOrDigit(candidate)) {
+                    acronymBuilder.append(candidate);
+                }
+            }
+        }
+
+        while (acronymBuilder.length() < 3) {
+            acronymBuilder.append('X');
+        }
+        return acronymBuilder.substring(0, 3);
     }
 
     private FootballDataService.TeamOption resolveFavoriteTeam() {
@@ -846,9 +988,10 @@ public class PlanningController implements Initializable {
         if (kickoffUtc == null) {
             return "-";
         }
-        return kickoffUtc.atZoneSameInstant(ZoneId.systemDefault()).format(fullDateFormatter)
-                + " "
-                + kickoffUtc.atZoneSameInstant(ZoneId.systemDefault()).format(timeFormatter);
+        var localKickoff = kickoffUtc.atZoneSameInstant(ZoneId.systemDefault());
+        String datePart = localKickoff.format(DateTimeFormatter.ofPattern("EEE, MMM d yyyy", Locale.ENGLISH));
+        String timePart = localKickoff.format(timeFormatter);
+        return "Date: " + datePart + " | Time: " + timePart;
     }
 
     private void setMatchStatus(String message, boolean error) {
@@ -869,6 +1012,32 @@ public class PlanningController implements Initializable {
         }
         if (matchKickoffLabel != null) {
             matchKickoffLabel.setText(kickoff == null ? "Kickoff: -" : kickoff);
+        }
+    }
+
+    private void setMatchTeams(String homeName, String awayName, String homeLogoUrl, String awayLogoUrl) {
+        if (matchHomeTeamLabel != null) {
+            matchHomeTeamLabel.setText((homeName == null || homeName.isBlank()) ? "Home" : homeName);
+        }
+        if (matchAwayTeamLabel != null) {
+            matchAwayTeamLabel.setText((awayName == null || awayName.isBlank()) ? "Away" : awayName);
+        }
+        loadTeamLogo(matchHomeLogoImageView, homeLogoUrl);
+        loadTeamLogo(matchAwayLogoImageView, awayLogoUrl);
+    }
+
+    private void loadTeamLogo(ImageView imageView, String logoUrl) {
+        if (imageView == null) {
+            return;
+        }
+        if (logoUrl == null || logoUrl.isBlank()) {
+            imageView.setImage(null);
+            return;
+        }
+        try {
+            imageView.setImage(new Image(logoUrl, true));
+        } catch (Exception exception) {
+            imageView.setImage(null);
         }
     }
 
@@ -1464,7 +1633,7 @@ public class PlanningController implements Initializable {
                     : assistantSessionResolutionError;
         }
 
-        if (servicePlanning.hasTimeOverlap(currentUser.getId(), command.date, normalizedStart, normalizedEnd, null)) {
+        if (!canApplyPlanningTime(currentUser.getId(), command.date, normalizedStart, normalizedEnd, null, seance, true)) {
             return "Cannot create planning: this time overlaps another session on that day.";
         }
 
@@ -1548,7 +1717,8 @@ public class PlanningController implements Initializable {
             return "Invalid updated time range. Use HH:mm from 06:00 to 23:30.";
         }
 
-        if (servicePlanning.hasTimeOverlap(currentUser.getId(), targetDate, targetStart, targetEnd, selected.getId())) {
+        Seance selectedSeance = findSeanceById(selected.getSeanceId());
+        if (!canApplyPlanningTime(currentUser.getId(), targetDate, targetStart, targetEnd, selected.getId(), selectedSeance, true)) {
             return "Cannot update planning: this time overlaps another session on that day.";
         }
 
@@ -2461,7 +2631,21 @@ public class PlanningController implements Initializable {
         List<Planning> entries = planningByDate.getOrDefault(date, List.of()).stream()
                 .sorted(Comparator.comparing(Planning::getStartTime))
                 .toList();
+        boolean hasDayOffEntry = entries.stream().anyMatch(this::isDayOffPlanningEntry);
+        if (hasDayOffEntry) {
+            cell.getStyleClass().add("planning-calendar-cell-dayoff");
+            StackPane dayOffMarker = new StackPane();
+            dayOffMarker.getStyleClass().add("planning-dayoff-calendar-cell-marker");
+            Label dayOffLabel = new Label("XX");
+            dayOffLabel.getStyleClass().add("planning-dayoff-calendar-cell-marker-text");
+            dayOffMarker.getChildren().add(dayOffLabel);
+            VBox.setVgrow(dayOffMarker, Priority.ALWAYS);
+            cell.getChildren().add(dayOffMarker);
+        }
         for (Planning entry : entries) {
+            if (hasDayOffEntry && isDayOffPlanningEntry(entry)) {
+                continue;
+            }
             cell.getChildren().add(createCalendarEntryCard(entry));
         }
 
@@ -2476,6 +2660,9 @@ public class PlanningController implements Initializable {
             if (!isCurrentMonth) {
                 currentYearMonth = YearMonth.from(date);
                 updateCalendar();
+            }
+            if (hasDayOffEntry) {
+                showInfo("This day has a day off. Only Match planning is allowed on this date.");
             }
             resetForm();
             planningDatePicker.setValue(date);
@@ -2505,8 +2692,17 @@ public class PlanningController implements Initializable {
     }
 
     private HBox createCalendarEntryCard(Planning entry) {
-        HBox card = new HBox(6);
+        boolean matchEntry = isMatchPlanningEntry(entry);
+        boolean dayOffEntry = !matchEntry && isDayOffPlanningEntry(entry);
+        HBox card = new HBox(matchEntry ? 8 : 6);
         card.getStyleClass().add("planning-calendar-entry-card");
+        if (matchEntry) {
+            card.getStyleClass().add("planning-match-calendar-entry-card");
+            card.setMinHeight(52);
+        } else if (dayOffEntry) {
+            card.getStyleClass().add("planning-dayoff-calendar-entry-card");
+            card.setMinHeight(40);
+        }
         if (isAssistantGeneratedEntry(entry)) {
             card.getStyleClass().add("planning-ai-calendar-entry-card");
         }
@@ -2514,33 +2710,83 @@ public class PlanningController implements Initializable {
 
         Region colorStrip = new Region();
         colorStrip.getStyleClass().add("planning-calendar-entry-color");
-        colorStrip.setStyle("-fx-background-color: " + entry.getColorHex() + ";");
+        colorStrip.setStyle("-fx-background-color: " + entry.getColorHex() + "; -fx-background-radius: 4;");
 
-        VBox infoBox = new VBox(1);
+        Label matchChip = null;
+
+        VBox infoBox = new VBox(matchEntry ? 2 : 1);
         HBox.setHgrow(infoBox, Priority.ALWAYS);
+        if (dayOffEntry) {
+            infoBox.setAlignment(Pos.CENTER);
+        }
 
         String sessionTitle = entry.getSeanceTitle() == null ? "Session" : entry.getSeanceTitle();
-        if (sessionTitle.length() > 15) {
-            sessionTitle = sessionTitle.substring(0, 15) + "...";
+        if (matchEntry) {
+            sessionTitle = "⚽ " + sessionTitle;
+        } else if (dayOffEntry) {
+            sessionTitle = "XX";
+        }
+        int maxTitleLength = matchEntry ? Integer.MAX_VALUE : 15;
+        if (!matchEntry && sessionTitle.length() > maxTitleLength) {
+            sessionTitle = sessionTitle.substring(0, maxTitleLength) + "...";
         }
 
         Label titleLabel = new Label(sessionTitle);
+        titleLabel.setWrapText(matchEntry);
+        titleLabel.setMaxWidth(Double.MAX_VALUE);
         titleLabel.getStyleClass().add("planning-calendar-entry-title");
+        if (matchEntry) {
+            titleLabel.getStyleClass().add("planning-match-calendar-entry-title");
+            titleLabel.setWrapText(true);
+            titleLabel.setTooltip(new Tooltip(sessionTitle));
+        } else if (dayOffEntry) {
+            titleLabel.getStyleClass().add("planning-dayoff-calendar-entry-title");
+        }
         if (isAssistantGeneratedEntry(entry)) {
             titleLabel.getStyleClass().add("planning-ai-calendar-entry-title");
         }
+        HBox titleRow = new HBox(matchEntry ? 8 : 4);
+        titleRow.setAlignment(dayOffEntry ? Pos.CENTER : Pos.CENTER_LEFT);
+        HBox.setHgrow(titleLabel, Priority.ALWAYS);
+        titleRow.getChildren().add(titleLabel);
         Label timeLabel = new Label(entry.getStartTime().format(calendarEntryFormatter) + " - " + entry.getEndTime().format(calendarEntryFormatter));
         timeLabel.getStyleClass().add("planning-calendar-entry-time");
-        infoBox.getChildren().addAll(titleLabel, timeLabel);
+        if (matchEntry) {
+            timeLabel.getStyleClass().add("planning-match-calendar-entry-time");
+            // Keep full start/end time on one line for match entries.
+            timeLabel.setText(entry.getStartTime().format(calendarEntryFormatter) + " - " + entry.getEndTime().format(calendarEntryFormatter));
+            timeLabel.setWrapText(false);
+            timeLabel.setMaxWidth(Double.MAX_VALUE);
+        } else if (dayOffEntry) {
+            timeLabel.setText("");
+            timeLabel.setManaged(false);
+            timeLabel.setVisible(false);
+        }
+        infoBox.getChildren().addAll(titleRow, timeLabel);
 
-        card.getChildren().addAll(colorStrip, infoBox);
+        if (matchChip != null) {
+            card.getChildren().addAll(colorStrip, matchChip, infoBox);
+        } else if (dayOffEntry) {
+            card.getChildren().add(infoBox);
+        } else {
+            card.getChildren().addAll(colorStrip, infoBox);
+        }
 
         card.setOnMouseClicked(event -> {
+            if (dayOffEntry) {
+                showInfo("Day off is locked for this full day (00:00 - 23:59).");
+                event.consume();
+                return;
+            }
             PlanningController.this.startEdit(entry);
             event.consume();
         });
 
         card.setOnDragDetected(event -> {
+            if (dayOffEntry) {
+                event.consume();
+                return;
+            }
             Dragboard dragboard = card.startDragAndDrop(TransferMode.MOVE);
             ClipboardContent content = new ClipboardContent();
             content.putString(DRAG_ENTRY_PREFIX + entry.getId());
@@ -2571,6 +2817,192 @@ public class PlanningController implements Initializable {
             return description != null && normalizeAssistant(description).contains("created from planning assistant");
         }
         return false;
+    }
+
+    private boolean isMatchPlanningEntry(Planning entry) {
+        if (entry == null) {
+            return false;
+        }
+
+        String title = normalizeAssistant(entry.getSeanceTitle());
+        if (title.contains(" vs ")) {
+            return true;
+        }
+
+        if (sessionComboBox == null || sessionComboBox.getItems() == null) {
+            return false;
+        }
+
+        for (Seance seance : sessionComboBox.getItems()) {
+            if (seance == null || seance.getId() != entry.getSeanceId()) {
+                continue;
+            }
+            String typeName = normalizeAssistant(seance.getTypeSeanceName());
+            String type = normalizeAssistant(seance.getTypeSeance());
+            return SESSION_TYPE_MATCH.equals(typeName) || SESSION_TYPE_MATCH.equals(type);
+        }
+
+        return false;
+    }
+
+    private boolean isDayOffPlanningEntry(Planning entry) {
+        if (entry == null) {
+            return false;
+        }
+
+        String title = normalizeAssistant(entry.getSeanceTitle());
+        if (title.contains(SESSION_TYPE_DAY_OFF) || title.contains(SESSION_TYPE_DAYOFF)) {
+            return true;
+        }
+
+        if (sessionComboBox == null || sessionComboBox.getItems() == null) {
+            return false;
+        }
+
+        for (Seance seance : sessionComboBox.getItems()) {
+            if (seance == null || seance.getId() != entry.getSeanceId()) {
+                continue;
+            }
+            String typeName = normalizeAssistant(seance.getTypeSeanceName());
+            String type = normalizeAssistant(seance.getTypeSeance());
+            return typeName.contains(SESSION_TYPE_DAY_OFF)
+                    || type.contains(SESSION_TYPE_DAY_OFF)
+                    || typeName.contains(SESSION_TYPE_DAYOFF)
+                    || type.contains(SESSION_TYPE_DAYOFF);
+        }
+
+        return false;
+    }
+
+    private boolean isDayOffSeance(Seance seance) {
+        if (seance == null) {
+            return false;
+        }
+        String typeName = normalizeAssistant(seance.getTypeSeanceName());
+        String type = normalizeAssistant(seance.getTypeSeance());
+        return typeName.contains(SESSION_TYPE_DAY_OFF)
+                || type.contains(SESSION_TYPE_DAY_OFF)
+                || typeName.contains(SESSION_TYPE_DAYOFF)
+                || type.contains(SESSION_TYPE_DAYOFF);
+    }
+
+    private void updateDayOffTimeMode(Seance selectedSeance) {
+        boolean dayOffSelection = isDayOffSeance(selectedSeance);
+        if (dayOffSelection) {
+            startTimeComboBox.setValue(DAY_OFF_START_TIME);
+            endTimeComboBox.setValue(DAY_OFF_END_TIME);
+            if (colorPicker != null) {
+                colorPicker.setValue(Color.web(DAY_OFF_COLOR_HEX));
+            }
+            showInfo("Day off uses full day automatically: 00:00 - 23:59 with a fixed color.");
+        }
+        setTimeFieldsDisabled(dayOffSelection);
+        if (colorPicker != null) {
+            colorPicker.setDisable(dayOffSelection);
+        }
+    }
+
+    private void setTimeFieldsDisabled(boolean disabled) {
+        if (startTimeComboBox != null) {
+            startTimeComboBox.setDisable(disabled);
+        }
+        if (endTimeComboBox != null) {
+            endTimeComboBox.setDisable(disabled);
+        }
+    }
+
+    private String toCompactMatchTitle(String title) {
+        if (title == null || title.isBlank()) {
+            return "Match";
+        }
+        String lowered = normalizeAssistant(title);
+        if (!lowered.contains(" vs ")) {
+            return title;
+        }
+
+        String[] parts = title.split("(?i)\\s+vs\\s+", 2);
+        if (parts.length < 2) {
+            return title;
+        }
+        return toShortTeamName(parts[0]) + " vs " + toShortTeamName(parts[1]);
+    }
+
+    private String toCalendarMatchDisplayTitle(String title) {
+        if (title == null || title.isBlank()) {
+            return "MATCH";
+        }
+
+        String normalized = normalizeAssistant(title);
+        if (normalized.contains(" vs ")) {
+            String[] parts = title.split("(?i)\\s+vs\\s+", 2);
+            if (parts.length == 2) {
+                return toTeamAcronym(parts[0]) + " VS " + toTeamAcronym(parts[1]);
+            }
+        }
+
+        return title;
+    }
+
+    private String toElegantMatchTitle(String title) {
+        if (title == null || title.isBlank()) {
+            return "Match";
+        }
+        String lowered = normalizeAssistant(title);
+        if (!lowered.contains(" vs ")) {
+            return shortenTeamName(cleanTeamPrefix(title));
+        }
+
+        String[] parts = title.split("(?i)\\s+vs\\s+", 2);
+        if (parts.length < 2) {
+            return shortenTeamName(cleanTeamPrefix(title));
+        }
+        String home = shortenTeamName(cleanTeamPrefix(parts[0]));
+        String away = shortenTeamName(cleanTeamPrefix(parts[1]));
+        return home + " vs " + away;
+    }
+
+    private String cleanTeamPrefix(String teamName) {
+        if (teamName == null) {
+            return "";
+        }
+        String cleaned = teamName.trim();
+        String normalized = normalizeAssistant(cleaned);
+        List<String> prefixes = List.of("fc ", "cf ", "ac ", "sc ", "rc ", "real ", "club ");
+        for (String prefix : prefixes) {
+            if (normalized.startsWith(prefix)) {
+                return cleaned.substring(prefix.length()).trim();
+            }
+        }
+        return cleaned;
+    }
+
+    private String shortenTeamName(String teamName) {
+        if (teamName == null || teamName.isBlank()) {
+            return "Team";
+        }
+        String cleaned = teamName.trim();
+        if (cleaned.length() <= 24) {
+            return cleaned;
+        }
+        return cleaned.substring(0, 24);
+    }
+
+    private String toShortTeamName(String teamName) {
+        if (teamName == null || teamName.isBlank()) {
+            return "Team";
+        }
+        String cleaned = teamName.trim();
+        String[] tokens = cleaned.split("\\s+");
+        if (tokens.length >= 2) {
+            String first = tokens[0];
+            String second = tokens[1];
+            String combined = first + " " + second;
+            return combined.length() <= 12 ? combined : first;
+        }
+        if (cleaned.length() <= 12) {
+            return cleaned;
+        }
+        return cleaned.substring(0, 12);
     }
 
     private String pickRandomAssistantColor(int userId, LocalDate date) {
@@ -2697,7 +3129,8 @@ public class PlanningController implements Initializable {
     }
 
     private void movePlanningEntryToDate(Planning entry, LocalDate targetDate) {
-        if (servicePlanning.hasTimeOverlap(entry.getUserId(), targetDate, entry.getStartTime(), entry.getEndTime(), entry.getId())) {
+        Seance movingSeance = findSeanceById(entry.getSeanceId());
+        if (!canApplyPlanningTime(entry.getUserId(), targetDate, entry.getStartTime(), entry.getEndTime(), entry.getId(), movingSeance, true)) {
             showErrorOn(pageMessageLabel,
                     "Move cancelled: another session already uses this time range on " + targetDate.format(shortDateFormatter) + ".");
             return;
@@ -2886,6 +3319,7 @@ public class PlanningController implements Initializable {
         startTimeComboBox.setValue(planningEntry.getStartTime());
         endTimeComboBox.setValue(planningEntry.getEndTime());
         colorPicker.setValue(Color.web(planningEntry.getColorHex()));
+        updateDayOffTimeMode(sessionComboBox.getValue());
         boolean hasEditableFeedback = hasFeedback(planningEntry);
         showPlanningEditFeedbackEditor(hasEditableFeedback);
         if (planningEditFeedbackComboBox != null) {
@@ -2923,6 +3357,10 @@ public class PlanningController implements Initializable {
         planningDatePicker.setValue(null);
         startTimeComboBox.setValue(null);
         endTimeComboBox.setValue(null);
+        setTimeFieldsDisabled(false);
+        if (colorPicker != null) {
+            colorPicker.setDisable(false);
+        }
         colorPicker.setValue(Color.web(COLOR_PALETTE.get(0)));
         if (planningEditFeedbackComboBox != null) {
             planningEditFeedbackComboBox.setValue(null);
@@ -2994,20 +3432,22 @@ public class PlanningController implements Initializable {
         return valid;
     }
 
-    private boolean validateTimeOverlap(int userId, LocalDate planningDate, LocalTime startTime, LocalTime endTime, boolean showMessage) {
+    private boolean validateTimeOverlap(int userId, LocalDate planningDate, LocalTime startTime, LocalTime endTime, Seance selectedSeance, boolean showValidation) {
         if (planningDate == null || startTime == null || endTime == null || !endTime.isAfter(startTime)) {
             return true;
         }
 
-        boolean hasOverlap = servicePlanning.hasTimeOverlap(
+        boolean allowed = canApplyPlanningTime(
                 userId,
                 planningDate,
                 startTime,
                 endTime,
-                editingPlanning == null ? null : editingPlanning.getId()
+                editingPlanning == null ? null : editingPlanning.getId(),
+                selectedSeance,
+                showValidation
         );
-        if (hasOverlap) {
-            if (showMessage) {
+        if (!allowed) {
+            if (showValidation) {
                 markFieldInvalid(startTimeComboBox, startTimeErrorLabel, "This time range overlaps another session on this day.");
                 markFieldInvalid(endTimeComboBox, endTimeErrorLabel, "This time range overlaps another session on this day.");
             }
@@ -3015,6 +3455,80 @@ public class PlanningController implements Initializable {
         }
 
         return true;
+    }
+
+    private boolean canApplyPlanningTime(int userId,
+                                         LocalDate planningDate,
+                                         LocalTime startTime,
+                                         LocalTime endTime,
+                                         Integer excludedPlanningId,
+                                         Seance selectedSeance,
+                                         boolean enforceDayOffRuleMessage) {
+        boolean hasOverlap = servicePlanning.hasTimeOverlap(userId, planningDate, startTime, endTime, excludedPlanningId);
+        if (!hasOverlap) {
+            return true;
+        }
+
+        boolean selectedIsMatch = isMatchSeance(selectedSeance);
+        boolean selectedIsDayOff = isDayOffSeance(selectedSeance);
+        if (!selectedIsMatch && !selectedIsDayOff) {
+            return false;
+        }
+
+        for (Planning existing : allPlanningEntries) {
+            if (existing == null || existing.getUserId() != userId) {
+                continue;
+            }
+            if (excludedPlanningId != null && existing.getId() == excludedPlanningId) {
+                continue;
+            }
+            if (!planningDate.equals(existing.getPlanningDate())) {
+                continue;
+            }
+            if (!timeRangesOverlap(startTime, endTime, existing.getStartTime(), existing.getEndTime())) {
+                continue;
+            }
+
+            boolean existingIsMatch = isMatchPlanningEntry(existing);
+            boolean existingIsDayOff = isDayOffPlanningEntry(existing);
+            boolean allowedPair = (selectedIsMatch && existingIsDayOff) || (selectedIsDayOff && existingIsMatch);
+            if (!allowedPair) {
+                return false;
+            }
+        }
+
+        if (enforceDayOffRuleMessage && selectedIsDayOff && !selectedIsMatch) {
+            showInfo("Day off can only coexist with Match on the same day.");
+        }
+        return true;
+    }
+
+    private boolean timeRangesOverlap(LocalTime startA, LocalTime endA, LocalTime startB, LocalTime endB) {
+        if (startA == null || endA == null || startB == null || endB == null) {
+            return false;
+        }
+        return startA.isBefore(endB) && startB.isBefore(endA);
+    }
+
+    private Seance findSeanceById(int seanceId) {
+        if (sessionComboBox == null || sessionComboBox.getItems() == null) {
+            return null;
+        }
+        for (Seance seance : sessionComboBox.getItems()) {
+            if (seance != null && seance.getId() == seanceId) {
+                return seance;
+            }
+        }
+        return null;
+    }
+
+    private boolean isMatchSeance(Seance seance) {
+        if (seance == null) {
+            return false;
+        }
+        String typeName = normalizeAssistant(seance.getTypeSeanceName());
+        String type = normalizeAssistant(seance.getTypeSeance());
+        return SESSION_TYPE_MATCH.equals(typeName) || SESSION_TYPE_MATCH.equals(type);
     }
 
     private boolean validateColorForDate(LocalDate planningDate, String selectedColor, boolean showMessage) {
@@ -3157,10 +3671,11 @@ public class PlanningController implements Initializable {
     }
 
     private void updateFeedbackPendingBanner() {
-        long pendingCount = allPlanningEntries.stream()
-                .filter(entry -> isSessionCompleted(entry.getPlanningDate(), entry.getEndTime()))
-                .filter(this::isAwaitingFeedback)
-                .count();
+        List<Planning> pendingEntries = allPlanningEntries.stream()
+                 .filter(entry -> isSessionCompleted(entry.getPlanningDate(), entry.getEndTime()))
+                 .filter(this::isAwaitingFeedback)
+                 .toList();
+        long pendingCount = pendingEntries.size();
 
         if (feedbackPendingBox == null || feedbackPendingLabel == null) {
             return;
@@ -3178,7 +3693,25 @@ public class PlanningController implements Initializable {
         feedbackPendingLabel.setText(pendingCount + suffix);
         feedbackPendingBox.setVisible(true);
         feedbackPendingBox.setManaged(true);
-        updateFeedbackPendingCta(pendingCount);
+        updateFeedbackPendingCta(pendingEntries.size());
+        if (pendingCount == 0) {
+            selectedFeedbackEntry = null;
+            if (feedbackSelectedSessionLabel != null) {
+                feedbackSelectedSessionLabel.setText("No sessions are awaiting feedback.");
+            }
+            feedbackToggleGroup.selectToggle(null);
+            return;
+        }
+
+        if (selectedFeedbackEntry != null) {
+            for (Planning entry : pendingEntries) {
+                if (entry.getId() == selectedFeedbackEntry.getId()) {
+                    feedbackPendingListView.getSelectionModel().select(entry);
+                    return;
+                }
+            }
+        }
+        feedbackPendingListView.getSelectionModel().select(pendingEntries.get(0));
     }
 
     private void refreshFeedbackQueue() {
@@ -3453,16 +3986,17 @@ public class PlanningController implements Initializable {
     }
 
     private final class PlanningEntryCell extends ListCell<Planning> {
-        private final VBox root = new VBox(8);
-        private final HBox topRow = new HBox(10);
+        private final VBox root = new VBox(3);
+        private final HBox topRow = new HBox(8);
         private final Region colorBar = new Region();
         private final VBox content = new VBox(4);
         private final Label titleLabel = new Label();
         private final Label dateTimeLabel = new Label();
         private final Label aiBadgeLabel = new Label("AI");
-        private final HBox actionBox = new HBox(8);
-        private final Button editButton = new Button("Edit");
-        private final Button deleteButton = new Button("Delete");
+        private final Label matchBadgeLabel = new Label("⚽");
+        private final HBox actionBox = new HBox(6);
+        private final Button editButton = new Button();
+        private final Button deleteButton = new Button();
 
         private PlanningEntryCell() {
             colorBar.setPrefWidth(5);
@@ -3471,13 +4005,28 @@ public class PlanningController implements Initializable {
             colorBar.setPrefHeight(44);
 
             titleLabel.getStyleClass().add("planning-upcoming-item-title");
+            titleLabel.setWrapText(false);
+            titleLabel.setTextOverrun(OverrunStyle.ELLIPSIS);
+            titleLabel.setMaxWidth(Double.MAX_VALUE);
             dateTimeLabel.getStyleClass().add("planning-upcoming-item-time");
+            dateTimeLabel.setWrapText(false);
+            dateTimeLabel.setTextOverrun(OverrunStyle.ELLIPSIS);
+            dateTimeLabel.setMaxWidth(Double.MAX_VALUE);
             aiBadgeLabel.getStyleClass().add("planning-ai-badge");
             aiBadgeLabel.setManaged(false);
             aiBadgeLabel.setVisible(false);
+            matchBadgeLabel.getStyleClass().add("planning-match-badge");
+            matchBadgeLabel.setManaged(false);
+            matchBadgeLabel.setVisible(false);
 
-            editButton.getStyleClass().add("btn-secondary");
-            deleteButton.getStyleClass().add("btn-danger");
+            editButton.getStyleClass().addAll("btn-secondary", "planning-upcoming-action-btn", "planning-upcoming-action-icon");
+            deleteButton.getStyleClass().addAll("btn-danger", "planning-upcoming-action-btn", "planning-upcoming-action-delete", "planning-upcoming-action-icon");
+            editButton.setText(null);
+            deleteButton.setText(null);
+            editButton.setGraphic(new FontIcon("fth-edit-3:12"));
+            deleteButton.setGraphic(new FontIcon("fth-trash-2:12"));
+            editButton.setTooltip(new Tooltip("Edit"));
+            deleteButton.setTooltip(new Tooltip("Delete"));
             editButton.setOnAction(event -> {
                 Planning entry = getItem();
                 if (entry != null) {
@@ -3491,14 +4040,19 @@ public class PlanningController implements Initializable {
                 }
             });
 
-            actionBox.getChildren().addAll(aiBadgeLabel, editButton, deleteButton);
+            actionBox.getChildren().addAll(matchBadgeLabel, aiBadgeLabel, editButton, deleteButton);
             actionBox.setAlignment(Pos.CENTER_RIGHT);
+            actionBox.setMinWidth(Region.USE_PREF_SIZE);
 
             content.getChildren().addAll(titleLabel, dateTimeLabel);
+            content.setFillWidth(true);
+            content.setMinWidth(0);
             HBox.setHgrow(content, Priority.ALWAYS);
             topRow.getChildren().addAll(colorBar, content, actionBox);
+            topRow.setAlignment(Pos.TOP_LEFT);
 
-            root.setPadding(new Insets(14));
+            root.setPadding(new Insets(8, 10, 8, 10));
+            root.setFillWidth(true);
             root.getStyleClass().add("planning-upcoming-item-card");
             root.getChildren().add(topRow);
             setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
@@ -3517,11 +4071,18 @@ public class PlanningController implements Initializable {
             dateTimeLabel.setText(item.getPlanningDate().format(shortDateFormatter) + "  •  " + formatEntryTime(item));
 
             boolean aiGenerated = isAssistantGeneratedEntry(item);
+            boolean matchEntry = isMatchPlanningEntry(item);
             aiBadgeLabel.setVisible(aiGenerated);
             aiBadgeLabel.setManaged(aiGenerated);
+            matchBadgeLabel.setVisible(matchEntry);
+            matchBadgeLabel.setManaged(matchEntry);
             root.getStyleClass().remove("planning-ai-upcoming-item-card");
+            root.getStyleClass().remove("planning-match-upcoming-item-card");
             if (aiGenerated) {
                 root.getStyleClass().add("planning-ai-upcoming-item-card");
+            }
+            if (matchEntry) {
+                root.getStyleClass().add("planning-match-upcoming-item-card");
             }
             setGraphic(root);
         }

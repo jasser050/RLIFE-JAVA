@@ -1625,6 +1625,11 @@
     -fx-font-size: 12px;
 }
 
+.planning-match-upcoming-item-card {
+    -fx-background-color: linear-gradient(to right, rgba(30, 64, 175, 0.18), rgba(245, 158, 11, 0.14));
+    -fx-border-color: rgba(245, 158, 11, 0.55);
+}
+
 .planning-week-header-grid {
     -fx-background-color: linear-gradient(to bottom, #1A2437, #141F32);
     -fx-background-radius: 14;
@@ -2107,6 +2112,153 @@
     -fx-border-color: rgba(139, 92, 246, 0.55);
     -fx-background-color: rgba(17, 28, 49, 0.96);
 }
+
+.planning-match-calendar-entry-card {
+    -fx-background-color: linear-gradient(to right, rgba(30, 64, 175, 0.22), rgba(245, 158, 11, 0.2));
+    -fx-border-color: rgba(245, 158, 11, 0.62);
+    -fx-border-width: 1.3;
+    -fx-padding: 6 7;
+}
+
+.planning-match-calendar-entry-title {
+    -fx-text-fill: #F8FAFC;
+    -fx-font-size: 11.5px;
+    -fx-font-weight: 800;
+}
+
+.planning-match-calendar-entry-time {
+    -fx-text-fill: #CBD5E1;
+    -fx-font-size: 10px;
+    -fx-font-weight: 700;
+    -fx-text-overrun: clip;
+}
+
+.planning-match-calendar-ball {
+    -fx-text-fill: #F59E0B;
+    -fx-background-color: transparent;
+    -fx-padding: 0 2;
+    -fx-font-size: 10.5px;
+    -fx-font-weight: 700;
+}
+
+.planning-match-calendar-ball-chip {
+    -fx-min-width: 22;
+    -fx-pref-width: 22;
+    -fx-min-height: 22;
+    -fx-pref-height: 22;
+    -fx-alignment: center;
+    -fx-background-color: rgba(245, 158, 11, 0.22);
+    -fx-border-color: rgba(245, 158, 11, 0.7);
+    -fx-border-width: 1;
+    -fx-border-radius: 999;
+    -fx-background-radius: 999;
+    -fx-text-fill: #FCD34D;
+    -fx-font-size: 12px;
+    -fx-font-weight: 700;
+}
+
+.planning-match-badge {
+    -fx-background-color: rgba(245, 158, 11, 0.2);
+    -fx-border-color: rgba(245, 158, 11, 0.6);
+    -fx-border-width: 1;
+    -fx-border-radius: 999;
+    -fx-background-radius: 999;
+    -fx-text-fill: #FDE68A;
+    -fx-font-size: 8.5px;
+    -fx-font-weight: 700;
+    -fx-padding: 1 7;
+}
+
+.planning-calendar-cell-dayoff {
+    -fx-background-color: linear-gradient(to bottom, rgba(5, 150, 105, 0.28), rgba(16, 185, 129, 0.2));
+    -fx-border-color: rgba(52, 211, 153, 0.6);
+    -fx-border-width: 1.3;
+}
+
+.planning-dayoff-calendar-entry-card {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-padding: 4 6;
+}
+
+.planning-dayoff-calendar-entry-title {
+    -fx-text-fill: #34D399;
+    -fx-font-size: 16px;
+    -fx-font-weight: 900;
+}
+
+.planning-dayoff-calendar-cell-marker {
+    -fx-background-color: rgba(16, 185, 129, 0.14);
+    -fx-border-color: rgba(52, 211, 153, 0.5);
+    -fx-border-width: 1;
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
+    -fx-alignment: center;
+}
+
+.planning-dayoff-calendar-cell-marker-text {
+    -fx-text-fill: #34D399;
+    -fx-font-size: 28px;
+    -fx-font-weight: 900;
+}
+
+.planning-live-clock-card {
+    -fx-background-color: linear-gradient(to right, rgba(79, 70, 229, 0.28), rgba(30, 64, 175, 0.24));
+    -fx-border-color: rgba(129, 140, 248, 0.45);
+    -fx-border-width: 1;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+    -fx-padding: 7 12;
+}
+
+.planning-live-clock-time {
+    -fx-text-fill: #E0E7FF;
+    -fx-font-size: 14px;
+    -fx-font-weight: 900;
+}
+
+.planning-live-clock-date {
+    -fx-text-fill: #93C5FD;
+    -fx-font-size: 10px;
+    -fx-font-weight: 700;
+}
+
+.planning-upcoming-item-card {
+    -fx-padding: 10 12;
+}
+
+.planning-upcoming-item-title {
+    -fx-font-size: 12px;
+    -fx-font-weight: 800;
+}
+
+.planning-upcoming-item-time {
+    -fx-font-size: 10.5px;
+}
+
+.planning-upcoming-action-btn {
+    -fx-min-height: 28;
+    -fx-pref-height: 28;
+    -fx-min-width: 58;
+    -fx-font-size: 11px;
+    -fx-font-weight: 700;
+    -fx-padding: 0 10;
+}
+
+.planning-upcoming-action-delete {
+    -fx-text-fill: #FFFFFF;
+}
+
+.planning-upcoming-action-icon {
+    -fx-min-width: 28;
+    -fx-pref-width: 28;
+    -fx-max-width: 28;
+    -fx-padding: 0;
+    -fx-content-display: graphic-only;
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+}
+
 
 .planning-calendar-entry-color {
     -fx-min-width: 4;
