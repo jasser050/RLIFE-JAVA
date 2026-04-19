@@ -21,7 +21,6 @@ import javafx.css.PseudoClass;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
-import javafx.scene.web.WebView;
 import javafx.util.Duration;
 import org.kordamp.ikonli.javafx.FontIcon;
 import javafx.scene.layout.FlowPane;
@@ -316,7 +315,7 @@ public class CoursesController implements Initializable {
     }
 
     // ══════════════════════════════════════════════════════════════════════════
-    //  BUILD CARD — FIXED: all text visible, white/light on dark bg
+    //  BUILD CARD
     // ══════════════════════════════════════════════════════════════════════════
     private VBox buildCard(EvaluationMatiere ev, String color) {
         VBox card = new VBox(0);
@@ -333,28 +332,21 @@ public class CoursesController implements Initializable {
                         "-fx-effect:dropshadow(gaussian,rgba(0,0,0,0.4),12,0,0,4);"
         );
 
-        // ── Color bar top ──────────────────────────────────────────────────
         Region colorBar = new Region();
         colorBar.setPrefHeight(4);
         colorBar.setStyle("-fx-background-color:" + getGradientForColor(color) + "; -fx-background-radius:16 16 0 0;");
 
-        // ── Content ────────────────────────────────────────────────────────
         VBox content = new VBox(14);
         content.setPadding(new Insets(18, 20, 18, 20));
 
-        // ── Header row: icon + score badge ────────────────────────────────
         HBox header = new HBox(12);
         header.setAlignment(Pos.CENTER_LEFT);
 
-        // Icon box
         StackPane iconBox = new StackPane();
         iconBox.setPrefSize(46, 46);
         iconBox.setMinSize(46, 46);
         iconBox.setMaxSize(46, 46);
-        iconBox.setStyle(
-                "-fx-background-color:" + getIconBg(color) + ";" +
-                        "-fx-background-radius:12;"
-        );
+        iconBox.setStyle("-fx-background-color:" + getIconBg(color) + ";-fx-background-radius:12;");
         FontIcon icon = new FontIcon("fth-clipboard");
         icon.setIconSize(20);
         icon.setIconColor(Color.web(getColorHex(color)));
@@ -363,7 +355,6 @@ public class CoursesController implements Initializable {
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
-        // Score badge — always white text on colored bg
         Label scoreBadge = new Label(String.format("%.1f / %.0f", ev.getScoreEval(), ev.getNoteMaximaleEval()));
         scoreBadge.setStyle(
                 "-fx-background-color:" + getColorHex(color) + ";" +
@@ -376,16 +367,10 @@ public class CoursesController implements Initializable {
 
         header.getChildren().addAll(iconBox, spacer, scoreBadge);
 
-        // ── Subject name — WHITE and bold ─────────────────────────────────
         Label nomLabel = new Label(getNomMatiere(ev.getMatiereId()));
-        nomLabel.setStyle(
-                "-fx-text-fill:#F8FAFC;" +
-                        "-fx-font-size:17px;" +
-                        "-fx-font-weight:700;"
-        );
+        nomLabel.setStyle("-fx-text-fill:#F8FAFC;-fx-font-size:17px;-fx-font-weight:700;");
         nomLabel.setWrapText(true);
 
-        // ── Date row ──────────────────────────────────────────────────────
         HBox dateRow = new HBox(6);
         dateRow.setAlignment(Pos.CENTER_LEFT);
         FontIcon calIcon = new FontIcon("fth-calendar");
@@ -395,7 +380,6 @@ public class CoursesController implements Initializable {
         dateLabel.setStyle("-fx-text-fill:#94A3B8; -fx-font-size:12px;");
         dateRow.getChildren().addAll(calIcon, dateLabel);
 
-        // ── Chips row: duration + priority ───────────────────────────────
         HBox chipsRow = new HBox(10);
         chipsRow.setAlignment(Pos.CENTER_LEFT);
         chipsRow.getChildren().addAll(
@@ -405,28 +389,18 @@ public class CoursesController implements Initializable {
                         getPriorityColor(ev.getPrioriteE()))
         );
 
-        // ── Progress section ──────────────────────────────────────────────
         double progress = ev.getNoteMaximaleEval() > 0
                 ? ev.getScoreEval() / ev.getNoteMaximaleEval() : 0;
 
         VBox progressSection = new VBox(6);
-
         HBox progressHeader = new HBox();
         progressHeader.setAlignment(Pos.CENTER_LEFT);
-
         Label scoreLabel = new Label("Score");
         scoreLabel.setStyle("-fx-text-fill:#64748B; -fx-font-size:12px;");
-
         Region ps = new Region();
         HBox.setHgrow(ps, Priority.ALWAYS);
-
-        // Score % — colored and bold
         Label pv = new Label((int)(progress * 100) + "%");
-        pv.setStyle(
-                "-fx-text-fill:" + getColorHex(color) + ";" +
-                        "-fx-font-size:13px;" +
-                        "-fx-font-weight:700;"
-        );
+        pv.setStyle("-fx-text-fill:" + getColorHex(color) + ";-fx-font-size:13px;-fx-font-weight:700;");
         progressHeader.getChildren().addAll(scoreLabel, ps, pv);
 
         ProgressBar progressBar = new ProgressBar(progress);
@@ -439,12 +413,10 @@ public class CoursesController implements Initializable {
         );
         progressSection.getChildren().addAll(progressHeader, progressBar);
 
-        // ── Divider ───────────────────────────────────────────────────────
         Region divider = new Region();
         divider.setPrefHeight(1);
         divider.setStyle("-fx-background-color:#1E293B;");
 
-        // ── Action buttons ────────────────────────────────────────────────
         HBox actions = new HBox(8);
         actions.setAlignment(Pos.CENTER_RIGHT);
 
@@ -453,13 +425,8 @@ public class CoursesController implements Initializable {
                 "-fx-background-color:transparent;" +
                         "-fx-text-fill:" + getColorHex(color) + ";" +
                         "-fx-border-color:" + getColorHex(color) + ";" +
-                        "-fx-border-width:1.5;" +
-                        "-fx-border-radius:8;" +
-                        "-fx-background-radius:8;" +
-                        "-fx-font-size:12px;" +
-                        "-fx-font-weight:600;" +
-                        "-fx-padding:6 16;" +
-                        "-fx-cursor:hand;"
+                        "-fx-border-width:1.5;-fx-border-radius:8;-fx-background-radius:8;" +
+                        "-fx-font-size:12px;-fx-font-weight:600;-fx-padding:6 16;-fx-cursor:hand;"
         );
         btnEdit.setOnAction(e -> startEdit(ev));
 
@@ -468,21 +435,14 @@ public class CoursesController implements Initializable {
                 "-fx-background-color:transparent;" +
                         "-fx-text-fill:#FB7185;" +
                         "-fx-border-color:#FB7185;" +
-                        "-fx-border-width:1.5;" +
-                        "-fx-border-radius:8;" +
-                        "-fx-background-radius:8;" +
-                        "-fx-font-size:12px;" +
-                        "-fx-font-weight:600;" +
-                        "-fx-padding:6 16;" +
-                        "-fx-cursor:hand;"
+                        "-fx-border-width:1.5;-fx-border-radius:8;-fx-background-radius:8;" +
+                        "-fx-font-size:12px;-fx-font-weight:600;-fx-padding:6 16;-fx-cursor:hand;"
         );
         btnDel.setOnAction(e -> deleteItem(ev));
 
         actions.getChildren().addAll(btnEdit, btnDel);
 
-        content.getChildren().addAll(
-                header, nomLabel, dateRow, chipsRow, progressSection, divider, actions
-        );
+        content.getChildren().addAll(header, nomLabel, dateRow, chipsRow, progressSection, divider, actions);
         card.getChildren().addAll(colorBar, content);
         return card;
     }
@@ -646,7 +606,7 @@ public class CoursesController implements Initializable {
         if (cmbQuizSection.getValue() == null) { lblQuizSetupError.setText("⚠ Please select a section."); return; }
         if (cmbQuizMatiere.getValue() == null) { lblQuizSetupError.setText("⚠ Please select a subject."); return; }
 
-        String subject = cmbQuizMatiere.getValue().getNomMatiere();
+        String subject    = cmbQuizMatiere.getValue().getNomMatiere();
         String difficulty = cmbQuizDifficulty.getValue();
         int count = cmbQuizCount.getValue() != null ? cmbQuizCount.getValue() : 10;
 
@@ -870,12 +830,10 @@ public class CoursesController implements Initializable {
         cmbPriorite.setValue(valeur);
         errPriorite.setText("");
 
-        // Reset all to outline style
         btnPrioHaute.setStyle("-fx-background-color:#1E293B;-fx-text-fill:#FB7185;-fx-border-color:#FB7185;-fx-border-width:1.5;-fx-border-radius:10;-fx-background-radius:10;-fx-padding:10 20;-fx-font-size:13px;-fx-cursor:hand;");
         btnPrioMoyenne.setStyle("-fx-background-color:#1E293B;-fx-text-fill:#FBBF24;-fx-border-color:#FBBF24;-fx-border-width:1.5;-fx-border-radius:10;-fx-background-radius:10;-fx-padding:10 20;-fx-font-size:13px;-fx-cursor:hand;");
         btnPrioBasse.setStyle("-fx-background-color:#1E293B;-fx-text-fill:#34D399;-fx-border-color:#34D399;-fx-border-width:1.5;-fx-border-radius:10;-fx-background-radius:10;-fx-padding:10 20;-fx-font-size:13px;-fx-cursor:hand;");
 
-        // Highlight selected
         switch (valeur) {
             case "High"   -> btnPrioHaute.setStyle("-fx-background-color:#F43F5E;-fx-text-fill:white;-fx-border-color:#F43F5E;-fx-border-width:1.5;-fx-border-radius:10;-fx-background-radius:10;-fx-padding:10 20;-fx-font-size:13px;-fx-cursor:hand;-fx-font-weight:700;");
             case "Medium" -> btnPrioMoyenne.setStyle("-fx-background-color:#F59E0B;-fx-text-fill:white;-fx-border-color:#F59E0B;-fx-border-width:1.5;-fx-border-radius:10;-fx-background-radius:10;-fx-padding:10 20;-fx-font-size:13px;-fx-cursor:hand;-fx-font-weight:700;");
@@ -925,7 +883,7 @@ public class CoursesController implements Initializable {
     }
 
     // ══════════════════════════════════════════════════════════════════════════
-    //  STATISTICS
+    //  STATISTICS — using native JavaFX charts (no WebView, no CDN)
     // ══════════════════════════════════════════════════════════════════════════
     @FXML private void handleShowStats() {
         if (allEvals.isEmpty()) {
@@ -940,26 +898,107 @@ public class CoursesController implements Initializable {
         statsView.getChildren().clear();
         statsView.setSpacing(16);
         statsView.setPadding(new Insets(0, 0, 24, 0));
+
+        // Row 1 — KPI cards
         statsView.getChildren().add(buildKpiRow());
 
+        // Row 2 — Subject bars + Priority rings (pure JavaFX)
         HBox row2 = new HBox(16);
-        row2.getChildren().addAll(buildSubjectBarsCard(), buildPriorityRingsCard());
-        HBox.setHgrow(row2.getChildren().get(0), Priority.ALWAYS);
-        HBox.setHgrow(row2.getChildren().get(1), Priority.ALWAYS);
+        VBox subjectCard = buildSubjectBarsCard();
+        VBox priorityCard = buildPriorityRingsCard();
+        HBox.setHgrow(subjectCard, Priority.ALWAYS);
+        HBox.setHgrow(priorityCard, Priority.ALWAYS);
+        row2.getChildren().addAll(subjectCard, priorityCard);
         statsView.getChildren().add(row2);
 
+        // Row 3 — Line chart + Bar chart (native JavaFX)
         HBox row3 = new HBox(16);
-        VBox lineCard = buildWebChartCard("Score trend", buildLineChartHtml());
-        VBox barCard  = buildWebChartCard("Avg by subject", buildBarChartHtml());
+        VBox lineCard = buildLineChartCard();
+        VBox barCard  = buildBarChartCard();
         HBox.setHgrow(lineCard, Priority.ALWAYS);
         HBox.setHgrow(barCard, Priority.ALWAYS);
         row3.getChildren().addAll(lineCard, barCard);
         statsView.getChildren().add(row3);
 
+        // Row 4 — Heatmap
         statsView.getChildren().add(buildHeatmapCard());
+
+        // Row 5 — Insights
         statsView.getChildren().add(buildInsightsCard());
     }
 
+    // ── Native JavaFX Line Chart ───────────────────────────────────────────
+    private VBox buildLineChartCard() {
+        VBox card = cardContainer("Score trend");
+
+        CategoryAxis xAxis = new CategoryAxis();
+        NumberAxis yAxis = new NumberAxis(0, 20, 2);
+        xAxis.setTickLabelFill(Color.web("#64748B"));
+        yAxis.setTickLabelFill(Color.web("#64748B"));
+        xAxis.setStyle("-fx-tick-label-fill:#64748B;");
+        yAxis.setStyle("-fx-tick-label-fill:#64748B;");
+
+        LineChart<String, Number> chart = new LineChart<>(xAxis, yAxis);
+        chart.setLegendVisible(false);
+        chart.setAnimated(true);
+        chart.setPrefHeight(240);
+        chart.setStyle("-fx-background-color:transparent;-fx-plot-background-color:#0F172A;");
+
+        XYChart.Series<String, Number> series = new XYChart.Series<>();
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM");
+
+        allEvals.stream()
+                .filter(e -> e.getDateEvaluation() != null)
+                .sorted(Comparator.comparing(EvaluationMatiere::getDateEvaluation))
+                .forEach(e -> series.getData().add(
+                        new XYChart.Data<>(e.getDateEvaluation().format(fmt), e.getScoreEval())
+                ));
+
+        chart.getData().add(series);
+
+        // Style the line and dots purple
+        chart.setStyle(chart.getStyle() +
+                " -fx-stroke:#A78BFA; -fx-background-color:transparent;");
+
+        card.getChildren().add(chart);
+        return card;
+    }
+
+    // ── Native JavaFX Bar Chart ────────────────────────────────────────────
+    private VBox buildBarChartCard() {
+        VBox card = cardContainer("Avg by subject");
+
+        CategoryAxis xAxis = new CategoryAxis();
+        NumberAxis yAxis = new NumberAxis(0, 20, 2);
+        xAxis.setTickLabelFill(Color.web("#64748B"));
+        yAxis.setTickLabelFill(Color.web("#64748B"));
+
+        BarChart<String, Number> chart = new BarChart<>(xAxis, yAxis);
+        chart.setLegendVisible(false);
+        chart.setAnimated(true);
+        chart.setPrefHeight(240);
+        chart.setStyle("-fx-background-color:transparent;-fx-plot-background-color:#0F172A;");
+
+        XYChart.Series<String, Number> series = new XYChart.Series<>();
+
+        Map<Integer, Double> avgBySubject = allEvals.stream().collect(
+                Collectors.groupingBy(EvaluationMatiere::getMatiereId,
+                        Collectors.averagingDouble(EvaluationMatiere::getScoreEval)));
+
+        avgBySubject.entrySet().stream()
+                .sorted(Map.Entry.<Integer, Double>comparingByValue().reversed())
+                .forEach(entry -> {
+                    String name = getNomMatiere(entry.getKey());
+                    if (name.length() > 10) name = name.substring(0, 9) + "…";
+                    series.getData().add(new XYChart.Data<>(name, entry.getValue()));
+                });
+
+        chart.getData().add(series);
+        card.getChildren().add(chart);
+        return card;
+    }
+
+    // ── KPI Row ───────────────────────────────────────────────────────────────
     private HBox buildKpiRow() {
         HBox row = new HBox(12);
         double avg      = allEvals.stream().mapToDouble(EvaluationMatiere::getScoreEval).average().orElse(0);
@@ -1048,102 +1087,55 @@ public class CoursesController implements Initializable {
         return card;
     }
 
+    // ── Priority rings using JavaFX StackPane + ProgressIndicator ─────────
     private VBox buildPriorityRingsCard() {
         VBox card = cardContainer("Score rings by priority");
+
         Map<String, Double> avgByPrio = allEvals.stream().filter(e -> e.getPrioriteE() != null)
-                .collect(Collectors.groupingBy(EvaluationMatiere::getPrioriteE, Collectors.averagingDouble(EvaluationMatiere::getScoreEval)));
+                .collect(Collectors.groupingBy(EvaluationMatiere::getPrioriteE,
+                        Collectors.averagingDouble(EvaluationMatiere::getScoreEval)));
+
         double high   = avgByPrio.getOrDefault("High",   avgByPrio.getOrDefault("Haute",   0.0));
         double medium = avgByPrio.getOrDefault("Medium", avgByPrio.getOrDefault("Moyenne", 0.0));
         double low    = avgByPrio.getOrDefault("Low",    avgByPrio.getOrDefault("Basse",   0.0));
-        WebView wv = new WebView(); wv.setPrefHeight(160); wv.setMinHeight(160); wv.setMaxHeight(160);
-        wv.getEngine().loadContent(buildRingsHtml(high, medium, low));
-        card.getChildren().add(wv);
+
+        HBox ringsRow = new HBox(24);
+        ringsRow.setAlignment(Pos.CENTER);
+        ringsRow.setPadding(new Insets(12, 0, 0, 0));
+
+        ringsRow.getChildren().addAll(
+                buildRingWidget("HIGH",   high,   "#E24B4A"),
+                buildRingWidget("MEDIUM", medium, "#EF9F27"),
+                buildRingWidget("LOW",    low,    "#1D9E75")
+        );
+
+        card.getChildren().add(ringsRow);
         return card;
     }
 
-    private String buildRingsHtml(double high, double medium, double low) {
-        return "<!DOCTYPE html><html><head><style>" +
-                "body{margin:0;padding:0;background:#0F172A;display:flex;justify-content:space-around;align-items:center;height:160px;font-family:sans-serif;}" +
-                ".ring-wrap{display:flex;flex-direction:column;align-items:center;gap:8px;}" +
-                ".ring-label{color:#94A3B8;font-size:11px;font-weight:600;letter-spacing:.05em;}" +
-                "</style></head><body>" +
-                buildRingSvg("HIGH", high, "#E24B4A", 20) +
-                buildRingSvg("MEDIUM", medium, "#EF9F27", 20) +
-                buildRingSvg("LOW", low, "#1D9E75", 20) +
-                "</body></html>";
-    }
+    private VBox buildRingWidget(String label, double avg, String color) {
+        VBox box = new VBox(8);
+        box.setAlignment(Pos.CENTER);
 
-    private String buildRingSvg(String label, double avg, String color, double max) {
-        double pct = max > 0 ? avg/max : 0;
-        double r = 34, circ = 2*Math.PI*r, dash = pct*circ;
-        return "<div class='ring-wrap'>" +
-                "<svg width='90' height='90' viewBox='0 0 90 90'>" +
-                "<circle cx='45' cy='45' r='"+r+"' fill='none' stroke='#1E293B' stroke-width='7'/>" +
-                "<circle cx='45' cy='45' r='"+r+"' fill='none' stroke='"+color+"' stroke-width='7'" +
-                " stroke-dasharray='"+dash+" "+circ+"' stroke-dashoffset='"+(circ*0.25)+"' stroke-linecap='round'/>" +
-                "<text x='45' y='50' text-anchor='middle' font-size='14' font-weight='700' fill='#F8FAFC'>"+String.format("%.1f",avg)+"</text>" +
-                "</svg><span class='ring-label'>"+label+"</span></div>";
-    }
+        double progress = avg / 20.0;
 
-    private VBox buildWebChartCard(String title, String html) {
-        VBox card = cardContainer(title);
-        WebView wv = new WebView(); wv.setPrefHeight(240); wv.setMinHeight(240);
-        wv.getEngine().loadContent(html);
-        card.getChildren().add(wv);
-        return card;
-    }
+        StackPane ringStack = new StackPane();
+        ringStack.setPrefSize(90, 90);
 
-    private String buildLineChartHtml() {
-        DateTimeFormatter shortFmt = DateTimeFormatter.ofPattern("dd/MM");
-        List<EvaluationMatiere> sorted = allEvals.stream().filter(e -> e.getDateEvaluation() != null)
-                .sorted(Comparator.comparing(EvaluationMatiere::getDateEvaluation)).collect(Collectors.toList());
-        StringBuilder labels = new StringBuilder(), data = new StringBuilder();
-        for (int i = 0; i < sorted.size(); i++) {
-            if (i > 0) { labels.append(","); data.append(","); }
-            labels.append("'").append(sorted.get(i).getDateEvaluation().format(shortFmt)).append("'");
-            data.append(sorted.get(i).getScoreEval());
-        }
-        return "<!DOCTYPE html><html><head>" +
-                "<script src='https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js'></script>" +
-                "<style>body{margin:0;background:#0F172A;}</style>" +
-                "</head><body><div style='position:relative;width:100%;height:220px;'><canvas id='lc'></canvas></div>" +
-                "<script>new Chart(document.getElementById('lc'),{type:'line'," +
-                "data:{labels:["+labels+"],datasets:[{label:'Score',data:["+data+"]," +
-                "borderColor:'#A78BFA',backgroundColor:'rgba(167,139,250,0.12)'," +
-                "pointBackgroundColor:'#A78BFA',tension:0.4,fill:true,borderWidth:2.5,pointRadius:5}]}," +
-                "options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}," +
-                "scales:{y:{min:0,max:20,ticks:{color:'#64748B',font:{size:10}},grid:{color:'rgba(255,255,255,0.04)'}}," +
-                "x:{ticks:{color:'#64748B',font:{size:10},maxRotation:0},grid:{display:false}}}}}})" +
-                "</script></body></html>";
-    }
+        ProgressIndicator ring = new ProgressIndicator(progress);
+        ring.setPrefSize(80, 80);
+        ring.setStyle("-fx-accent:" + color + ";");
 
-    private String buildBarChartHtml() {
-        Map<Integer, Double> avgBySubject = allEvals.stream().collect(
-                Collectors.groupingBy(EvaluationMatiere::getMatiereId, Collectors.averagingDouble(EvaluationMatiere::getScoreEval)));
-        List<Map.Entry<Integer,Double>> entries = avgBySubject.entrySet().stream()
-                .sorted(Map.Entry.<Integer,Double>comparingByValue().reversed()).collect(Collectors.toList());
-        StringBuilder labels = new StringBuilder(), data = new StringBuilder(), colors = new StringBuilder();
-        for (int i = 0; i < entries.size(); i++) {
-            if (i > 0) { labels.append(","); data.append(","); colors.append(","); }
-            String name = getNomMatiere(entries.get(i).getKey());
-            if (name.length() > 10) name = name.substring(0,9)+"…";
-            double avg = entries.get(i).getValue();
-            String color = avg >= 14 ? "'#10B981'" : avg >= 10 ? "'#F59E0B'" : "'#F43F5E'";
-            labels.append("'").append(name).append("'");
-            data.append(String.format("%.2f", avg));
-            colors.append(color);
-        }
-        return "<!DOCTYPE html><html><head>" +
-                "<script src='https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js'></script>" +
-                "<style>body{margin:0;background:#0F172A;}</style>" +
-                "</head><body><div style='position:relative;width:100%;height:220px;'><canvas id='bc'></canvas></div>" +
-                "<script>new Chart(document.getElementById('bc'),{type:'bar'," +
-                "data:{labels:["+labels+"],datasets:[{data:["+data+"]," +
-                "backgroundColor:["+colors+"],borderRadius:6,borderSkipped:false}]}," +
-                "options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}," +
-                "scales:{y:{min:0,max:20,ticks:{color:'#64748B',font:{size:10}},grid:{color:'rgba(255,255,255,0.04)'}}," +
-                "x:{ticks:{color:'#64748B',font:{size:10}},grid:{display:false}}}}}})" +
-                "</script></body></html>";
+        Label valueLabel = new Label(String.format("%.1f", avg));
+        valueLabel.setStyle("-fx-text-fill:#F8FAFC;-fx-font-size:14px;-fx-font-weight:700;");
+
+        ringStack.getChildren().addAll(ring, valueLabel);
+
+        Label nameLabel = new Label(label);
+        nameLabel.setStyle("-fx-text-fill:#94A3B8;-fx-font-size:11px;-fx-font-weight:600;");
+
+        box.getChildren().addAll(ringStack, nameLabel);
+        return box;
     }
 
     private VBox buildHeatmapCard() {
@@ -1279,11 +1271,11 @@ public class CoursesController implements Initializable {
         Matiere selected = cmbQuizMatiere.getValue();
         if (selected == null) { lblQuizSetupError.setText("⚠ Please select a subject."); return; }
 
-        String matiere   = selected.getNomMatiere();
-        String section   = cmbQuizSection.getValue();
+        String matiere    = selected.getNomMatiere();
+        String section    = cmbQuizSection.getValue();
         String difficulty = cmbQuizDifficulty.getValue() != null ? cmbQuizDifficulty.getValue() : "Medium";
-        int    count     = cmbQuizCount.getValue() != null ? cmbQuizCount.getValue() : 10;
-        String level     = detectLevel(getStudentGradeForSubject(selected.getId()));
+        int    count      = cmbQuizCount.getValue() != null ? cmbQuizCount.getValue() : 10;
+        String level      = detectLevel(getStudentGradeForSubject(selected.getId()));
 
         showQuizLoading(true);
         lblQuizLoadingStatus.setText("Claude AI is generating your questions...");
@@ -1399,7 +1391,6 @@ public class CoursesController implements Initializable {
         catch (Exception e) { return "Matière #"+id; }
     }
 
-    // ── Icon background per color ─────────────────────────────────────────
     private String getIconBg(String color) {
         return switch (color) {
             case "primary" -> "rgba(109,40,217,0.25)";
