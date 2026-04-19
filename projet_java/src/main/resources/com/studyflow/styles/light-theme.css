@@ -623,3 +623,188 @@
 .notification-footer .btn-secondary:hover .text {
     -fx-fill: #122033;
 }
+
+/*
+ * Projects + Assignments theme parity
+ */
+
+.card-header {
+    -fx-border-color: #D7E0EE;
+}
+
+.chart {
+    -fx-background-color: transparent;
+}
+
+.chart-vertical-grid-lines,
+.chart-horizontal-grid-lines {
+    -fx-stroke: #E3EBF5;
+}
+
+.axis {
+    -fx-tick-label-fill: #5F728A;
+}
+
+.axis-label,
+.chart-legend-item {
+    -fx-text-fill: #5F728A;
+}
+
+.board-hero-card {
+    -fx-padding: 18;
+    -fx-background-color: linear-gradient(to right, rgba(255,255,255,0.98), rgba(244,248,253,0.98));
+    -fx-border-color: #D7E0EE;
+}
+
+.panel-toolbar {
+    -fx-padding: 6;
+    -fx-background-color: rgba(243, 246, 251, 0.96);
+    -fx-background-radius: 14;
+    -fx-border-color: #D7E0EE;
+    -fx-border-radius: 14;
+}
+
+.panel-switch-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #5F728A;
+    -fx-padding: 10 14;
+    -fx-background-radius: 10;
+    -fx-graphic-text-gap: 8;
+}
+
+.panel-switch-button .text {
+    -fx-fill: #5F728A;
+}
+
+.panel-switch-button .ikonli-font-icon {
+    -fx-icon-color: #5F728A;
+}
+
+.panel-switch-button:hover {
+    -fx-background-color: #EEF4FB;
+    -fx-text-fill: #122033;
+}
+
+.panel-switch-button:hover .text {
+    -fx-fill: #122033;
+}
+
+.panel-switch-button:hover .ikonli-font-icon {
+    -fx-icon-color: #2563EB;
+}
+
+.panel-switch-button.active {
+    -fx-background-color: rgba(59, 130, 246, 0.12);
+    -fx-text-fill: #1D4ED8;
+}
+
+.panel-switch-button.active .text {
+    -fx-fill: #1D4ED8;
+}
+
+.panel-switch-button.active .ikonli-font-icon {
+    -fx-icon-color: #2563EB;
+}
+
+.board-column {
+    -fx-min-width: 250;
+    -fx-pref-width: 280;
+    -fx-background-color: linear-gradient(to bottom, #FFFFFF, #F8FBFF);
+    -fx-background-radius: 18;
+    -fx-border-color: #D7E0EE;
+    -fx-border-radius: 18;
+    -fx-padding: 14;
+}
+
+.board-column-title {
+    -fx-font-size: 18px;
+    -fx-text-fill: #122033;
+}
+
+.board-count-chip {
+    -fx-padding: 6 12;
+    -fx-background-color: #EEF4FB;
+    -fx-background-radius: 100;
+    -fx-text-fill: #334155;
+}
+
+.board-column-drop-target {
+    -fx-border-color: #3B82F6;
+    -fx-effect: dropshadow(gaussian, rgba(59, 130, 246, 0.14), 14, 0, 0, 0);
+}
+
+.board-task-card {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #D7E0EE;
+    -fx-background-radius: 16;
+    -fx-border-radius: 16;
+}
+
+.board-task-card:hover {
+    -fx-border-color: #A9BCDA;
+}
+
+.board-task-shared {
+    -fx-background-color: #F4F8FD;
+}
+
+.board-empty-card {
+    -fx-background-color: #F8FBFF;
+    -fx-border-color: #D7E0EE;
+}
+
+.action-panel-card {
+    -fx-padding: 20;
+}
+
+.mini-stat-card {
+    -fx-padding: 14;
+    -fx-background-radius: 16;
+    -fx-border-radius: 16;
+    -fx-border-width: 1;
+}
+
+.mini-stat-purple {
+    -fx-background-color: rgba(124,58,237,0.1);
+    -fx-border-color: rgba(124,58,237,0.18);
+}
+
+.mini-stat-violet {
+    -fx-background-color: rgba(79,70,229,0.1);
+    -fx-border-color: rgba(79,70,229,0.18);
+}
+
+.mini-stat-rose {
+    -fx-background-color: rgba(244,63,94,0.1);
+    -fx-border-color: rgba(244,63,94,0.18);
+}
+
+.mini-stat-amber {
+    -fx-background-color: rgba(245,158,11,0.12);
+    -fx-border-color: rgba(245,158,11,0.2);
+}
+
+.mini-stat-green {
+    -fx-background-color: rgba(16,185,129,0.1);
+    -fx-border-color: rgba(16,185,129,0.18);
+}
+
+.mini-stat-value {
+    -fx-font-size: 22px;
+    -fx-font-weight: 800;
+    -fx-text-fill: #122033;
+}
+
+.mini-stat-label {
+    -fx-font-size: 12px;
+    -fx-text-fill: #5F728A;
+}
+
+.registry-shell {
+    -fx-padding: 0;
+}
+
+.project-detail-shell {
+    -fx-background-color: linear-gradient(to bottom, #FFFFFF, #F8FBFF);
+    -fx-border-color: #D7E0EE;
+}
