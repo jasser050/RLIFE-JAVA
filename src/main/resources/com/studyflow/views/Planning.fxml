@@ -93,9 +93,9 @@
                     <Label styleClass="planning-weekday-label" text="Thu" GridPane.columnIndex="4" />
                     <Label styleClass="planning-weekday-label" text="Fri" GridPane.columnIndex="5" />
                     <Label styleClass="planning-weekday-label" text="Sat" GridPane.columnIndex="6" />
-               <rowConstraints>
-                  <RowConstraints />
-               </rowConstraints>
+                    <rowConstraints>
+                        <RowConstraints />
+                    </rowConstraints>
                 </GridPane>
 
                 <ScrollPane fitToHeight="false" fitToWidth="true" hbarPolicy="NEVER" pannable="true" prefViewportHeight="560" styleClass="planning-calendar-scroll" vbarPolicy="AS_NEEDED" VBox.vgrow="ALWAYS">
@@ -106,6 +106,8 @@
             </VBox>
 
             <VBox maxWidth="470" minWidth="420" prefWidth="440" spacing="16" styleClass="planning-side-column">
+
+                <!-- Today's Planning -->
                 <VBox minHeight="180" prefHeight="200" styleClass="card" VBox.vgrow="NEVER">
                     <HBox alignment="CENTER_LEFT" spacing="12" styleClass="card-header">
                         <StackPane prefHeight="36" prefWidth="36" styleClass="stat-icon-box, primary">
@@ -119,6 +121,35 @@
                     <ListView fx:id="todayEventsListView" prefHeight="117.0" prefWidth="440.0" styleClass="sessions-list-view planning-list-view" VBox.vgrow="ALWAYS" />
                 </VBox>
 
+                <!-- Next Match Planner (MOVED HERE: above AI Assistant) -->
+                <VBox minHeight="210" prefHeight="220" styleClass="card, planning-match-card" VBox.vgrow="NEVER">
+                    <HBox alignment="CENTER_LEFT" spacing="12" styleClass="card-header">
+                        <StackPane prefHeight="36" prefWidth="36" styleClass="stat-icon-box, warning">
+                            <FontIcon iconLiteral="fth-target" iconSize="16" />
+                        </StackPane>
+                        <VBox spacing="2" HBox.hgrow="ALWAYS">
+                            <Label styleClass="card-title" text="Next Match Planner" />
+                            <Label styleClass="text-small" text="Pick your favorite team and plan the next game" />
+                        </VBox>
+                    </HBox>
+
+                    <VBox spacing="10" styleClass="planning-match-body">
+                        <ComboBox fx:id="matchTeamComboBox" maxWidth="1.7976931348623157E308" promptText="Choose your favorite team" styleClass="planning-match-combo" />
+                        <HBox alignment="CENTER_LEFT" spacing="10">
+                            <Button onAction="#handleLoadNextMatch" styleClass="btn-secondary" text="Load Next Match" />
+                            <Region HBox.hgrow="ALWAYS" />
+                            <Button fx:id="matchPrefillButton" disable="true" onAction="#handlePrefillNextMatch" styleClass="btn-primary" text="Plan This Match" />
+                        </HBox>
+                        <Label fx:id="matchStatusLabel" styleClass="text-small" text="Select a team to load its next match." wrapText="true" />
+                        <VBox spacing="4" styleClass="planning-match-details-box">
+                            <Label fx:id="matchSummaryLabel" styleClass="planning-match-summary" text="No match loaded yet" />
+                            <Label fx:id="matchCompetitionLabel" styleClass="planning-match-detail" text="Competition: -" />
+                            <Label fx:id="matchKickoffLabel" styleClass="planning-match-detail" text="Kickoff: -" />
+                        </VBox>
+                    </VBox>
+                </VBox>
+
+                <!-- Upcoming Planning -->
                 <VBox minHeight="460" styleClass="card" VBox.vgrow="ALWAYS">
                     <HBox alignment="CENTER_LEFT" spacing="12" styleClass="card-header">
                         <StackPane prefHeight="36" prefWidth="36" styleClass="stat-icon-box, success">
@@ -140,6 +171,7 @@
                     <ListView fx:id="upcomingEventsListView" styleClass="sessions-list-view planning-list-view" VBox.vgrow="ALWAYS" />
                 </VBox>
 
+                <!-- AI Assistant -->
                 <VBox minHeight="320" prefHeight="340" prefWidth="465.0" styleClass="card, planning-assistant-card" VBox.vgrow="ALWAYS">
 
                     <!-- HEADER -->
@@ -157,7 +189,6 @@
 
                     <!-- CHAT -->
                     <ScrollPane fx:id="chatScrollPane" fitToWidth="true" prefHeight="232.0" prefWidth="464.0" styleClass="chat-scroll" VBox.vgrow="ALWAYS">
-
                         <VBox fx:id="chatBox" spacing="10" styleClass="chat-container" />
                     </ScrollPane>
 
@@ -170,18 +201,16 @@
 
                     <!-- INPUT BAR -->
                     <HBox alignment="CENTER_LEFT" spacing="10" styleClass="chat-input-bar">
-
                         <TextField fx:id="assistantInputField" promptText="Type a command... (e.g. Add math session tomorrow at 14:00)" styleClass="chat-input" HBox.hgrow="ALWAYS" />
-
                         <Button onAction="#handleAssistantSend" styleClass="chat-send-btn">
                             <graphic>
                                 <FontIcon iconColor="white" iconLiteral="fth-send" iconSize="14" />
                             </graphic>
                         </Button>
-
                     </HBox>
 
                 </VBox>
+
             </VBox>
         </HBox>
 
@@ -248,14 +277,15 @@
                         </HBox>
                         <Label styleClass="session-field-tip" text="You can update or remove existing feedback." />
                     </VBox>
-               <rowConstraints>
-                  <RowConstraints />
-                  <RowConstraints />
-                  <RowConstraints />
-                  <RowConstraints />
-                  <RowConstraints />
-                  <RowConstraints />
-               </rowConstraints>
+
+                    <rowConstraints>
+                        <RowConstraints />
+                        <RowConstraints />
+                        <RowConstraints />
+                        <RowConstraints />
+                        <RowConstraints />
+                        <RowConstraints />
+                    </rowConstraints>
 
                 </GridPane>
 

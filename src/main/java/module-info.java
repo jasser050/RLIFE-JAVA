@@ -8,10 +8,12 @@ module com.studyflow {
     requires javafx.web;
     requires java.desktop;
     requires java.net.http;
+    requires java.prefs;
     requires org.apache.poi.poi;
     requires org.apache.poi.ooxml;
     requires org.apache.pdfbox;
     requires com.google.gson;
+    requires jakarta.mail;
 
     opens com.studyflow to javafx.fxml;
     opens com.studyflow.controllers to javafx.fxml;

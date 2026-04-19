@@ -8,6 +8,7 @@ import com.studyflow.models.User;
 import com.studyflow.services.ServicePlanning;
 import com.studyflow.services.ServiceSeance;
 import com.studyflow.services.AIPlanningService;
+import com.studyflow.services.FootballDataService;
 import com.studyflow.services.PlanningEmailNotificationService;
 import com.studyflow.services.ServiceTypeSeance;
 import com.studyflow.utils.UserSession;
@@ -63,7 +64,9 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.OffsetDateTime;
 import java.time.YearMonth;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.TemporalAdjusters;
@@ -79,6 +82,7 @@ import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.prefs.Preferences;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -119,6 +123,7 @@ public class PlanningController implements Initializable {
     private static final String UPCOMING_MODE_TIME = "Time search - earliest";
     private static final String UPCOMING_MODE_COLOR = "Color search - nearest";
     private static final String UPCOMING_MODE_FEEDBACK = "Feedback search - nearest";
+    private static final String SESSION_TYPE_MATCH = "match";
 
     private static final String ASSISTANT_MODE_CHAT = "Chat mode";
     private static final String ASSISTANT_MODE_TERMINAL = "Terminal mode";
@@ -181,6 +186,12 @@ public class PlanningController implements Initializable {
     @FXML private ListView<Planning> upcomingEventsListView;
     @FXML private TextField upcomingSearchField;
     @FXML private ComboBox<String> upcomingUnifiedFilterComboBox;
+    @FXML private ComboBox<FootballDataService.TeamOption> matchTeamComboBox;
+    @FXML private Label matchStatusLabel;
+    @FXML private Label matchSummaryLabel;
+    @FXML private Label matchCompetitionLabel;
+    @FXML private Label matchKickoffLabel;
+    @FXML private Button matchPrefillButton;
     @FXML private ScrollPane chatScrollPane;
     @FXML private VBox chatBox;
     @FXML private TextField assistantInputField;
@@ -191,6 +202,8 @@ public class PlanningController implements Initializable {
     private final ServiceTypeSeance serviceTypeSeance = new ServiceTypeSeance();
     private final PlanningEmailNotificationService planningEmailNotificationService = new PlanningEmailNotificationService();
     private final AIPlanningService claudePlanningService = new AIPlanningService();
+    private final FootballDataService footballDataService = new FootballDataService();
+    private final Preferences planningPreferences = Preferences.userNodeForPackage(PlanningController.class);
     private final DateTimeFormatter monthFormatter = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ENGLISH);
     private final DateTimeFormatter fullDateFormatter = DateTimeFormatter.ofPattern("EEEE, MMM d", Locale.ENGLISH);
     private final DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
@@ -212,6 +225,7 @@ public class PlanningController implements Initializable {
     private String assistantSessionResolutionError;
     private HBox assistantTypingRow;
     private AssistantCommand pendingAssistantCommand;
+    private FootballDataService.NextMatch selectedNextMatch;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -224,6 +238,7 @@ public class PlanningController implements Initializable {
         configureFormInteractions();
         configureFeedbackControls();
         configureUpcomingControls();
+        configureMatchPlannerControls();
         configureAssistantControls();
         loadSessions();
         refreshPlanningData();
@@ -634,6 +649,233 @@ public class PlanningController implements Initializable {
 
         upcomingSearchField.textProperty().addListener((observable, oldValue, newValue) -> updateUpcomingPanel());
         upcomingUnifiedFilterComboBox.valueProperty().addListener((observable, oldValue, newValue) -> updateUpcomingPanel());
+    }
+
+    private void configureMatchPlannerControls() {
+        if (matchTeamComboBox == null) {
+            return;
+        }
+
+        matchTeamComboBox.setItems(FXCollections.observableArrayList(footballDataService.getSuggestedTeams()));
+        matchTeamComboBox.setCellFactory(combo -> new ListCell<>() {
+            @Override
+            protected void updateItem(FootballDataService.TeamOption item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? null : item.name());
+            }
+        });
+        matchTeamComboBox.setButtonCell(new ListCell<>() {
+            @Override
+            protected void updateItem(FootballDataService.TeamOption item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? null : item.name());
+            }
+        });
+
+        FootballDataService.TeamOption savedFavorite = resolveFavoriteTeam();
+        if (savedFavorite != null) {
+            matchTeamComboBox.getSelectionModel().select(savedFavorite);
+            setMatchStatus("Favorite team loaded. Click 'Load Next Match'.", false);
+        } else {
+            setMatchStatus("Select a team to load its next match.", false);
+        }
+
+        if (matchPrefillButton != null) {
+            matchPrefillButton.setDisable(true);
+        }
+        selectedNextMatch = null;
+    }
+
+    @FXML
+    private void handleLoadNextMatch() {
+        if (matchTeamComboBox == null) {
+            return;
+        }
+
+        FootballDataService.TeamOption selectedTeam = matchTeamComboBox.getValue();
+        if (selectedTeam == null) {
+            setMatchStatus("Please choose a team first.", true);
+            return;
+        }
+
+        saveFavoriteTeam(selectedTeam);
+        setMatchStatus("Loading next match for " + selectedTeam.name() + "...", false);
+        setMatchDetails("No match loaded yet", "Competition: -", "Kickoff: -");
+        setMatchPrefillEnabled(false);
+
+        CompletableFuture.supplyAsync(() -> {
+            try {
+                return footballDataService.fetchNextMatch(selectedTeam);
+            } catch (Exception exception) {
+                throw new RuntimeException(exception.getMessage(), exception);
+            }
+        }).thenAccept(nextMatch -> Platform.runLater(() -> {
+            selectedNextMatch = nextMatch;
+            String localKickoff = formatMatchKickoff(nextMatch.kickoffUtc());
+            setMatchDetails(
+                    nextMatch.summary(),
+                    "Competition: " + nextMatch.competition(),
+                    "Kickoff: " + localKickoff
+            );
+            setMatchStatus("Next match loaded successfully.", false);
+            setMatchPrefillEnabled(true);
+        })).exceptionally(error -> {
+            Platform.runLater(() -> {
+                selectedNextMatch = null;
+                String message = error == null || error.getCause() == null
+                        ? "Unable to load the next match."
+                        : error.getCause().getMessage();
+                setMatchStatus(message, true);
+                setMatchPrefillEnabled(false);
+            });
+            return null;
+        });
+    }
+
+    @FXML
+    private void handlePrefillNextMatch() {
+        User currentUser = UserSession.getInstance().getCurrentUser();
+        if (currentUser == null) {
+            showError("No logged-in user found.");
+            return;
+        }
+        if (selectedNextMatch == null) {
+            showError("Load a match first.");
+            return;
+        }
+
+        TypeSeance matchType = resolveAssistantType(SESSION_TYPE_MATCH);
+        if (matchType == null) {
+            showError("Type 'Match' was not found. Please create it in session types.");
+            return;
+        }
+
+        Seance matchSession = resolveOrCreateMatchSession(currentUser.getId(), selectedNextMatch, matchType);
+        if (matchSession == null) {
+            showError("Unable to prepare the match session.");
+            return;
+        }
+
+        LocalDate matchDate = selectedNextMatch.kickoffUtc().atZoneSameInstant(ZoneId.systemDefault()).toLocalDate();
+        LocalTime matchStart = selectedNextMatch.kickoffUtc().atZoneSameInstant(ZoneId.systemDefault()).toLocalTime();
+        LocalTime startSlot = normalizeAssistantTime(matchStart, false);
+        if (startSlot == null) {
+            startSlot = LocalTime.of(18, 0);
+        }
+        LocalTime endSlot = normalizeAssistantTime(startSlot.plusHours(2), true);
+        if (endSlot == null || !endSlot.isAfter(startSlot)) {
+            endSlot = startSlot.plusHours(1);
+        }
+
+        resetForm();
+        planningFormTitleLabel.setText("Add Match Planning");
+        showForm(true);
+        sessionComboBox.setValue(matchSession);
+        planningDatePicker.setValue(matchDate);
+        startTimeComboBox.setValue(startSlot);
+        endTimeComboBox.setValue(endSlot);
+        colorPicker.setValue(Color.web(findAvailableColor(matchDate, null)));
+        showInfo("Match planning pre-filled. Review and click Save Planning.");
+    }
+
+    private Seance resolveOrCreateMatchSession(int userId,
+                                               FootballDataService.NextMatch nextMatch,
+                                               TypeSeance matchType) {
+        String matchTitle = nextMatch.team().name() + " vs " + nextMatch.opponent();
+        String normalizedTitle = normalize(matchTitle);
+        for (Seance seance : sessionComboBox.getItems()) {
+            if (seance != null
+                    && seance.getTypeSeanceId() != null
+                    && seance.getTypeSeanceId() == matchType.getId()
+                    && normalize(seance.getTitre()).equals(normalizedTitle)) {
+                return seance;
+            }
+        }
+
+        Seance created = new Seance();
+        created.setUserId(userId);
+        created.setTitre(matchTitle);
+        created.setTypeSeanceId(matchType.getId());
+        created.setTypeSeanceName(matchType.getName());
+        created.setTypeSeance(matchType.getName());
+        created.setDescription("Auto-created from football next match card");
+        serviceSeance.add(created);
+        loadSessions();
+
+        for (Seance seance : sessionComboBox.getItems()) {
+            if (seance.getId() == created.getId()) {
+                return seance;
+            }
+        }
+        return created;
+    }
+
+    private FootballDataService.TeamOption resolveFavoriteTeam() {
+        User currentUser = UserSession.getInstance().getCurrentUser();
+        if (currentUser == null || matchTeamComboBox == null) {
+            return null;
+        }
+
+        int savedTeamId = planningPreferences.getInt(favoriteTeamKey(currentUser.getId()), -1);
+        if (savedTeamId <= 0) {
+            return null;
+        }
+
+        for (FootballDataService.TeamOption team : matchTeamComboBox.getItems()) {
+            if (team.id() == savedTeamId) {
+                return team;
+            }
+        }
+
+        return null;
+    }
+
+    private void saveFavoriteTeam(FootballDataService.TeamOption team) {
+        User currentUser = UserSession.getInstance().getCurrentUser();
+        if (currentUser == null || team == null) {
+            return;
+        }
+        planningPreferences.putInt(favoriteTeamKey(currentUser.getId()), team.id());
+    }
+
+    private String favoriteTeamKey(int userId) {
+        return "planning.favorite.team." + userId;
+    }
+
+    private String formatMatchKickoff(OffsetDateTime kickoffUtc) {
+        if (kickoffUtc == null) {
+            return "-";
+        }
+        return kickoffUtc.atZoneSameInstant(ZoneId.systemDefault()).format(fullDateFormatter)
+                + " "
+                + kickoffUtc.atZoneSameInstant(ZoneId.systemDefault()).format(timeFormatter);
+    }
+
+    private void setMatchStatus(String message, boolean error) {
+        if (matchStatusLabel == null) {
+            return;
+        }
+        matchStatusLabel.setText(message == null ? "" : message);
+        matchStatusLabel.getStyleClass().removeAll("session-field-error", "text-small");
+        matchStatusLabel.getStyleClass().add(error ? "session-field-error" : "text-small");
+    }
+
+    private void setMatchDetails(String summary, String competition, String kickoff) {
+        if (matchSummaryLabel != null) {
+            matchSummaryLabel.setText(summary == null ? "No match loaded yet" : summary);
+        }
+        if (matchCompetitionLabel != null) {
+            matchCompetitionLabel.setText(competition == null ? "Competition: -" : competition);
+        }
+        if (matchKickoffLabel != null) {
+            matchKickoffLabel.setText(kickoff == null ? "Kickoff: -" : kickoff);
+        }
+    }
+
+    private void setMatchPrefillEnabled(boolean enabled) {
+        if (matchPrefillButton != null) {
+            matchPrefillButton.setDisable(!enabled);
+        }
     }
 
     private void configureAssistantControls() {
