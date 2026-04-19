@@ -5,7 +5,7 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.*?>
-<?import org.kordamp.ikonli.javafx.FontIcon?>
+<?import org.kordamp.ikonli.javafx.*?>
 
 <VBox spacing="24" styleClass="courses-page"
       xmlns="http://javafx.com/javafx/17.0.12"
@@ -25,17 +25,41 @@
                    text="Track your results and manage your assessments by subject"/>
         </VBox>
 
-        <ComboBox fx:id="sortCombo" prefHeight="26.0" prefWidth="75.0" styleClass="courses-select"/>
+        <ComboBox fx:id="sortCombo" prefHeight="28.0" prefWidth="80.0" styleClass="courses-select"/>
 
-        <TextField fx:id="searchField" maxHeight="22.0" maxWidth="75.0"
-                   prefHeight="22.0" prefWidth="75.0"
+        <TextField fx:id="searchField" maxHeight="24.0" maxWidth="80.0"
+                   prefHeight="24.0" prefWidth="80.0"
                    promptText="Search…" styleClass="search-field">
             <font><Font size="10.0"/></font>
         </TextField>
 
-        <Button onAction="#handleExportPdf" styleClass="courses-outline-button" text="Export PDF"/>
+        <!-- FIXED: Export PDF button — violet outline, matches UI -->
+        <Button onAction="#handleExportPdf"
+                style="-fx-background-color:transparent;
+                       -fx-text-fill:#A78BFA;
+                       -fx-border-color:#A78BFA;
+                       -fx-border-width:1.5;
+                       -fx-border-radius:10;
+                       -fx-background-radius:10;
+                       -fx-padding:6 16;
+                       -fx-font-size:12px;
+                       -fx-font-weight:600;
+                       -fx-cursor:hand;"
+                text="Export PDF"/>
 
-        <Button onAction="#handleShowStats" styleClass="courses-stats-button" text="📊  Statistics"/>
+        <!-- FIXED: Statistics button — dark card style, matches UI -->
+        <Button onAction="#handleShowStats"
+                style="-fx-background-color:#1E293B;
+                       -fx-text-fill:#F8FAFC;
+                       -fx-border-color:#334155;
+                       -fx-border-width:1.5;
+                       -fx-border-radius:10;
+                       -fx-background-radius:10;
+                       -fx-padding:6 16;
+                       -fx-font-size:12px;
+                       -fx-font-weight:600;
+                       -fx-cursor:hand;"
+                text="📊  Statistics"/>
 
         <Button fx:id="btnHeaderAction" onAction="#handleHeaderAction"
                 styleClass="btn-primary" text="New Assessment">
@@ -108,10 +132,10 @@
           style="-fx-border-color:#4C1D95; -fx-border-width:1.5; -fx-border-radius:14; -fx-background-radius:14;">
 
         <HBox alignment="CENTER_LEFT" spacing="14"
-              style="-fx-background-color: linear-gradient(from 0% 0% to 100% 0%, #1E1B4B, #2D1B69);
+              style="-fx-background-color:linear-gradient(to right,#1E1B4B,#2D1B69);
                      -fx-background-radius:12 12 0 0; -fx-padding:20 20 20 20;">
 
-            <StackPane style="-fx-background-color: linear-gradient(from 0% 0% to 100% 100%, #7C3AED, #A855F7);
+            <StackPane style="-fx-background-color:linear-gradient(135deg,#7C3AED,#A855F7);
                               -fx-background-radius:12;
                               -fx-min-width:48; -fx-min-height:48;
                               -fx-max-width:48; -fx-max-height:48;">
@@ -141,9 +165,10 @@
         <HBox alignment="CENTER_LEFT" spacing="12"
               style="-fx-padding:16 20 16 20; -fx-background-color:rgba(124,58,237,0.06);">
             <Label style="-fx-text-fill:#CBD5E1; -fx-font-size:13px;"
-                   text="Claude AI generates personalized MCQ questions based on your section and subject. Difficulty adapts to your average score!" wrapText="true" HBox.hgrow="ALWAYS"/>
+                   text="Claude AI generates personalized MCQ questions based on your section and subject. Difficulty adapts to your average score!"
+                   wrapText="true" HBox.hgrow="ALWAYS"/>
             <Button fx:id="btnSmartQuiz" onAction="#handleShowQuiz"
-                    style="-fx-background-color: linear-gradient(from 0% 0% to 100% 0%, #7C3AED, #A855F7);
+                    style="-fx-background-color:linear-gradient(to right,#7C3AED,#A855F7);
                            -fx-text-fill:white; -fx-font-weight:700;
                            -fx-border-radius:10; -fx-background-radius:10;
                            -fx-padding:10 22; -fx-cursor:hand;
@@ -154,22 +179,36 @@
     </VBox>
 
     <!-- ══ VUE LISTE ════════════════════════════════════════════════════════ -->
-    <VBox fx:id="listView" spacing="24">
+    <VBox fx:id="listView" spacing="16">
         <HBox spacing="8">
             <Label onMouseClicked="#filterAll"
-                   style="-fx-cursor:hand;" styleClass="badge, primary" text="All"/>
+                   style="-fx-cursor:hand;-fx-background-color:#7C3AED;-fx-text-fill:#FFFFFF;
+                          -fx-padding:5 14;-fx-background-radius:20;-fx-font-size:12px;-fx-font-weight:600;"
+                   text="All"/>
             <Label onMouseClicked="#filterBonne"
-                   style="-fx-cursor:hand;-fx-background-color:#1E293B;-fx-text-fill:#34D399;"
-                   styleClass="badge" text="✅ Good (≥14)"/>
+                   style="-fx-cursor:hand;-fx-background-color:#0D2C1F;-fx-text-fill:#34D399;
+                          -fx-border-color:#34D399;-fx-border-width:1;
+                          -fx-padding:5 14;-fx-background-radius:20;-fx-border-radius:20;
+                          -fx-font-size:12px;-fx-font-weight:600;"
+                   text="✅ Good (≥14)"/>
             <Label onMouseClicked="#filterMoyenne"
-                   style="-fx-cursor:hand;-fx-background-color:#1E293B;-fx-text-fill:#FBBF24;"
-                   styleClass="badge" text="🟡 Average (10–14)"/>
+                   style="-fx-cursor:hand;-fx-background-color:#2C1E00;-fx-text-fill:#FBBF24;
+                          -fx-border-color:#FBBF24;-fx-border-width:1;
+                          -fx-padding:5 14;-fx-background-radius:20;-fx-border-radius:20;
+                          -fx-font-size:12px;-fx-font-weight:600;"
+                   text="🟡 Average (10–14)"/>
             <Label onMouseClicked="#filterFaible"
-                   style="-fx-cursor:hand;-fx-background-color:#1E293B;-fx-text-fill:#FB7185;"
-                   styleClass="badge" text="🔴 Low (&lt;10)"/>
+                   style="-fx-cursor:hand;-fx-background-color:#2D0A0A;-fx-text-fill:#FB7185;
+                          -fx-border-color:#FB7185;-fx-border-width:1;
+                          -fx-padding:5 14;-fx-background-radius:20;-fx-border-radius:20;
+                          -fx-font-size:12px;-fx-font-weight:600;"
+                   text="🔴 Low (&lt;10)"/>
             <Label onMouseClicked="#filterHaute"
-                   style="-fx-cursor:hand;-fx-background-color:#1E293B;-fx-text-fill:#FB923C;"
-                   styleClass="badge" text="🔥 High Priority"/>
+                   style="-fx-cursor:hand;-fx-background-color:#2C1200;-fx-text-fill:#FB923C;
+                          -fx-border-color:#FB923C;-fx-border-width:1;
+                          -fx-padding:5 14;-fx-background-radius:20;-fx-border-radius:20;
+                          -fx-font-size:12px;-fx-font-weight:600;"
+                   text="🔥 High Priority"/>
         </HBox>
         <FlowPane fx:id="courseGrid" hgap="16" vgap="16"/>
     </VBox>
@@ -183,8 +222,11 @@
                 <FontIcon iconColor="#A78BFA" iconLiteral="fth-edit-3" iconSize="18"/>
             </StackPane>
             <VBox spacing="2">
-                <Label fx:id="formTitle" styleClass="courses-form-title" text="New Assessment"/>
-                <Label styleClass="courses-helper-text"
+                <!-- FIXED: form title white -->
+                <Label fx:id="formTitle"
+                       style="-fx-font-size:18px;-fx-font-weight:700;-fx-text-fill:#F8FAFC;"
+                       text="New Assessment"/>
+                <Label style="-fx-font-size:12px;-fx-text-fill:#94A3B8;"
                        text="Fill in all required fields marked with *"/>
             </VBox>
         </HBox>
@@ -195,7 +237,8 @@
             <VBox spacing="8">
                 <HBox alignment="CENTER_LEFT" spacing="6">
                     <Label style="-fx-font-size:13px;" text="🏫"/>
-                    <Label style="-fx-font-size:13px;-fx-font-weight:700;-fx-text-fill:#CBD5E1;" text="Section"/>
+                    <!-- FIXED: label text white -->
+                    <Label style="-fx-font-size:13px;-fx-font-weight:700;-fx-text-fill:#F8FAFC;" text="Section"/>
                     <Label style="-fx-text-fill:#F43F5E;-fx-font-weight:800;" text="*"/>
                 </HBox>
                 <ComboBox fx:id="cmbSection" maxWidth="1.7976931348623157E308"
@@ -213,9 +256,9 @@
             <VBox spacing="8">
                 <HBox alignment="CENTER_LEFT" spacing="6">
                     <Label style="-fx-font-size:13px;" text="📚"/>
-                    <Label style="-fx-font-size:13px;-fx-font-weight:700;-fx-text-fill:#CBD5E1;" text="Subject"/>
+                    <Label style="-fx-font-size:13px;-fx-font-weight:700;-fx-text-fill:#F8FAFC;" text="Subject"/>
                     <Label style="-fx-text-fill:#F43F5E;-fx-font-weight:800;" text="*"/>
-                    <Label style="-fx-font-size:11px;-fx-text-fill:#64748B;" text="(filtered by section)"/>
+                    <Label style="-fx-font-size:11px;-fx-text-fill:#94A3B8;" text="(filtered by section)"/>
                 </HBox>
                 <ComboBox fx:id="cmbMatiere" maxWidth="1.7976931348623157E308"
                           promptText="Select a section first…"
@@ -232,12 +275,13 @@
             <VBox spacing="8">
                 <HBox alignment="CENTER_LEFT" spacing="6">
                     <Label style="-fx-font-size:13px;" text="🎯"/>
-                    <Label style="-fx-font-size:13px;-fx-font-weight:700;-fx-text-fill:#CBD5E1;" text="Score Obtained"/>
+                    <Label style="-fx-font-size:13px;-fx-font-weight:700;-fx-text-fill:#F8FAFC;" text="Score Obtained"/>
                     <Label style="-fx-text-fill:#F43F5E;-fx-font-weight:800;" text="*"/>
-                    <Label style="-fx-font-size:11px;-fx-text-fill:#64748B;" text="(between 0 and the max grade)"/>
+                    <Label style="-fx-font-size:11px;-fx-text-fill:#94A3B8;" text="(between 0 and the max grade)"/>
                 </HBox>
                 <TextField fx:id="fldScore" promptText="e.g. 14.5"
                            style="-fx-background-color:#1E293B;-fx-text-fill:#F8FAFC;
+                                  -fx-prompt-text-fill:#64748B;
                                   -fx-border-color:#334155;-fx-border-width:1.5;
                                   -fx-border-radius:12;-fx-background-radius:12;
                                   -fx-padding:12 16;-fx-font-size:14px;-fx-font-weight:500;"/>
@@ -250,11 +294,12 @@
             <VBox spacing="8">
                 <HBox alignment="CENTER_LEFT" spacing="6">
                     <Label style="-fx-font-size:13px;" text="📊"/>
-                    <Label style="-fx-font-size:13px;-fx-font-weight:700;-fx-text-fill:#CBD5E1;" text="Maximum Grade"/>
+                    <Label style="-fx-font-size:13px;-fx-font-weight:700;-fx-text-fill:#F8FAFC;" text="Maximum Grade"/>
                     <Label style="-fx-text-fill:#F43F5E;-fx-font-weight:800;" text="*"/>
                 </HBox>
-                <TextField fx:id="fldNoteMax" promptText="e.g.  20"
+                <TextField fx:id="fldNoteMax" promptText="e.g. 20"
                            style="-fx-background-color:#1E293B;-fx-text-fill:#F8FAFC;
+                                  -fx-prompt-text-fill:#64748B;
                                   -fx-border-color:#334155;-fx-border-width:1.5;
                                   -fx-border-radius:10;-fx-background-radius:10;
                                   -fx-padding:12 14;-fx-font-size:14px;"/>
@@ -263,16 +308,17 @@
 
             <Region maxHeight="1" prefHeight="1" style="-fx-background-color:#1E293B;"/>
 
-            <!-- Durée -->
+            <!-- Duration -->
             <VBox spacing="8">
                 <HBox alignment="CENTER_LEFT" spacing="6">
                     <Label style="-fx-font-size:13px;" text="⏱"/>
-                    <Label style="-fx-font-size:13px;-fx-font-weight:700;-fx-text-fill:#CBD5E1;" text="Duration"/>
+                    <Label style="-fx-font-size:13px;-fx-font-weight:700;-fx-text-fill:#F8FAFC;" text="Duration"/>
                     <Label style="-fx-text-fill:#F43F5E;-fx-font-weight:800;" text="*"/>
-                    <Label style="-fx-font-size:11px;-fx-text-fill:#64748B;" text="(minutes of revision)"/>
+                    <Label style="-fx-font-size:11px;-fx-text-fill:#94A3B8;" text="(minutes of revision)"/>
                 </HBox>
-                <TextField fx:id="fldDuree" promptText="e.g.  90"
+                <TextField fx:id="fldDuree" promptText="e.g. 90"
                            style="-fx-background-color:#1E293B;-fx-text-fill:#F8FAFC;
+                                  -fx-prompt-text-fill:#64748B;
                                   -fx-border-color:#334155;-fx-border-width:1.5;
                                   -fx-border-radius:10;-fx-background-radius:10;
                                   -fx-padding:12 14;-fx-font-size:14px;"/>
@@ -281,20 +327,33 @@
 
             <Region maxHeight="1" prefHeight="1" style="-fx-background-color:#1E293B;"/>
 
-            <!-- Priorité -->
+            <!-- Priority -->
             <VBox spacing="8">
                 <HBox alignment="CENTER_LEFT" spacing="6">
                     <Label style="-fx-font-size:13px;" text="⚡"/>
-                    <Label style="-fx-font-size:13px;-fx-font-weight:700;-fx-text-fill:#CBD5E1;" text="Priority"/>
+                    <Label style="-fx-font-size:13px;-fx-font-weight:700;-fx-text-fill:#F8FAFC;" text="Priority"/>
                     <Label style="-fx-text-fill:#F43F5E;-fx-font-weight:800;" text="*"/>
                 </HBox>
+                <!-- FIXED: priority buttons with inline style, no styleClass dependency -->
                 <HBox fx:id="priorityBox" spacing="12">
                     <Button fx:id="btnPrioHaute" onAction="#selectPrioHaute"
-                            styleClass="courses-priority-btn, high" text="🔴  High"/>
+                            style="-fx-background-color:#1E293B;-fx-text-fill:#FB7185;
+                                   -fx-border-color:#FB7185;-fx-border-width:1.5;
+                                   -fx-border-radius:10;-fx-background-radius:10;
+                                   -fx-padding:10 20;-fx-font-size:13px;-fx-cursor:hand;"
+                            text="🔴  High"/>
                     <Button fx:id="btnPrioMoyenne" onAction="#selectPrioMoyenne"
-                            styleClass="courses-priority-btn, medium" text="🟡 Medium"/>
+                            style="-fx-background-color:#1E293B;-fx-text-fill:#FBBF24;
+                                   -fx-border-color:#FBBF24;-fx-border-width:1.5;
+                                   -fx-border-radius:10;-fx-background-radius:10;
+                                   -fx-padding:10 20;-fx-font-size:13px;-fx-cursor:hand;"
+                            text="🟡 Medium"/>
                     <Button fx:id="btnPrioBasse" onAction="#selectPrioBasse"
-                            styleClass="courses-priority-btn, low" text="🟢  Low"/>
+                            style="-fx-background-color:#1E293B;-fx-text-fill:#34D399;
+                                   -fx-border-color:#34D399;-fx-border-width:1.5;
+                                   -fx-border-radius:10;-fx-background-radius:10;
+                                   -fx-padding:10 20;-fx-font-size:13px;-fx-cursor:hand;"
+                            text="🟢  Low"/>
                 </HBox>
                 <ComboBox fx:id="cmbPriorite" managed="false" visible="false"/>
                 <Label fx:id="errPriorite" style="-fx-text-fill:#F43F5E;-fx-font-size:11px;" text=""/>
@@ -306,9 +365,9 @@
             <VBox spacing="8">
                 <HBox alignment="CENTER_LEFT" spacing="6">
                     <Label style="-fx-font-size:13px;" text="📅"/>
-                    <Label style="-fx-font-size:13px;-fx-font-weight:700;-fx-text-fill:#CBD5E1;" text="Assessment Date"/>
+                    <Label style="-fx-font-size:13px;-fx-font-weight:700;-fx-text-fill:#F8FAFC;" text="Assessment Date"/>
                     <Label style="-fx-text-fill:#F43F5E;-fx-font-weight:800;" text="*"/>
-                    <Label style="-fx-font-size:11px;-fx-text-fill:#64748B;" text="(today or earlier — no future dates)"/>
+                    <Label style="-fx-font-size:11px;-fx-text-fill:#94A3B8;" text="(today or earlier)"/>
                 </HBox>
                 <DatePicker fx:id="dpDate" maxWidth="1.7976931348623157E308"
                             promptText="Select a date…"
@@ -420,9 +479,8 @@
         <!-- ── QUIZ SETUP ───────────────────────────────────────────────── -->
         <VBox fx:id="quizSetupView" spacing="0" styleClass="courses-form-panel">
 
-            <!-- Header gradient -->
             <HBox alignment="CENTER_LEFT" spacing="20"
-                  style="-fx-background-color: linear-gradient(from 0% 0% to 100% 0%, #4C1D95, #2D1B69);
+                  style="-fx-background-color:linear-gradient(to right,#4C1D95,#2D1B69);
                          -fx-background-radius:12 12 0 0; -fx-padding:24 28;">
                 <StackPane style="-fx-background-color:rgba(255,255,255,0.15);
                                   -fx-background-radius:12;
@@ -437,92 +495,63 @@
                            text="Questions generated by Claude (Anthropic) based on your section and subject"/>
                 </VBox>
                 <HBox spacing="8">
-                    <Label style="-fx-background-color:rgba(255,255,255,0.18);
-                                  -fx-text-fill:white;-fx-font-size:11px;
-                                  -fx-background-radius:999;-fx-padding:4 12;"
-                           text="🤖  Claude AI"/>
-                    <Label style="-fx-background-color:rgba(255,255,255,0.18);
-                                  -fx-text-fill:white;-fx-font-size:11px;
-                                  -fx-background-radius:999;-fx-padding:4 12;"
-                           text="🎯  Adaptive"/>
-                    <Label style="-fx-background-color:rgba(255,255,255,0.18);
-                                  -fx-text-fill:white;-fx-font-size:11px;
-                                  -fx-background-radius:999;-fx-padding:4 12;"
-                           text="⚡  Instant"/>
+                    <Label style="-fx-background-color:rgba(255,255,255,0.18);-fx-text-fill:white;-fx-font-size:11px;-fx-background-radius:999;-fx-padding:4 12;" text="🤖  Claude AI"/>
+                    <Label style="-fx-background-color:rgba(255,255,255,0.18);-fx-text-fill:white;-fx-font-size:11px;-fx-background-radius:999;-fx-padding:4 12;" text="🎯  Adaptive"/>
+                    <Label style="-fx-background-color:rgba(255,255,255,0.18);-fx-text-fill:white;-fx-font-size:11px;-fx-background-radius:999;-fx-padding:4 12;" text="⚡  Instant"/>
                 </HBox>
             </HBox>
 
-            <!-- Formulaire setup -->
             <VBox spacing="20" style="-fx-padding:24 28 28 28;">
 
-                <!-- Section -->
                 <VBox spacing="8">
                     <HBox alignment="CENTER_LEFT" spacing="6">
                         <Label style="-fx-font-size:13px;" text="🏫"/>
-                        <Label style="-fx-font-size:13px;-fx-font-weight:700;-fx-text-fill:#CBD5E1;" text="Section"/>
+                        <Label style="-fx-font-size:13px;-fx-font-weight:700;-fx-text-fill:#F8FAFC;" text="Section"/>
                         <Label style="-fx-text-fill:#F43F5E;-fx-font-weight:800;" text="*"/>
                     </HBox>
                     <ComboBox fx:id="cmbQuizSection" maxWidth="1.7976931348623157E308"
-                              onAction="#handleQuizSectionChange"
-                              promptText="Choose a section…"
-                              style="-fx-background-color:#1E293B;-fx-border-color:#334155;
-                                     -fx-border-width:1.5;-fx-border-radius:10;
-                                     -fx-background-radius:10;-fx-padding:10 14;
-                                     -fx-font-size:13px;-fx-text-fill:#F8FAFC;"/>
+                              onAction="#handleQuizSectionChange" promptText="Choose a section…"
+                              style="-fx-background-color:#1E293B;-fx-border-color:#334155;-fx-border-width:1.5;-fx-border-radius:10;-fx-background-radius:10;-fx-padding:10 14;-fx-font-size:13px;-fx-text-fill:#F8FAFC;"/>
                 </VBox>
 
                 <Region maxHeight="1" prefHeight="1" style="-fx-background-color:#1E293B;"/>
 
-                <!-- Subject -->
                 <VBox spacing="8">
                     <HBox alignment="CENTER_LEFT" spacing="6">
                         <Label style="-fx-font-size:13px;" text="📚"/>
-                        <Label style="-fx-font-size:13px;-fx-font-weight:700;-fx-text-fill:#CBD5E1;" text="Subject"/>
+                        <Label style="-fx-font-size:13px;-fx-font-weight:700;-fx-text-fill:#F8FAFC;" text="Subject"/>
                         <Label style="-fx-text-fill:#F43F5E;-fx-font-weight:800;" text="*"/>
-                        <Label style="-fx-font-size:11px;-fx-text-fill:#64748B;" text="(filtered by section)"/>
+                        <Label style="-fx-font-size:11px;-fx-text-fill:#94A3B8;" text="(filtered by section)"/>
                     </HBox>
                     <ComboBox fx:id="cmbQuizMatiere" maxWidth="1.7976931348623157E308"
                               promptText="Select a section first…"
-                              style="-fx-background-color:#1E293B;-fx-border-color:#334155;
-                                     -fx-border-width:1.5;-fx-border-radius:10;
-                                     -fx-background-radius:10;-fx-padding:10 14;
-                                     -fx-font-size:13px;-fx-text-fill:#F8FAFC;"/>
+                              style="-fx-background-color:#1E293B;-fx-border-color:#334155;-fx-border-width:1.5;-fx-border-radius:10;-fx-background-radius:10;-fx-padding:10 14;-fx-font-size:13px;-fx-text-fill:#F8FAFC;"/>
                 </VBox>
 
                 <Region maxHeight="1" prefHeight="1" style="-fx-background-color:#1E293B;"/>
 
-                <!-- Difficulty + Count -->
                 <HBox spacing="16">
                     <VBox spacing="8" HBox.hgrow="ALWAYS">
                         <HBox alignment="CENTER_LEFT" spacing="6">
                             <Label style="-fx-font-size:13px;" text="⚡"/>
-                            <Label style="-fx-font-size:13px;-fx-font-weight:700;-fx-text-fill:#CBD5E1;"
-                                   text="Difficulty"/>
+                            <Label style="-fx-font-size:13px;-fx-font-weight:700;-fx-text-fill:#F8FAFC;" text="Difficulty"/>
                         </HBox>
                         <ComboBox fx:id="cmbQuizDifficulty" maxWidth="1.7976931348623157E308"
-                                  style="-fx-background-color:#1E293B;-fx-border-color:#334155;
-                                         -fx-border-width:1.5;-fx-border-radius:10;
-                                         -fx-background-radius:10;-fx-padding:10 14;
-                                         -fx-font-size:13px;-fx-text-fill:#F8FAFC;"/>
+                                  style="-fx-background-color:#1E293B;-fx-border-color:#334155;-fx-border-width:1.5;-fx-border-radius:10;-fx-background-radius:10;-fx-padding:10 14;-fx-font-size:13px;-fx-text-fill:#F8FAFC;"/>
                     </VBox>
                     <VBox spacing="8" HBox.hgrow="ALWAYS">
                         <HBox alignment="CENTER_LEFT" spacing="6">
                             <Label style="-fx-font-size:13px;" text="🔢"/>
-                            <Label style="-fx-font-size:13px;-fx-font-weight:700;-fx-text-fill:#CBD5E1;"
-                                   text="Number of questions"/>
+                            <Label style="-fx-font-size:13px;-fx-font-weight:700;-fx-text-fill:#F8FAFC;" text="Number of questions"/>
                         </HBox>
                         <ComboBox fx:id="cmbQuizCount" maxWidth="1.7976931348623157E308"
-                                  style="-fx-background-color:#1E293B;-fx-border-color:#334155;
-                                         -fx-border-width:1.5;-fx-border-radius:10;
-                                         -fx-background-radius:10;-fx-padding:10 14;
-                                         -fx-font-size:13px;-fx-text-fill:#F8FAFC;"/>
+                                  style="-fx-background-color:#1E293B;-fx-border-color:#334155;-fx-border-width:1.5;-fx-border-radius:10;-fx-background-radius:10;-fx-padding:10 14;-fx-font-size:13px;-fx-text-fill:#F8FAFC;"/>
                     </VBox>
                 </HBox>
 
-                <!-- Bouton generate -->
                 <Button fx:id="btnGenerateAIQuiz" onAction="#handleGenerateAIQuiz"
                         maxWidth="Infinity"
-                        style="-fx-background-color: linear-gradient(from 0% 0% to 100% 0%, #7C3AED, #A855F7);
+                        style="-fx-background-color:linear-gradient(to right,#7C3AED,#A855F7);
                                -fx-text-fill:white;-fx-font-weight:bold;
                                -fx-padding:14 32;-fx-font-size:14px;
                                -fx-border-radius:10;-fx-background-radius:10;
@@ -530,26 +559,18 @@
                                -fx-effect:dropshadow(gaussian,rgba(124,58,237,0.5),10,0,0,3);"
                         text="🤖  Generate AI Quiz with Claude"/>
 
-                <!-- Error label -->
                 <Label fx:id="lblQuizSetupError"
-                       style="-fx-text-fill:#F43F5E;-fx-font-size:12px;-fx-font-weight:600;"
-                       text=""/>
+                       style="-fx-text-fill:#F43F5E;-fx-font-size:12px;-fx-font-weight:600;" text=""/>
 
-                <!-- Info box -->
                 <VBox spacing="6"
                       style="-fx-background-color:#0C1A2E;-fx-border-color:#1E3A5F;
                              -fx-border-width:1;-fx-border-radius:10;
                              -fx-background-radius:10;-fx-padding:14 16;">
-                    <Label style="-fx-text-fill:#93C5FD;-fx-font-size:13px;-fx-font-weight:700;"
-                           text="💡  How it works"/>
-                    <Label style="-fx-text-fill:#BFDBFE;-fx-font-size:12px;"
-                           text="✓  Claude AI reads your section and subject"/>
-                    <Label style="-fx-text-fill:#BFDBFE;-fx-font-size:12px;"
-                           text="✓  Questions adapt to your average score in the subject"/>
-                    <Label style="-fx-text-fill:#BFDBFE;-fx-font-size:12px;"
-                           text="✓  Multiple choice format — 4 options per question"/>
-                    <Label style="-fx-text-fill:#BFDBFE;-fx-font-size:12px;"
-                           text="✓  API key needed — get yours at console.anthropic.com"/>
+                    <Label style="-fx-text-fill:#93C5FD;-fx-font-size:13px;-fx-font-weight:700;" text="💡  How it works"/>
+                    <Label style="-fx-text-fill:#BFDBFE;-fx-font-size:12px;" text="✓  Claude AI reads your section and subject"/>
+                    <Label style="-fx-text-fill:#BFDBFE;-fx-font-size:12px;" text="✓  Questions adapt to your average score in the subject"/>
+                    <Label style="-fx-text-fill:#BFDBFE;-fx-font-size:12px;" text="✓  Multiple choice format — 4 options per question"/>
+                    <Label style="-fx-text-fill:#BFDBFE;-fx-font-size:12px;" text="✓  API key needed — get yours at console.anthropic.com"/>
                 </VBox>
 
             </VBox>
@@ -558,95 +579,65 @@
         <!-- ── QUIZ LOADING ─────────────────────────────────────────────── -->
         <VBox fx:id="quizLoadingView" alignment="CENTER" managed="false"
               spacing="24" style="-fx-padding:60 0;" visible="false">
-
             <ProgressIndicator fx:id="quizLoadingSpinner" prefHeight="60" prefWidth="60"
                                style="-fx-accent:#7C3AED;"/>
             <VBox alignment="CENTER" spacing="8">
                 <Label fx:id="lblQuizLoadingStatus"
                        style="-fx-text-fill:#A78BFA;-fx-font-size:16px;-fx-font-weight:600;"
                        text="Claude AI is generating your questions…"/>
-                <Label style="-fx-text-fill:#64748B;-fx-font-size:13px;"
-                       text="This may take a few seconds…"/>
+                <Label style="-fx-text-fill:#64748B;-fx-font-size:13px;" text="This may take a few seconds…"/>
             </VBox>
-
             <VBox alignment="CENTER" spacing="6"
                   style="-fx-background-color:#1E1B4B;-fx-background-radius:12;-fx-padding:16 24;">
                 <Label style="-fx-text-fill:#A78BFA;-fx-font-size:12px;" text="🤖  Powered by Claude (Anthropic)"/>
                 <Label style="-fx-text-fill:#6D28D9;-fx-font-size:11px;" text="console.anthropic.com"/>
             </VBox>
-
         </VBox>
 
         <!-- ── QUIZ IN PROGRESS ─────────────────────────────────────────── -->
         <VBox fx:id="quizInProgressView" managed="false" spacing="16" visible="false">
 
-            <!-- Barre de progression -->
             <HBox alignment="CENTER_LEFT" spacing="16"
                   style="-fx-background-color:#1E293B;-fx-border-color:#7C3AED;
                          -fx-border-width:0 0 2 0;-fx-padding:14 20;
                          -fx-background-radius:12;-fx-border-radius:12;">
                 <HBox alignment="CENTER_LEFT" spacing="8">
-                    <FontIcon iconLiteral="fth-clock" iconSize="16"
-                              style="-fx-icon-color:#A78BFA;"/>
+                    <FontIcon iconLiteral="fth-clock" iconSize="16" style="-fx-icon-color:#A78BFA;"/>
                     <Label fx:id="lblQuizTimer"
-                           style="-fx-text-fill:#F8FAFC;-fx-font-size:20px;-fx-font-weight:700;"
-                           text="0:00"/>
+                           style="-fx-text-fill:#F8FAFC;-fx-font-size:20px;-fx-font-weight:700;" text="0:00"/>
                 </HBox>
                 <Region HBox.hgrow="ALWAYS"/>
                 <Label fx:id="lblQuizProgress"
-                       style="-fx-text-fill:#A78BFA;-fx-font-size:14px;-fx-font-weight:600;"
-                       text="1 / 10"/>
+                       style="-fx-text-fill:#A78BFA;-fx-font-size:14px;-fx-font-weight:600;" text="1 / 10"/>
                 <ProgressBar fx:id="quizProgressBar" prefHeight="10" prefWidth="180" progress="0"
-                             style="-fx-accent:#7C3AED;-fx-background-color:#334155;
-                                    -fx-background-radius:5;-fx-border-radius:5;"/>
+                             style="-fx-accent:#7C3AED;-fx-background-color:#334155;-fx-background-radius:5;-fx-border-radius:5;"/>
                 <Label fx:id="lblQuizAnsweredCount"
                        style="-fx-text-fill:#64748B;-fx-font-size:12px;" text="0 answered"/>
             </HBox>
 
-            <!-- Question card -->
             <VBox spacing="0"
                   style="-fx-background-color:#1E293B;-fx-border-color:#334155;
                          -fx-border-width:1.5;-fx-border-radius:12;-fx-background-radius:12;">
-
                 <HBox alignment="CENTER_LEFT" spacing="12"
                       style="-fx-padding:18 20 14 20;-fx-border-color:#334155;-fx-border-width:0 0 1 0;">
                     <Label fx:id="lblQuizQuestionNum"
-                           style="-fx-background-color:#534AB7;-fx-text-fill:white;
-                                  -fx-background-radius:8;-fx-padding:5 14;
-                                  -fx-font-size:13px;-fx-font-weight:700;" text="Question 1"/>
+                           style="-fx-background-color:#534AB7;-fx-text-fill:white;-fx-background-radius:8;-fx-padding:5 14;-fx-font-size:13px;-fx-font-weight:700;" text="Question 1"/>
                     <Label fx:id="lblQuizDiffBadge"
-                           style="-fx-background-color:#FAEEDA;-fx-text-fill:#854F0B;
-                                  -fx-background-radius:999;-fx-padding:3 10;
-                                  -fx-font-size:11px;-fx-font-weight:700;" text="Medium"/>
+                           style="-fx-background-color:#FAEEDA;-fx-text-fill:#854F0B;-fx-background-radius:999;-fx-padding:3 10;-fx-font-size:11px;-fx-font-weight:700;" text="Medium"/>
                     <Label fx:id="lblQuizCategoryBadge"
-                           style="-fx-background-color:#1E293B;-fx-text-fill:#A78BFA;
-                                  -fx-border-color:#534AB7;-fx-border-width:1;
-                                  -fx-background-radius:999;-fx-border-radius:999;
-                                  -fx-padding:3 10;-fx-font-size:11px;" text="Category"/>
+                           style="-fx-background-color:#1E293B;-fx-text-fill:#A78BFA;-fx-border-color:#534AB7;-fx-border-width:1;-fx-background-radius:999;-fx-border-radius:999;-fx-padding:3 10;-fx-font-size:11px;" text="Category"/>
                     <Region HBox.hgrow="ALWAYS"/>
-                    <Label style="-fx-background-color:rgba(124,58,237,0.15);
-                                  -fx-text-fill:#A78BFA;-fx-font-size:10px;
-                                  -fx-background-radius:20;-fx-padding:3 8;"
-                           text="🤖 Claude AI"/>
+                    <Label style="-fx-background-color:rgba(124,58,237,0.15);-fx-text-fill:#A78BFA;-fx-font-size:10px;-fx-background-radius:20;-fx-padding:3 8;" text="🤖 Claude AI"/>
                 </HBox>
-
                 <Label fx:id="lblQuizQuestionText"
-                       style="-fx-text-fill:#F8FAFC;-fx-font-size:16px;-fx-font-weight:500;
-                              -fx-padding:18 20 14 20;-fx-line-spacing:3;"
+                       style="-fx-text-fill:#F8FAFC;-fx-font-size:16px;-fx-font-weight:500;-fx-padding:18 20 14 20;-fx-line-spacing:3;"
                        text="" wrapText="true"/>
-
-                <VBox fx:id="quizVboxOptions" spacing="8"
-                      style="-fx-padding:0 20 20 20;"/>
+                <VBox fx:id="quizVboxOptions" spacing="8" style="-fx-padding:0 20 20 20;"/>
             </VBox>
 
-            <!-- Bouton suivant -->
             <HBox alignment="CENTER_RIGHT">
-                <Button fx:id="btnQuizNext" disable="true"
-                        onAction="#handleQuizNextQuestion"
-                        style="-fx-background-color:#7C3AED;-fx-text-fill:white;
-                               -fx-border-radius:10;-fx-background-radius:10;
-                               -fx-padding:12 28;-fx-font-size:14px;
-                               -fx-font-weight:700;-fx-cursor:hand;"
+                <Button fx:id="btnQuizNext" disable="true" onAction="#handleQuizNextQuestion"
+                        style="-fx-background-color:#7C3AED;-fx-text-fill:white;-fx-border-radius:10;-fx-background-radius:10;-fx-padding:12 28;-fx-font-size:14px;-fx-font-weight:700;-fx-cursor:hand;"
                         text="Next Question →"/>
             </HBox>
 
@@ -654,103 +645,60 @@
 
         <!-- ── QUIZ RESULTS ─────────────────────────────────────────────── -->
         <ScrollPane fx:id="quizResultsView" fitToWidth="true" managed="false"
-                    style="-fx-background:transparent;-fx-background-color:transparent;
-                           -fx-border-color:transparent;" visible="false">
+                    style="-fx-background:transparent;-fx-background-color:transparent;-fx-border-color:transparent;" visible="false">
             <VBox spacing="20">
 
-                <!-- Score banner -->
                 <VBox alignment="CENTER" spacing="12"
-                      style="-fx-background-color: linear-gradient(from 0% 0% to 100% 100%, #3C3489, #1E1B4B);
-                             -fx-background-radius:14;-fx-padding:32 24;">
-
-                    <Label style="-fx-background-color:rgba(255,255,255,0.15);
-                                  -fx-text-fill:white;-fx-background-radius:999;
-                                  -fx-padding:6 18;-fx-font-size:13px;-fx-font-weight:600;"
+                      style="-fx-background-color:linear-gradient(to bottom right,#3C3489,#1E1B4B);-fx-background-radius:14;-fx-padding:32 24;">
+                    <Label style="-fx-background-color:rgba(255,255,255,0.15);-fx-text-fill:white;-fx-background-radius:999;-fx-padding:6 18;-fx-font-size:13px;-fx-font-weight:600;"
                            text="✅  Quiz Completed — Powered by Claude AI"/>
-
                     <Label fx:id="lblQuizFinalScore"
-                           style="-fx-text-fill:white;-fx-font-size:54px;-fx-font-weight:900;"
-                           text="0 / 0"/>
+                           style="-fx-text-fill:white;-fx-font-size:54px;-fx-font-weight:900;" text="0 / 0"/>
                     <Label fx:id="lblQuizFinalPercent"
-                           style="-fx-text-fill:rgba(255,255,255,0.75);-fx-font-size:22px;-fx-font-weight:600;"
-                           text="0%"/>
+                           style="-fx-text-fill:rgba(255,255,255,0.75);-fx-font-size:22px;-fx-font-weight:600;" text="0%"/>
                     <Label fx:id="lblQuizFinalLevel"
-                           style="-fx-text-fill:#34D399;-fx-font-size:20px;-fx-font-weight:700;"
-                           text="Good"/>
-
+                           style="-fx-text-fill:#34D399;-fx-font-size:20px;-fx-font-weight:700;" text="Good"/>
                     <HBox alignment="CENTER" spacing="16" style="-fx-padding:12 0 0 0;">
-                        <VBox alignment="CENTER" spacing="4"
-                              style="-fx-background-color:rgba(255,255,255,0.12);
-                                     -fx-background-radius:10;-fx-padding:12 20;">
+                        <VBox alignment="CENTER" spacing="4" style="-fx-background-color:rgba(255,255,255,0.12);-fx-background-radius:10;-fx-padding:12 20;">
                             <FontIcon iconColor="white" iconLiteral="fth-clock" iconSize="20"/>
-                            <Label fx:id="lblQuizTotalTime"
-                                   style="-fx-text-fill:white;-fx-font-size:22px;-fx-font-weight:700;"
-                                   text="0:00"/>
-                            <Label style="-fx-text-fill:rgba(255,255,255,0.7);-fx-font-size:11px;"
-                                   text="Total Time"/>
+                            <Label fx:id="lblQuizTotalTime" style="-fx-text-fill:white;-fx-font-size:22px;-fx-font-weight:700;" text="0:00"/>
+                            <Label style="-fx-text-fill:rgba(255,255,255,0.7);-fx-font-size:11px;" text="Total Time"/>
                         </VBox>
-                        <VBox alignment="CENTER" spacing="4"
-                              style="-fx-background-color:rgba(255,255,255,0.12);
-                                     -fx-background-radius:10;-fx-padding:12 20;">
+                        <VBox alignment="CENTER" spacing="4" style="-fx-background-color:rgba(255,255,255,0.12);-fx-background-radius:10;-fx-padding:12 20;">
                             <FontIcon iconColor="#34D399" iconLiteral="fth-check-circle" iconSize="20"/>
-                            <Label fx:id="lblQuizCorrectCount"
-                                   style="-fx-text-fill:#34D399;-fx-font-size:22px;-fx-font-weight:700;"
-                                   text="0"/>
-                            <Label style="-fx-text-fill:rgba(255,255,255,0.7);-fx-font-size:11px;"
-                                   text="Correct"/>
+                            <Label fx:id="lblQuizCorrectCount" style="-fx-text-fill:#34D399;-fx-font-size:22px;-fx-font-weight:700;" text="0"/>
+                            <Label style="-fx-text-fill:rgba(255,255,255,0.7);-fx-font-size:11px;" text="Correct"/>
                         </VBox>
-                        <VBox alignment="CENTER" spacing="4"
-                              style="-fx-background-color:rgba(255,255,255,0.12);
-                                     -fx-background-radius:10;-fx-padding:12 20;">
+                        <VBox alignment="CENTER" spacing="4" style="-fx-background-color:rgba(255,255,255,0.12);-fx-background-radius:10;-fx-padding:12 20;">
                             <FontIcon iconColor="#FB7185" iconLiteral="fth-x-circle" iconSize="20"/>
-                            <Label fx:id="lblQuizWrongCount"
-                                   style="-fx-text-fill:#FB7185;-fx-font-size:22px;-fx-font-weight:700;"
-                                   text="0"/>
-                            <Label style="-fx-text-fill:rgba(255,255,255,0.7);-fx-font-size:11px;"
-                                   text="Wrong"/>
+                            <Label fx:id="lblQuizWrongCount" style="-fx-text-fill:#FB7185;-fx-font-size:22px;-fx-font-weight:700;" text="0"/>
+                            <Label style="-fx-text-fill:rgba(255,255,255,0.7);-fx-font-size:11px;" text="Wrong"/>
                         </VBox>
                     </HBox>
                 </VBox>
 
-                <!-- Détail des réponses -->
                 <VBox spacing="0"
-                      style="-fx-background-color:#0F172A;-fx-border-color:#1E293B;
-                             -fx-border-width:1.5;-fx-border-radius:12;-fx-background-radius:12;">
+                      style="-fx-background-color:#0F172A;-fx-border-color:#1E293B;-fx-border-width:1.5;-fx-border-radius:12;-fx-background-radius:12;">
                     <HBox alignment="CENTER_LEFT" spacing="12"
                           style="-fx-padding:16 20 14 20;-fx-border-color:#1E293B;-fx-border-width:0 0 1 0;">
-                        <StackPane style="-fx-background-color:#1E293B;-fx-background-radius:8;
-                                         -fx-min-width:36;-fx-max-width:36;
-                                         -fx-min-height:36;-fx-max-height:36;">
-                            <FontIcon iconLiteral="fth-list" iconSize="16"
-                                      style="-fx-icon-color:#A78BFA;"/>
+                        <StackPane style="-fx-background-color:#1E293B;-fx-background-radius:8;-fx-min-width:36;-fx-max-width:36;-fx-min-height:36;-fx-max-height:36;">
+                            <FontIcon iconLiteral="fth-list" iconSize="16" style="-fx-icon-color:#A78BFA;"/>
                         </StackPane>
                         <VBox spacing="2">
-                            <Label style="-fx-text-fill:#F8FAFC;-fx-font-size:16px;-fx-font-weight:700;"
-                                   text="Detailed Analysis"/>
-                            <Label style="-fx-text-fill:#64748B;-fx-font-size:12px;"
-                                   text="Review each question and correct answers"/>
+                            <Label style="-fx-text-fill:#F8FAFC;-fx-font-size:16px;-fx-font-weight:700;" text="Detailed Analysis"/>
+                            <Label style="-fx-text-fill:#64748B;-fx-font-size:12px;" text="Review each question and correct answers"/>
                         </VBox>
                     </HBox>
-                    <VBox fx:id="quizVboxDetailedResults" spacing="10"
-                          style="-fx-padding:16;"/>
+                    <VBox fx:id="quizVboxDetailedResults" spacing="10" style="-fx-padding:16;"/>
                 </VBox>
 
-                <!-- Actions -->
                 <HBox alignment="CENTER_LEFT" spacing="12"
-                      style="-fx-background-color:#1E293B;-fx-border-color:#334155;
-                             -fx-border-width:1.5;-fx-border-radius:12;
-                             -fx-background-radius:12;-fx-padding:16 20;">
+                      style="-fx-background-color:#1E293B;-fx-border-color:#334155;-fx-border-width:1.5;-fx-border-radius:12;-fx-background-radius:12;-fx-padding:16 20;">
                     <Button fx:id="btnQuizRetake" onAction="#handleQuizRetake"
-                            style="-fx-background-color:#7C3AED;-fx-text-fill:white;
-                                   -fx-border-radius:10;-fx-background-radius:10;
-                                   -fx-padding:11 24;-fx-font-size:13px;
-                                   -fx-font-weight:700;-fx-cursor:hand;"
+                            style="-fx-background-color:#7C3AED;-fx-text-fill:white;-fx-border-radius:10;-fx-background-radius:10;-fx-padding:11 24;-fx-font-size:13px;-fx-font-weight:700;-fx-cursor:hand;"
                             text="🔄  Retake Quiz"/>
                     <Button fx:id="btnQuizBackToSetup" onAction="#handleQuizBackToSetup"
-                            style="-fx-background-color:#1E293B;-fx-text-fill:#94A3B8;
-                                   -fx-border-color:#334155;-fx-border-radius:10;
-                                   -fx-background-radius:10;-fx-padding:11 24;
-                                   -fx-font-size:13px;-fx-cursor:hand;"
+                            style="-fx-background-color:#1E293B;-fx-text-fill:#94A3B8;-fx-border-color:#334155;-fx-border-radius:10;-fx-background-radius:10;-fx-padding:11 24;-fx-font-size:13px;-fx-cursor:hand;"
                             text="← New Quiz"/>
                 </HBox>
 
