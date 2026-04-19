@@ -161,7 +161,7 @@ public class AdminController implements Initializable {
     }
 
     @FXML private void showDashboard() { showView(btnAdminDash, "views/admin/AdminDashboard.fxml"); }
-    @FXML private void showCourses() { showView(btnCourses, "views/Courses.fxml"); }
+    @FXML private void showCourses() { showView(btnCourses, "views/admin/AdminMatieres.fxml"); }
     @FXML private void showAssignments() { showView(btnAssignments, "views/Assignments.fxml"); }
     @FXML private void showPlanning() { showView(btnPlanning, "views/Planning.fxml"); }
     @FXML private void showRevisions() { showView(btnRevisions, "views/Revisions.fxml"); }

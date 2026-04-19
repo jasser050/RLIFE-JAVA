@@ -134,8 +134,11 @@ public class DashboardController implements Initializable {
      * Falls back gracefully if the fx:id is not present in the FXML.
      */
     private void setupQuickActions() {
+        if (quickCardAssignment != null) {
+            quickCardAssignment.setOnMouseClicked(e -> navigateTo("views/Courses.fxml"));
+        }
         if (quickCardDecks != null) {
-            quickCardDecks.setOnMouseClicked(e -> navigateTo("views/Revisions.fxml"));
+            quickCardDecks.setOnMouseClicked(e -> navigateTo("views/Flashcards.fxml"));
             quickCardDecks.setStyle(quickCardDecks.getStyle() + "; -fx-cursor: hand;");
         }
         if (quickCardAssignment != null) {

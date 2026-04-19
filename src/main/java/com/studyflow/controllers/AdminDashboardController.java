@@ -88,8 +88,8 @@ public class AdminDashboardController implements Initializable {
         long females = allUsers.stream().filter(u -> "female".equalsIgnoreCase(u.getGender())).count();
         long other = allUsers.size() - males - females;
         genderChart.setData(FXCollections.observableArrayList(
-            new PieChart.Data("Male (" + males + ")", males),
-            new PieChart.Data("Female (" + females + ")", females)
+                new PieChart.Data("Male (" + males + ")", males),
+                new PieChart.Data("Female (" + females + ")", females)
         ));
         if (other > 0) genderChart.getData().add(new PieChart.Data("Other (" + other + ")", other));
     }
@@ -143,8 +143,8 @@ public class AdminDashboardController implements Initializable {
                 if (empty || item == null) { setText(null); setStyle(""); return; }
                 setText(item);
                 setStyle("Banned".equals(item)
-                    ? "-fx-text-fill: #F43F5E; -fx-font-weight: bold;"
-                    : "-fx-text-fill: #34D399; -fx-font-weight: bold;");
+                        ? "-fx-text-fill: #F43F5E; -fx-font-weight: bold;"
+                        : "-fx-text-fill: #34D399; -fx-font-weight: bold;");
             }
         });
 
@@ -166,11 +166,11 @@ public class AdminDashboardController implements Initializable {
         rows.add(new String[]{"ID", "Name", "Email", "Gender", "Status"});
         for (User u : allUsers) {
             rows.add(new String[]{
-                String.valueOf(u.getId()),
-                trunc(u.getFullName().trim(), 24),
-                trunc(u.getEmail(), 30),
-                u.getGender() != null ? u.getGender() : "N/A",
-                u.isBanned() ? "BANNED" : "Active"
+                    String.valueOf(u.getId()),
+                    trunc(u.getFullName().trim(), 24),
+                    trunc(u.getEmail(), 30),
+                    u.getGender() != null ? u.getGender() : "N/A",
+                    u.isBanned() ? "BANNED" : "Active"
             });
         }
         savePdf("RLife - User List", "Total Users: " + allUsers.size(), rows, "user_list.pdf");
@@ -183,10 +183,10 @@ public class AdminDashboardController implements Initializable {
         rows.add(new String[]{"ID", "Name", "Email", "Ban Reason"});
         for (User u : banned) {
             rows.add(new String[]{
-                String.valueOf(u.getId()),
-                trunc(u.getFullName().trim(), 24),
-                trunc(u.getEmail(), 30),
-                trunc(u.getBanReason() != null ? u.getBanReason() : "No reason", 28)
+                    String.valueOf(u.getId()),
+                    trunc(u.getFullName().trim(), 24),
+                    trunc(u.getEmail(), 30),
+                    trunc(u.getBanReason() != null ? u.getBanReason() : "No reason", 28)
             });
         }
         savePdf("RLife - Banned Users", "Banned: " + banned.size() + " / " + allUsers.size() + " total", rows, "banned_users.pdf");
