@@ -138,7 +138,7 @@ public class DashboardController implements Initializable {
             quickCardAssignment.setOnMouseClicked(e -> navigateTo("views/Courses.fxml"));
         }
         if (quickCardDecks != null) {
-            quickCardDecks.setOnMouseClicked(e -> navigateTo("views/Revisions.fxml"));
+            quickCardDecks.setOnMouseClicked(e -> navigateTo("views/Flashcards.fxml"));
             quickCardDecks.setStyle(quickCardDecks.getStyle() + "; -fx-cursor: hand;");
         }
         if (quickCardAssignment != null) {

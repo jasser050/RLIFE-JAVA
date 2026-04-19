@@ -200,7 +200,7 @@ public class MainController implements Initializable {
     @FXML
     private void showRevisions() {
         setActiveButton(btnRevisions);
-        loadContent("views/Revisions.fxml");
+        loadContent("views/Flashcards.fxml");
     }
 
     @FXML
