@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.geometry.Insets?>
+<?import org.kordamp.ikonli.javafx.FontIcon?>
+
+<VBox xmlns="http://javafx.com/javafx/21"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.studyflow.controllers.ProjectsController"
+      spacing="24" style="-fx-background-color: #020617;">
+
+    <padding>
+        <Insets top="0" right="0" bottom="24" left="0"/>
+    </padding>
+
+    <!-- Header -->
+    <HBox alignment="CENTER_LEFT" spacing="16">
+        <VBox spacing="4" HBox.hgrow="ALWAYS">
+            <Label text="Groups &amp; Projects" styleClass="text-heading"/>
+            <Label text="Collaborate and track project progress" styleClass="text-muted"/>
+        </VBox>
+        <HBox spacing="12">
+            <Button text="Invite Member" styleClass="btn-secondary">
+                <graphic>
+                    <FontIcon iconLiteral="fth-user-plus" iconSize="16"/>
+                </graphic>
+            </Button>
+            <Button text="New Project" styleClass="btn-primary" onAction="#showNewProjectDialog">
+                <graphic>
+                    <FontIcon iconLiteral="fth-plus" iconSize="16" iconColor="white"/>
+                </graphic>
+            </Button>
+        </HBox>
+    </HBox>
+
+    <!-- Stats Row -->
+    <HBox spacing="16">
+        <VBox styleClass="stat-card" spacing="8" HBox.hgrow="ALWAYS">
+            <HBox alignment="CENTER_LEFT" spacing="12">
+                <StackPane styleClass="stat-icon-box, primary" prefWidth="40" prefHeight="40">
+                    <FontIcon iconLiteral="fth-folder" iconSize="18"/>
+                </StackPane>
+                <VBox spacing="2">
+                    <Label fx:id="activeProjectsLabel" text="0" styleClass="stat-value"/>
+                    <Label text="Active Projects" styleClass="stat-label"/>
+                </VBox>
+            </HBox>
+        </VBox>
+
+        <VBox styleClass="stat-card" spacing="8" HBox.hgrow="ALWAYS">
+            <HBox alignment="CENTER_LEFT" spacing="12">
+                <StackPane styleClass="stat-icon-box, success" prefWidth="40" prefHeight="40">
+                    <FontIcon iconLiteral="fth-users" iconSize="18"/>
+                </StackPane>
+                <VBox spacing="2">
+                    <Label fx:id="teamMembersLabel" text="0" styleClass="stat-value"/>
+                    <Label text="Team Members" styleClass="stat-label"/>
+                </VBox>
+            </HBox>
+        </VBox>
+
+        <VBox styleClass="stat-card" spacing="8" HBox.hgrow="ALWAYS">
+            <HBox alignment="CENTER_LEFT" spacing="12">
+                <StackPane styleClass="stat-icon-box, warning" prefWidth="40" prefHeight="40">
+                    <FontIcon iconLiteral="fth-list" iconSize="18"/>
+                </StackPane>
+                <VBox spacing="2">
+                    <Label fx:id="totalTasksLabel" text="0" styleClass="stat-value"/>
+                    <Label text="Total Tasks" styleClass="stat-label"/>
+                </VBox>
+            </HBox>
+        </VBox>
+
+        <VBox styleClass="stat-card" spacing="8" HBox.hgrow="ALWAYS">
+            <HBox alignment="CENTER_LEFT" spacing="12">
+                <StackPane styleClass="stat-icon-box, accent" prefWidth="40" prefHeight="40">
+                    <FontIcon iconLiteral="fth-check-circle" iconSize="18"/>
+                </StackPane>
+                <VBox spacing="2">
+                    <Label fx:id="completedTasksLabel" text="0" styleClass="stat-value"/>
+                    <Label text="Completed" styleClass="stat-label"/>
+                </VBox>
+            </HBox>
+        </VBox>
+    </HBox>
+
+    <!-- Project Selector and Kanban -->
+    <VBox spacing="16" VBox.vgrow="ALWAYS">
+        <!-- Project Tabs -->
+        <HBox alignment="CENTER_LEFT" spacing="16">
+            <HBox fx:id="projectTabsBox" styleClass="filter-tabs" spacing="0"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <HBox styleClass="filter-tabs" spacing="0">
+                <Button text="Kanban" styleClass="filter-tab, active"/>
+                <Button text="List" styleClass="filter-tab"/>
+                <Button text="Timeline" styleClass="filter-tab"/>
+            </HBox>
+        </HBox>
+
+        <!-- Kanban Board -->
+        <ScrollPane fitToHeight="true" VBox.vgrow="ALWAYS"
+                    style="-fx-background-color: transparent; -fx-background: transparent;">
+            <HBox fx:id="kanbanBoard" spacing="16"/>
+        </ScrollPane>
+    </VBox>
+</VBox>
