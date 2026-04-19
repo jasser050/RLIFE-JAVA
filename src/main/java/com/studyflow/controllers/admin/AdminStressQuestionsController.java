@@ -58,6 +58,7 @@ public class AdminStressQuestionsController implements Initializable {
     @FXML private Label totalQuestionsLabel;
     @FXML private Label activeQuestionsLabel;
     @FXML private Label inactiveQuestionsLabel;
+    @FXML private Label listFeedbackLabel;
 
     @FXML private TextField searchField;
     @FXML private ComboBox<String> sortCombo;
@@ -82,8 +83,7 @@ public class AdminStressQuestionsController implements Initializable {
     private QuestionStress editingQuestion;
     private QuestionStress detailQuestion;
     private boolean reorderEnabled;
-    private Integer pendingDeleteQuestionId;
-    private long pendingDeleteDeadlineMs;
+    private Integer pendingDeleteId;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -91,6 +91,7 @@ public class AdminStressQuestionsController implements Initializable {
         enforceTextLimit(questionTextArea, MAX_TEXT_LENGTH);
         initCombos();
         addSearchListener();
+        questionTextArea.textProperty().addListener((obs, oldVal, newVal) -> questionTextArea.getStyleClass().remove("admin-field-error"));
         loadQuestions();
     }
 
@@ -347,6 +348,7 @@ public class AdminStressQuestionsController implements Initializable {
     private void handleBackToList() {
         editingQuestion = null;
         detailQuestion = null;
+        pendingDeleteId = null;
         showSection(listSection);
         loadQuestions();
     }
@@ -358,6 +360,7 @@ public class AdminStressQuestionsController implements Initializable {
         saveButton.setText("Create Question");
         clearForm();
         hideFormError();
+        hideListFeedback();
         showSection(formSection);
     }
 
@@ -369,16 +372,18 @@ public class AdminStressQuestionsController implements Initializable {
         activeCheckBox.setSelected(q.isActive());
         markFieldValid(questionTextArea);
         hideFormError();
+        questionTextArea.getStyleClass().remove("admin-field-error");
         showSection(formSection);
     }
 
     @FXML
     private void handleSaveQuestion() {
         hideFormError();
+        questionTextArea.getStyleClass().remove("admin-field-error");
         String text = questionTextArea.getText() == null ? "" : questionTextArea.getText().trim();
         if (text.isEmpty()) {
-            markFieldInvalid(questionTextArea);
-            showFormError(QUESTION_VALIDATION_RULE);
+            markFieldError(questionTextArea);
+            showFormError("Question text is required.");
             return;
         }
         if (text.length() < MIN_TEXT_LENGTH) {
@@ -402,13 +407,13 @@ public class AdminStressQuestionsController implements Initializable {
             newQ.setActive(active);
             newQ.setCreatedAt(LocalDateTime.now());
             service.save(newQ);
-            showNotification("Question créée avec succès.", "success");
+            showListFeedback("Question created successfully!", true);
         } else {
             editingQuestion.setQuestionText(text);
             editingQuestion.setActive(active);
             editingQuestion.setUpdatedAt(LocalDateTime.now());
             service.update(editingQuestion);
-            showNotification("Question mise à jour avec succès.", "success");
+            showListFeedback("Question updated successfully!", true);
         }
         handleBackToList();
     }
@@ -447,12 +452,18 @@ public class AdminStressQuestionsController implements Initializable {
     }
 
     private void handleDelete(QuestionStress q) {
-        long now = System.currentTimeMillis();
-        if (pendingDeleteQuestionId == null || pendingDeleteQuestionId != q.getId() || now > pendingDeleteDeadlineMs) {
-            pendingDeleteQuestionId = q.getId();
-            pendingDeleteDeadlineMs = now + DELETE_CONFIRM_WINDOW_MS;
-            showNotification("Cliquez encore sur Delete dans 5 secondes pour confirmer la suppression.", "warning");
+        if (pendingDeleteId == null || pendingDeleteId != q.getId()) {
+            pendingDeleteId = q.getId();
+            showListFeedback("Click Delete again to confirm removal of Question #" + q.getQuestionNumber() + ".", false);
             return;
+        }
+        try {
+            service.delete(q.getId());
+            pendingDeleteId = null;
+            showListFeedback("Question deleted successfully!", true);
+            handleBackToList();
+        } catch (RuntimeException e) {
+            showListFeedback(e.getMessage() == null ? "Failed to delete question." : e.getMessage(), false);
         }
         service.delete(q.getId());
         pendingDeleteQuestionId = null;
@@ -472,9 +483,9 @@ public class AdminStressQuestionsController implements Initializable {
         }
         try {
             generatePdf(file, service.findAll());
-            showNotification("PDF exporté: " + file.getAbsolutePath(), "success");
+            showListFeedback("PDF exported: " + file.getAbsolutePath(), true);
         } catch (Exception ex) {
-            showNotification("Échec export PDF: " + ex.getMessage(), "error");
+            showListFeedback("Export failed: " + ex.getMessage(), false);
         }
     }
 
@@ -547,24 +558,23 @@ public class AdminStressQuestionsController implements Initializable {
         formErrorLabel.setManaged(false);
     }
 
-    private void showNotification(String message, String type) {
-        if (notificationLabel == null) {
-            return;
+    private void markFieldError(TextArea field) {
+        if (!field.getStyleClass().contains("admin-field-error")) {
+            field.getStyleClass().add("admin-field-error");
         }
-        String background = switch (type) {
-            case "success" -> "#16a34a";
-            case "warning" -> "#d97706";
-            default -> "#dc2626";
-        };
-        notificationLabel.setText(message);
-        notificationLabel.setStyle(
-                "-fx-background-color: " + background + ";" +
-                "-fx-text-fill: white;" +
-                "-fx-padding: 10 14 10 14;" +
-                "-fx-background-radius: 8;"
-        );
-        notificationLabel.setVisible(true);
-        notificationLabel.setManaged(true);
+    }
+
+    private void showListFeedback(String message, boolean success) {
+        listFeedbackLabel.setText(message);
+        listFeedbackLabel.getStyleClass().removeAll("auth-error", "auth-success");
+        listFeedbackLabel.getStyleClass().add(success ? "auth-success" : "auth-error");
+        listFeedbackLabel.setVisible(true);
+        listFeedbackLabel.setManaged(true);
+    }
+
+    private void hideListFeedback() {
+        listFeedbackLabel.setVisible(false);
+        listFeedbackLabel.setManaged(false);
     }
 
     private void enforceTextLimit(TextArea area, int maxLength) {

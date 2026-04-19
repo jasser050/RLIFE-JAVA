@@ -55,8 +55,8 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
-import javafx.stage.Modality;
-import javafx.stage.Stage;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.net.URL;
@@ -68,6 +68,7 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.ResourceBundle;
 import java.util.HashMap;
 import java.util.Locale;
@@ -97,7 +98,7 @@ public class WellbeingController implements Initializable {
     @FXML private FlowPane moodDistributionPane;
     @FXML private VBox historyListBox;
     @FXML private VBox moodWeekBox;
-    @FXML private VBox habitsBox;
+    @FXML private HBox habitsBox;
     @FXML private VBox mindfulnessBox;
     @FXML private VBox sleepLogBox;
     @FXML private Slider stressSlider;
@@ -108,6 +109,7 @@ public class WellbeingController implements Initializable {
     @FXML private Label stressValueLabel;
     @FXML private Label energyValueLabel;
     @FXML private Label formTitleLabel;
+    @FXML private Label formErrorLabel;
     @FXML private Button saveButton;
     @FXML private Button cancelEditButton;
     @FXML private HBox statsSection;
@@ -153,9 +155,6 @@ public class WellbeingController implements Initializable {
     private int currentQuizIndex = 0;
     private static final int MIN_NOTE_LENGTH = 6;
     private static final int MAX_NOTE_LENGTH = 1000;
-    private static final int MOOD_EMOJI_SIZE = 56;
-    private static final int MOOD_EMOJI_FALLBACK_FONT_SIZE = 50;
-    private record CopingToolDef(String key, String title, String durationLabel, int durationSeconds, String description) {}
     private record MoodEntry(String day, String mood, String icon, String color) {}
     private record HabitData(String name, String icon, String color, boolean[] weekProgress) {}
     private record MindfulnessSession(String title, String duration, String icon, String color) {}
@@ -210,6 +209,7 @@ public class WellbeingController implements Initializable {
         cancelEditButton.setManaged(false);
         updateChoiceSelection(moodButtonsBox, selectedMood);
         updateChoiceSelection(sleepButtonsBox, String.valueOf((int) selectedSleepHours));
+        notesArea.textProperty().addListener((obs, oldVal, newVal) -> hideFormError());
     }
 
     private void configureMoodButtons() {
@@ -349,18 +349,11 @@ public class WellbeingController implements Initializable {
             HBox row = new HBox(14);
             row.getStyleClass().add("wellbeing-list-item");
 
-            String moodKey = item.getMood() == null ? "okay" : item.getMood().toLowerCase().trim();
-            String emojiUnicode = EmojiUtils.getMoodEmojiUnicode(moodKey);
-            ImageView emojiImage = EmojiUtils.loadMoodEmojiImage(moodKey, MOOD_EMOJI_SIZE);
-            Node emojiNode;
-            if (emojiImage != null) {
-                emojiNode = emojiImage;
-            } else {
-                Label emojiFallback = new Label(emojiUnicode);
-                emojiFallback.getStyleClass().add("wellbeing-list-emoji");
-                emojiFallback.setStyle("-fx-font-size: " + MOOD_EMOJI_FALLBACK_FONT_SIZE + "px; -fx-font-family: 'Segoe UI Emoji';");
-                emojiNode = emojiFallback;
-            }
+            // Use PNG emoji image instead of Unicode emoji
+            ImageView emojiImageView = createMoodEmojiImage(item.getMood());
+            StackPane emojiContainer = new StackPane(emojiImageView);
+            emojiContainer.getStyleClass().add("wellbeing-list-emoji");
+            emojiContainer.setPrefSize(45, 45);
 
             VBox content = new VBox(4);
             Label mood = new Label(capitalize(item.getMood()));
@@ -382,7 +375,7 @@ public class WellbeingController implements Initializable {
             sleep.setStyle("-fx-text-fill: #93C5FD; -fx-font-weight: 700;");
             metrics.getChildren().addAll(stress, sleep);
 
-            row.getChildren().addAll(emojiNode, content, metrics);
+            row.getChildren().addAll(emojiContainer, content, metrics);
             recentCheckinsBox.getChildren().add(row);
         }
     }
@@ -406,9 +399,11 @@ public class WellbeingController implements Initializable {
             VBox moodBox = new VBox(4);
             moodBox.setAlignment(Pos.CENTER);
             moodBox.getStyleClass().add("wellbeing-history-mood-box");
-            Label emoji = new Label(item.getMoodEmoji());
-            emoji.getStyleClass().add("wellbeing-list-emoji");
-            moodBox.getChildren().add(emoji);
+            ImageView emojiImageView = createMoodEmojiImage(item.getMood());
+            StackPane emojiContainer = new StackPane(emojiImageView);
+            emojiContainer.getStyleClass().add("wellbeing-list-emoji");
+            emojiContainer.setPrefSize(45, 45);
+            moodBox.getChildren().add(emojiContainer);
 
             VBox main = new VBox(4);
             HBox.setHgrow(main, Priority.ALWAYS);
@@ -463,14 +458,16 @@ public class WellbeingController implements Initializable {
             VBox card = new VBox(8);
             card.getStyleClass().add("wellbeing-mood-card");
             card.setAlignment(Pos.CENTER);
-            Label emoji = new Label(emojiForMood(entry.getKey()));
-            emoji.getStyleClass().add("wellbeing-mood-emoji");
+            ImageView emojiImageView = createMoodEmojiImage(entry.getKey());
+            StackPane emojiContainer = new StackPane(emojiImageView);
+            emojiContainer.getStyleClass().add("wellbeing-mood-emoji");
+            emojiContainer.setPrefSize(50, 50);
             Label count = new Label(String.valueOf(entry.getValue()));
             count.getStyleClass().add("stat-value");
             count.setStyle("-fx-font-size: 24px;");
             Label mood = new Label(capitalize(entry.getKey()));
             mood.getStyleClass().add("text-small");
-            card.getChildren().addAll(emoji, count, mood);
+            card.getChildren().addAll(emojiContainer, count, mood);
             moodDistributionPane.getChildren().add(card);
         }
     }
@@ -514,6 +511,25 @@ public class WellbeingController implements Initializable {
         Integer userId = getCurrentUserId();
         if (userId == null || userId <= 0) {
             showError("Please log in with a valid account to start coping tools.");
+            return;
+        }
+        Integer currentUserId = getCurrentUserId();
+        if (currentUserId == null || currentUserId <= 0) {
+            showError("Please log in with a valid account to save check-ins.");
+            return;
+        }
+
+        String note = notesArea.getText() == null ? "" : notesArea.getText().trim();
+        if (note.isBlank()) {
+            showError("Note is required.");
+            return;
+        }
+        if (note.length() < MIN_NOTE_LENGTH) {
+            showError("Note must be more than 5 characters.");
+            return;
+        }
+        if (note.length() > MAX_NOTE_LENGTH) {
+            showError("Note must be 1000 characters or less.");
             return;
         }
 
@@ -2331,4 +2347,32 @@ public class WellbeingController implements Initializable {
         }
         return "#EF4444";
     }
+
+    private ImageView createMoodEmojiImage(String mood) {
+        String moodName = (mood == null || mood.isBlank()) ? "good" : mood.toLowerCase();
+        try {
+            String imagePath = "/com/studyflow/assets/mood/" + moodName + ".png";
+            Image image = new Image(Objects.requireNonNull(getClass().getResource(imagePath)).toExternalForm());
+            ImageView imageView = new ImageView(image);
+            imageView.setFitHeight(40);
+            imageView.setFitWidth(40);
+            imageView.setPreserveRatio(true);
+            imageView.getStyleClass().add("mood-emoji-image");
+            return imageView;
+        } catch (Exception e) {
+            // Fallback to default good mood image if not found
+            try {
+                Image image = new Image(Objects.requireNonNull(getClass().getResource("/com/studyflow/assets/mood/good.png")).toExternalForm());
+                ImageView imageView = new ImageView(image);
+                imageView.setFitHeight(40);
+                imageView.setFitWidth(40);
+                imageView.setPreserveRatio(true);
+                imageView.getStyleClass().add("mood-emoji-image");
+                return imageView;
+            } catch (Exception ex) {
+                return new ImageView();
+            }
+        }
+    }
 }
+

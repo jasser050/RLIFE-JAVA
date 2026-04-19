@@ -11,6 +11,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
+import javafx.scene.control.TextInputControl;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.web.WebView;
 import javafx.stage.Stage;
@@ -43,6 +44,8 @@ public class LoginController implements Initializable {
 
         passwordField.setOnAction(e -> handleLogin());
         emailField.setOnAction(e -> passwordField.requestFocus());
+
+        wireClearOnTyping(emailField, passwordField);
     }
 
     @FXML
@@ -52,18 +55,46 @@ public class LoginController implements Initializable {
             String password = passwordField.getText() == null ? "" : passwordField.getText();
 
             hideError();
+            clearFieldErrors(emailField, passwordField);
 
-            if (email.isEmpty() || password.isEmpty()) {
-                showError("Please fill in all fields.");
+            if (email.isEmpty()) {
+                markFieldError(emailField);
+                showError("Email is required.");
+                return;
+            }
+            if (!isValidEmail(email)) {
+                markFieldError(emailField);
+                showError("Please enter a valid email address.");
+                return;
+            }
+            if (password.isEmpty()) {
+                markFieldError(passwordField);
+                showError("Password is required.");
                 return;
             }
 
             loginBtn.setDisable(true);
             loginBtn.setText("Signing in...");
 
-            User user = resolveLoginUser(email, password);
+            User demoAdmin = buildDemoAdmin(email, password);
+            if (demoAdmin != null) {
+                UserSession.getInstance().setCurrentUser(demoAdmin);
+                App.setRoot("views/admin/AdminMainLayout");
+                return;
+            }
+
+            User existingUser = serviceUser.findByEmail(email);
+            if (existingUser == null) {
+                markFieldError(emailField);
+                showError("No account exists with this email.");
+                resetButton();
+                return;
+            }
+
+            User user = serviceUser.authenticate(email, password);
             if (user == null) {
-                showError("Invalid email or password.");
+                markFieldError(passwordField);
+                showError("Incorrect password.");
                 resetButton();
                 return;
             }
@@ -135,12 +166,29 @@ public class LoginController implements Initializable {
         loginBtn.setText("Sign In");
     }
 
-    private User resolveLoginUser(String email, String password) {
-        User demoAdmin = buildDemoAdmin(email, password);
-        if (demoAdmin != null) {
-            return demoAdmin;
+    private boolean isValidEmail(String email) {
+        return email != null
+                && email.contains("@")
+                && email.indexOf('@') > 0
+                && email.indexOf('@') < email.length() - 1;
+    }
+
+    private void wireClearOnTyping(TextInputControl... fields) {
+        for (TextInputControl field : fields) {
+            field.textProperty().addListener((obs, oldValue, newValue) -> field.getStyleClass().remove("auth-field-error"));
         }
-        return serviceUser.authenticate(email, password);
+    }
+
+    private void markFieldError(TextInputControl field) {
+        if (!field.getStyleClass().contains("auth-field-error")) {
+            field.getStyleClass().add("auth-field-error");
+        }
+    }
+
+    private void clearFieldErrors(TextInputControl... fields) {
+        for (TextInputControl field : fields) {
+            field.getStyleClass().remove("auth-field-error");
+        }
     }
 
     private User buildDemoAdmin(String email, String password) {

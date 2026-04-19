@@ -7,7 +7,6 @@ module com.studyflow {
     requires java.sql;
     requires javafx.web;
     requires jdk.httpserver;
-    requires java.net.http;
 
     // iText 7 - PDF Export
     requires kernel;

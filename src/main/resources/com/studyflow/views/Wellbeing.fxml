@@ -13,6 +13,8 @@
 <?import javafx.scene.control.Slider?>
 <?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TextField?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.FlowPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Priority?>
@@ -42,7 +44,7 @@
                         <FontIcon iconLiteral="fth-clipboard" iconSize="15" iconColor="#E2E8F0"/>
                     </graphic>
                 </Button>
-                <Button text="Coping Tools" styleClass="btn-secondary" onAction="#handleOpenCopingTools">
+                <Button text="Coping Tools" styleClass="btn-secondary" onAction="#handleViewAllHistory">
                     <graphic>
                         <FontIcon iconLiteral="fth-heart" iconSize="15" iconColor="#E2E8F0"/>
                     </graphic>
@@ -104,7 +106,7 @@
             <Label fx:id="energyLabel" visible="false" managed="false" text="High"/>
             <FlowPane fx:id="moodDistributionPane" visible="false" managed="false"/>
             <VBox fx:id="moodWeekBox" visible="false" managed="false"/>
-            <VBox fx:id="habitsBox" visible="false" managed="false"/>
+            <HBox fx:id="habitsBox" visible="false" managed="false" spacing="12"/>
             <VBox fx:id="mindfulnessBox" visible="false" managed="false"/>
             <VBox fx:id="sleepLogBox" visible="false" managed="false"/>
 
@@ -178,6 +180,7 @@
                     </StackPane>
                     <VBox spacing="2" HBox.hgrow="ALWAYS">
                         <Label fx:id="formTitleLabel" text="Daily Check-in" styleClass="card-title"/>
+                        <Label fx:id="formErrorLabel" text="" styleClass="auth-error" visible="false" managed="false"/>
                         <Label text="How are you feeling today?" styleClass="text-small"/>
                     </VBox>
                     <Button text="Back" styleClass="btn-secondary" onAction="#handleBackToOverview"/>
@@ -187,12 +190,57 @@
                     <VBox spacing="8" styleClass="wellbeing-input-card">
                         <Label text="Mood" styleClass="text-subheading" style="-fx-font-size: 22px;"/>
                         <Label text="Select the emoji that best represents how you're feeling" styleClass="text-small"/>
-                        <HBox fx:id="moodButtonsBox" spacing="12" maxWidth="Infinity">
-                            <Button text="😃&#10;Great" userData="great" onAction="#handleMoodSelection" styleClass="wellbeing-choice-card, mood-great" HBox.hgrow="ALWAYS"/>
-                            <Button text="😊&#10;Good" userData="good" onAction="#handleMoodSelection" styleClass="wellbeing-choice-card, mood-good, selected" HBox.hgrow="ALWAYS"/>
-                            <Button text="😐&#10;Okay" userData="okay" onAction="#handleMoodSelection" styleClass="wellbeing-choice-card, mood-okay" HBox.hgrow="ALWAYS"/>
-                            <Button text="😰&#10;Stressed" userData="stressed" onAction="#handleMoodSelection" styleClass="wellbeing-choice-card, mood-stressed" HBox.hgrow="ALWAYS"/>
-                            <Button text="😪&#10;Tired" userData="tired" onAction="#handleMoodSelection" styleClass="wellbeing-choice-card, mood-tired" HBox.hgrow="ALWAYS"/>
+                        <HBox fx:id="moodButtonsBox" spacing="12">
+                            <Button text="Great" contentDisplay="TOP" userData="great" onAction="#handleMoodSelection"
+                                    styleClass="wellbeing-choice-card, mood-great" maxWidth="Infinity" HBox.hgrow="ALWAYS">
+                                <graphic>
+                                    <ImageView fitHeight="30" preserveRatio="true" styleClass="mood-emoji-image">
+                                        <image>
+                                            <Image url="@../assets/mood/great.png"/>
+                                        </image>
+                                    </ImageView>
+                                </graphic>
+                            </Button>
+                            <Button text="Good" contentDisplay="TOP" userData="good" onAction="#handleMoodSelection"
+                                    styleClass="wellbeing-choice-card, mood-good, selected" maxWidth="Infinity" HBox.hgrow="ALWAYS">
+                                <graphic>
+                                    <ImageView fitHeight="30" preserveRatio="true" styleClass="mood-emoji-image">
+                                        <image>
+                                            <Image url="@../assets/mood/good.png"/>
+                                        </image>
+                                    </ImageView>
+                                </graphic>
+                            </Button>
+                            <Button text="Okay" contentDisplay="TOP" userData="okay" onAction="#handleMoodSelection"
+                                    styleClass="wellbeing-choice-card, mood-okay" maxWidth="Infinity" HBox.hgrow="ALWAYS">
+                                <graphic>
+                                    <ImageView fitHeight="30" preserveRatio="true" styleClass="mood-emoji-image">
+                                        <image>
+                                            <Image url="@../assets/mood/okay.png"/>
+                                        </image>
+                                    </ImageView>
+                                </graphic>
+                            </Button>
+                            <Button text="Stressed" contentDisplay="TOP" userData="stressed" onAction="#handleMoodSelection"
+                                    styleClass="wellbeing-choice-card, mood-stressed" maxWidth="Infinity" HBox.hgrow="ALWAYS">
+                                <graphic>
+                                    <ImageView fitHeight="30" preserveRatio="true" styleClass="mood-emoji-image">
+                                        <image>
+                                            <Image url="@../assets/mood/stressed.png"/>
+                                        </image>
+                                    </ImageView>
+                                </graphic>
+                            </Button>
+                            <Button text="Tired" contentDisplay="TOP" userData="tired" onAction="#handleMoodSelection"
+                                    styleClass="wellbeing-choice-card, mood-tired" maxWidth="Infinity" HBox.hgrow="ALWAYS">
+                                <graphic>
+                                    <ImageView fitHeight="30" preserveRatio="true" styleClass="mood-emoji-image">
+                                        <image>
+                                            <Image url="@../assets/mood/tired.png"/>
+                                        </image>
+                                    </ImageView>
+                                </graphic>
+                            </Button>
                         </HBox>
                     </VBox>
 
@@ -224,25 +272,28 @@
                         </VBox>
                     </HBox>
 
-                    <VBox spacing="10" styleClass="wellbeing-input-card">
+                    <VBox spacing="4" VBox.vgrow="NEVER">
                         <Label text="Sleep" styleClass="text-subheading" style="-fx-font-size: 18px;"/>
                         <Label text="How many hours did you sleep last night?" styleClass="text-small"/>
-                        <HBox fx:id="sleepButtonsBox" spacing="10">
-                            <Button text="4&#10;hrs" userData="4" onAction="#handleSleepSelection" styleClass="wellbeing-sleep-card" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
-                            <Button text="5&#10;hrs" userData="5" onAction="#handleSleepSelection" styleClass="wellbeing-sleep-card" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
-                            <Button text="6&#10;hrs" userData="6" onAction="#handleSleepSelection" styleClass="wellbeing-sleep-card" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
-                            <Button text="7&#10;hrs" userData="7" onAction="#handleSleepSelection" styleClass="wellbeing-sleep-card, selected" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
-                            <Button text="8&#10;hrs" userData="8" onAction="#handleSleepSelection" styleClass="wellbeing-sleep-card" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
-                            <Button text="9&#10;hrs" userData="9" onAction="#handleSleepSelection" styleClass="wellbeing-sleep-card" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
-                            <Button text="10&#10;hrs" userData="10" onAction="#handleSleepSelection" styleClass="wellbeing-sleep-card" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
-                            <Button text="10+&#10;hrs" userData="11" onAction="#handleSleepSelection" styleClass="wellbeing-sleep-card" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                        <HBox fx:id="sleepButtonsBox" spacing="10" HBox.hgrow="ALWAYS">
+                            <Button text="4&#10;hrs" userData="4" onAction="#handleSleepSelection" styleClass="wellbeing-sleep-card"/>
+                            <Button text="5&#10;hrs" userData="5" onAction="#handleSleepSelection" styleClass="wellbeing-sleep-card"/>
+                            <Button text="6&#10;hrs" userData="6" onAction="#handleSleepSelection" styleClass="wellbeing-sleep-card"/>
+                            <Button text="7&#10;hrs" userData="7" onAction="#handleSleepSelection" styleClass="wellbeing-sleep-card, selected"/>
+                            <Button text="8&#10;hrs" userData="8" onAction="#handleSleepSelection" styleClass="wellbeing-sleep-card"/>
+                            <Button text="9&#10;hrs" userData="9" onAction="#handleSleepSelection" styleClass="wellbeing-sleep-card"/>
+                            <Button text="10&#10;hrs" userData="10" onAction="#handleSleepSelection" styleClass="wellbeing-sleep-card"/>
+                            <Button text="10+&#10;hrs" userData="11" onAction="#handleSleepSelection" styleClass="wellbeing-sleep-card"/>
                         </HBox>
+                        <Label fx:id="sleepErrorLabel" text="" visible="false" managed="false" style="-fx-text-fill: #FB7185; -fx-font-size: 14px; -fx-font-weight: 600; -fx-padding: 6 0 0 8;"/>
                     </VBox>
 
-                    <VBox spacing="8" styleClass="wellbeing-input-card">
+                    <VBox spacing="8">
                         <Label text="Notes" styleClass="text-subheading" style="-fx-font-size: 18px;"/>
-                        <TextArea fx:id="notesArea" promptText="How are you feeling? What's on your mind?" prefRowCount="4" wrapText="true" styleClass="wellbeing-notes-area"/>
-                        <Label fx:id="notesErrorLabel" text="" styleClass="auth-error" visible="false" managed="false"/>
+                        <StackPane>
+                            <TextArea fx:id="notesArea" promptText="How are you feeling? What's on your mind?" prefRowCount="4" wrapText="true"/>
+                            <Label fx:id="noteErrorLabel" text="" visible="false" managed="false" style="-fx-text-fill: #FB7185; -fx-font-size: 14px; -fx-font-weight: 600; -fx-padding: 12;"/>
+                        </StackPane>
                     </VBox>
 
                     <HBox spacing="12">

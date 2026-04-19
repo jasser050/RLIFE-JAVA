@@ -36,11 +36,20 @@ public class RegisterController implements Initializable {
         String splineHtml = getClass().getResource("/com/studyflow/views/spline.html").toExternalForm();
         splineView.getEngine().load(splineHtml);
         splineView.getEngine().setJavaScriptEnabled(true);
+
+        wireClearOnTyping(
+                firstNameField, lastNameField, usernameField,
+                emailField, passwordField, confirmPasswordField
+        );
     }
 
     @FXML
     private void handleRegister() {
         hideError();
+        clearFieldErrors(
+                firstNameField, lastNameField, usernameField,
+                emailField, passwordField, confirmPasswordField
+        );
 
         String firstName = firstNameField.getText() == null ? "" : firstNameField.getText().trim();
         String lastName  = lastNameField.getText() == null ? "" : lastNameField.getText().trim();
@@ -49,29 +58,59 @@ public class RegisterController implements Initializable {
         String password  = passwordField.getText() == null ? "" : passwordField.getText();
         String confirm   = confirmPasswordField.getText() == null ? "" : confirmPasswordField.getText();
 
-        // Validation
-        if (firstName.isEmpty() || lastName.isEmpty() || username.isEmpty()
-                || email.isEmpty() || password.isEmpty()) {
-            showError("Please fill in all required fields.");
+        if (firstName.isEmpty()) {
+            markFieldError(firstNameField);
+            showError("First name is required.");
+            return;
+        }
+        if (lastName.isEmpty()) {
+            markFieldError(lastNameField);
+            showError("Last name is required.");
+            return;
+        }
+        if (username.isEmpty()) {
+            markFieldError(usernameField);
+            showError("Username is required.");
             return;
         }
         if (username.length() < 3 || username.length() > 20) {
+            markFieldError(usernameField);
             showError("Username must be between 3 and 20 characters.");
             return;
         }
-        if (!email.contains("@")) {
+        if (email.isEmpty()) {
+            markFieldError(emailField);
+            showError("Email is required.");
+            return;
+        }
+        if (!isValidEmail(email)) {
+            markFieldError(emailField);
             showError("Please enter a valid email address.");
             return;
         }
+        if (password.isEmpty()) {
+            markFieldError(passwordField);
+            showError("Password is required.");
+            return;
+        }
         if (password.length() < 6) {
+            markFieldError(passwordField);
             showError("Password must be at least 6 characters.");
             return;
         }
+        if (confirm.isEmpty()) {
+            markFieldError(confirmPasswordField);
+            showError("Please confirm your password.");
+            return;
+        }
         if (!password.equals(confirm)) {
+            markFieldError(passwordField);
+            markFieldError(confirmPasswordField);
             showError("Passwords do not match.");
             return;
         }
         if (serviceUser.findByEmail(email) != null) {
+            markFieldError(emailField);
             showError("An account with this email already exists.");
             return;
         }
@@ -149,5 +188,30 @@ public class RegisterController implements Initializable {
     private void resetButton() {
         registerBtn.setDisable(false);
         registerBtn.setText("Create Account");
+    }
+
+    private boolean isValidEmail(String email) {
+        return email != null
+                && email.contains("@")
+                && email.indexOf('@') > 0
+                && email.indexOf('@') < email.length() - 1;
+    }
+
+    private void wireClearOnTyping(TextInputControl... fields) {
+        for (TextInputControl field : fields) {
+            field.textProperty().addListener((obs, oldValue, newValue) -> field.getStyleClass().remove("auth-field-error"));
+        }
+    }
+
+    private void markFieldError(TextInputControl field) {
+        if (!field.getStyleClass().contains("auth-field-error")) {
+            field.getStyleClass().add("auth-field-error");
+        }
+    }
+
+    private void clearFieldErrors(TextInputControl... fields) {
+        for (TextInputControl field : fields) {
+            field.getStyleClass().remove("auth-field-error");
+        }
     }
 }
