@@ -397,6 +397,20 @@ public class PlanningController implements Initializable {
     }
 
     @FXML
+    private void handleOpenPlanningGame() {
+        MainController mainController = MainController.getInstance();
+        if (mainController != null) {
+            mainController.showPlanningGame();
+            return;
+        }
+        try {
+            App.setRoot("views/PlanningGame");
+        } catch (IOException exception) {
+            showErrorOn(pageMessageLabel, "Unable to open planning game: " + exception.getMessage());
+        }
+    }
+
+    @FXML
     private void handleAddPlanning() {
         resetForm();
         planningDatePicker.setValue(LocalDate.now());

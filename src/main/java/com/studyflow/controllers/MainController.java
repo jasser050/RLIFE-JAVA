@@ -199,6 +199,11 @@ public class MainController implements Initializable {
         loadContent("views/TypeSeance.fxml");
     }
 
+    public void showPlanningGame() {
+        setActiveButton(btnPlanning);
+        loadContent("views/PlanningGame.fxml");
+    }
+
     @FXML
     private void showRevisions() {
         setActiveButton(btnRevisions);

@@ -50,6 +50,11 @@
                 <FontIcon iconLiteral="fth-settings" iconSize="16" />
             </graphic>
         </Button>
+        <Button onAction="#handleOpenPlanningGame" styleClass="btn-secondary" text="Gaming">
+            <graphic>
+                <FontIcon iconLiteral="fth-zap" iconSize="16" />
+            </graphic>
+        </Button>
     </HBox>
 
     <Label fx:id="pageMessageLabel" managed="false" visible="false" />
