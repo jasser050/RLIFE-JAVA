@@ -12,6 +12,7 @@
 
     <padding><Insets top="0" right="0" bottom="24" left="0"/></padding>
 
+    <!-- ══ HEADER ══════════════════════════════════════════════════════════ -->
     <HBox alignment="CENTER_LEFT" spacing="16">
         <VBox spacing="4" HBox.hgrow="ALWAYS">
             <Label fx:id="pageTitle" text="Subject Management" styleClass="text-heading"/>
@@ -27,6 +28,7 @@
         </Button>
     </HBox>
 
+    <!-- ══ STAT CARDS ══════════════════════════════════════════════════════ -->
     <HBox spacing="16">
         <VBox styleClass="stat-card" spacing="12" HBox.hgrow="ALWAYS">
             <HBox alignment="CENTER_LEFT" spacing="12">
@@ -34,7 +36,7 @@
                     <FontIcon iconLiteral="fth-book-open" iconSize="20"/>
                 </StackPane>
                 <VBox spacing="2">
-                    <Label fx:id="totalMatieresLabel" text="0" styleClass="stat-value" style="-fx-font-size: 24px;"/>
+                    <Label fx:id="totalMatieresLabel" text="0" styleClass="stat-value" style="-fx-font-size:24px;"/>
                     <Label text="Total Subjects" styleClass="stat-label"/>
                 </VBox>
             </HBox>
@@ -45,7 +47,7 @@
                     <FontIcon iconLiteral="fth-layers" iconSize="20"/>
                 </StackPane>
                 <VBox spacing="2">
-                    <Label fx:id="totalCoursLabel" text="0" styleClass="stat-value" style="-fx-font-size: 24px;"/>
+                    <Label fx:id="totalCoursLabel" text="0" styleClass="stat-value" style="-fx-font-size:24px;"/>
                     <Label text="Courses" styleClass="stat-label"/>
                 </VBox>
             </HBox>
@@ -56,7 +58,7 @@
                     <FontIcon iconLiteral="fth-edit" iconSize="20"/>
                 </StackPane>
                 <VBox spacing="2">
-                    <Label fx:id="totalTDLabel" text="0" styleClass="stat-value" style="-fx-font-size: 24px;"/>
+                    <Label fx:id="totalTDLabel" text="0" styleClass="stat-value" style="-fx-font-size:24px;"/>
                     <Label text="Tutorials / Labs" styleClass="stat-label"/>
                 </VBox>
             </HBox>
@@ -67,73 +69,153 @@
                     <FontIcon iconLiteral="fth-trending-up" iconSize="20"/>
                 </StackPane>
                 <VBox spacing="2">
-                    <Label fx:id="avgCoeffLabel" text="0.0" styleClass="stat-value" style="-fx-font-size: 24px;"/>
+                    <Label fx:id="avgCoeffLabel" text="0.0" styleClass="stat-value" style="-fx-font-size:24px;"/>
                     <Label text="Average Coefficient" styleClass="stat-label"/>
                 </VBox>
             </HBox>
         </VBox>
     </HBox>
 
-    <VBox fx:id="listView" spacing="24">
+    <!-- ══ LIST VIEW ═══════════════════════════════════════════════════════ -->
+    <VBox fx:id="listView" spacing="16">
+
+        <!-- FIXED: filter badges — all inline styles, uniform appearance -->
         <HBox spacing="8">
-            <Label text="All" styleClass="badge, primary" style="-fx-cursor: hand;" onMouseClicked="#filterAll"/>
-            <Label text="Courses" styleClass="badge, courses-filter-chip, success" style="-fx-cursor: hand;" onMouseClicked="#filterCours"/>
-            <Label text="Tutorials" styleClass="badge, courses-filter-chip, warning" style="-fx-cursor: hand;" onMouseClicked="#filterTD"/>
-            <Label text="Labs" styleClass="badge, courses-filter-chip, accent" style="-fx-cursor: hand;" onMouseClicked="#filterTP"/>
+            <Label text="All" onMouseClicked="#filterAll"
+                   style="-fx-cursor:hand;
+                          -fx-background-color:#7C3AED;
+                          -fx-text-fill:#FFFFFF;
+                          -fx-padding:5 16;
+                          -fx-background-radius:20;
+                          -fx-font-size:12px;
+                          -fx-font-weight:700;"/>
+            <Label text="Courses" onMouseClicked="#filterCours"
+                   style="-fx-cursor:hand;
+                          -fx-background-color:#0D2C1F;
+                          -fx-text-fill:#34D399;
+                          -fx-border-color:#34D399;
+                          -fx-border-width:1.5;
+                          -fx-padding:5 16;
+                          -fx-background-radius:20;
+                          -fx-border-radius:20;
+                          -fx-font-size:12px;
+                          -fx-font-weight:600;"/>
+            <Label text="Tutorials" onMouseClicked="#filterTD"
+                   style="-fx-cursor:hand;
+                          -fx-background-color:#2C1E00;
+                          -fx-text-fill:#FBBF24;
+                          -fx-border-color:#FBBF24;
+                          -fx-border-width:1.5;
+                          -fx-padding:5 16;
+                          -fx-background-radius:20;
+                          -fx-border-radius:20;
+                          -fx-font-size:12px;
+                          -fx-font-weight:600;"/>
+            <Label text="Labs" onMouseClicked="#filterTP"
+                   style="-fx-cursor:hand;
+                          -fx-background-color:#2C1200;
+                          -fx-text-fill:#FB923C;
+                          -fx-border-color:#FB923C;
+                          -fx-border-width:1.5;
+                          -fx-padding:5 16;
+                          -fx-background-radius:20;
+                          -fx-border-radius:20;
+                          -fx-font-size:12px;
+                          -fx-font-weight:600;"/>
         </HBox>
+
         <FlowPane fx:id="matieresGrid" hgap="16" vgap="16" prefWidth="Infinity" VBox.vgrow="ALWAYS"/>
     </VBox>
 
+    <!-- ══ FORM PANEL ══════════════════════════════════════════════════════ -->
     <VBox fx:id="formPanel" managed="false" visible="false" spacing="0" styleClass="courses-form-panel">
+
         <HBox alignment="CENTER_LEFT" spacing="16" styleClass="courses-form-header">
             <StackPane styleClass="courses-form-icon">
                 <FontIcon iconLiteral="fth-book-open" iconSize="20" iconColor="#A78BFA"/>
             </StackPane>
             <VBox spacing="4">
-                <Label fx:id="formTitle" text="Subject Information" styleClass="courses-form-title"/>
-                <Label text="Please fill in all required fields" styleClass="courses-helper-text"/>
+                <Label fx:id="formTitle" text="Subject Information"
+                       style="-fx-font-size:18px;-fx-font-weight:700;-fx-text-fill:#F8FAFC;"/>
+                <Label text="Please fill in all required fields"
+                       style="-fx-font-size:12px;-fx-text-fill:#94A3B8;"/>
             </VBox>
         </HBox>
 
-        <VBox spacing="24" style="-fx-padding: 28;">
+        <VBox spacing="24" style="-fx-padding:28;">
+
+            <!-- Subject Name -->
             <VBox spacing="8">
-                <Label text="Subject Name *" styleClass="courses-field-label"/>
-                <TextField fx:id="fldNom" promptText="e.g. Numerical Analysis, Physics..." styleClass="courses-text-field"/>
+                <Label text="Subject Name *"
+                       style="-fx-font-size:13px;-fx-font-weight:700;-fx-text-fill:#F8FAFC;"/>
+                <TextField fx:id="fldNom" promptText="e.g. Numerical Analysis, Physics..."
+                           style="-fx-background-color:#1E293B;-fx-text-fill:#F8FAFC;
+                                  -fx-prompt-text-fill:#64748B;-fx-border-color:#334155;
+                                  -fx-border-width:1.5;-fx-border-radius:10;
+                                  -fx-background-radius:10;-fx-padding:12 14;-fx-font-size:13px;"/>
             </VBox>
 
+            <!-- Code + Coefficient -->
             <HBox spacing="20">
                 <VBox spacing="8" HBox.hgrow="ALWAYS">
-                    <Label text="Code *" styleClass="courses-field-label"/>
-                    <TextField fx:id="fldCode" promptText="e.g. MATH301" styleClass="courses-text-field"/>
+                    <Label text="Code *"
+                           style="-fx-font-size:13px;-fx-font-weight:700;-fx-text-fill:#F8FAFC;"/>
+                    <TextField fx:id="fldCode" promptText="e.g. MATH301"
+                               style="-fx-background-color:#1E293B;-fx-text-fill:#F8FAFC;
+                                      -fx-prompt-text-fill:#64748B;-fx-border-color:#334155;
+                                      -fx-border-width:1.5;-fx-border-radius:10;
+                                      -fx-background-radius:10;-fx-padding:12 14;-fx-font-size:13px;"/>
                 </VBox>
                 <VBox spacing="8" HBox.hgrow="ALWAYS">
-                    <Label text="Coefficient *" styleClass="courses-field-label"/>
-                    <TextField fx:id="fldCoeff" promptText="e.g. 3.0" styleClass="courses-text-field"/>
+                    <Label text="Coefficient *"
+                           style="-fx-font-size:13px;-fx-font-weight:700;-fx-text-fill:#F8FAFC;"/>
+                    <TextField fx:id="fldCoeff" promptText="e.g. 3.0"
+                               style="-fx-background-color:#1E293B;-fx-text-fill:#F8FAFC;
+                                      -fx-prompt-text-fill:#64748B;-fx-border-color:#334155;
+                                      -fx-border-width:1.5;-fx-border-radius:10;
+                                      -fx-background-radius:10;-fx-padding:12 14;-fx-font-size:13px;"/>
                 </VBox>
             </HBox>
 
+            <!-- Hours + Section + Type -->
             <HBox spacing="20">
                 <VBox spacing="8" HBox.hgrow="ALWAYS">
-                    <Label text="Hours *" styleClass="courses-field-label"/>
-                    <TextField fx:id="fldHeures" promptText="e.g. 40" styleClass="courses-text-field"/>
+                    <Label text="Hours *"
+                           style="-fx-font-size:13px;-fx-font-weight:700;-fx-text-fill:#F8FAFC;"/>
+                    <TextField fx:id="fldHeures" promptText="e.g. 40"
+                               style="-fx-background-color:#1E293B;-fx-text-fill:#F8FAFC;
+                                      -fx-prompt-text-fill:#64748B;-fx-border-color:#334155;
+                                      -fx-border-width:1.5;-fx-border-radius:10;
+                                      -fx-background-radius:10;-fx-padding:12 14;-fx-font-size:13px;"/>
                 </VBox>
                 <VBox spacing="8" HBox.hgrow="ALWAYS">
-                    <Label text="Section *" styleClass="courses-field-label"/>
-                    <ComboBox fx:id="cmbSection" promptText="Select section..." maxWidth="Infinity" styleClass="courses-select"/>
+                    <Label text="Section *"
+                           style="-fx-font-size:13px;-fx-font-weight:700;-fx-text-fill:#F8FAFC;"/>
+                    <ComboBox fx:id="cmbSection" promptText="Select section..."
+                              maxWidth="1.7976931348623157E308"
+                              style="-fx-background-color:#1E293B;-fx-border-color:#334155;
+                                     -fx-border-width:1.5;-fx-border-radius:10;
+                                     -fx-background-radius:10;-fx-padding:10 14;
+                                     -fx-font-size:13px;-fx-text-fill:#F8FAFC;"/>
                 </VBox>
                 <VBox spacing="8" HBox.hgrow="ALWAYS">
-                    <Label text="Type *" styleClass="courses-field-label"/>
-                    <ComboBox fx:id="cmbType" maxWidth="Infinity" styleClass="courses-select"/>
+                    <Label text="Type *"
+                           style="-fx-font-size:13px;-fx-font-weight:700;-fx-text-fill:#F8FAFC;"/>
+                    <ComboBox fx:id="cmbType" maxWidth="1.7976931348623157E308"
+                              style="-fx-background-color:#1E293B;-fx-border-color:#334155;
+                                     -fx-border-width:1.5;-fx-border-radius:10;
+                                     -fx-background-radius:10;-fx-padding:10 14;
+                                     -fx-font-size:13px;-fx-text-fill:#F8FAFC;"/>
                 </VBox>
             </HBox>
 
-            <VBox spacing="8" alignment="CENTER_LEFT">
-                <Label text="Description" styleClass="courses-field-label"/>
-
+            <!-- Description -->
+            <VBox spacing="8">
+                <Label text="Description"
+                       style="-fx-font-size:13px;-fx-font-weight:700;-fx-text-fill:#F8FAFC;"/>
                 <TextArea fx:id="fldDesc"
                           promptText="Optional description of the subject content..."
-                          prefRowCount="3"
-                          wrapText="true"
+                          prefRowCount="3" wrapText="true"
                           styleClass="courses-text-area"/>
             </VBox>
 
@@ -141,7 +223,7 @@
         </VBox>
 
         <HBox alignment="CENTER_RIGHT" spacing="12"
-              style="-fx-padding: 16 28 24 28; -fx-border-color: #1E293B; -fx-border-width: 1 0 0 0;">
+              style="-fx-padding:16 28 24 28;-fx-border-color:#1E293B;-fx-border-width:1 0 0 0;">
             <Button text="Cancel" styleClass="btn-secondary" onAction="#handleCancel"/>
             <Button fx:id="btnSave" text="Save Subject" styleClass="btn-primary" onAction="#handleSave">
                 <graphic>
