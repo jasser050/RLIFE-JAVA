@@ -25,40 +25,53 @@
                    text="Track your results and manage your assessments by subject"/>
         </VBox>
 
-        <ComboBox fx:id="sortCombo" prefHeight="28.0" prefWidth="80.0" styleClass="courses-select"/>
+        <ComboBox fx:id="sortCombo" prefHeight="32.0" prefWidth="100.0"
+                  style="-fx-background-color:#1E293B;
+                 -fx-border-color:#334155;
+                 -fx-border-width:1.5;
+                 -fx-border-radius:10;
+                 -fx-background-radius:10;
+                 -fx-font-size:12px;
+                 -fx-text-fill:#F8FAFC;"/>
 
-        <TextField fx:id="searchField" maxHeight="24.0" maxWidth="80.0"
-                   prefHeight="24.0" prefWidth="80.0"
-                   promptText="Search…" styleClass="search-field">
-            <font><Font size="10.0"/></font>
+        <TextField fx:id="searchField" prefHeight="32.0" prefWidth="120.0"
+                   promptText="Search…"
+                   style="-fx-background-color:#1E293B;
+                  -fx-text-fill:#F8FAFC;
+                  -fx-prompt-text-fill:#64748B;
+                  -fx-border-color:#334155;
+                  -fx-border-width:1.5;
+                  -fx-border-radius:10;
+                  -fx-background-radius:10;
+                  -fx-padding:6 12;
+                  -fx-font-size:12px;">
+            <font><Font size="12.0"/></font>
         </TextField>
 
-        <!-- FIXED: Export PDF button — violet outline, matches UI -->
+        <!-- Export PDF — même style que New Assessment -->
         <Button onAction="#handleExportPdf"
-                style="-fx-background-color:transparent;
-                       -fx-text-fill:#A78BFA;
-                       -fx-border-color:#A78BFA;
-                       -fx-border-width:1.5;
-                       -fx-border-radius:10;
-                       -fx-background-radius:10;
-                       -fx-padding:6 16;
-                       -fx-font-size:12px;
-                       -fx-font-weight:600;
-                       -fx-cursor:hand;"
+                prefHeight="36.0"
+                style="-fx-background-color:#7C3AED;
+               -fx-text-fill:#FFFFFF;
+               -fx-border-radius:10;
+               -fx-background-radius:10;
+               -fx-padding:8 16;
+               -fx-font-size:12px;
+               -fx-font-weight:700;
+               -fx-cursor:hand;"
                 text="Export PDF"/>
 
-        <!-- FIXED: Statistics button — dark card style, matches UI -->
+        <!-- Statistics — même style que New Assessment -->
         <Button onAction="#handleShowStats"
-                style="-fx-background-color:#1E293B;
-                       -fx-text-fill:#F8FAFC;
-                       -fx-border-color:#334155;
-                       -fx-border-width:1.5;
-                       -fx-border-radius:10;
-                       -fx-background-radius:10;
-                       -fx-padding:6 16;
-                       -fx-font-size:12px;
-                       -fx-font-weight:600;
-                       -fx-cursor:hand;"
+                prefHeight="36.0"
+                style="-fx-background-color:#7C3AED;
+               -fx-text-fill:#FFFFFF;
+               -fx-border-radius:10;
+               -fx-background-radius:10;
+               -fx-padding:8 16;
+               -fx-font-size:12px;
+               -fx-font-weight:700;
+               -fx-cursor:hand;"
                 text="📊  Statistics"/>
 
         <Button fx:id="btnHeaderAction" onAction="#handleHeaderAction"
