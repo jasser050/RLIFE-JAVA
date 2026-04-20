@@ -7,6 +7,8 @@ C:\Users\yassi\Desktop\3A50\pidevjava\RLIFE-JAVA-main\_push_planning_repo\src\ma
 C:\Users\yassi\Desktop\3A50\pidevjava\RLIFE-JAVA-main\_push_planning_repo\src\main\java\com\studyflow\models\Assignment.java
 C:\Users\yassi\Desktop\3A50\pidevjava\RLIFE-JAVA-main\_push_planning_repo\src\main\java\com\studyflow\models\Course.java
 C:\Users\yassi\Desktop\3A50\pidevjava\RLIFE-JAVA-main\_push_planning_repo\src\main\java\com\studyflow\controllers\NotesController.java
+C:\Users\yassi\Desktop\3A50\pidevjava\RLIFE-JAVA-main\_push_planning_repo\src\main\java\com\studyflow\services\PlanningEmailNotificationService.java
+C:\Users\yassi\Desktop\3A50\pidevjava\RLIFE-JAVA-main\_push_planning_repo\src\main\java\com\studyflow\services\AIPlanningService.java
 C:\Users\yassi\Desktop\3A50\pidevjava\RLIFE-JAVA-main\_push_planning_repo\src\main\java\com\studyflow\controllers\WellbeingController.java
 C:\Users\yassi\Desktop\3A50\pidevjava\RLIFE-JAVA-main\_push_planning_repo\src\main\java\com\studyflow\App.java
 C:\Users\yassi\Desktop\3A50\pidevjava\RLIFE-JAVA-main\_push_planning_repo\src\main\java\com\studyflow\services\ServiceTypeSeance.java
@@ -22,6 +24,7 @@ C:\Users\yassi\Desktop\3A50\pidevjava\RLIFE-JAVA-main\_push_planning_repo\src\ma
 C:\Users\yassi\Desktop\3A50\pidevjava\RLIFE-JAVA-main\_push_planning_repo\src\main\java\com\studyflow\controllers\MainController.java
 C:\Users\yassi\Desktop\3A50\pidevjava\RLIFE-JAVA-main\_push_planning_repo\src\main\java\com\studyflow\models\User.java
 C:\Users\yassi\Desktop\3A50\pidevjava\RLIFE-JAVA-main\_push_planning_repo\src\main\java\com\studyflow\controllers\DashboardController.java
+C:\Users\yassi\Desktop\3A50\pidevjava\RLIFE-JAVA-main\_push_planning_repo\src\main\java\com\studyflow\services\FootballDataService.java
 C:\Users\yassi\Desktop\3A50\pidevjava\RLIFE-JAVA-main\_push_planning_repo\src\main\java\com\studyflow\controllers\AssignmentsController.java
 C:\Users\yassi\Desktop\3A50\pidevjava\RLIFE-JAVA-main\_push_planning_repo\src\main\java\com\studyflow\controllers\RevisionsController.java
 C:\Users\yassi\Desktop\3A50\pidevjava\RLIFE-JAVA-main\_push_planning_repo\src\main\java\com\studyflow\controllers\ProfileController.java
