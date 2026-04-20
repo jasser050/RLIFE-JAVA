@@ -34,9 +34,12 @@ public class GlbLoader {
      * Load a .glb from a classpath resource stream.
      * Copies to a temp file first so jgltf can use its URI-based reader.
      */
-    public static Group loadFromResource(String resourcePath) throws Exception {
-        InputStream is = GlbLoader.class.getResourceAsStream(resourcePath);
-        if (is == null) throw new IllegalArgumentException("Resource not found: " + resourcePath);
+    private static String resourcePath; // for debug logging
+
+    public static Group loadFromResource(String resPath) throws Exception {
+        InputStream is = GlbLoader.class.getResourceAsStream(resPath);
+        if (is == null) throw new IllegalArgumentException("Resource not found: " + resPath);
+        resourcePath = resPath;
         return loadFromStream(is);
     }
 
@@ -64,6 +67,31 @@ public class GlbLoader {
                     if (!img.isError()) {
                         textureImage = img;
                     }
+                }
+            }
+
+            // Debug: print model structure
+            if (resourcePath != null && resourcePath.contains("spline")) {
+                System.out.println("[GLB-DEBUG] === Model: " + resourcePath + " ===");
+                System.out.println("[GLB-DEBUG] Images: " + (images != null ? images.size() : 0));
+                System.out.println("[GLB-DEBUG] Materials: " + model.getMaterialModels().size());
+                for (MaterialModel mat : model.getMaterialModels()) {
+                    System.out.println("[GLB-DEBUG]   Mat: " + mat.getName() + " class=" + mat.getClass().getSimpleName());
+                    if (mat instanceof MaterialModelV2) {
+                        MaterialModelV2 m2 = (MaterialModelV2) mat;
+                        float[] bc = m2.getBaseColorFactor();
+                        if (bc != null) System.out.println("[GLB-DEBUG]     BaseColor: [" + bc[0] + ", " + bc[1] + ", " + bc[2] + "]");
+                        System.out.println("[GLB-DEBUG]     BaseColorTexture: " + m2.getBaseColorTexture());
+                        System.out.println("[GLB-DEBUG]     Metallic: " + m2.getMetallicFactor());
+                        System.out.println("[GLB-DEBUG]     Roughness: " + m2.getRoughnessFactor());
+                        float[] ef = m2.getEmissiveFactor();
+                        if (ef != null) System.out.println("[GLB-DEBUG]     Emissive: [" + ef[0] + ", " + ef[1] + ", " + ef[2] + "]");
+                    }
+                }
+                System.out.println("[GLB-DEBUG] Scenes: " + model.getSceneModels().size());
+                for (SceneModel scene : model.getSceneModels()) {
+                    System.out.println("[GLB-DEBUG]   Scene nodes: " + scene.getNodeModels().size());
+                    for (NodeModel n : scene.getNodeModels()) debugNode(n, 2);
                 }
             }
 
@@ -265,6 +293,32 @@ public class GlbLoader {
 
         mat.setDiffuseColor(Color.color(0.68, 0.56, 0.92));
         return mat;
+    }
+
+    private static void debugNode(NodeModel node, int depth) {
+        String indent = "  ".repeat(depth);
+        String name = node.getName() != null ? node.getName() : "(unnamed)";
+        float[] matrix = node.getMatrix();
+        float[] t = node.getTranslation();
+        float[] s = node.getScale();
+        System.out.println("[GLB-DEBUG] " + indent + "Node: " + name
+            + " children=" + node.getChildren().size()
+            + " meshes=" + (node.getMeshModels() != null ? node.getMeshModels().size() : 0));
+        if (matrix != null) System.out.println("[GLB-DEBUG] " + indent + "  matrix diag: [" + matrix[0] + ", " + matrix[5] + ", " + matrix[10] + "]");
+        if (t != null) System.out.println("[GLB-DEBUG] " + indent + "  translate: [" + t[0] + ", " + t[1] + ", " + t[2] + "]");
+        if (s != null) System.out.println("[GLB-DEBUG] " + indent + "  scale: [" + s[0] + ", " + s[1] + ", " + s[2] + "]");
+        List<MeshModel> meshes = node.getMeshModels();
+        if (meshes != null) {
+            for (MeshModel mesh : meshes) {
+                for (MeshPrimitiveModel prim : mesh.getMeshPrimitiveModels()) {
+                    MaterialModel mat = prim.getMaterialModel();
+                    AccessorModel pos = prim.getAttributes().get("POSITION");
+                    System.out.println("[GLB-DEBUG] " + indent + "  Prim: mat=" + (mat != null ? mat.getName() : "null")
+                        + " verts=" + (pos != null ? pos.getCount() : 0));
+                }
+            }
+        }
+        for (NodeModel child : node.getChildren()) debugNode(child, depth + 1);
     }
 
     private static Image bufferToImage(ByteBuffer buf) {

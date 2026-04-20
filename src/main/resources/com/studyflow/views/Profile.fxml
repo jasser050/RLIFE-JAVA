@@ -8,19 +8,18 @@
 <?import javafx.geometry.Insets?>
 <?import org.kordamp.ikonli.javafx.FontIcon?>
 <?import javafx.scene.SubScene?>
+<?import javafx.scene.Node?>
 
 <VBox xmlns="http://javafx.com/javafx/21"
       xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="com.studyflow.controllers.ProfileController"
       styleClass="profile-container" spacing="0">
 
-    <ScrollPane fitToWidth="true" hbarPolicy="NEVER" VBox.vgrow="ALWAYS" styleClass="auth-scroll">
+<ScrollPane fitToWidth="true" hbarPolicy="NEVER" VBox.vgrow="ALWAYS" styleClass="auth-scroll">
         <VBox spacing="28">
             <padding><Insets top="32" right="36" bottom="40" left="36"/></padding>
 
-            <!-- ══════════════════════════════════════
-                 PAGE HEADER
-                 ══════════════════════════════════════ -->
+            <!-- PAGE HEADER -->
             <HBox alignment="CENTER_LEFT" spacing="16">
                 <VBox spacing="4" HBox.hgrow="ALWAYS">
                     <Label text="Profile &amp; Settings" styleClass="page-title"/>
@@ -28,6 +27,24 @@
                 </VBox>
                 <Label fx:id="saveStatus" styleClass="badge success" visible="false" managed="false"/>
             </HBox>
+
+            <!-- Avatar Picker Overlay -->
+            <StackPane fx:id="avatarPickerOverlay" visible="false" managed="false" styleClass="avatar-picker-overlay">
+                <StackPane styleClass="avatar-picker-backdrop" onMouseClicked="#hideAvatarPicker"/>
+                <StackPane styleClass="avatar-picker-dialog" alignment="CENTER">
+                    <VBox styleClass="avatar-picker-content" spacing="20" maxWidth="520">
+                        <HBox alignment="CENTER_LEFT" spacing="12">
+                            <Label text="Choose your avatar" styleClass="auth-title"/>
+                            <Region HBox.hgrow="ALWAYS"/>
+                            <Button styleClass="btn-ghost" onAction="#hideAvatarPicker">
+                                <graphic><FontIcon iconLiteral="fth-x" iconSize="18"/></graphic>
+                            </Button>
+                        </HBox>
+                        <Label text="Pick a character that represents you" styleClass="auth-subtitle"/>
+                        <FlowPane fx:id="profileAvatarContainer" hgap="12" vgap="12" styleClass="wizard-avatar-flow"/>
+                    </VBox>
+                </StackPane>
+            </StackPane>
 
             <!-- ══════════════════════════════════════
                  HERO BANNER — Vivid gradient (matches Symfony)
@@ -52,7 +69,7 @@
                     <HBox spacing="24" alignment="BOTTOM_LEFT">
 
                         <!-- ── Avatar circle — 3D GLB model or initials fallback ── -->
-                        <StackPane fx:id="avatarContainer" styleClass="profile-avatar-ring" alignment="CENTER">
+                        <StackPane fx:id="avatarContainer" styleClass="profile-avatar-ring" alignment="CENTER" onMouseClicked="#showAvatarPicker">
                             <StackPane styleClass="profile-avatar-inner" alignment="CENTER">
                                 <Label fx:id="avatarInitials" text="??" styleClass="profile-avatar-text"/>
                             </StackPane>
@@ -73,6 +90,9 @@
                                     <Label fx:id="profileEmail" text="" styleClass="profile-pill-text-purple"/>
                                 </HBox>
                             </HBox>
+
+                            <!-- Bio display -->
+                            <Label fx:id="profileBio" text="" styleClass="profile-bio-text" visible="false" managed="false"/>
                         </VBox>
                     </HBox>
                 </VBox>
@@ -170,16 +190,45 @@
 
                     <VBox spacing="10">
                         <Label text="Gender" styleClass="auth-field-label"/>
-                        <HBox spacing="20">
-                            <RadioButton fx:id="genderMale" text="Male" styleClass="profile-radio"/>
-                            <RadioButton fx:id="genderFemale" text="Female" styleClass="profile-radio"/>
+                        <HBox spacing="14">
+                            <ToggleButton fx:id="genderMaleBtn" styleClass="gender-card" maxWidth="Infinity" HBox.hgrow="ALWAYS">
+                                <graphic>
+                                    <HBox alignment="CENTER_LEFT" spacing="10">
+                                        <StackPane styleClass="gender-icon-box, gender-male-icon">
+                                            <FontIcon iconLiteral="fth-user" iconSize="16" iconColor="white"/>
+                                        </StackPane>
+                                        <VBox spacing="2">
+                                            <Label text="Male" styleClass="gender-card-title"/>
+                                            <Label text="He/Him" styleClass="gender-card-sub"/>
+                                        </VBox>
+                                    </HBox>
+                                </graphic>
+                            </ToggleButton>
+                            <ToggleButton fx:id="genderFemaleBtn" styleClass="gender-card" maxWidth="Infinity" HBox.hgrow="ALWAYS">
+                                <graphic>
+                                    <HBox alignment="CENTER_LEFT" spacing="10">
+                                        <StackPane styleClass="gender-icon-box, gender-female-icon">
+                                            <FontIcon iconLiteral="fth-user" iconSize="16" iconColor="white"/>
+                                        </StackPane>
+                                        <VBox spacing="2">
+                                            <Label text="Female" styleClass="gender-card-title"/>
+                                            <Label text="She/Her" styleClass="gender-card-sub"/>
+                                        </VBox>
+                                    </HBox>
+                                </graphic>
+                            </ToggleButton>
                         </HBox>
                     </VBox>
 
                     <VBox spacing="8">
                         <Label text="Bio" styleClass="auth-field-label"/>
-                        <TextArea fx:id="bioField" styleClass="auth-field" promptText="Tell us about yourself..."
-                                  prefRowCount="3" wrapText="true"/>
+                        <StackPane>
+                            <TextArea fx:id="bioField" styleClass="bio-textarea" promptText="Share something about yourself — your interests, goals, what you're studying..."
+                                      prefRowCount="4" wrapText="true"/>
+                        </StackPane>
+                        <HBox alignment="CENTER_RIGHT">
+                            <Label fx:id="bioCharCount" text="0 / 280" styleClass="bio-char-count"/>
+                        </HBox>
                     </VBox>
                 </VBox>
             </VBox>
@@ -239,6 +288,216 @@
             </VBox>
 
             <!-- ══════════════════════════════════════
+                 ACCESSIBILITY & PERSONALIZATION
+                 ══════════════════════════════════════ -->
+            <VBox styleClass="card" spacing="0">
+                <HBox styleClass="card-header" alignment="CENTER_LEFT" spacing="12">
+                    <StackPane styleClass="stat-icon-box primary">
+                        <FontIcon iconLiteral="fth-settings" iconSize="16"/>
+                    </StackPane>
+                    <VBox spacing="2" HBox.hgrow="ALWAYS">
+                        <Label text="Accessibility &amp; Personalization" styleClass="card-title"/>
+                        <Label text="Customize your app experience" styleClass="card-subtitle"/>
+                    </VBox>
+                </HBox>
+                <VBox styleClass="card-body" spacing="28">
+
+                    <!-- Theme Selection -->
+                    <VBox spacing="12">
+                        <Label text="Theme Mode" styleClass="auth-field-label"/>
+                        <HBox spacing="12" alignment="CENTER_LEFT">
+                            <Button fx:id="themeLightBtn" styleClass="theme-btn" onAction="#setThemeLight" maxWidth="Infinity" HBox.hgrow="ALWAYS">
+                                <graphic>
+                                    <VBox alignment="CENTER" spacing="6">
+                                        <StackPane styleClass="theme-icon-circle">
+                                            <FontIcon iconLiteral="fth-sun" iconSize="20"/>
+                                        </StackPane>
+                                        <Label text="Light" styleClass="theme-btn-label"/>
+                                    </VBox>
+                                </graphic>
+                            </Button>
+                            <Button fx:id="themeDarkBtn" styleClass="theme-btn active" onAction="#setThemeDark" maxWidth="Infinity" HBox.hgrow="ALWAYS">
+                                <graphic>
+                                    <VBox alignment="CENTER" spacing="6">
+                                        <StackPane styleClass="theme-icon-circle">
+                                            <FontIcon iconLiteral="fth-moon" iconSize="20"/>
+                                        </StackPane>
+                                        <Label text="Dark" styleClass="theme-btn-label"/>
+                                    </VBox>
+                                </graphic>
+                            </Button>
+                            <Button fx:id="themeAutoBtn" styleClass="theme-btn" onAction="#setThemeAuto" maxWidth="Infinity" HBox.hgrow="ALWAYS">
+                                <graphic>
+                                    <VBox alignment="CENTER" spacing="6">
+                                        <StackPane styleClass="theme-icon-circle">
+                                            <FontIcon iconLiteral="fth-monitor" iconSize="20"/>
+                                        </StackPane>
+                                        <Label text="System" styleClass="theme-btn-label"/>
+                                    </VBox>
+                                </graphic>
+                            </Button>
+                        </HBox>
+                    </VBox>
+
+                    <!-- Font Size -->
+                    <VBox spacing="14">
+                        <HBox alignment="CENTER_LEFT">
+                            <Label text="Font Size" styleClass="auth-field-label"/>
+                            <Region HBox.hgrow="ALWAYS"/>
+                            <Label fx:id="fontSizeLabel" text="Normal" styleClass="font-size-preview"/>
+                        </HBox>
+                        <Slider fx:id="fontSizeSlider" min="1" max="5" value="3"
+                                blockIncrement="1" majorTickUnit="1" minorTickCount="0"
+                                snapToTicks="true" showTickMarks="false"
+                                styleClass="font-size-slider"/>
+                        <HBox spacing="0" alignment="CENTER">
+                            <Label text="Aa" styleClass="font-size-tick-label" style="-fx-font-size: 10px;"/>
+                            <Region HBox.hgrow="ALWAYS"/>
+                            <Label text="Aa" styleClass="font-size-tick-label" style="-fx-font-size: 12px;"/>
+                            <Region HBox.hgrow="ALWAYS"/>
+                            <Label text="Aa" styleClass="font-size-tick-label" style="-fx-font-size: 14px; -fx-text-fill: #8B5CF6; -fx-font-weight: bold;"/>
+                            <Region HBox.hgrow="ALWAYS"/>
+                            <Label text="Aa" styleClass="font-size-tick-label" style="-fx-font-size: 16px;"/>
+                            <Region HBox.hgrow="ALWAYS"/>
+                            <Label text="Aa" styleClass="font-size-tick-label" style="-fx-font-size: 19px;"/>
+                        </HBox>
+                    </VBox>
+
+                    <!-- Font Family -->
+                    <VBox spacing="14">
+                        <HBox alignment="CENTER_LEFT">
+                            <Label text="Font Family" styleClass="auth-field-label"/>
+                            <Region HBox.hgrow="ALWAYS"/>
+                            <Label fx:id="fontFamilyLabel" text="Segoe UI" styleClass="font-size-preview"/>
+                        </HBox>
+                        <HBox spacing="10">
+                            <Button fx:id="fontSegoe" styleClass="font-family-btn" onAction="#setFontSegoe"
+                                    maxWidth="Infinity" HBox.hgrow="ALWAYS">
+                                <graphic>
+                                    <VBox alignment="CENTER" spacing="4">
+                                        <Label text="Ag" style="-fx-font-family: 'Segoe UI'; -fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #E2E8F0;"/>
+                                        <Label text="Segoe" styleClass="font-family-name"/>
+                                    </VBox>
+                                </graphic>
+                            </Button>
+                            <Button fx:id="fontInter" styleClass="font-family-btn" onAction="#setFontInter"
+                                    maxWidth="Infinity" HBox.hgrow="ALWAYS">
+                                <graphic>
+                                    <VBox alignment="CENTER" spacing="4">
+                                        <Label text="Ag" style="-fx-font-family: 'Inter'; -fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #E2E8F0;"/>
+                                        <Label text="Inter" styleClass="font-family-name"/>
+                                    </VBox>
+                                </graphic>
+                            </Button>
+                            <Button fx:id="fontJetbrains" styleClass="font-family-btn" onAction="#setFontJetbrains"
+                                    maxWidth="Infinity" HBox.hgrow="ALWAYS">
+                                <graphic>
+                                    <VBox alignment="CENTER" spacing="4">
+                                        <Label text="Ag" style="-fx-font-family: 'JetBrains Mono'; -fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #E2E8F0;"/>
+                                        <Label text="JetBrains" styleClass="font-family-name"/>
+                                    </VBox>
+                                </graphic>
+                            </Button>
+                            <Button fx:id="fontGeorgia" styleClass="font-family-btn" onAction="#setFontGeorgia"
+                                    maxWidth="Infinity" HBox.hgrow="ALWAYS">
+                                <graphic>
+                                    <VBox alignment="CENTER" spacing="4">
+                                        <Label text="Ag" style="-fx-font-family: 'Georgia'; -fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #E2E8F0;"/>
+                                        <Label text="Georgia" styleClass="font-family-name"/>
+                                    </VBox>
+                                </graphic>
+                            </Button>
+                            <Button fx:id="fontCascadia" styleClass="font-family-btn" onAction="#setFontCascadia"
+                                    maxWidth="Infinity" HBox.hgrow="ALWAYS">
+                                <graphic>
+                                    <VBox alignment="CENTER" spacing="4">
+                                        <Label text="Ag" style="-fx-font-family: 'Cascadia Code'; -fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #E2E8F0;"/>
+                                        <Label text="Cascadia" styleClass="font-family-name"/>
+                                    </VBox>
+                                </graphic>
+                            </Button>
+                        </HBox>
+                    </VBox>
+
+                    <!-- Accent Color -->
+                    <VBox spacing="14">
+                        <HBox alignment="CENTER_LEFT">
+                            <Label text="Accent Color" styleClass="auth-field-label"/>
+                            <Region HBox.hgrow="ALWAYS"/>
+                            <Label fx:id="accentColorLabel" text="Default" styleClass="font-size-preview"/>
+                        </HBox>
+                        <HBox spacing="10" alignment="CENTER_LEFT">
+                            <Button fx:id="btnDefault" styleClass="accent-color-btn, accent-default-btn" onAction="#setAccentDefault"
+                                    minWidth="40" minHeight="40" maxWidth="40" maxHeight="40">
+                                <graphic>
+                                    <FontIcon iconLiteral="fth-rotate-ccw" iconSize="16" iconColor="#94A3B8"/>
+                                </graphic>
+                            </Button>
+                            <Button fx:id="btnViolet" styleClass="accent-color-btn" onAction="#setAccentViolet"
+                                    minWidth="40" minHeight="40" maxWidth="40" maxHeight="40"
+                                    style="-fx-background-color: #8B5CF6; -fx-border-color: #A78BFA;"/>
+                            <Button fx:id="btnIndigo" styleClass="accent-color-btn" onAction="#setAccentIndigo"
+                                    minWidth="40" minHeight="40" maxWidth="40" maxHeight="40"
+                                    style="-fx-background-color: #6366F1; -fx-border-color: #818CF8;"/>
+                            <Button fx:id="btnBlue" styleClass="accent-color-btn" onAction="#setAccentBlue"
+                                    minWidth="40" minHeight="40" maxWidth="40" maxHeight="40"
+                                    style="-fx-background-color: #3B82F6; -fx-border-color: #60A5FA;"/>
+                            <Button fx:id="btnCyan" styleClass="accent-color-btn" onAction="#setAccentCyan"
+                                    minWidth="40" minHeight="40" maxWidth="40" maxHeight="40"
+                                    style="-fx-background-color: #06B6D4; -fx-border-color: #22D3EE;"/>
+                            <Button fx:id="btnGreen" styleClass="accent-color-btn" onAction="#setAccentGreen"
+                                    minWidth="40" minHeight="40" maxWidth="40" maxHeight="40"
+                                    style="-fx-background-color: #10B981; -fx-border-color: #34D399;"/>
+                            <Button fx:id="btnOrange" styleClass="accent-color-btn" onAction="#setAccentOrange"
+                                    minWidth="40" minHeight="40" maxWidth="40" maxHeight="40"
+                                    style="-fx-background-color: #F97316; -fx-border-color: #FB923C;"/>
+                            <Button fx:id="btnPink" styleClass="accent-color-btn" onAction="#setAccentPink"
+                                    minWidth="40" minHeight="40" maxWidth="40" maxHeight="40"
+                                    style="-fx-background-color: #EC4899; -fx-border-color: #F472B6;"/>
+                            <Button fx:id="btnRed" styleClass="accent-color-btn" onAction="#setAccentRed"
+                                    minWidth="40" minHeight="40" maxWidth="40" maxHeight="40"
+                                    style="-fx-background-color: #EF4444; -fx-border-color: #F87171;"/>
+                            <Region HBox.hgrow="ALWAYS"/>
+                            <ColorPicker fx:id="accentColorPicker" onAction="#changeAccentColor" styleClass="accent-color-picker"/>
+                        </HBox>
+                    </VBox>
+
+                    <!-- Toggles — as cards -->
+                    <HBox spacing="14">
+                        <VBox styleClass="toggle-card" HBox.hgrow="ALWAYS" spacing="14">
+                            <HBox spacing="12" alignment="CENTER_LEFT">
+                                <StackPane styleClass="toggle-icon">
+                                    <FontIcon iconLiteral="fth-zap-off" iconSize="16" iconColor="white"/>
+                                </StackPane>
+                                <VBox spacing="2" HBox.hgrow="ALWAYS">
+                                    <Label text="Reduce Motion" styleClass="toggle-title"/>
+                                    <Label text="Minimize UI animations" styleClass="toggle-subtitle"/>
+                                </VBox>
+                            </HBox>
+                            <HBox alignment="CENTER_RIGHT">
+                                <CheckBox fx:id="reduceMotionToggle" styleClass="toggle-switch"/>
+                            </HBox>
+                        </VBox>
+                        <VBox styleClass="toggle-card" HBox.hgrow="ALWAYS" spacing="14">
+                            <HBox spacing="12" alignment="CENTER_LEFT">
+                                <StackPane styleClass="toggle-icon-contrast">
+                                    <FontIcon iconLiteral="fth-eye" iconSize="16" iconColor="white"/>
+                                </StackPane>
+                                <VBox spacing="2" HBox.hgrow="ALWAYS">
+                                    <Label text="High Contrast" styleClass="toggle-title"/>
+                                    <Label text="Sharper text visibility" styleClass="toggle-subtitle"/>
+                                </VBox>
+                            </HBox>
+                            <HBox alignment="CENTER_RIGHT">
+                                <CheckBox fx:id="highContrastToggle" styleClass="toggle-switch"/>
+                            </HBox>
+                        </VBox>
+                    </HBox>
+
+                </VBox>
+            </VBox>
+
+            <!-- ══════════════════════════════════════
                  ACTION BUTTONS
                  ══════════════════════════════════════ -->
             <HBox spacing="14" alignment="CENTER_RIGHT">
@@ -246,9 +505,7 @@
                     <graphic><FontIcon iconLiteral="fth-trash-2" iconSize="15"/></graphic>
                 </Button>
                 <Region HBox.hgrow="ALWAYS"/>
-                <Button text="Sign Out" styleClass="btn-danger" onAction="#handleLogout">
-                    <graphic><FontIcon iconLiteral="fth-log-out" iconSize="15"/></graphic>
-                </Button>
+                <Label fx:id="saveStatusBottom" text="" styleClass="save-status-label" visible="false" managed="false"/>
                 <Button text="Save Changes" styleClass="auth-btn-primary-sm" onAction="#handleSave">
                     <graphic><FontIcon iconLiteral="fth-check" iconSize="15" iconColor="white"/></graphic>
                 </Button>

@@ -19,7 +19,7 @@
     <!-- Welcome Header -->
     <HBox alignment="CENTER_LEFT" spacing="16">
         <VBox spacing="4" HBox.hgrow="ALWAYS">
-            <Label fx:id="welcomeLabel" text="Good evening, Jasser" styleClass="text-heading"/>
+            <Label fx:id="welcomeLabel" text="Good evening, Student" styleClass="text-heading"/>
             <Label text="Here's what's happening with your studies today" styleClass="text-muted"/>
         </VBox>
 
@@ -114,12 +114,8 @@
             <VBox styleClass="card-body" VBox.vgrow="ALWAYS">
                 <AreaChart fx:id="studyTimeChart" legendVisible="false"
                            prefHeight="200" createSymbols="true">
-                    <xAxis>
-                        <CategoryAxis side="BOTTOM"/>
-                    </xAxis>
-                    <yAxis>
-                        <NumberAxis side="LEFT" autoRanging="true"/>
-                    </yAxis>
+                    <xAxis><CategoryAxis side="BOTTOM"/></xAxis>
+                    <yAxis><NumberAxis side="LEFT" autoRanging="true"/></yAxis>
                 </AreaChart>
             </VBox>
         </VBox>
@@ -139,12 +135,8 @@
             <VBox styleClass="card-body" VBox.vgrow="ALWAYS">
                 <BarChart fx:id="weeklyProgressChart" legendVisible="true"
                           prefHeight="200" barGap="2" categoryGap="20">
-                    <xAxis>
-                        <CategoryAxis side="BOTTOM"/>
-                    </xAxis>
-                    <yAxis>
-                        <NumberAxis side="LEFT" autoRanging="true"/>
-                    </yAxis>
+                    <xAxis><CategoryAxis side="BOTTOM"/></xAxis>
+                    <yAxis><NumberAxis side="LEFT" autoRanging="true"/></yAxis>
                 </BarChart>
             </VBox>
         </VBox>
@@ -161,9 +153,7 @@
                 <Label text="Today's Schedule" styleClass="card-title" HBox.hgrow="ALWAYS"/>
                 <Hyperlink text="View all" style="-fx-text-fill: #A78BFA; -fx-font-size: 13px;"/>
             </HBox>
-            <VBox fx:id="scheduleList" styleClass="card-body" spacing="8">
-                <!-- Schedule items will be added dynamically -->
-            </VBox>
+            <VBox fx:id="scheduleList" styleClass="card-body" spacing="8"/>
         </VBox>
 
         <!-- Upcoming Tasks -->
@@ -175,9 +165,7 @@
                 <Label text="Upcoming Tasks" styleClass="card-title" HBox.hgrow="ALWAYS"/>
                 <Hyperlink text="View all" style="-fx-text-fill: #A78BFA; -fx-font-size: 13px;"/>
             </HBox>
-            <VBox fx:id="tasksList" styleClass="card-body" spacing="8">
-                <!-- Task items will be added dynamically -->
-            </VBox>
+            <VBox fx:id="tasksList" styleClass="card-body" spacing="8"/>
         </VBox>
 
         <!-- Recent Activity -->
@@ -188,9 +176,7 @@
                 </StackPane>
                 <Label text="Recent Activity" styleClass="card-title" HBox.hgrow="ALWAYS"/>
             </HBox>
-            <VBox fx:id="activityList" styleClass="card-body" spacing="12">
-                <!-- Activity items will be added dynamically -->
-            </VBox>
+            <VBox fx:id="activityList" styleClass="card-body" spacing="12"/>
         </VBox>
     </HBox>
 
@@ -217,10 +203,12 @@
         </HBox>
     </VBox>
 
-    <!-- Quick Actions -->
+    <!-- Quick Actions — each card has an fx:id so DashboardController can add click handlers -->
     <HBox spacing="16">
-        <VBox styleClass="stat-card" alignment="CENTER" spacing="12" HBox.hgrow="ALWAYS"
-              style="-fx-cursor: hand;">
+
+        <!-- Add Assignment -->
+        <VBox fx:id="quickCardAssignment" styleClass="stat-card" alignment="CENTER"
+              spacing="12" HBox.hgrow="ALWAYS" style="-fx-cursor: hand;">
             <StackPane styleClass="stat-icon-box, primary" prefWidth="48" prefHeight="48">
                 <FontIcon iconLiteral="fth-plus-circle" iconSize="24"/>
             </StackPane>
@@ -228,8 +216,9 @@
             <Label text="Track new tasks" styleClass="text-small"/>
         </VBox>
 
-        <VBox styleClass="stat-card" alignment="CENTER" spacing="12" HBox.hgrow="ALWAYS"
-              style="-fx-cursor: hand;">
+        <!-- Schedule Event -->
+        <VBox fx:id="quickCardSchedule" styleClass="stat-card" alignment="CENTER"
+              spacing="12" HBox.hgrow="ALWAYS" style="-fx-cursor: hand;">
             <StackPane styleClass="stat-icon-box, accent" prefWidth="48" prefHeight="48">
                 <FontIcon iconLiteral="fth-calendar" iconSize="24"/>
             </StackPane>
@@ -237,22 +226,25 @@
             <Label text="Plan your time" styleClass="text-small"/>
         </VBox>
 
-        <VBox styleClass="stat-card" alignment="CENTER" spacing="12" HBox.hgrow="ALWAYS"
-              style="-fx-cursor: hand;">
+        <!-- Start Revision — navigates to Revisions.fxml (Decks) -->
+        <VBox fx:id="quickCardDecks" styleClass="stat-card" alignment="CENTER"
+              spacing="12" HBox.hgrow="ALWAYS" style="-fx-cursor: hand;">
             <StackPane styleClass="stat-icon-box, success" prefWidth="48" prefHeight="48">
-                <FontIcon iconLiteral="fth-book" iconSize="24"/>
+                <FontIcon iconLiteral="fth-layers" iconSize="24"/>
             </StackPane>
             <Label text="Start Revision" styleClass="text-body" style="-fx-font-weight: 600;"/>
             <Label text="Review flashcards" styleClass="text-small"/>
         </VBox>
 
-        <VBox styleClass="stat-card" alignment="CENTER" spacing="12" HBox.hgrow="ALWAYS"
-              style="-fx-cursor: hand;">
+        <!-- Wellness Check -->
+        <VBox fx:id="quickCardWellness" styleClass="stat-card" alignment="CENTER"
+              spacing="12" HBox.hgrow="ALWAYS" style="-fx-cursor: hand;">
             <StackPane styleClass="stat-icon-box, danger" prefWidth="48" prefHeight="48">
                 <FontIcon iconLiteral="fth-heart" iconSize="24"/>
             </StackPane>
             <Label text="Wellness Check" styleClass="text-body" style="-fx-font-weight: 600;"/>
             <Label text="How are you feeling?" styleClass="text-small"/>
         </VBox>
+
     </HBox>
 </VBox>

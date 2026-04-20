@@ -1,9 +1,14 @@
 package com.studyflow.controllers;
 
+import com.studyflow.App;
+import com.studyflow.models.User;
+import com.studyflow.utils.UserSession;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Parent;
 import javafx.scene.chart.AreaChart;
 import javafx.scene.chart.BarChart;
 import javafx.scene.chart.XYChart;
@@ -17,13 +22,15 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import org.kordamp.ikonli.javafx.FontIcon;
 
+import java.io.IOException;
 import java.net.URL;
 import java.time.LocalTime;
 import java.util.ResourceBundle;
 
 /**
- * Controller for the Dashboard view
- * Manages charts, stats, and dynamic content
+ * Controller for the Dashboard view.
+ * Manages charts, stats, and dynamic content.
+ * Quick-action cards navigate to their respective views via MainController.
  */
 public class DashboardController implements Initializable {
 
@@ -41,6 +48,12 @@ public class DashboardController implements Initializable {
     @FXML private VBox tasksList;
     @FXML private VBox activityList;
 
+    // Quick-action card containers (injected via fx:id in Dashboard.fxml)
+    @FXML private VBox quickCardDecks;
+    @FXML private VBox quickCardAssignment;
+    @FXML private VBox quickCardSchedule;
+    @FXML private VBox quickCardWellness;
+
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         setupWelcomeMessage();
@@ -50,20 +63,20 @@ public class DashboardController implements Initializable {
         setupScheduleList();
         setupTasksList();
         setupActivityList();
+        setupQuickActions();
     }
+
+    // ── Welcome ──────────────────────────────────────────────────────
 
     private void setupWelcomeMessage() {
         int hour = LocalTime.now().getHour();
-        String greeting;
-        if (hour < 12) {
-            greeting = "Good morning";
-        } else if (hour < 17) {
-            greeting = "Good afternoon";
-        } else {
-            greeting = "Good evening";
-        }
-        welcomeLabel.setText(greeting + ", Jasser");
+        String greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+        User currentUser = UserSession.getInstance().getCurrentUser();
+        String userName = (currentUser != null) ? currentUser.getFirstName() : "Student";
+        welcomeLabel.setText(greeting + ", " + userName);
     }
+
+    // ── Stats ────────────────────────────────────────────────────────
 
     private void setupStats() {
         streakLabel.setText("7");
@@ -73,10 +86,11 @@ public class DashboardController implements Initializable {
         cardsReviewedLabel.setText("48");
     }
 
+    // ── Charts ───────────────────────────────────────────────────────
+
     private void setupStudyTimeChart() {
         XYChart.Series<String, Number> series = new XYChart.Series<>();
         series.setName("Study Hours");
-
         series.getData().add(new XYChart.Data<>("Mon", 2.5));
         series.getData().add(new XYChart.Data<>("Tue", 3.2));
         series.getData().add(new XYChart.Data<>("Wed", 4.1));
@@ -84,7 +98,6 @@ public class DashboardController implements Initializable {
         series.getData().add(new XYChart.Data<>("Fri", 3.5));
         series.getData().add(new XYChart.Data<>("Sat", 5.0));
         series.getData().add(new XYChart.Data<>("Sun", 4.2));
-
         studyTimeChart.getData().add(series);
         studyTimeChart.setAnimated(true);
     }
@@ -92,7 +105,6 @@ public class DashboardController implements Initializable {
     private void setupWeeklyProgressChart() {
         XYChart.Series<String, Number> completedSeries = new XYChart.Series<>();
         completedSeries.setName("Completed");
-
         completedSeries.getData().add(new XYChart.Data<>("Mon", 3));
         completedSeries.getData().add(new XYChart.Data<>("Tue", 5));
         completedSeries.getData().add(new XYChart.Data<>("Wed", 4));
@@ -103,7 +115,6 @@ public class DashboardController implements Initializable {
 
         XYChart.Series<String, Number> pendingSeries = new XYChart.Series<>();
         pendingSeries.setName("Pending");
-
         pendingSeries.getData().add(new XYChart.Data<>("Mon", 2));
         pendingSeries.getData().add(new XYChart.Data<>("Tue", 1));
         pendingSeries.getData().add(new XYChart.Data<>("Wed", 3));
@@ -116,13 +127,60 @@ public class DashboardController implements Initializable {
         weeklyProgressChart.setAnimated(true);
     }
 
+    // ── Quick Actions ────────────────────────────────────────────────
+
+    /**
+     * Wire up the four quick-action cards so each navigates to its view.
+     * Falls back gracefully if the fx:id is not present in the FXML.
+     */
+    private void setupQuickActions() {
+        if (quickCardAssignment != null) {
+            quickCardAssignment.setOnMouseClicked(e -> navigateTo("views/Courses.fxml"));
+        }
+        if (quickCardDecks != null) {
+            quickCardDecks.setOnMouseClicked(e -> navigateTo("views/Flashcards.fxml"));
+            quickCardDecks.setStyle(quickCardDecks.getStyle() + "; -fx-cursor: hand;");
+        }
+        if (quickCardAssignment != null) {
+            quickCardAssignment.setOnMouseClicked(e -> navigateTo("views/Assignments.fxml"));
+        }
+        if (quickCardSchedule != null) {
+            quickCardSchedule.setOnMouseClicked(e -> navigateTo("views/Planning.fxml"));
+        }
+        if (quickCardWellness != null) {
+            quickCardWellness.setOnMouseClicked(e -> navigateTo("views/Wellbeing.fxml"));
+        }
+    }
+
+    /**
+     * Load a new FXML into the MainController's contentArea.
+     * Works by walking up the scene graph to find the StackPane#contentArea.
+     */
+    private void navigateTo(String fxmlPath) {
+        try {
+            FXMLLoader loader = new FXMLLoader(App.class.getResource(fxmlPath));
+            Parent content = loader.load();
+
+            // Find the parent contentArea (owned by MainController)
+            StackPane contentArea = (StackPane) welcomeLabel.getScene()
+                    .lookup("#contentArea");
+
+            if (contentArea != null) {
+                contentArea.getChildren().setAll(content);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // ── Schedule ─────────────────────────────────────────────────────
+
     private void setupScheduleList() {
         scheduleList.getChildren().clear();
-
         addScheduleItem("Data Structures Lecture", "09:00 AM", "Room 301", "primary");
-        addScheduleItem("Algorithm Study Group", "11:30 AM", "Library", "success");
-        addScheduleItem("Database Lab", "02:00 PM", "Lab 205", "warning");
-        addScheduleItem("Project Meeting", "04:30 PM", "Online", "accent");
+        addScheduleItem("Algorithm Study Group",   "11:30 AM", "Library",  "success");
+        addScheduleItem("Database Lab",            "02:00 PM", "Lab 205",  "warning");
+        addScheduleItem("Project Meeting",         "04:30 PM", "Online",   "accent");
     }
 
     private void addScheduleItem(String title, String time, String location, String color) {
@@ -131,13 +189,11 @@ public class DashboardController implements Initializable {
         item.setPadding(new Insets(12));
         item.setStyle("-fx-background-color: transparent; -fx-background-radius: 12; -fx-cursor: hand;");
 
-        // Color indicator
         Region colorBar = new Region();
         colorBar.setPrefWidth(4);
         colorBar.setPrefHeight(48);
         colorBar.setStyle("-fx-background-color: " + getColorHex(color) + "; -fx-background-radius: 2;");
 
-        // Content
         VBox content = new VBox(4);
         HBox.setHgrow(content, Priority.ALWAYS);
 
@@ -168,27 +224,25 @@ public class DashboardController implements Initializable {
         details.getChildren().addAll(clockIcon, timeLabel, separator, locationIcon, locationLabel);
         content.getChildren().addAll(titleLabel, details);
 
-        // Badge
         Label badge = new Label(color.toUpperCase().substring(0, 3));
         badge.getStyleClass().addAll("badge", color);
         badge.setStyle("-fx-font-size: 10px;");
 
         item.getChildren().addAll(colorBar, content, badge);
-
-        // Hover effect
         item.setOnMouseEntered(e -> item.setStyle("-fx-background-color: #1E293B; -fx-background-radius: 12; -fx-cursor: hand;"));
-        item.setOnMouseExited(e -> item.setStyle("-fx-background-color: transparent; -fx-background-radius: 12; -fx-cursor: hand;"));
+        item.setOnMouseExited (e -> item.setStyle("-fx-background-color: transparent; -fx-background-radius: 12; -fx-cursor: hand;"));
 
         scheduleList.getChildren().add(item);
     }
 
+    // ── Tasks ────────────────────────────────────────────────────────
+
     private void setupTasksList() {
         tasksList.getChildren().clear();
-
-        addTaskItem("Complete Algorithm Assignment", "CS301", "high", "Jan 26");
-        addTaskItem("Database ER Diagram", "CS305", "medium", "Jan 27");
-        addTaskItem("Read Chapter 5", "CS202", "low", "Jan 28");
-        addTaskItem("Submit Lab Report", "CS310", "high", "Jan 29");
+        addTaskItem("Complete Algorithm Assignment", "CS301", "high",   "Jan 26");
+        addTaskItem("Database ER Diagram",           "CS305", "medium", "Jan 27");
+        addTaskItem("Read Chapter 5",                "CS202", "low",    "Jan 28");
+        addTaskItem("Submit Lab Report",             "CS310", "high",   "Jan 29");
     }
 
     private void addTaskItem(String title, String course, String priority, String dueDate) {
@@ -197,14 +251,12 @@ public class DashboardController implements Initializable {
         item.setPadding(new Insets(12));
         item.setStyle("-fx-background-color: transparent; -fx-background-radius: 12; -fx-cursor: hand;");
 
-        // Checkbox circle using Region for proper rendering
         Region checkbox = new Region();
         checkbox.setMinSize(20, 20);
         checkbox.setPrefSize(20, 20);
         checkbox.setMaxSize(20, 20);
         checkbox.setStyle("-fx-background-color: transparent; -fx-border-color: #475569; -fx-border-width: 2; -fx-background-radius: 10; -fx-border-radius: 10;");
 
-        // Content
         VBox content = new VBox(4);
         HBox.setHgrow(content, Priority.ALWAYS);
 
@@ -214,10 +266,8 @@ public class DashboardController implements Initializable {
 
         Label courseLabel = new Label(course);
         courseLabel.getStyleClass().add("text-small");
-
         content.getChildren().addAll(titleLabel, courseLabel);
 
-        // Right side
         VBox right = new VBox(4);
         right.setAlignment(Pos.CENTER_RIGHT);
 
@@ -228,12 +278,9 @@ public class DashboardController implements Initializable {
 
         Label dueDateLabel = new Label(dueDate);
         dueDateLabel.getStyleClass().add("text-small");
-
         right.getChildren().addAll(priorityBadge, dueDateLabel);
 
         item.getChildren().addAll(checkbox, content, right);
-
-        // Hover effect
         item.setOnMouseEntered(e -> {
             item.setStyle("-fx-background-color: #1E293B; -fx-background-radius: 12; -fx-cursor: hand;");
             checkbox.setStyle("-fx-background-color: transparent; -fx-border-color: #A78BFA; -fx-border-width: 2; -fx-background-radius: 10; -fx-border-radius: 10;");
@@ -246,13 +293,14 @@ public class DashboardController implements Initializable {
         tasksList.getChildren().add(item);
     }
 
+    // ── Activity ─────────────────────────────────────────────────────
+
     private void setupActivityList() {
         activityList.getChildren().clear();
-
-        addActivityItem("fth-check", "primary", "Completed Data Structures Assignment", "2 hours ago");
-        addActivityItem("fth-layers", "warning", "Reviewed 15 flashcards in Algorithms", "4 hours ago");
-        addActivityItem("fth-zap", "accent", "7 day study streak achieved!", "Yesterday");
-        addActivityItem("fth-file-text", "success", "Added new notes for Database Systems", "Yesterday");
+        addActivityItem("fth-check",     "primary", "Completed Data Structures Assignment", "2 hours ago");
+        addActivityItem("fth-layers",    "warning",  "Reviewed 15 flashcards in Algorithms", "4 hours ago");
+        addActivityItem("fth-zap",       "accent",   "7 day study streak achieved!",          "Yesterday");
+        addActivityItem("fth-file-text", "success",  "Added new notes for Database Systems",  "Yesterday");
     }
 
     private void addActivityItem(String icon, String color, String message, String time) {
@@ -282,19 +330,20 @@ public class DashboardController implements Initializable {
         timeLabel.setStyle("-fx-text-fill: #64748B;");
 
         content.getChildren().addAll(messageLabel, timeLabel);
-
         item.getChildren().addAll(iconBox, content);
         activityList.getChildren().add(item);
     }
+
+    // ── Helpers ──────────────────────────────────────────────────────
 
     private String getColorHex(String color) {
         return switch (color) {
             case "primary" -> "#A78BFA";
             case "success" -> "#34D399";
             case "warning" -> "#FBBF24";
-            case "danger" -> "#FB7185";
-            case "accent" -> "#FB923C";
-            default -> "#94A3B8";
+            case "danger"  -> "#FB7185";
+            case "accent"  -> "#FB923C";
+            default        -> "#94A3B8";
         };
     }
 }
