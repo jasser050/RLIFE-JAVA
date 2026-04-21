@@ -4,12 +4,126 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class WellbeingAiService {
     private final OpenRouterService openRouterService = new OpenRouterService();
 
     public record ChatTurn(String role, String content) {}
     public record CoachReply(String reply, String source, String languageCode) {}
+    public record RecommendationItem(String title, String description) {}
+    public record QuoteResult(String quote, String source, String type) {}
+
+    public List<RecommendationItem> generateRecommendations(int stressLevel10, String mood, List<String> signals) {
+        int safeStress = Math.max(1, Math.min(10, stressLevel10));
+        String safeMood = mood == null ? "okay" : mood.trim().toLowerCase(Locale.ROOT);
+        List<String> safeSignals = signals == null ? List.of() : signals.stream()
+                .filter(s -> s != null && !s.isBlank())
+                .limit(6)
+                .toList();
+
+        if (openRouterService.isConfigured()) {
+            List<OpenRouterService.ChatMessage> payload = new ArrayList<>();
+            payload.add(new OpenRouterService.ChatMessage(
+                    "system",
+                    """
+                    You generate wellbeing recommendations for students.
+                    Return exactly 3 lines.
+                    Each line format: Title | Short actionable description
+                    Keep each description under 120 chars.
+                    No numbering, no markdown, no extra text.
+                    """
+            ));
+            payload.add(new OpenRouterService.ChatMessage(
+                    "user",
+                    "Stress level (1..10): " + safeStress
+                            + ", mood: " + safeMood
+                            + ", context: " + String.join(", ", safeSignals)
+                            + ". Generate practical recommendations."
+            ));
+            String response = openRouterService.chat(payload, "anthropic/claude-3-haiku", 0.35, 220);
+            List<RecommendationItem> parsed = parseRecommendationLines(response);
+            if (!parsed.isEmpty()) {
+                return parsed;
+            }
+        }
+
+        return fallbackRecommendations(safeStress, safeMood);
+    }
+
+    public QuoteResult generateMotivationQuote(String type) {
+        String normalizedType = normalizeQuoteType(type);
+
+        Map<String, List<String>> fallbackByType = Map.of(
+                "motivation", List.of(
+                        "Small progress every day beats perfect plans.",
+                        "Breathe. Focus on the next step, not the whole mountain.",
+                        "You do not need to finish everything today. Keep moving.",
+                        "Rest is part of performance, not the opposite of it.",
+                        "Your effort today is building tomorrow's confidence."
+                ),
+                "funny", List.of(
+                        "If stress had homework, we would both ignore it tonight.",
+                        "Deep breath. You are not a robot, even on deadline mode.",
+                        "Your brain is buffering. Hydrate and press refresh.",
+                        "Study plan: tea, tiny steps, dramatic success later.",
+                        "Even Wi-Fi drops. You can pause and reconnect too."
+                ),
+                "calm", List.of(
+                        "Slow breath in, slower breath out. You are safe now.",
+                        "Soft shoulders, relaxed jaw, one quiet moment at a time.",
+                        "Let today be gentle. Peace grows in small pauses.",
+                        "Calm is a skill. Practice one breath at a time.",
+                        "Be kind to yourself. Recovery is productive too."
+                ),
+                "focus", List.of(
+                        "One task. One timer. One win. Repeat.",
+                        "Start small, stay steady, finish strong.",
+                        "Close distractions. Open your next step.",
+                        "Progress loves consistency more than intensity.",
+                        "Done is built from focused minutes, not perfect hours."
+                )
+        );
+
+        List<String> fallbackQuotes = fallbackByType.getOrDefault(normalizedType, fallbackByType.get("motivation"));
+
+        if (!openRouterService.isConfigured()) {
+            return new QuoteResult(pickRandom(fallbackQuotes), "fallback", normalizedType);
+        }
+
+        try {
+            String style = switch (normalizedType) {
+                case "funny" -> "lightly funny";
+                case "calm" -> "calming";
+                case "focus" -> "focus-oriented";
+                default -> "motivational";
+            };
+
+            List<OpenRouterService.ChatMessage> payload = List.of(
+                    new OpenRouterService.ChatMessage(
+                            "system",
+                            "Return one short " + style + " quote for stressed students. 8 to 18 words."
+                    ),
+                    new OpenRouterService.ChatMessage(
+                            "user",
+                            "Type: " + normalizedType + ". Give one quote only, no hashtags, no emojis."
+                    )
+            );
+
+            String aiQuote = openRouterService.chat(payload, "anthropic/claude-3-haiku", 0.9, 60);
+            if (aiQuote == null || aiQuote.isBlank()) {
+                return new QuoteResult(pickRandom(fallbackQuotes), "fallback", normalizedType);
+            }
+
+            String cleaned = aiQuote.trim().replaceAll("^\"|\"$", "");
+            if (cleaned.isBlank()) {
+                return new QuoteResult(pickRandom(fallbackQuotes), "fallback", normalizedType);
+            }
+            return new QuoteResult(cleaned, "ai", normalizedType);
+        } catch (Exception ignored) {
+            return new QuoteResult(pickRandom(fallbackQuotes), "fallback", normalizedType);
+        }
+    }
 
     public CoachReply coachReply(
             String message,
@@ -349,5 +463,97 @@ public class WellbeingAiService {
             return value;
         }
         return value.substring(0, max);
+    }
+
+    private List<RecommendationItem> parseRecommendationLines(String response) {
+        if (response == null || response.isBlank()) {
+            return List.of();
+        }
+        List<RecommendationItem> items = new ArrayList<>();
+        String[] lines = response.split("\\r?\\n");
+        for (String line : lines) {
+            String value = line == null ? "" : line.trim();
+            if (value.isBlank()) {
+                continue;
+            }
+            String[] parts = value.split("\\|", 2);
+            if (parts.length < 2) {
+                continue;
+            }
+            String title = parts[0].trim();
+            String description = parts[1].trim();
+            if (title.isBlank() || description.isBlank()) {
+                continue;
+            }
+            items.add(new RecommendationItem(title, description));
+            if (items.size() >= 3) {
+                break;
+            }
+        }
+        return items;
+    }
+
+    private String normalizeQuoteType(String type) {
+        String value = type == null ? "motivation" : type.trim().toLowerCase(Locale.ROOT);
+        Map<String, String> aliases = Map.of(
+                "fanny", "funny",
+                "fun", "funny",
+                "motivational", "motivation",
+                "relax", "calm",
+                "calme", "calm",
+                "study", "focus"
+        );
+        value = aliases.getOrDefault(value, value);
+        if (!List.of("motivation", "funny", "calm", "focus").contains(value)) {
+            return "motivation";
+        }
+        return value;
+    }
+
+    private String pickRandom(List<String> values) {
+        if (values == null || values.isEmpty()) {
+            return "Keep going.";
+        }
+        return values.get(ThreadLocalRandom.current().nextInt(values.size()));
+    }
+
+    private List<RecommendationItem> fallbackRecommendations(int stressLevel10, String mood) {
+        List<RecommendationItem> high = List.of(
+                new RecommendationItem("Breathing Reset", "Try 4-7-8 breathing for 3 rounds before your next task."),
+                new RecommendationItem("Mini Meditation", "Do a 5-minute body scan to release physical tension."),
+                new RecommendationItem("Sleep Recovery", "Set a fixed sleep hour and reduce screens 45 minutes before bed."),
+                new RecommendationItem("Healthy Boundaries", "Say no to one non-essential task and protect one calm study block.")
+        );
+        List<RecommendationItem> medium = List.of(
+                new RecommendationItem("Focus Sprint", "Use 25 min focus + 5 min break for 3 cycles today."),
+                new RecommendationItem("Active Break", "Stand up, stretch neck/shoulders, and walk 3 minutes between blocks."),
+                new RecommendationItem("Hydration Boost", "Drink one glass of water at every study break."),
+                new RecommendationItem("Pressure Reset", "Pick one 10-minute action to reduce overwhelm immediately.")
+        );
+        List<RecommendationItem> low = List.of(
+                new RecommendationItem("Gratitude Note", "Write one win from today before ending your study session."),
+                new RecommendationItem("Consistency Plan", "Keep your current routine and lock tomorrow's first task now."),
+                new RecommendationItem("Sleep Hygiene", "Maintain stable sleep timing to preserve focus and mood."),
+                new RecommendationItem("Energy Check", "Take a short movement break every 60 minutes of work.")
+        );
+
+        List<RecommendationItem> source;
+        if (stressLevel10 >= 8 || "stressed".equals(mood) || "tired".equals(mood)) {
+            source = new ArrayList<>(high);
+        } else if (stressLevel10 >= 5) {
+            source = new ArrayList<>(medium);
+        } else {
+            source = new ArrayList<>(low);
+        }
+
+        for (int i = source.size() - 1; i > 0; i--) {
+            int j = ThreadLocalRandom.current().nextInt(i + 1);
+            RecommendationItem tmp = source.get(i);
+            source.set(i, source.get(j));
+            source.set(j, tmp);
+        }
+
+        int count = Math.min(3, source.size());
+        return new ArrayList<>(source.subList(0, count));
     }
 }
