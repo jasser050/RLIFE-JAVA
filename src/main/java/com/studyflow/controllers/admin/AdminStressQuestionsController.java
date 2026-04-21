@@ -559,9 +559,9 @@ public class AdminStressQuestionsController implements Initializable {
         notificationLabel.setText(message);
         notificationLabel.setStyle(
                 "-fx-background-color: " + background + ";" +
-                "-fx-text-fill: white;" +
-                "-fx-padding: 10 14 10 14;" +
-                "-fx-background-radius: 8;"
+                        "-fx-text-fill: white;" +
+                        "-fx-padding: 10 14 10 14;" +
+                        "-fx-background-radius: 8;"
         );
         notificationLabel.setVisible(true);
         notificationLabel.setManaged(true);

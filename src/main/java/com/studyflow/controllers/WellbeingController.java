@@ -34,6 +34,7 @@ import javafx.scene.Scene;
 import javafx.scene.chart.BarChart;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.Control;
@@ -93,6 +94,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
+import java.util.prefs.Preferences;
 
 public class WellbeingController implements Initializable {
     private enum QuizMode {
@@ -119,6 +121,7 @@ public class WellbeingController implements Initializable {
     @FXML private BarChart<String, Number> stressChart;
     @FXML private VBox recentCheckinsBox;
     @FXML private FlowPane copingToolsPane;
+    @FXML private FlowPane copingToolsPreviewPane;
     @FXML private FlowPane moodDistributionPane;
     @FXML private VBox historyListBox;
     @FXML private VBox moodWeekBox;
@@ -140,6 +143,10 @@ public class WellbeingController implements Initializable {
     @FXML private VBox formSection;
     @FXML private VBox historySection;
     @FXML private VBox toolsSection;
+    @FXML private VBox inlineToolSection;
+    @FXML private Label inlineToolTitleLabel;
+    @FXML private StackPane inlineToolHost;
+    @FXML private VBox quizModeSection;
     @FXML private VBox quizSection;
     @FXML private VBox quizResultsSection;
     @FXML private Label quizCurrentQuestionLabel;
@@ -167,6 +174,8 @@ public class WellbeingController implements Initializable {
     @FXML private Label quizSelectedRecommendationContentLabel;
     @FXML private Label globalMessageLabel;
     @FXML private Label notesErrorLabel;
+    @FXML private ComboBox<String> quoteTypeCombo;
+    @FXML private CheckBox quoteEnabledToggle;
     private final ServiceWellBeing serviceWellBeing = new ServiceWellBeing();
     private final ServiceCopingSession serviceCopingSession = new ServiceCopingSession();
     private final ServiceWellbeingJournalEntry serviceJournalEntry = new ServiceWellbeingJournalEntry();
@@ -191,8 +200,13 @@ public class WellbeingController implements Initializable {
     private static final int QUIZ_AI_QUESTION_COUNT = 10;
     private static final int MIN_NOTE_LENGTH = 6;
     private static final int MAX_NOTE_LENGTH = 1000;
+    private static final String PREF_QUOTE_TYPE = "global.quote.type";
+    private static final String PREF_QUOTE_ENABLED = "global.quote.enabled";
+    private static final String PREF_QUOTE_DISMISSED_UNTIL = "global.quote.dismissed.until";
     private static final int MOOD_EMOJI_SIZE = 56;
     private static final int MOOD_EMOJI_FALLBACK_FONT_SIZE = 50;
+    private final Preferences preferences = Preferences.userNodeForPackage(MainController.class);
+    private Runnable activeInlineToolCloser;
     private String journalAutoCandidateCode = "";
     private int journalAutoCandidateHits = 0;
     private record CopingToolDef(String key, String title, String durationLabel, int durationSeconds, String description) {}
@@ -205,10 +219,49 @@ public class WellbeingController implements Initializable {
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         hideGlobalMessage();
-        setupFilters();
-        setupForm();
-        loadData();
-        showOverviewMode();
+        try {
+            setupFilters();
+            setupForm();
+            setupQuoteControls();
+            loadData();
+            showOverviewMode();
+        } catch (Exception e) {
+            allCheckins.clear();
+            showOverviewMode();
+            showError("Wellbeing data could not be loaded right now. Check the database connection and try again.");
+            e.printStackTrace();
+        }
+    }
+
+    private void setupQuoteControls() {
+        if (quoteTypeCombo == null || quoteEnabledToggle == null) {
+            return;
+        }
+        quoteTypeCombo.setItems(FXCollections.observableArrayList("Motivation", "Funny", "Calm", "Focus"));
+        String storedType = preferences.get(PREF_QUOTE_TYPE, "motivation").trim().toLowerCase(Locale.ROOT);
+        String selected = switch (storedType) {
+            case "funny" -> "Funny";
+            case "calm" -> "Calm";
+            case "focus" -> "Focus";
+            default -> "Motivation";
+        };
+        quoteTypeCombo.setValue(selected);
+        quoteEnabledToggle.setSelected(preferences.getBoolean(PREF_QUOTE_ENABLED, true));
+    }
+
+    @FXML
+    private void handleApplyQuoteSettings() {
+        if (quoteTypeCombo == null || quoteEnabledToggle == null) {
+            return;
+        }
+        String type = quoteTypeCombo.getValue() == null ? "motivation" : quoteTypeCombo.getValue().trim().toLowerCase(Locale.ROOT);
+        if (!List.of("motivation", "funny", "calm", "focus").contains(type)) {
+            type = "motivation";
+        }
+        preferences.put(PREF_QUOTE_TYPE, type);
+        preferences.putBoolean(PREF_QUOTE_ENABLED, quoteEnabledToggle.isSelected());
+        preferences.putLong(PREF_QUOTE_DISMISSED_UNTIL, 0L);
+        showGlobalMessage("Quote settings updated.", false);
     }
 
     private void setupFilters() {
@@ -311,6 +364,7 @@ public class WellbeingController implements Initializable {
         populateStressChart(sorted.stream().limit(10).collect(Collectors.toList()));
         populateRecentCheckins(sorted.stream().limit(6).collect(Collectors.toList()));
         populateCopingTools();
+        populateCopingToolsPreview();
         populateMoodDistribution(sorted);
         loadMoodWeek(sorted);
         loadHabits();
@@ -447,9 +501,17 @@ public class WellbeingController implements Initializable {
             VBox moodBox = new VBox(4);
             moodBox.setAlignment(Pos.CENTER);
             moodBox.getStyleClass().add("wellbeing-history-mood-box");
-            Label emoji = new Label(item.getMoodEmoji());
-            emoji.getStyleClass().add("wellbeing-list-emoji");
-            moodBox.getChildren().add(emoji);
+            String moodKey = item.getMood() == null ? "okay" : item.getMood().toLowerCase().trim();
+            String emojiUnicode = EmojiUtils.getMoodEmojiUnicode(moodKey);
+            ImageView emojiImage = EmojiUtils.loadMoodEmojiImage(moodKey, MOOD_EMOJI_SIZE);
+            if (emojiImage != null) {
+                moodBox.getChildren().add(emojiImage);
+            } else {
+                Label emojiFallback = new Label(emojiUnicode);
+                emojiFallback.getStyleClass().add("wellbeing-list-emoji");
+                emojiFallback.setStyle("-fx-font-size: " + MOOD_EMOJI_FALLBACK_FONT_SIZE + "px; -fx-font-family: 'Segoe UI Emoji';");
+                moodBox.getChildren().add(emojiFallback);
+            }
 
             VBox main = new VBox(4);
             HBox.setHgrow(main, Priority.ALWAYS);
@@ -522,32 +584,102 @@ public class WellbeingController implements Initializable {
         }
         copingToolsPane.getChildren().clear();
         for (CopingToolDef tool : copingToolsCatalog()) {
-            VBox card = new VBox(8);
+            VBox card = new VBox(10);
             card.getStyleClass().add("wellbeing-tool-card");
+            card.setPrefWidth(410);
+            card.setMinWidth(410);
+
+            StackPane iconBox = new StackPane();
+            iconBox.getStyleClass().addAll("wellbeing-tool-icon", "tool-icon-" + tool.key());
+            FontIcon icon = new FontIcon(toolIconLiteral(tool.key()));
+            icon.setIconSize(18);
+            iconBox.getChildren().add(icon);
+
             Label title = new Label(tool.title());
-            title.getStyleClass().add("text-body");
-            title.setStyle("-fx-font-weight: 600;");
+            title.getStyleClass().add("tools-card-title");
+
             Label desc = new Label(tool.description());
-            desc.getStyleClass().add("text-small");
+            desc.getStyleClass().add("tools-card-desc");
             desc.setWrapText(true);
+
             Label duration = new Label(tool.durationLabel());
-            duration.getStyleClass().addAll("badge", "accent");
+            duration.getStyleClass().addAll("tools-card-badge", toolBadgeClass(tool.durationLabel()));
 
             Button startBtn = new Button("Start");
-            startBtn.getStyleClass().add("btn-primary");
+            startBtn.getStyleClass().addAll("btn-primary", "tools-start-btn");
             startBtn.setOnAction(event -> openCopingTool(tool));
-            card.getChildren().addAll(title, desc, duration, startBtn);
+
+            HBox contentTop = new HBox(12, iconBox, new VBox(4, title, desc));
+            HBox.setHgrow(contentTop.getChildren().get(1), Priority.ALWAYS);
+
+            HBox footer = new HBox(10, duration, new Region(), startBtn);
+            HBox.setHgrow(footer.getChildren().get(1), Priority.ALWAYS);
+
+            card.getChildren().addAll(contentTop, footer);
             copingToolsPane.getChildren().add(card);
         }
     }
 
+    private void populateCopingToolsPreview() {
+        if (copingToolsPreviewPane == null) {
+            return;
+        }
+        copingToolsPreviewPane.getChildren().clear();
+        for (CopingToolDef tool : copingToolsCatalog()) {
+            HBox card = new HBox(12);
+            card.getStyleClass().add("wellbeing-tool-preview-card");
+            card.setPrefWidth(495);
+            card.setMinWidth(495);
+
+            StackPane iconBox = new StackPane();
+            iconBox.getStyleClass().addAll("wellbeing-tool-icon", "tool-icon-" + tool.key());
+            FontIcon icon = new FontIcon(toolIconLiteral(tool.key()));
+            icon.setIconSize(18);
+            iconBox.getChildren().add(icon);
+
+            Label title = new Label(tool.title());
+            title.getStyleClass().add("tools-card-title");
+            Label desc = new Label(tool.description());
+            desc.getStyleClass().add("tools-card-desc");
+            desc.setWrapText(true);
+            Label duration = new Label(tool.durationLabel());
+            duration.getStyleClass().addAll("tools-card-badge", toolBadgeClass(tool.durationLabel()));
+
+            VBox textBox = new VBox(5, title, desc, duration);
+            textBox.setMaxWidth(Double.MAX_VALUE);
+            HBox.setHgrow(textBox, Priority.ALWAYS);
+            card.getChildren().addAll(iconBox, textBox);
+            copingToolsPreviewPane.getChildren().add(card);
+        }
+    }
+
+    private String toolIconLiteral(String key) {
+        return switch (key) {
+            case "breathing_exercise" -> "fth-activity";
+            case "gratitude_journal" -> "fth-book-open";
+            case "nature_sounds", "yoga_coach" -> "fth-moon";
+            default -> "fth-cpu";
+        };
+    }
+
+    private String toolBadgeClass(String durationLabel) {
+        String value = durationLabel == null ? "" : durationLabel.trim().toLowerCase(Locale.ROOT);
+        if (value.contains("ongoing")) {
+            return "tools-card-badge-ongoing";
+        }
+        if (value.contains("anytime")) {
+            return "tools-card-badge-anytime";
+        }
+        return "tools-card-badge-time";
+    }
+
     private List<CopingToolDef> copingToolsCatalog() {
         return List.of(
-                new CopingToolDef("breathing_exercise", "Breathing Exercise", "3 min", 180, "Guided 4-7-8 breathing session."),
-                new CopingToolDef("gratitude_journal", "Gratitude Journal", "2 min", 120, "Write what you are grateful for and save entries."),
-                new CopingToolDef("yoga_coach", "Yoga Coach", "3 min", 180, "Follow short yoga stretches with automatic timer."),
-                new CopingToolDef("ai_chat_coach", "AI Chat Coach", "5 min", 300, "Chat with a supportive wellbeing assistant."),
-                new CopingToolDef("nature_sounds", "Nature Sounds", "5 min", 300, "Quiet focus timer inspired by ambient nature sessions.")
+                new CopingToolDef("breathing_exercise", "Breathing Exercise", "3 min", 180, "4-7-8 breathing technique for quick relaxation"),
+                new CopingToolDef("gratitude_journal", "Gratitude Journal", "2 min", 120, "Write three things you're grateful for"),
+                new CopingToolDef("nature_sounds", "Nature Sounds", "Ongoing", 300, "Relaxing ambient sounds for focus"),
+                new CopingToolDef("yoga_coach", "Yoga Coach", "6 min", 360, "Stress-relief yoga with dynamic demo"),
+                new CopingToolDef("ai_chat_coach", "AI Chat Coach", "Anytime", 300, "Talk with AI for motivation and practical advice")
         );
     }
 
@@ -570,7 +702,7 @@ public class WellbeingController implements Initializable {
             case "gratitude_journal" -> openJournalTool(session);
             case "yoga_coach" -> openYogaTool(session);
             case "ai_chat_coach" -> openAiChatTool(session);
-                case "nature_sounds" -> openNatureSoundsSpotifyTool(session);
+            case "nature_sounds" -> openNatureSoundsSpotifyTool(session);
             default -> openBreathingTool(session);
         }
     }
@@ -580,20 +712,51 @@ public class WellbeingController implements Initializable {
         stage.initModality(Modality.NONE);
         stage.setTitle(title);
         body.setPadding(new Insets(18));
-        body.setOpacity(1);
+        body.setOpacity(12);
         if (body.getStyle() == null || body.getStyle().isBlank()) {
             body.setStyle("-fx-background-color: #0F172A;");
         }
         Scene scene = new Scene(body, width, height);
-        Scene parentScene = statsSection != null ? statsSection.getScene() : null;
-        if (parentScene != null && parentScene.getStylesheets() != null) {
-            scene.getStylesheets().setAll(parentScene.getStylesheets());
-            if (parentScene.getWindow() instanceof Stage owner) {
-                stage.initOwner(owner);
-            }
-        }
         stage.setScene(scene);
         return stage;
+    }
+
+    private void showInlineTool(String title, Node content, Runnable closer) {
+        if (inlineToolSection == null || inlineToolHost == null || inlineToolTitleLabel == null) {
+            return;
+        }
+        activeInlineToolCloser = closer;
+        inlineToolTitleLabel.setText(title);
+        inlineToolHost.getChildren().setAll(content);
+        inlineToolSection.setVisible(true);
+        inlineToolSection.setManaged(true);
+        Platform.runLater(() -> {
+            if (inlineToolSection.getScene() != null) {
+                Node p = inlineToolSection.getParent();
+                while (p != null && !(p instanceof ScrollPane)) {
+                    p = p.getParent();
+                }
+                if (p instanceof ScrollPane scrollPane) {
+                    scrollPane.layout();
+                    scrollPane.setVvalue(1.0);
+                }
+            }
+        });
+    }
+
+    @FXML
+    private void handleCloseInlineTool() {
+        if (activeInlineToolCloser != null) {
+            activeInlineToolCloser.run();
+            activeInlineToolCloser = null;
+        }
+        if (inlineToolHost != null) {
+            inlineToolHost.getChildren().clear();
+        }
+        if (inlineToolSection != null) {
+            inlineToolSection.setVisible(false);
+            inlineToolSection.setManaged(false);
+        }
     }
 
     private void openBreathingTool(CopingSession session) {
@@ -806,29 +969,29 @@ public class WellbeingController implements Initializable {
             return;
         }
         VBox root = new VBox(16);
-        root.setStyle("-fx-background-color: linear-gradient(to bottom right, #040b19, #07122a, #0a1633);");
+        root.setStyle("-fx-background-color: transparent;");
 
         VBox topBanner = new VBox(6);
         topBanner.setPadding(new Insets(16));
         topBanner.setStyle(
-                "-fx-background-color: linear-gradient(to right, #0f2047, #0b1a3d, #122a4f);" +
-                "-fx-background-radius: 16;" +
-                "-fx-border-color: #1f4f9e;" +
-                "-fx-border-width: 1;" +
-                "-fx-border-radius: 16;"
+                "-fx-background-color: linear-gradient(to right, #111827, #1E293B);" +
+                        "-fx-background-radius: 16;" +
+                        "-fx-border-color: #334155;" +
+                        "-fx-border-width: 1;" +
+                        "-fx-border-radius: 16;"
         );
         Label focusLabel = new Label("FOCUS SESSION");
-        focusLabel.setStyle("-fx-text-fill: #93c5fd; -fx-font-size: 11px; -fx-font-weight: 700;");
+        focusLabel.setStyle("-fx-text-fill: #A78BFA; -fx-font-size: 11px; -fx-font-weight: 700;");
         Label titleLabel = new Label("Gratitude Journal");
         titleLabel.setStyle("-fx-text-fill: #f8fafc; -fx-font-size: 38px; -fx-font-weight: 800;");
         Label subtitleLabel = new Label("Write three things you're grateful for");
-        subtitleLabel.setStyle("-fx-text-fill: #bfdbfe; -fx-font-size: 13px;");
+        subtitleLabel.setStyle("-fx-text-fill: #94A3B8; -fx-font-size: 13px;");
         HBox badges = new HBox(8);
         badges.setAlignment(Pos.CENTER_RIGHT);
         Label durationBadge = new Label("2 min");
-        durationBadge.setStyle("-fx-background-color: #1e3a8a; -fx-text-fill: #bfdbfe; -fx-padding: 4 10; -fx-background-radius: 10; -fx-font-weight: 700;");
+        durationBadge.setStyle("-fx-background-color: rgba(167,139,250,0.2); -fx-text-fill: #C4B5FD; -fx-padding: 4 10; -fx-background-radius: 10; -fx-font-weight: 700;");
         Label readyBadge = new Label("Ready");
-        readyBadge.setStyle("-fx-background-color: #1f2937; -fx-text-fill: #e2e8f0; -fx-padding: 4 10; -fx-background-radius: 10; -fx-font-weight: 700;");
+        readyBadge.setStyle("-fx-background-color: #1E293B; -fx-text-fill: #E2E8F0; -fx-padding: 4 10; -fx-background-radius: 10; -fx-font-weight: 700;");
         badges.getChildren().addAll(durationBadge, readyBadge);
         HBox bannerTitleRow = new HBox(10, new VBox(2, focusLabel, titleLabel, subtitleLabel), new Region(), badges);
         HBox.setHgrow(bannerTitleRow.getChildren().get(1), Priority.ALWAYS);
@@ -837,11 +1000,11 @@ public class WellbeingController implements Initializable {
         VBox composerCard = new VBox(12);
         composerCard.setPadding(new Insets(20));
         composerCard.setStyle(
-                "-fx-background-color: linear-gradient(to bottom right, #0a1737, #09152f);" +
-                "-fx-background-radius: 16;" +
-                "-fx-border-color: #1b3f78;" +
-                "-fx-border-width: 1;" +
-                "-fx-border-radius: 16;"
+                "-fx-background-color: linear-gradient(to bottom right, #0F172A, #111827);" +
+                        "-fx-background-radius: 16;" +
+                        "-fx-border-color: #334155;" +
+                        "-fx-border-width: 1;" +
+                        "-fx-border-radius: 16;"
         );
         Label sectionTitle = new Label("Gratitude Journal");
         sectionTitle.setStyle("-fx-text-fill: #f8fafc; -fx-font-size: 34px; -fx-font-weight: 800;");
@@ -853,13 +1016,13 @@ public class WellbeingController implements Initializable {
         input.setWrapText(true);
         input.setPrefRowCount(7);
         input.setStyle(
-                "-fx-control-inner-background: #1e2f4b;" +
-                "-fx-text-fill: #f8fafc;" +
-                "-fx-prompt-text-fill: #94a3b8;" +
-                "-fx-border-color: #818cf8;" +
-                "-fx-border-width: 1.8;" +
-                "-fx-border-radius: 14;" +
-                "-fx-background-radius: 14;"
+                "-fx-control-inner-background: #1E293B;" +
+                        "-fx-text-fill: #f8fafc;" +
+                        "-fx-prompt-text-fill: #94a3b8;" +
+                        "-fx-border-color: #475569;" +
+                        "-fx-border-width: 1.8;" +
+                        "-fx-border-radius: 14;" +
+                        "-fx-background-radius: 14;"
         );
 
         ComboBox<String> languageBox = new ComboBox<>(FXCollections.observableArrayList(
@@ -867,64 +1030,64 @@ public class WellbeingController implements Initializable {
         ));
         languageBox.setValue("Auto (AI detect)");
         languageBox.setStyle(
-                "-fx-background-color: #0d1e3f;" +
-                "-fx-text-fill: #e2e8f0;" +
-                "-fx-border-color: #1f4f9e;" +
-                "-fx-border-radius: 10;" +
-                "-fx-background-radius: 10;"
+                "-fx-background-color: #1E293B;" +
+                        "-fx-text-fill: #e2e8f0;" +
+                        "-fx-border-color: #475569;" +
+                        "-fx-border-radius: 10;" +
+                        "-fx-background-radius: 10;"
         );
 
         Label statusLabel = new Label("Ready");
-        statusLabel.setStyle("-fx-text-fill: #38bdf8; -fx-font-size: 12px; -fx-font-weight: 700;");
+        statusLabel.setStyle("-fx-text-fill: #A78BFA; -fx-font-size: 12px; -fx-font-weight: 700;");
         Label voiceStatusLabel = new Label("Voice: idle");
         voiceStatusLabel.setStyle("-fx-text-fill: #94a3b8; -fx-font-size: 12px; -fx-font-weight: 600;");
 
         Button startVoiceBtn = new Button("Start Voice Input");
         startVoiceBtn.getStyleClass().add("btn-secondary");
         startVoiceBtn.setStyle(
-                "-fx-background-color: #1d4ed8;" +
-                "-fx-text-fill: #eff6ff;" +
-                "-fx-background-radius: 12;" +
-                "-fx-padding: 9 16;" +
-                "-fx-font-weight: 700;"
+                "-fx-background-color: #334155;" +
+                        "-fx-text-fill: #eff6ff;" +
+                        "-fx-background-radius: 12;" +
+                        "-fx-padding: 9 16;" +
+                        "-fx-font-weight: 700;"
         );
         Button stopVoiceBtn = new Button("Stop");
         stopVoiceBtn.getStyleClass().add("btn-danger");
         stopVoiceBtn.setStyle(
                 "-fx-background-color: #dc2626;" +
-                "-fx-text-fill: #ffffff;" +
-                "-fx-background-radius: 12;" +
-                "-fx-padding: 9 16;" +
-                "-fx-font-weight: 700;"
+                        "-fx-text-fill: #ffffff;" +
+                        "-fx-background-radius: 12;" +
+                        "-fx-padding: 9 16;" +
+                        "-fx-font-weight: 700;"
         );
         stopVoiceBtn.setDisable(true);
 
         Button saveBtn = new Button("Save");
         saveBtn.getStyleClass().add("btn-primary");
         saveBtn.setStyle(
-                "-fx-background-color: #4f46e5;" +
-                "-fx-text-fill: #ffffff;" +
-                "-fx-background-radius: 12;" +
-                "-fx-padding: 9 18;" +
-                "-fx-font-weight: 700;"
+                "-fx-background-color: #7C3AED;" +
+                        "-fx-text-fill: #ffffff;" +
+                        "-fx-background-radius: 12;" +
+                        "-fx-padding: 9 18;" +
+                        "-fx-font-weight: 700;"
         );
         Button newBtn = new Button("New Journal");
         newBtn.getStyleClass().add("btn-secondary");
         newBtn.setStyle(
-                "-fx-background-color: #1f2937;" +
-                "-fx-text-fill: #e2e8f0;" +
-                "-fx-background-radius: 12;" +
-                "-fx-padding: 9 16;" +
-                "-fx-font-weight: 700;"
+                "-fx-background-color: #1E293B;" +
+                        "-fx-text-fill: #e2e8f0;" +
+                        "-fx-background-radius: 12;" +
+                        "-fx-padding: 9 16;" +
+                        "-fx-font-weight: 700;"
         );
         Button closeBtn = new Button("Back to Coping Tools");
         closeBtn.getStyleClass().add("btn-secondary");
         closeBtn.setStyle(
                 "-fx-background-color: #334155;" +
-                "-fx-text-fill: #f1f5f9;" +
-                "-fx-background-radius: 12;" +
-                "-fx-padding: 9 16;" +
-                "-fx-font-weight: 700;"
+                        "-fx-text-fill: #f1f5f9;" +
+                        "-fx-background-radius: 12;" +
+                        "-fx-padding: 9 16;" +
+                        "-fx-font-weight: 700;"
         );
 
         HBox voiceRow = new HBox(10, startVoiceBtn, stopVoiceBtn, new Label("Language"), languageBox, voiceStatusLabel);
@@ -937,11 +1100,11 @@ public class WellbeingController implements Initializable {
         VBox entriesCard = new VBox(12);
         entriesCard.setPadding(new Insets(20));
         entriesCard.setStyle(
-                "-fx-background-color: linear-gradient(to bottom right, #0a1737, #09152f);" +
-                "-fx-background-radius: 16;" +
-                "-fx-border-color: #1b3f78;" +
-                "-fx-border-width: 1;" +
-                "-fx-border-radius: 16;"
+                "-fx-background-color: linear-gradient(to bottom right, #0F172A, #111827);" +
+                        "-fx-background-radius: 16;" +
+                        "-fx-border-color: #334155;" +
+                        "-fx-border-width: 1;" +
+                        "-fx-border-radius: 16;"
         );
         Label entriesTitle = new Label("Recent Journal Entries");
         entriesTitle.setStyle("-fx-text-fill: #f1f5f9; -fx-font-size: 30px; -fx-font-weight: 800;");
@@ -951,8 +1114,8 @@ public class WellbeingController implements Initializable {
         entriesPane.setPrefHeight(240);
         entriesPane.setStyle(
                 "-fx-background: transparent;" +
-                "-fx-background-color: transparent;" +
-                "-fx-border-color: transparent;"
+                        "-fx-background-color: transparent;" +
+                        "-fx-border-color: transparent;"
         );
         entriesCard.getChildren().addAll(entriesTitle, entriesPane);
 
@@ -982,11 +1145,11 @@ public class WellbeingController implements Initializable {
                 VBox card = new VBox(8);
                 card.setPadding(new Insets(14));
                 card.setStyle(
-                        "-fx-background-color: rgba(10, 28, 64, 0.85);" +
-                        "-fx-border-color: #1f3f72;" +
-                        "-fx-border-width: 1;" +
-                        "-fx-border-radius: 12;" +
-                        "-fx-background-radius: 12;"
+                        "-fx-background-color: rgba(30, 41, 59, 0.75);" +
+                                "-fx-border-color: #334155;" +
+                                "-fx-border-width: 1;" +
+                                "-fx-border-radius: 12;" +
+                                "-fx-background-radius: 12;"
                 );
 
                 String dateText = entry.getCreatedAt() == null
@@ -1002,16 +1165,16 @@ public class WellbeingController implements Initializable {
                 String meta = "Mode: " + (entry.getInputMode() == null ? "text" : entry.getInputMode())
                         + "   |   Language: " + (entry.getLanguageCode() == null || entry.getLanguageCode().isBlank() ? "auto" : entry.getLanguageCode());
                 Label metaLabel = new Label(meta);
-                metaLabel.setStyle("-fx-text-fill: #93c5fd; -fx-font-size: 11px;");
+                metaLabel.setStyle("-fx-text-fill: #94A3B8; -fx-font-size: 11px;");
 
                 Button editBtn = new Button("Edit");
                 editBtn.getStyleClass().add("btn-secondary");
                 editBtn.setStyle(
-                        "-fx-background-color: #0f766e;" +
-                        "-fx-text-fill: #ecfeff;" +
-                        "-fx-background-radius: 10;" +
-                        "-fx-padding: 7 14;" +
-                        "-fx-font-weight: 700;"
+                        "-fx-background-color: #334155;" +
+                                "-fx-text-fill: #E2E8F0;" +
+                                "-fx-background-radius: 10;" +
+                                "-fx-padding: 7 14;" +
+                                "-fx-font-weight: 700;"
                 );
                 editBtn.setOnAction(e -> {
                     editingId[0] = entry.getId();
@@ -1025,10 +1188,10 @@ public class WellbeingController implements Initializable {
                 deleteBtn.getStyleClass().add("btn-danger");
                 deleteBtn.setStyle(
                         "-fx-background-color: #b91c1c;" +
-                        "-fx-text-fill: #ffffff;" +
-                        "-fx-background-radius: 10;" +
-                        "-fx-padding: 7 14;" +
-                        "-fx-font-weight: 700;"
+                                "-fx-text-fill: #ffffff;" +
+                                "-fx-background-radius: 10;" +
+                                "-fx-padding: 7 14;" +
+                                "-fx-font-weight: 700;"
                 );
                 deleteBtn.setOnAction(e -> {
                     try {
@@ -1140,7 +1303,6 @@ public class WellbeingController implements Initializable {
         });
 
         root.getChildren().addAll(topBanner, composerCard, entriesCard);
-        Stage stage = createToolStage("Gratitude Journal", root, 1120, 860);
 
         LocalDateTime openedAt = LocalDateTime.now();
         Runnable closer = () -> {
@@ -1149,10 +1311,14 @@ public class WellbeingController implements Initializable {
         };
         closeBtn.setOnAction(e -> {
             closer.run();
-            stage.close();
+            if (inlineToolSection != null) {
+                inlineToolHost.getChildren().clear();
+                inlineToolSection.setVisible(false);
+                inlineToolSection.setManaged(false);
+                activeInlineToolCloser = null;
+            }
         });
-        stage.setOnCloseRequest(e -> closer.run());
-        stage.show();
+        showInlineTool("Gratitude Journal", root, closer);
     }
 
     private String mapJournalLanguageSelection(String selected) {
@@ -1480,43 +1646,43 @@ public class WellbeingController implements Initializable {
 
     private void openAiChatTool(CopingSession session) {
         VBox root = new VBox();
-        root.setStyle("-fx-background-color: linear-gradient(to bottom right, #040b19, #07122a, #0a1633);");
+        root.setStyle("-fx-background-color: transparent;");
 
         VBox header = new VBox(6);
         header.setPadding(new Insets(16));
         header.setStyle(
-                "-fx-background-color: linear-gradient(to right, #10224c, #0a1f45, #103b5f);" +
-                "-fx-background-radius: 16;" +
-                "-fx-border-color: #1f9fe3;" +
-                "-fx-border-width: 1;" +
-                "-fx-border-radius: 16;"
+                "-fx-background-color: linear-gradient(to right, #111827, #1E293B);" +
+                        "-fx-background-radius: 16;" +
+                        "-fx-border-color: #334155;" +
+                        "-fx-border-width: 1;" +
+                        "-fx-border-radius: 16;"
         );
         Label focusLabel = new Label("FOCUS SESSION");
-        focusLabel.setStyle("-fx-text-fill: #38bdf8; -fx-font-size: 11px; -fx-font-weight: 700; -fx-letter-spacing: 1px;");
+        focusLabel.setStyle("-fx-text-fill: #A78BFA; -fx-font-size: 11px; -fx-font-weight: 700; -fx-letter-spacing: 1px;");
         Label titleLabel = new Label("AI Chat Coach");
         titleLabel.setStyle("-fx-text-fill: #e2e8f0; -fx-font-size: 38px; -fx-font-weight: 800;");
         Label subtitle = new Label("Motivation · Guidance · Support · Any Language");
-        subtitle.setStyle("-fx-text-fill: #93c5fd; -fx-font-size: 13px;");
+        subtitle.setStyle("-fx-text-fill: #94A3B8; -fx-font-size: 13px;");
         header.getChildren().addAll(focusLabel, titleLabel, subtitle);
 
         Label statusLabel = new Label("Ready");
-        statusLabel.setStyle("-fx-text-fill: #38bdf8; -fx-font-size: 12px; -fx-font-weight: 600;");
+        statusLabel.setStyle("-fx-text-fill: #A78BFA; -fx-font-size: 12px; -fx-font-weight: 600;");
 
         VBox messagesBox = new VBox(12);
         messagesBox.setPadding(new Insets(14));
-        messagesBox.setStyle("-fx-background-color: #061433;");
+        messagesBox.setStyle("-fx-background-color: #111827;");
         messagesBox.getChildren().add(chatBubble("assistant", "Hello! I am here to help. What do you need right now?"));
 
         ScrollPane messagesPane = new ScrollPane(messagesBox);
         messagesPane.setFitToWidth(true);
         messagesPane.setPrefHeight(370);
         messagesPane.setStyle(
-                "-fx-background: #061433;" +
-                "-fx-background-color: #061433;" +
-                "-fx-border-color: #155e99;" +
-                "-fx-border-width: 1;" +
-                "-fx-border-radius: 14;" +
-                "-fx-background-radius: 14;"
+                "-fx-background: #111827;" +
+                        "-fx-background-color: #111827;" +
+                        "-fx-border-color: #334155;" +
+                        "-fx-border-width: 1;" +
+                        "-fx-border-radius: 14;" +
+                        "-fx-background-radius: 14;"
         );
 
         ComboBox<String> modeBox = new ComboBox<>(FXCollections.observableArrayList("General", "Supportive", "Practical"));
@@ -1530,11 +1696,11 @@ public class WellbeingController implements Initializable {
         for (ComboBox<String> box : List.of(modeBox, styleBox, levelBox, languageBox)) {
             box.setPrefWidth(170);
             box.setStyle(
-                    "-fx-background-color: #142847;" +
-                    "-fx-text-fill: #dbeafe;" +
-                    "-fx-border-color: #1f5d93;" +
-                    "-fx-border-radius: 9;" +
-                    "-fx-background-radius: 9;"
+                    "-fx-background-color: #1E293B;" +
+                            "-fx-text-fill: #E2E8F0;" +
+                            "-fx-border-color: #475569;" +
+                            "-fx-border-radius: 9;" +
+                            "-fx-background-radius: 9;"
             );
         }
         HBox configRow = new HBox(10, modeBox, styleBox, levelBox, languageBox);
@@ -1551,13 +1717,13 @@ public class WellbeingController implements Initializable {
         input.setWrapText(true);
         input.setPrefRowCount(3);
         input.setStyle(
-                "-fx-control-inner-background: #0d203e;" +
-                "-fx-text-fill: #e2e8f0;" +
-                "-fx-prompt-text-fill: #6b8ab3;" +
-                "-fx-border-color: #1e5a93;" +
-                "-fx-border-width: 1.4;" +
-                "-fx-border-radius: 12;" +
-                "-fx-background-radius: 12;"
+                "-fx-control-inner-background: #1E293B;" +
+                        "-fx-text-fill: #e2e8f0;" +
+                        "-fx-prompt-text-fill: #94A3B8;" +
+                        "-fx-border-color: #475569;" +
+                        "-fx-border-width: 1.4;" +
+                        "-fx-border-radius: 12;" +
+                        "-fx-background-radius: 12;"
         );
 
         List<WellbeingAiService.ChatTurn> chatHistory = new ArrayList<>();
@@ -1661,37 +1827,40 @@ public class WellbeingController implements Initializable {
         VBox chatCard = new VBox(10, messagesPane, configRow, chipsRow, input, actions);
         chatCard.setPadding(new Insets(14));
         chatCard.setStyle(
-                "-fx-background-color: linear-gradient(to bottom right, #071833, #05112a);" +
-                "-fx-background-radius: 16;" +
-                "-fx-border-color: #155e99;" +
-                "-fx-border-width: 1;" +
-                "-fx-border-radius: 16;"
+                "-fx-background-color: linear-gradient(to bottom right, #0F172A, #111827);" +
+                        "-fx-background-radius: 16;" +
+                        "-fx-border-color: #334155;" +
+                        "-fx-border-width: 1;" +
+                        "-fx-border-radius: 16;"
         );
 
         root.getChildren().addAll(header, chatCard);
-        Stage stage = createToolStage("AI Chat Coach", root, 1120, 760);
 
         LocalDateTime openedAt = LocalDateTime.now();
         Runnable closer = () -> closeSession(session, openedAt, completed[0]);
         closeBtn.setOnAction(e -> {
             closer.run();
-            stage.close();
+            if (inlineToolSection != null) {
+                inlineToolHost.getChildren().clear();
+                inlineToolSection.setVisible(false);
+                inlineToolSection.setManaged(false);
+                activeInlineToolCloser = null;
+            }
         });
-        stage.setOnCloseRequest(e -> closer.run());
-        stage.show();
+        showInlineTool("AI Chat Coach", root, closer);
     }
 
     private Button createChatChip(String text) {
         Button chip = new Button(text);
         chip.setStyle(
-                "-fx-background-color: #0f274a;" +
-                "-fx-text-fill: #93c5fd;" +
-                "-fx-background-radius: 100;" +
-                "-fx-border-color: #1f5d93;" +
-                "-fx-border-radius: 100;" +
-                "-fx-padding: 5 12;" +
-                "-fx-font-size: 12px;" +
-                "-fx-font-weight: 600;"
+                "-fx-background-color: #1E293B;" +
+                        "-fx-text-fill: #CBD5E1;" +
+                        "-fx-background-radius: 100;" +
+                        "-fx-border-color: #475569;" +
+                        "-fx-border-radius: 100;" +
+                        "-fx-padding: 5 12;" +
+                        "-fx-font-size: 12px;" +
+                        "-fx-font-weight: 600;"
         );
         return chip;
     }
@@ -1704,23 +1873,23 @@ public class WellbeingController implements Initializable {
         msg.getStyleClass().add("text-body");
         if ("user".equals(role)) {
             msg.setStyle(
-                    "-fx-background-color: #1f2d46;" +
-                    "-fx-text-fill: #e2e8f0;" +
-                    "-fx-background-radius: 14;" +
-                    "-fx-border-color: #334b6c;" +
-                    "-fx-border-radius: 14;"
+                    "-fx-background-color: #1E293B;" +
+                            "-fx-text-fill: #e2e8f0;" +
+                            "-fx-background-radius: 14;" +
+                            "-fx-border-color: #475569;" +
+                            "-fx-border-radius: 14;"
             );
         } else {
             msg.setStyle(
-                    "-fx-background-color: #15346b;" +
-                    "-fx-text-fill: #dbeafe;" +
-                    "-fx-background-radius: 14;" +
-                    "-fx-border-color: #1d4ed8;" +
-                    "-fx-border-radius: 14;"
+                    "-fx-background-color: rgba(124,58,237,0.25);" +
+                            "-fx-text-fill: #EDE9FE;" +
+                            "-fx-background-radius: 14;" +
+                            "-fx-border-color: #8B5CF6;" +
+                            "-fx-border-radius: 14;"
             );
         }
         Label time = new Label("just now");
-        time.setStyle("-fx-text-fill: #6b8ab3; -fx-font-size: 11px;");
+        time.setStyle("-fx-text-fill: #94A3B8; -fx-font-size: 11px;");
         VBox block = new VBox(4, msg, time);
         HBox row = new HBox(block);
         row.setAlignment("user".equals(role) ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
@@ -1735,10 +1904,10 @@ public class WellbeingController implements Initializable {
         shell.setPadding(new Insets(12));
         shell.setStyle(
                 "-fx-background-color: rgba(8, 12, 24, 0.92);" +
-                "-fx-background-radius: 18;" +
-                "-fx-border-color: #1f2937;" +
-                "-fx-border-width: 1;" +
-                "-fx-border-radius: 18;"
+                        "-fx-background-radius: 18;" +
+                        "-fx-border-color: #1f2937;" +
+                        "-fx-border-width: 1;" +
+                        "-fx-border-radius: 18;"
         );
 
         Label eyebrow = new Label("NATURE SOUND DECK");
@@ -1757,12 +1926,12 @@ public class WellbeingController implements Initializable {
             b.setToggleGroup(sizeGroup);
             b.setStyle(
                     "-fx-background-color: #111827;" +
-                    "-fx-text-fill: #94a3b8;" +
-                    "-fx-background-radius: 8;" +
-                    "-fx-border-color: #1f2937;" +
-                    "-fx-border-radius: 8;" +
-                    "-fx-padding: 4 10;" +
-                    "-fx-font-weight: 700;"
+                            "-fx-text-fill: #94a3b8;" +
+                            "-fx-background-radius: 8;" +
+                            "-fx-border-color: #1f2937;" +
+                            "-fx-border-radius: 8;" +
+                            "-fx-padding: 4 10;" +
+                            "-fx-font-weight: 700;"
             );
         }
         mBtn.setSelected(true);
@@ -1770,13 +1939,13 @@ public class WellbeingController implements Initializable {
         Button collapseBtn = new Button("x");
         collapseBtn.setStyle(
                 "-fx-background-color: #1f2937;" +
-                "-fx-text-fill: #cbd5e1;" +
-                "-fx-background-radius: 999;" +
-                "-fx-min-width: 24;" +
-                "-fx-min-height: 24;" +
-                "-fx-max-width: 24;" +
-                "-fx-max-height: 24;" +
-                "-fx-font-weight: 800;"
+                        "-fx-text-fill: #cbd5e1;" +
+                        "-fx-background-radius: 999;" +
+                        "-fx-min-width: 24;" +
+                        "-fx-min-height: 24;" +
+                        "-fx-max-width: 24;" +
+                        "-fx-max-height: 24;" +
+                        "-fx-font-weight: 800;"
         );
         HBox topRow = new HBox(10, new VBox(2, eyebrow, title, subtitle), new Region(), sBtn, mBtn, lBtn, xlBtn, collapseBtn);
         HBox.setHgrow(topRow.getChildren().get(1), Priority.ALWAYS);
@@ -1792,12 +1961,12 @@ public class WellbeingController implements Initializable {
             b.setToggleGroup(categoryGroup);
             b.setStyle(
                     "-fx-background-color: #161b22;" +
-                    "-fx-text-fill: #cbd5e1;" +
-                    "-fx-background-radius: 16;" +
-                    "-fx-border-color: #334155;" +
-                    "-fx-border-radius: 16;" +
-                    "-fx-padding: 8 16;" +
-                    "-fx-font-weight: 700;"
+                            "-fx-text-fill: #cbd5e1;" +
+                            "-fx-background-radius: 16;" +
+                            "-fx-border-color: #334155;" +
+                            "-fx-border-radius: 16;" +
+                            "-fx-padding: 8 16;" +
+                            "-fx-font-weight: 700;"
             );
         }
         natureBtn.setSelected(true);
@@ -1807,9 +1976,9 @@ public class WellbeingController implements Initializable {
         playlistCard.setPadding(new Insets(14));
         playlistCard.setStyle(
                 "-fx-background-color: #111111;" +
-                "-fx-background-radius: 14;" +
-                "-fx-border-color: #232323;" +
-                "-fx-border-radius: 14;"
+                        "-fx-background-radius: 14;" +
+                        "-fx-border-color: #232323;" +
+                        "-fx-border-radius: 14;"
         );
 
         HBox coverAndTracks = new HBox(12);
@@ -1817,9 +1986,9 @@ public class WellbeingController implements Initializable {
         cover.setPrefSize(120, 120);
         cover.setStyle(
                 "-fx-background-color: linear-gradient(to bottom right, #0f5132, #052e16, #14532d);" +
-                "-fx-background-radius: 12;" +
-                "-fx-border-color: #166534;" +
-                "-fx-border-radius: 12;"
+                        "-fx-background-radius: 12;" +
+                        "-fx-border-color: #166534;" +
+                        "-fx-border-radius: 12;"
         );
         Label coverLabel = new Label("Nature\nSounds");
         coverLabel.setStyle("-fx-text-fill: #d1fae5; -fx-font-size: 24px; -fx-font-weight: 800;");
@@ -1829,11 +1998,11 @@ public class WellbeingController implements Initializable {
         tracksList.setPrefHeight(120);
         tracksList.setStyle(
                 "-fx-control-inner-background: #1f2937;" +
-                "-fx-background-color: #1f2937;" +
-                "-fx-text-fill: #e5e7eb;" +
-                "-fx-border-color: #374151;" +
-                "-fx-border-radius: 10;" +
-                "-fx-background-radius: 10;"
+                        "-fx-background-color: #1f2937;" +
+                        "-fx-text-fill: #e5e7eb;" +
+                        "-fx-border-color: #374151;" +
+                        "-fx-border-radius: 10;" +
+                        "-fx-background-radius: 10;"
         );
 
         coverAndTracks.getChildren().addAll(cover, tracksList);
@@ -1900,12 +2069,12 @@ public class WellbeingController implements Initializable {
                 boolean active = b.isSelected();
                 b.setStyle(
                         "-fx-background-color: " + (active ? accent : "#161b22") + ";" +
-                        "-fx-text-fill: " + (active ? "#041016" : "#cbd5e1") + ";" +
-                        "-fx-background-radius: 16;" +
-                        "-fx-border-color: " + (active ? accent : "#334155") + ";" +
-                        "-fx-border-radius: 16;" +
-                        "-fx-padding: 8 16;" +
-                        "-fx-font-weight: 700;"
+                                "-fx-text-fill: " + (active ? "#041016" : "#cbd5e1") + ";" +
+                                "-fx-background-radius: 16;" +
+                                "-fx-border-color: " + (active ? accent : "#334155") + ";" +
+                                "-fx-border-radius: 16;" +
+                                "-fx-padding: 8 16;" +
+                                "-fx-font-weight: 700;"
                 );
             }
             playlistTitle.setText(key + " Sounds · Spotify");
@@ -1960,10 +2129,10 @@ public class WellbeingController implements Initializable {
         Button start = new Button("Start");
         start.setStyle(
                 "-fx-background-color: #16a34a;" +
-                "-fx-text-fill: #ecfdf5;" +
-                "-fx-background-radius: 24;" +
-                "-fx-padding: 10 22;" +
-                "-fx-font-weight: 800;"
+                        "-fx-text-fill: #ecfdf5;" +
+                        "-fx-background-radius: 24;" +
+                        "-fx-padding: 10 22;" +
+                        "-fx-font-weight: 800;"
         );
         start.setOnAction(e -> {
             completed[0] = false;
@@ -1975,10 +2144,10 @@ public class WellbeingController implements Initializable {
         Button pause = new Button("Pause");
         pause.setStyle(
                 "-fx-background-color: #334155;" +
-                "-fx-text-fill: #f1f5f9;" +
-                "-fx-background-radius: 24;" +
-                "-fx-padding: 10 22;" +
-                "-fx-font-weight: 700;"
+                        "-fx-text-fill: #f1f5f9;" +
+                        "-fx-background-radius: 24;" +
+                        "-fx-padding: 10 22;" +
+                        "-fx-font-weight: 700;"
         );
         pause.setOnAction(e -> {
             timeline[0].stop();
@@ -1988,10 +2157,10 @@ public class WellbeingController implements Initializable {
         Button reset = new Button("Reset");
         reset.setStyle(
                 "-fx-background-color: #1e293b;" +
-                "-fx-text-fill: #cbd5e1;" +
-                "-fx-background-radius: 24;" +
-                "-fx-padding: 10 22;" +
-                "-fx-font-weight: 700;"
+                        "-fx-text-fill: #cbd5e1;" +
+                        "-fx-background-radius: 24;" +
+                        "-fx-padding: 10 22;" +
+                        "-fx-font-weight: 700;"
         );
         reset.setOnAction(e -> {
             timeline[0].stop();
@@ -2002,12 +2171,12 @@ public class WellbeingController implements Initializable {
         Button close = new Button("Back");
         close.setStyle(
                 "-fx-background-color: transparent;" +
-                "-fx-text-fill: #94a3b8;" +
-                "-fx-border-color: #334155;" +
-                "-fx-border-radius: 24;" +
-                "-fx-background-radius: 24;" +
-                "-fx-padding: 10 22;" +
-                "-fx-font-weight: 700;"
+                        "-fx-text-fill: #94a3b8;" +
+                        "-fx-border-color: #334155;" +
+                        "-fx-border-radius: 24;" +
+                        "-fx-background-radius: 24;" +
+                        "-fx-padding: 10 22;" +
+                        "-fx-font-weight: 700;"
         );
 
         HBox controls = new HBox(10, start, pause, reset, close, new Region(), timer);
@@ -2022,16 +2191,16 @@ public class WellbeingController implements Initializable {
         Button bubbleButton = new Button("♫");
         bubbleButton.setStyle(
                 "-fx-background-color: linear-gradient(to bottom right, #1ed760, #1db954);" +
-                "-fx-text-fill: #041016;" +
-                "-fx-font-size: 24px;" +
-                "-fx-font-weight: 800;" +
-                "-fx-background-radius: 999;" +
-                "-fx-min-width: 62;" +
-                "-fx-min-height: 62;" +
-                "-fx-max-width: 62;" +
-                "-fx-max-height: 62;" +
-                "-fx-cursor: hand;" +
-                "-fx-effect: dropshadow(gaussian, rgba(29,185,84,0.45), 18, 0.35, 0, 6);"
+                        "-fx-text-fill: #041016;" +
+                        "-fx-font-size: 24px;" +
+                        "-fx-font-weight: 800;" +
+                        "-fx-background-radius: 999;" +
+                        "-fx-min-width: 62;" +
+                        "-fx-min-height: 62;" +
+                        "-fx-max-width: 62;" +
+                        "-fx-max-height: 62;" +
+                        "-fx-cursor: hand;" +
+                        "-fx-effect: dropshadow(gaussian, rgba(29,185,84,0.45), 18, 0.35, 0, 6);"
         );
         bubbleButton.setText("SP");
         Label bubbleHint = new Label("Nature Sounds");
@@ -2121,10 +2290,10 @@ public class WellbeingController implements Initializable {
         widget.setPadding(new Insets(12));
         widget.setStyle(
                 "-fx-background-color: rgba(8, 12, 24, 0.94);" +
-                "-fx-background-radius: 16;" +
-                "-fx-border-color: rgba(51, 65, 85, 0.85);" +
-                "-fx-border-width: 1;" +
-                "-fx-border-radius: 16;"
+                        "-fx-background-radius: 16;" +
+                        "-fx-border-color: rgba(51, 65, 85, 0.85);" +
+                        "-fx-border-width: 1;" +
+                        "-fx-border-radius: 16;"
         );
 
         HBox topBar = new HBox(8);
@@ -2148,13 +2317,13 @@ public class WellbeingController implements Initializable {
             b.setToggleGroup(sizeGroup);
             b.setStyle(
                     "-fx-background-color: #111827;" +
-                    "-fx-text-fill: #cbd5e1;" +
-                    "-fx-font-size: 11px;" +
-                    "-fx-font-weight: 700;" +
-                    "-fx-padding: 4 8;" +
-                    "-fx-background-radius: 8;" +
-                    "-fx-border-color: #334155;" +
-                    "-fx-border-radius: 8;"
+                            "-fx-text-fill: #cbd5e1;" +
+                            "-fx-font-size: 11px;" +
+                            "-fx-font-weight: 700;" +
+                            "-fx-padding: 4 8;" +
+                            "-fx-background-radius: 8;" +
+                            "-fx-border-color: #334155;" +
+                            "-fx-border-radius: 8;"
             );
         }
         sBtn.setSelected(true);
@@ -2162,24 +2331,24 @@ public class WellbeingController implements Initializable {
         Button collapseBtn = new Button("-");
         collapseBtn.setStyle(
                 "-fx-background-color: #1f2937;" +
-                "-fx-text-fill: #cbd5e1;" +
-                "-fx-font-weight: 800;" +
-                "-fx-background-radius: 999;" +
-                "-fx-min-width: 24;" +
-                "-fx-min-height: 24;" +
-                "-fx-max-width: 24;" +
-                "-fx-max-height: 24;"
+                        "-fx-text-fill: #cbd5e1;" +
+                        "-fx-font-weight: 800;" +
+                        "-fx-background-radius: 999;" +
+                        "-fx-min-width: 24;" +
+                        "-fx-min-height: 24;" +
+                        "-fx-max-width: 24;" +
+                        "-fx-max-height: 24;"
         );
         Button closeBtn = new Button("x");
         closeBtn.setStyle(
                 "-fx-background-color: #1f2937;" +
-                "-fx-text-fill: #cbd5e1;" +
-                "-fx-font-weight: 800;" +
-                "-fx-background-radius: 999;" +
-                "-fx-min-width: 24;" +
-                "-fx-min-height: 24;" +
-                "-fx-max-width: 24;" +
-                "-fx-max-height: 24;"
+                        "-fx-text-fill: #cbd5e1;" +
+                        "-fx-font-weight: 800;" +
+                        "-fx-background-radius: 999;" +
+                        "-fx-min-width: 24;" +
+                        "-fx-min-height: 24;" +
+                        "-fx-max-width: 24;" +
+                        "-fx-max-height: 24;"
         );
         topBar.getChildren().addAll(label, topSpacer, sBtn, mBtn, lBtn, xlBtn, collapseBtn, closeBtn);
 
@@ -2193,13 +2362,13 @@ public class WellbeingController implements Initializable {
             b.setToggleGroup(presetGroup);
             b.setStyle(
                     "-fx-background-color: #161b22;" +
-                    "-fx-text-fill: #cbd5e1;" +
-                    "-fx-font-size: 12px;" +
-                    "-fx-font-weight: 700;" +
-                    "-fx-padding: 6 12;" +
-                    "-fx-background-radius: 999;" +
-                    "-fx-border-color: #334155;" +
-                    "-fx-border-radius: 999;"
+                            "-fx-text-fill: #cbd5e1;" +
+                            "-fx-font-size: 12px;" +
+                            "-fx-font-weight: 700;" +
+                            "-fx-padding: 6 12;" +
+                            "-fx-background-radius: 999;" +
+                            "-fx-border-color: #334155;" +
+                            "-fx-border-radius: 999;"
             );
             presetButtons.add(b);
             presetRow.getChildren().add(b);
@@ -2214,19 +2383,19 @@ public class WellbeingController implements Initializable {
         customUrlField.setPromptText("Paste Spotify embed URL...");
         customUrlField.setStyle(
                 "-fx-background-color: #0f172a;" +
-                "-fx-text-fill: #e2e8f0;" +
-                "-fx-prompt-text-fill: #64748b;" +
-                "-fx-border-color: #334155;" +
-                "-fx-border-radius: 8;" +
-                "-fx-background-radius: 8;"
+                        "-fx-text-fill: #e2e8f0;" +
+                        "-fx-prompt-text-fill: #64748b;" +
+                        "-fx-border-color: #334155;" +
+                        "-fx-border-radius: 8;" +
+                        "-fx-background-radius: 8;"
         );
         HBox.setHgrow(customUrlField, Priority.ALWAYS);
         Button loadCustomBtn = new Button("Load URL");
         loadCustomBtn.setStyle(
                 "-fx-background-color: #2563eb;" +
-                "-fx-text-fill: #dbeafe;" +
-                "-fx-font-weight: 700;" +
-                "-fx-background-radius: 8;"
+                        "-fx-text-fill: #dbeafe;" +
+                        "-fx-font-weight: 700;" +
+                        "-fx-background-radius: 8;"
         );
         customUrlRow.getChildren().addAll(customUrlField, loadCustomBtn);
 
@@ -2241,9 +2410,9 @@ public class WellbeingController implements Initializable {
         spotifyView.setPrefHeight(152);
         spotifyView.setStyle(
                 "-fx-background-color: #0b1220;" +
-                "-fx-border-color: #1f2937;" +
-                "-fx-border-radius: 10;" +
-                "-fx-background-radius: 10;"
+                        "-fx-border-color: #1f2937;" +
+                        "-fx-border-radius: 10;" +
+                        "-fx-background-radius: 10;"
         );
 
         VBox iframeWrap = new VBox(loadingLabel, spotifyView);
@@ -2255,15 +2424,15 @@ public class WellbeingController implements Initializable {
         Button bubbleButton = new Button("SP");
         bubbleButton.setStyle(
                 "-fx-background-color: linear-gradient(to bottom right, #1ed760, #1db954);" +
-                "-fx-text-fill: #041016;" +
-                "-fx-font-size: 16px;" +
-                "-fx-font-weight: 800;" +
-                "-fx-background-radius: 999;" +
-                "-fx-min-width: 58;" +
-                "-fx-min-height: 58;" +
-                "-fx-max-width: 58;" +
-                "-fx-max-height: 58;" +
-                "-fx-effect: dropshadow(gaussian, rgba(29,185,84,0.45), 16, 0.3, 0, 4);"
+                        "-fx-text-fill: #041016;" +
+                        "-fx-font-size: 16px;" +
+                        "-fx-font-weight: 800;" +
+                        "-fx-background-radius: 999;" +
+                        "-fx-min-width: 58;" +
+                        "-fx-min-height: 58;" +
+                        "-fx-max-width: 58;" +
+                        "-fx-max-height: 58;" +
+                        "-fx-effect: dropshadow(gaussian, rgba(29,185,84,0.45), 16, 0.3, 0, 4);"
         );
         Label bubbleHint = new Label("Nature Sounds");
         bubbleHint.setStyle("-fx-text-fill: #cbd5e1; -fx-font-size: 11px; -fx-font-weight: 700;");
@@ -2286,13 +2455,13 @@ public class WellbeingController implements Initializable {
                 boolean selected = b.isSelected();
                 b.setStyle(
                         "-fx-background-color: " + (selected ? "#1d4ed8" : "#161b22") + ";" +
-                        "-fx-text-fill: " + (selected ? "#dbeafe" : "#cbd5e1") + ";" +
-                        "-fx-font-size: 12px;" +
-                        "-fx-font-weight: 700;" +
-                        "-fx-padding: 6 12;" +
-                        "-fx-background-radius: 999;" +
-                        "-fx-border-color: " + (selected ? "#3b82f6" : "#334155") + ";" +
-                        "-fx-border-radius: 999;"
+                                "-fx-text-fill: " + (selected ? "#dbeafe" : "#cbd5e1") + ";" +
+                                "-fx-font-size: 12px;" +
+                                "-fx-font-weight: 700;" +
+                                "-fx-padding: 6 12;" +
+                                "-fx-background-radius: 999;" +
+                                "-fx-border-color: " + (selected ? "#3b82f6" : "#334155") + ";" +
+                                "-fx-border-radius: 999;"
                 );
             }
         };
@@ -2303,13 +2472,13 @@ public class WellbeingController implements Initializable {
                 boolean selected = b.isSelected();
                 b.setStyle(
                         "-fx-background-color: " + (selected ? "#0f3a2a" : "#111827") + ";" +
-                        "-fx-text-fill: " + (selected ? "#86efac" : "#cbd5e1") + ";" +
-                        "-fx-font-size: 11px;" +
-                        "-fx-font-weight: 700;" +
-                        "-fx-padding: 4 8;" +
-                        "-fx-background-radius: 8;" +
-                        "-fx-border-color: " + (selected ? "#16a34a" : "#334155") + ";" +
-                        "-fx-border-radius: 8;"
+                                "-fx-text-fill: " + (selected ? "#86efac" : "#cbd5e1") + ";" +
+                                "-fx-font-size: 11px;" +
+                                "-fx-font-weight: 700;" +
+                                "-fx-padding: 4 8;" +
+                                "-fx-background-radius: 8;" +
+                                "-fx-border-color: " + (selected ? "#16a34a" : "#334155") + ";" +
+                                "-fx-border-radius: 8;"
                 );
             }
         };
@@ -2601,12 +2770,30 @@ public class WellbeingController implements Initializable {
 
     @FXML
     private void handleOpenCopingTools() {
-        showOverviewMode();
+        showCopingToolsMode();
+    }
+
+    @FXML
+    private void handleStartBreathingTool() {
+        copingToolsCatalog().stream()
+                .filter(tool -> "breathing_exercise".equals(tool.key()))
+                .findFirst()
+                .ifPresent(this::openCopingTool);
     }
 
     @FXML
     private void handleOpenQuiz() {
-        openQuizModePicker();
+        showQuizModePickerInline();
+    }
+
+    @FXML
+    private void handleStartSimpleQuiz() {
+        startQuiz(QuizMode.SIMPLE);
+    }
+
+    @FXML
+    private void handleStartAiQuiz() {
+        startQuiz(QuizMode.AI);
     }
 
     @FXML
@@ -3002,14 +3189,14 @@ public class WellbeingController implements Initializable {
         quizProgressPercentLabel.setText(percent + "%");
     }
 
-     @SuppressWarnings({"unused", "all"})
-     private boolean isCurrentQuestionAnswered() {
-         if (quizQuestions.isEmpty()) {
-             return false;
-         }
-         QuestionStress question = quizQuestions.get(currentQuizIndex);
-         return quizAnswers.containsKey(question.getId());
-     }
+    @SuppressWarnings({"unused", "all"})
+    private boolean isCurrentQuestionAnswered() {
+        if (quizQuestions.isEmpty()) {
+            return false;
+        }
+        QuestionStress question = quizQuestions.get(currentQuizIndex);
+        return quizAnswers.containsKey(question.getId());
+    }
 
     private void showQuizResults(QuizStress quiz) {
         currentQuizResult = quiz;
@@ -3371,19 +3558,19 @@ public class WellbeingController implements Initializable {
         items.sort(comparator);
     }
 
-     @SuppressWarnings("SameParameterValue")
-     private Node createEmptyCard(String titleText, String subtitleText) {
-         VBox box = new VBox(8);
-         box.getStyleClass().add("wellbeing-empty-card");
-         Label title = new Label(titleText);
-         title.getStyleClass().add("text-body");
-         title.setStyle("-fx-font-weight: 600;");
-         Label subtitle = new Label(subtitleText);
-         subtitle.getStyleClass().add("text-small");
-         subtitle.setWrapText(true);
-         box.getChildren().addAll(title, subtitle);
-         return box;
-     }
+    @SuppressWarnings("SameParameterValue")
+    private Node createEmptyCard(String titleText, String subtitleText) {
+        VBox box = new VBox(8);
+        box.getStyleClass().add("wellbeing-empty-card");
+        Label title = new Label(titleText);
+        title.getStyleClass().add("text-body");
+        title.setStyle("-fx-font-weight: 600;");
+        Label subtitle = new Label(subtitleText);
+        subtitle.getStyleClass().add("text-small");
+        subtitle.setWrapText(true);
+        box.getChildren().addAll(title, subtitle);
+        return box;
+    }
 
     private boolean containsIgnoreCase(String value, String search) {
         return value != null && value.toLowerCase().contains(search);
@@ -3471,9 +3658,9 @@ public class WellbeingController implements Initializable {
         globalMessageLabel.setText(message == null ? "" : message);
         globalMessageLabel.setStyle(
                 "-fx-background-color: " + (error ? "#dc2626" : "#16a34a") + ";" +
-                "-fx-text-fill: white;" +
-                "-fx-padding: 10 14 10 14;" +
-                "-fx-background-radius: 8;"
+                        "-fx-text-fill: white;" +
+                        "-fx-padding: 10 14 10 14;" +
+                        "-fx-background-radius: 8;"
         );
         globalMessageLabel.setVisible(true);
         globalMessageLabel.setManaged(true);
@@ -3488,23 +3675,46 @@ public class WellbeingController implements Initializable {
     }
 
     private void showOverviewMode() {
+        handleCloseInlineTool();
         statsSection.setVisible(true);
         statsSection.setManaged(true);
         overviewSection.setVisible(true);
         overviewSection.setManaged(true);
         historySection.setVisible(false);
         historySection.setManaged(false);
-        toolsSection.setVisible(true);
-        toolsSection.setManaged(true);
+        toolsSection.setVisible(false);
+        toolsSection.setManaged(false);
         formSection.setVisible(false);
         formSection.setManaged(false);
+        quizModeSection.setVisible(false);
+        quizModeSection.setManaged(false);
         quizSection.setVisible(false);
         quizSection.setManaged(false);
         quizResultsSection.setVisible(false);
         quizResultsSection.setManaged(false);
     }
 
+    private void showCopingToolsMode() {
+        statsSection.setVisible(false);
+        statsSection.setManaged(false);
+        overviewSection.setVisible(false);
+        overviewSection.setManaged(false);
+        historySection.setVisible(false);
+        historySection.setManaged(false);
+        formSection.setVisible(false);
+        formSection.setManaged(false);
+        quizModeSection.setVisible(false);
+        quizModeSection.setManaged(false);
+        quizSection.setVisible(false);
+        quizSection.setManaged(false);
+        quizResultsSection.setVisible(false);
+        quizResultsSection.setManaged(false);
+        toolsSection.setVisible(true);
+        toolsSection.setManaged(true);
+    }
+
     private void showCheckinMode() {
+        handleCloseInlineTool();
         statsSection.setVisible(false);
         statsSection.setManaged(false);
         overviewSection.setVisible(false);
@@ -3515,6 +3725,8 @@ public class WellbeingController implements Initializable {
         toolsSection.setManaged(false);
         formSection.setVisible(true);
         formSection.setManaged(true);
+        quizModeSection.setVisible(false);
+        quizModeSection.setManaged(false);
         quizSection.setVisible(false);
         quizSection.setManaged(false);
         quizResultsSection.setVisible(false);
@@ -3522,6 +3734,7 @@ public class WellbeingController implements Initializable {
     }
 
     private void showHistoryMode() {
+        handleCloseInlineTool();
         statsSection.setVisible(false);
         statsSection.setManaged(false);
         overviewSection.setVisible(false);
@@ -3532,6 +3745,8 @@ public class WellbeingController implements Initializable {
         formSection.setManaged(false);
         historySection.setVisible(true);
         historySection.setManaged(true);
+        quizModeSection.setVisible(false);
+        quizModeSection.setManaged(false);
         quizSection.setVisible(false);
         quizSection.setManaged(false);
         quizResultsSection.setVisible(false);
@@ -3539,6 +3754,7 @@ public class WellbeingController implements Initializable {
     }
 
     private void showQuizMode() {
+        handleCloseInlineTool();
         statsSection.setVisible(false);
         statsSection.setManaged(false);
         overviewSection.setVisible(false);
@@ -3549,6 +3765,8 @@ public class WellbeingController implements Initializable {
         toolsSection.setManaged(false);
         formSection.setVisible(false);
         formSection.setManaged(false);
+        quizModeSection.setVisible(false);
+        quizModeSection.setManaged(false);
         quizResultsSection.setVisible(false);
         quizResultsSection.setManaged(false);
         quizSection.setVisible(true);
@@ -3556,6 +3774,27 @@ public class WellbeingController implements Initializable {
     }
 
     private void showQuizResultsMode() {
+        handleCloseInlineTool();
+        statsSection.setVisible(false);
+        statsSection.setManaged(false);
+        overviewSection.setVisible(false);
+        overviewSection.setManaged(false);
+        historySection.setVisible(false);
+        historySection.setManaged(false);
+        toolsSection.setVisible(false);
+        toolsSection.setManaged(false);
+        formSection.setVisible(false);
+        formSection.setManaged(false);
+        quizModeSection.setVisible(false);
+        quizModeSection.setManaged(false);
+        quizSection.setVisible(false);
+        quizSection.setManaged(false);
+        quizResultsSection.setVisible(true);
+        quizResultsSection.setManaged(true);
+    }
+
+    private void showQuizModePickerInline() {
+        handleCloseInlineTool();
         statsSection.setVisible(false);
         statsSection.setManaged(false);
         overviewSection.setVisible(false);
@@ -3568,8 +3807,12 @@ public class WellbeingController implements Initializable {
         formSection.setManaged(false);
         quizSection.setVisible(false);
         quizSection.setManaged(false);
-        quizResultsSection.setVisible(true);
-        quizResultsSection.setManaged(true);
+        quizResultsSection.setVisible(false);
+        quizResultsSection.setManaged(false);
+        if (quizModeSection != null) {
+            quizModeSection.setVisible(true);
+            quizModeSection.setManaged(true);
+        }
     }
 
     private void updateStatsLabels(List<WellBeing> items, Label total, Label stress, Label energy, Label sleep) {
@@ -3641,7 +3884,7 @@ public class WellbeingController implements Initializable {
                     new MoodEntry("Thu", "Stressed", "fth-frown", "danger"),
                     new MoodEntry("Fri", "Good", "fth-smile", "success"),
                     new MoodEntry("Sat", "Great", "fth-smile", "success"),
-                    new MoodEntry("Sun", "Good", "fth-smile", "success")
+                    new MoodEntry("Sun", "Good", "😊", "success")
             );
         } else {
             moods = recent.stream()
@@ -3773,7 +4016,7 @@ public class WellbeingController implements Initializable {
 
         mindfulnessBox.getChildren().clear();
         List<MindfulnessSession> sessions = List.of(
-                new MindfulnessSession("Deep Breathing", "5 min", "fth-wind", "primary"),
+                new MindfulnessSession("Deep Breathing", "5 min", "fth-activity", "primary"),
                 new MindfulnessSession("Body Scan", "10 min", "fth-user", "success"),
                 new MindfulnessSession("Focus Meditation", "15 min", "fth-target", "warning"),
                 new MindfulnessSession("Sleep Meditation", "20 min", "fth-moon", "accent")

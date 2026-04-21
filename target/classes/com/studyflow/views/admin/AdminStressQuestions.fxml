@@ -19,75 +19,84 @@
            xmlns:fx="http://javafx.com/fxml/1"
            fx:controller="com.studyflow.controllers.admin.AdminStressQuestionsController"
            styleClass="stress-root">
+    <Label fx:id="notificationLabel"
+           text=""
+           visible="false"
+           managed="false"
+           styleClass="text-small"
+           StackPane.alignment="TOP_RIGHT"/>
 
-    <VBox fx:id="listSection" spacing="24" styleClass="stress-page">
-        <padding>
-            <Insets top="0" right="0" bottom="0" left="0"/>
-        </padding>
-
-        <HBox alignment="CENTER_LEFT" spacing="16">
-            <VBox spacing="4" HBox.hgrow="ALWAYS">
-                <Label text="Stress Assessment Questions" styleClass="stress-title"/>
-                <Label text="Manage quiz questions for stress evaluation" styleClass="stress-subtitle"/>
-            </VBox>
-            <Button text="Export PDF" styleClass="btn-secondary" onAction="#handleExportPdf"/>
-            <Button text="Add Question" styleClass="btn-primary" onAction="#handleAddQuestion"/>
-        </HBox>
-
-        <HBox spacing="16">
-            <VBox spacing="8" HBox.hgrow="ALWAYS" styleClass="stress-stat-card, blue">
-                <Label fx:id="totalQuestionsLabel" text="0" styleClass="stress-stat-number"/>
-                <Label text="Total Questions" styleClass="stress-stat-label"/>
-            </VBox>
-            <VBox spacing="8" HBox.hgrow="ALWAYS" styleClass="stress-stat-card, green">
-                <Label fx:id="activeQuestionsLabel" text="0" styleClass="stress-stat-number"/>
-                <Label text="Active Questions" styleClass="stress-stat-label"/>
-            </VBox>
-            <VBox spacing="8" HBox.hgrow="ALWAYS" styleClass="stress-stat-card, gray">
-                <Label fx:id="inactiveQuestionsLabel" text="0" styleClass="stress-stat-number"/>
-                <Label text="Inactive Questions" styleClass="stress-stat-label"/>
-            </VBox>
-        </HBox>
-
-        <HBox alignment="CENTER_LEFT" spacing="14" styleClass="stress-search-card">
-            <padding>
-                <Insets top="16" right="16" bottom="16" left="16"/>
-            </padding>
-            <TextField fx:id="searchField" promptText="Search questions..." styleClass="admin-input" HBox.hgrow="ALWAYS"/>
-            <ComboBox fx:id="sortCombo" prefWidth="190"/>
-            <ComboBox fx:id="orderCombo" prefWidth="150"/>
-        </HBox>
-
-        <VBox spacing="0" styleClass="stress-table-shell">
-            <VBox fx:id="questionsListBox" spacing="0"/>
-        </VBox>
-    </VBox>
-
-    <ScrollPane fx:id="formSection" fitToWidth="true" visible="false" managed="false" style="-fx-background-color: transparent;">
+    <ScrollPane fx:id="listSection" fitToWidth="true" visible="true" managed="true" style="-fx-background-color: transparent;">
         <content>
-            <VBox spacing="22" styleClass="stress-page">
+            <VBox spacing="24" styleClass="stress-page">
                 <padding>
                     <Insets top="0" right="0" bottom="0" left="0"/>
                 </padding>
 
-                <Button text="Back to Questions" styleClass="auth-link" onAction="#handleBackToList"/>
+                <HBox alignment="CENTER_LEFT" spacing="16">
+                    <VBox spacing="4" HBox.hgrow="ALWAYS">
+                        <Label text="Stress Assessment Questions" styleClass="stress-title"/>
+                        <Label text="Manage quiz questions for stress evaluation" styleClass="stress-subtitle"/>
+                    </VBox>
+                    <Button text="Export PDF" styleClass="btn-secondary" onAction="#handleExportPdf"/>
+                    <Button text="Add Question" styleClass="btn-primary" onAction="#handleAddQuestion"/>
+                </HBox>
 
-                <VBox spacing="18" styleClass="stress-form-card">
+                <HBox spacing="16">
+                    <VBox spacing="8" HBox.hgrow="ALWAYS" styleClass="stress-stat-card, blue">
+                        <Label fx:id="totalQuestionsLabel" text="0" styleClass="stress-stat-number"/>
+                        <Label text="Total Questions" styleClass="stress-stat-label"/>
+                    </VBox>
+                    <VBox spacing="8" HBox.hgrow="ALWAYS" styleClass="stress-stat-card, green">
+                        <Label fx:id="activeQuestionsLabel" text="0" styleClass="stress-stat-number"/>
+                        <Label text="Active Questions" styleClass="stress-stat-label"/>
+                    </VBox>
+                    <VBox spacing="8" HBox.hgrow="ALWAYS" styleClass="stress-stat-card, gray">
+                        <Label fx:id="inactiveQuestionsLabel" text="0" styleClass="stress-stat-number"/>
+                        <Label text="Inactive Questions" styleClass="stress-stat-label"/>
+                    </VBox>
+                </HBox>
+
+                <HBox alignment="CENTER_LEFT" spacing="14" styleClass="stress-search-card">
                     <padding>
-                        <Insets top="30" right="32" bottom="30" left="32"/>
+                        <Insets top="16" right="16" bottom="16" left="16"/>
+                    </padding>
+                    <TextField fx:id="searchField" promptText="Search questions..." styleClass="admin-input" HBox.hgrow="ALWAYS"/>
+                    <ComboBox fx:id="sortCombo" prefWidth="190"/>
+                    <ComboBox fx:id="orderCombo" prefWidth="150"/>
+                </HBox>
+
+                <VBox spacing="0" styleClass="stress-table-shell">
+                    <VBox fx:id="questionsListBox" spacing="0"/>
+                </VBox>
+            </VBox>
+        </content>
+    </ScrollPane>
+
+    <ScrollPane fx:id="formSection" fitToWidth="true" visible="false" managed="false" style="-fx-background-color: transparent;">
+        <content>
+            <VBox spacing="22" styleClass="stress-page" alignment="TOP_CENTER">
+                <padding>
+                    <Insets top="0" right="0" bottom="0" left="0"/>
+                </padding>
+
+                <HBox alignment="CENTER_LEFT" maxWidth="1200" prefWidth="1200">
+                    <Button text="Back to Questions" styleClass="auth-link" onAction="#handleBackToList"/>
+                </HBox>
+
+                <VBox spacing="22" styleClass="stress-form-card" maxWidth="1200" prefWidth="1200" minHeight="700" prefHeight="700">
+                    <padding>
+                        <Insets top="36" right="40" bottom="36" left="40"/>
                     </padding>
 
                     <Label fx:id="formTitleLabel" text="New Question" styleClass="stress-title"/>
                     <Label fx:id="formErrorLabel" text="" styleClass="auth-error" visible="false" managed="false"/>
-
-                    <VBox spacing="8">
-                        <Label text="Position (Order)" styleClass="auth-field-label"/>
-                        <TextField fx:id="questionNumberField" promptText="0" styleClass="admin-input"/>
-                    </VBox>
+                    <Label text="Drag-and-drop works in the list when Sort by Number + Ascending and search is empty." styleClass="text-small"/>
 
                     <VBox spacing="8">
                         <Label text="Question Text" styleClass="auth-field-label"/>
-                        <TextArea fx:id="questionTextArea" prefRowCount="5" wrapText="true" styleClass="admin-textarea"/>
+                        <TextArea fx:id="questionTextArea" prefRowCount="9" wrapText="true" styleClass="admin-textarea"/>
+                        <Label text="Condition: obligatoire, minimum 5 caractères et maximum 1000 caractères." styleClass="text-small"/>
                     </VBox>
 
                     <CheckBox fx:id="activeCheckBox" text="Active" styleClass="admin-checkbox"/>

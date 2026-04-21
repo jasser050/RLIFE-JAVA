@@ -30,7 +30,7 @@
                 </image>
             </ImageView>
             <Label text="RLife" styleClass="title-bar-title"/>
-            <Label text="-" style="-fx-text-fill: #475569;"/>
+            <Label text="—" style="-fx-text-fill: #475569;"/>
             <Label text="Admin Dashboard" styleClass="title-bar-subtitle" style="-fx-text-fill: #F43F5E;"/>
         </HBox>
 
@@ -84,14 +84,6 @@
                             <text>Courses</text>
                         </Button>
 
-                        <Button fx:id="btnAssignments" styleClass="nav-button"
-                                onAction="#showAssignments" maxWidth="Infinity">
-                            <graphic>
-                                <FontIcon iconLiteral="fth-clipboard" iconSize="18"/>
-                            </graphic>
-                            <text>Assignments</text>
-                        </Button>
-
                         <Button fx:id="btnPlanning" styleClass="nav-button"
                                 onAction="#showPlanning" maxWidth="Infinity">
                             <graphic>
@@ -136,12 +128,20 @@
                             </VBox.margin>
                         </Label>
 
-                        <Button fx:id="btnWellbeing" styleClass="nav-button"
-                                onAction="#showWellbeing" maxWidth="Infinity">
+                        <Button fx:id="btnStressQuestions" styleClass="nav-button"
+                                onAction="#showStressQuestions" maxWidth="Infinity">
                             <graphic>
-                                <FontIcon iconLiteral="fth-heart" iconSize="18"/>
+                                <FontIcon iconLiteral="fth-help-circle" iconSize="18"/>
                             </graphic>
-                            <text>Wellbeing</text>
+                            <text>Stress Questions</text>
+                        </Button>
+
+                        <Button fx:id="btnRecommendations" styleClass="nav-button"
+                                onAction="#showRecommendations" maxWidth="Infinity">
+                            <graphic>
+                                <FontIcon iconLiteral="fth-activity" iconSize="18"/>
+                            </graphic>
+                            <text>Recommendations</text>
                         </Button>
 
                         <Button fx:id="btnStats" styleClass="nav-button"
@@ -184,12 +184,12 @@
                     </VBox>
                 </ScrollPane>
 
-                <HBox styleClass="sidebar-header sidebar-user-row" alignment="CENTER_LEFT" spacing="12">
+                <HBox fx:id="userProfileRow" styleClass="sidebar-header sidebar-user-row" alignment="CENTER_LEFT" spacing="12">
                     <StackPane styleClass="avatar"
                                style="-fx-background-color: linear-gradient(to bottom right, #DC2626, #7C3AED);">
                         <Label fx:id="sidebarAvatar" text="AD" styleClass="avatar-text"/>
                     </StackPane>
-                    <VBox spacing="2" HBox.hgrow="ALWAYS">
+                    <VBox fx:id="userInfoBox" spacing="2" HBox.hgrow="ALWAYS">
                         <Label fx:id="sidebarUserName" text="Administrator" styleClass="sidebar-title" style="-fx-font-size: 14px;"/>
                         <Label fx:id="sidebarUserSub" text="admin@rlife.com" styleClass="sidebar-subtitle"/>
                     </VBox>

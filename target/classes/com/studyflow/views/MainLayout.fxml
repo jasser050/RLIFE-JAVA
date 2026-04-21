@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.scene.layout.*?>
-<?import javafx.scene.control.*?>
-<?import javafx.scene.text.*?>
-<?import javafx.scene.image.ImageView?>
-<?import javafx.scene.image.Image?>
 <?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
 <?import org.kordamp.ikonli.javafx.FontIcon?>
 
 <VBox xmlns="http://javafx.com/javafx/21"
@@ -13,11 +13,8 @@
       fx:controller="com.studyflow.controllers.MainController"
       styleClass="app-container">
 
-    <!-- Custom Title Bar -->
     <HBox fx:id="titleBar" styleClass="title-bar" alignment="CENTER_LEFT" spacing="0"
           onMousePressed="#onTitleBarPressed" onMouseDragged="#onTitleBarDragged">
-
-        <!-- App Icon and Title -->
         <HBox alignment="CENTER_LEFT" spacing="10" HBox.hgrow="ALWAYS">
             <padding>
                 <Insets left="16"/>
@@ -30,23 +27,19 @@
             <Label text="Student Dashboard" styleClass="title-bar-subtitle"/>
         </HBox>
 
-        <!-- Window Controls -->
         <HBox alignment="CENTER_RIGHT" spacing="0" styleClass="window-controls">
-            <!-- Minimize Button -->
             <Button fx:id="btnMinimize" styleClass="window-btn, minimize-btn" onAction="#minimizeWindow">
                 <graphic>
                     <FontIcon iconLiteral="fth-minus" iconSize="14"/>
                 </graphic>
             </Button>
 
-            <!-- Maximize Button -->
             <Button fx:id="btnMaximize" styleClass="window-btn, maximize-btn" onAction="#maximizeWindow">
                 <graphic>
                     <FontIcon fx:id="maximizeIcon" iconLiteral="fth-square" iconSize="12"/>
                 </graphic>
             </Button>
 
-            <!-- Close Button -->
             <Button fx:id="btnClose" styleClass="window-btn, close-btn" onAction="#closeWindow">
                 <graphic>
                     <FontIcon iconLiteral="fth-x" iconSize="14"/>
@@ -55,12 +48,9 @@
         </HBox>
     </HBox>
 
-    <!-- Main App Content -->
     <BorderPane VBox.vgrow="ALWAYS" styleClass="root">
-        <!-- Sidebar -->
         <left>
             <VBox styleClass="sidebar" spacing="0">
-                <!-- Logo Section -->
                 <HBox styleClass="sidebar-header" alignment="CENTER_LEFT" spacing="12">
                     <ImageView fx:id="sidebarLogo" fitHeight="44" fitWidth="44" preserveRatio="true" styleClass="sidebar-logo-img"/>
                     <VBox spacing="2">
@@ -69,93 +59,79 @@
                     </VBox>
                 </HBox>
 
-                <!-- Navigation -->
-                <ScrollPane fitToWidth="true" hbarPolicy="NEVER" VBox.vgrow="ALWAYS"
-                            styleClass="nav-scroll">
+                <ScrollPane fitToWidth="true" hbarPolicy="NEVER" VBox.vgrow="ALWAYS" styleClass="nav-scroll">
                     <VBox styleClass="sidebar-nav" spacing="4">
-                        <!-- Main Section -->
                         <Label text="MAIN" styleClass="nav-section-title"/>
 
-                        <Button fx:id="btnDashboard" styleClass="nav-button, active"
-                                onAction="#showDashboard" maxWidth="Infinity">
+                        <Button fx:id="btnDashboard" styleClass="nav-button, active" onAction="#showDashboard" maxWidth="Infinity">
                             <graphic>
                                 <FontIcon iconLiteral="fth-home" iconSize="18"/>
                             </graphic>
                             <text>Dashboard</text>
                         </Button>
 
-                        <Button fx:id="btnCourses" styleClass="nav-button"
-                                onAction="#showCourses" maxWidth="Infinity">
+                        <Button fx:id="btnCourses" styleClass="nav-button" onAction="#showCourses" maxWidth="Infinity">
                             <graphic>
                                 <FontIcon iconLiteral="fth-book-open" iconSize="18"/>
                             </graphic>
                             <text>Courses</text>
                         </Button>
 
-                        <Button fx:id="btnAssignments" styleClass="nav-button"
-                                onAction="#showAssignments" maxWidth="Infinity">
+                        <Button fx:id="btnAssignments" styleClass="nav-button" onAction="#showAssignments" maxWidth="Infinity">
                             <graphic>
                                 <FontIcon iconLiteral="fth-clipboard" iconSize="18"/>
                             </graphic>
                             <text>Assignments</text>
                         </Button>
 
-                        <Button fx:id="btnPlanning" styleClass="nav-button"
-                                onAction="#showPlanning" maxWidth="Infinity">
+                        <Button fx:id="btnPlanning" styleClass="nav-button" onAction="#showPlanning" maxWidth="Infinity">
                             <graphic>
                                 <FontIcon iconLiteral="fth-calendar" iconSize="18"/>
                             </graphic>
                             <text>Planning</text>
                         </Button>
 
-                        <!-- Study Tools Section -->
                         <Label text="STUDY TOOLS" styleClass="nav-section-title">
                             <VBox.margin>
                                 <Insets top="16"/>
                             </VBox.margin>
                         </Label>
 
-                        <Button fx:id="btnRevisions" styleClass="nav-button"
-                                onAction="#showRevisions" maxWidth="Infinity">
+                        <Button fx:id="btnRevisions" styleClass="nav-button" onAction="#showRevisions" maxWidth="Infinity">
                             <graphic>
                                 <FontIcon iconLiteral="fth-layers" iconSize="18"/>
                             </graphic>
                             <text>Decks</text>
                         </Button>
 
-                        <Button fx:id="btnProjects" styleClass="nav-button"
-                                onAction="#showProjects" maxWidth="Infinity">
+                        <Button fx:id="btnProjects" styleClass="nav-button" onAction="#showProjects" maxWidth="Infinity">
                             <graphic>
                                 <FontIcon iconLiteral="fth-users" iconSize="18"/>
                             </graphic>
                             <text>Projects</text>
                         </Button>
 
-                        <Button fx:id="btnNotes" styleClass="nav-button"
-                                onAction="#showNotes" maxWidth="Infinity">
+                        <Button fx:id="btnNotes" styleClass="nav-button" onAction="#showNotes" maxWidth="Infinity">
                             <graphic>
                                 <FontIcon iconLiteral="fth-file-text" iconSize="18"/>
                             </graphic>
                             <text>Notes</text>
                         </Button>
 
-                        <!-- Wellness Section -->
                         <Label text="WELLNESS" styleClass="nav-section-title">
                             <VBox.margin>
                                 <Insets top="16"/>
                             </VBox.margin>
                         </Label>
 
-                        <Button fx:id="btnWellbeing" styleClass="nav-button"
-                                onAction="#showWellbeing" maxWidth="Infinity">
+                        <Button fx:id="btnWellbeing" styleClass="nav-button" onAction="#showWellbeing" maxWidth="Infinity">
                             <graphic>
                                 <FontIcon iconLiteral="fth-heart" iconSize="18"/>
                             </graphic>
                             <text>Wellbeing</text>
                         </Button>
 
-                        <Button fx:id="btnStats" styleClass="nav-button"
-                                onAction="#showStats" maxWidth="Infinity">
+                        <Button fx:id="btnStats" styleClass="nav-button" onAction="#showStats" maxWidth="Infinity">
                             <graphic>
                                 <FontIcon iconLiteral="fth-bar-chart-2" iconSize="18"/>
                             </graphic>
@@ -164,7 +140,6 @@
                     </VBox>
                 </ScrollPane>
 
-                <!-- User Section at Bottom -->
                 <HBox fx:id="userProfileRow" styleClass="sidebar-header sidebar-user-row" alignment="CENTER_LEFT" spacing="12">
                     <StackPane styleClass="avatar">
                         <Label fx:id="sidebarAvatar" text="??" styleClass="avatar-text"/>
@@ -182,16 +157,12 @@
             </VBox>
         </left>
 
-        <!-- Main Content Area -->
         <center>
             <VBox styleClass="main-content">
-                <!-- Top Bar -->
                 <HBox styleClass="topbar" alignment="CENTER_LEFT">
                     <HBox alignment="CENTER_LEFT" spacing="16" HBox.hgrow="ALWAYS">
-                        <!-- Search Field -->
                         <StackPane>
-                            <TextField fx:id="searchField" styleClass="search-field"
-                                       promptText="Search courses, assignments..."/>
+                            <TextField fx:id="searchField" styleClass="search-field" promptText="Search courses, assignments..."/>
                             <FontIcon iconLiteral="fth-search" iconSize="18"
                                       style="-fx-icon-color: #64748B;"
                                       StackPane.alignment="CENTER_LEFT"
@@ -200,8 +171,7 @@
                     </HBox>
 
                     <HBox alignment="CENTER_RIGHT" spacing="8">
-                        <!-- Notifications -->
-                        <Button styleClass="topbar-button">
+                        <Button fx:id="notificationsButton" styleClass="topbar-button, notifications-button" onAction="#showNotifications">
                             <graphic>
                                 <FontIcon iconLiteral="fth-bell" iconSize="20"/>
                             </graphic>
@@ -210,17 +180,15 @@
                             </tooltip>
                         </Button>
 
-                        <!-- Quick Add -->
                         <Button styleClass="btn-primary" text="New Task">
                             <graphic>
                                 <FontIcon iconLiteral="fth-plus" iconSize="16" iconColor="white"/>
                             </graphic>
                         </Button>
 
-                        <!-- Theme Toggle -->
-                        <Button styleClass="topbar-button">
+                        <Button fx:id="themeToggleButton" styleClass="topbar-button" onAction="#toggleTheme" text="Light">
                             <graphic>
-                                <FontIcon iconLiteral="fth-moon" iconSize="20"/>
+                                <FontIcon fx:id="themeToggleIcon" iconLiteral="fth-sun" iconSize="20"/>
                             </graphic>
                             <tooltip>
                                 <Tooltip text="Toggle Theme"/>
@@ -229,9 +197,7 @@
                     </HBox>
                 </HBox>
 
-                <!-- Content Container -->
-                <ScrollPane fx:id="contentScroll" fitToWidth="true" fitToHeight="true"
-                            hbarPolicy="NEVER" VBox.vgrow="ALWAYS">
+                <ScrollPane fx:id="contentScroll" fitToWidth="true" fitToHeight="true" hbarPolicy="NEVER" VBox.vgrow="ALWAYS">
                     <StackPane fx:id="contentArea" styleClass="content-area"/>
                 </ScrollPane>
             </VBox>

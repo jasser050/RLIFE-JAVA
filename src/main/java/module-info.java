@@ -25,6 +25,7 @@ module com.studyflow {
     requires kernel;
     requires layout;
     requires io;
+    requires java.prefs;
 
     opens com.studyflow to javafx.fxml;
     opens com.studyflow.controllers to javafx.fxml;

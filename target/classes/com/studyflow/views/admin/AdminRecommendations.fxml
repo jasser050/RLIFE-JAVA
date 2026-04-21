@@ -19,51 +19,64 @@
            xmlns:fx="http://javafx.com/fxml/1"
            fx:controller="com.studyflow.controllers.admin.AdminRecommendationsController"
            styleClass="stress-root">
+    <Label fx:id="notificationLabel"
+           text=""
+           visible="false"
+           managed="false"
+           styleClass="text-small"
+           StackPane.alignment="TOP_RIGHT"/>
 
-    <VBox fx:id="listSection" spacing="24" styleClass="stress-page">
-        <HBox alignment="CENTER_LEFT" spacing="16">
-            <VBox spacing="4" HBox.hgrow="ALWAYS">
-                <Label text="Stress Recommendations" styleClass="stress-title"/>
-                <Label text="Manage personalized recommendations for students" styleClass="stress-subtitle"/>
-            </VBox>
-            <Button text="Add Recommendation" styleClass="btn-primary" onAction="#handleAddRecommendation"/>
-        </HBox>
+    <ScrollPane fx:id="listSection" fitToWidth="true" visible="true" managed="true" style="-fx-background-color: transparent;">
+        <content>
+            <VBox spacing="24" styleClass="stress-page">
+                <HBox alignment="CENTER_LEFT" spacing="16">
+                    <VBox spacing="4" HBox.hgrow="ALWAYS">
+                        <Label text="Stress Recommendations" styleClass="stress-title"/>
+                        <Label text="Manage personalized recommendations for students" styleClass="stress-subtitle"/>
+                    </VBox>
+                    <Button text="Add Recommendation" styleClass="btn-primary" onAction="#handleAddRecommendation"/>
+                </HBox>
 
-        <HBox spacing="16">
-            <VBox spacing="8" HBox.hgrow="ALWAYS" styleClass="stress-stat-card, green">
-                <Label fx:id="lowCountLabel" text="0" styleClass="stress-stat-number"/>
-                <Label text="Low Stress" styleClass="stress-stat-label"/>
-            </VBox>
-            <VBox spacing="8" HBox.hgrow="ALWAYS" styleClass="stress-stat-card, warning">
-                <Label fx:id="mediumCountLabel" text="0" styleClass="stress-stat-number"/>
-                <Label text="Medium Stress" styleClass="stress-stat-label"/>
-            </VBox>
-            <VBox spacing="8" HBox.hgrow="ALWAYS" styleClass="stress-stat-card, danger">
-                <Label fx:id="highCountLabel" text="0" styleClass="stress-stat-number"/>
-                <Label text="High Stress" styleClass="stress-stat-label"/>
-            </VBox>
-            <VBox spacing="8" HBox.hgrow="ALWAYS" styleClass="stress-stat-card, blue">
-                <Label fx:id="totalCountLabel" text="0" styleClass="stress-stat-number"/>
-                <Label text="Total" styleClass="stress-stat-label"/>
-            </VBox>
-        </HBox>
+                <HBox spacing="16">
+                    <VBox spacing="8" HBox.hgrow="ALWAYS" styleClass="stress-stat-card, green">
+                        <Label fx:id="lowCountLabel" text="0" styleClass="stress-stat-number"/>
+                        <Label text="Low Stress" styleClass="stress-stat-label"/>
+                    </VBox>
+                    <VBox spacing="8" HBox.hgrow="ALWAYS" styleClass="stress-stat-card, warning">
+                        <Label fx:id="mediumCountLabel" text="0" styleClass="stress-stat-number"/>
+                        <Label text="Medium Stress" styleClass="stress-stat-label"/>
+                    </VBox>
+                    <VBox spacing="8" HBox.hgrow="ALWAYS" styleClass="stress-stat-card, danger">
+                        <Label fx:id="highCountLabel" text="0" styleClass="stress-stat-number"/>
+                        <Label text="High Stress" styleClass="stress-stat-label"/>
+                    </VBox>
+                    <VBox spacing="8" HBox.hgrow="ALWAYS" styleClass="stress-stat-card, blue">
+                        <Label fx:id="totalCountLabel" text="0" styleClass="stress-stat-number"/>
+                        <Label text="Total" styleClass="stress-stat-label"/>
+                    </VBox>
+                </HBox>
 
-        <VBox spacing="0" styleClass="stress-table-shell">
-            <VBox fx:id="recommendationsListBox" spacing="0"/>
-        </VBox>
-    </VBox>
+                <VBox spacing="0" styleClass="stress-table-shell">
+                    <VBox fx:id="recommendationsListBox" spacing="0"/>
+                </VBox>
+            </VBox>
+        </content>
+    </ScrollPane>
 
     <ScrollPane fx:id="formSection" fitToWidth="true" visible="false" managed="false" style="-fx-background-color: transparent;">
         <content>
-            <VBox spacing="22" styleClass="stress-page">
-                <Button text="Back to Recommendations" styleClass="auth-link" onAction="#handleBackToList"/>
-                <VBox spacing="18" styleClass="stress-form-card">
-                    <padding><Insets top="30" right="32" bottom="30" left="32"/></padding>
+            <VBox spacing="22" styleClass="stress-page" alignment="TOP_CENTER">
+                <HBox alignment="CENTER_LEFT" maxWidth="1200" prefWidth="1200">
+                    <Button text="Back to Recommendations" styleClass="auth-link" onAction="#handleBackToList"/>
+                </HBox>
+                <VBox spacing="22" styleClass="stress-form-card" maxWidth="1200" prefWidth="1200" minHeight="700" prefHeight="700">
+                    <padding><Insets top="36" right="40" bottom="36" left="40"/></padding>
                     <Label fx:id="formTitleLabel" text="Create New Recommendation" styleClass="stress-title"/>
                     <Label fx:id="formErrorLabel" text="" styleClass="auth-error" visible="false" managed="false"/>
                     <VBox spacing="8">
                         <Label text="Title" styleClass="auth-field-label"/>
                         <TextField fx:id="titleField" promptText="e.g., Take a Short Walk" styleClass="admin-input"/>
+                        <Label text="Titre: obligatoire, 10 à 100 caractères, et pas uniquement des chiffres." styleClass="text-small"/>
                     </VBox>
                     <VBox spacing="8">
                         <Label text="Stress Level" styleClass="auth-field-label"/>
@@ -71,7 +84,8 @@
                     </VBox>
                     <VBox spacing="8">
                         <Label text="Content" styleClass="auth-field-label"/>
-                        <TextArea fx:id="contentArea" prefRowCount="5" wrapText="true" styleClass="admin-textarea"/>
+                        <TextArea fx:id="contentArea" prefRowCount="9" wrapText="true" styleClass="admin-textarea"/>
+                        <Label text="Contenu: obligatoire et plus de 10 caractères." styleClass="text-small"/>
                     </VBox>
                     <CheckBox fx:id="activeCheckBox" text="Active" styleClass="admin-checkbox"/>
                     <Separator/>
