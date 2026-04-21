@@ -40,19 +40,21 @@ public class AdminController implements Initializable {
     @FXML private Label sidebarUserName;
     @FXML private Label sidebarUserSub;
     @FXML private Label sidebarAvatar;
+    @FXML private HBox userProfileRow;
+    @FXML private VBox userInfoBox;
 
     @FXML private Button btnAdminDash;
     @FXML private Button btnCourses;
-    @FXML private Button btnAssignments;
     @FXML private Button btnPlanning;
     @FXML private Button btnRevisions;
     @FXML private Button btnProjects;
     @FXML private Button btnNotes;
-    @FXML private Button btnWellbeing;
     @FXML private Button btnStats;
     @FXML private Button btnAdminUsers;
     @FXML private Button btnAdminAudit;
     @FXML private Button btnAdminAI;
+    @FXML private Button btnStressQuestions;
+    @FXML private Button btnRecommendations;
 
     private Button activeButton;
     private double xOffset = 0;
@@ -71,6 +73,13 @@ public class AdminController implements Initializable {
 
         activeButton = btnAdminDash;
         showDashboard();
+
+        if (userProfileRow != null) {
+            userProfileRow.setOnMouseClicked(event -> showProfile());
+        }
+        if (userInfoBox != null) {
+            userInfoBox.setOnMouseClicked(event -> showProfile());
+        }
 
         searchField.textProperty().addListener((obs, oldVal, newVal) -> {
             String query = newVal.trim();
@@ -140,15 +149,15 @@ public class AdminController implements Initializable {
     private void reloadActiveView() {
         if (activeButton == btnAdminDash) showDashboard();
         else if (activeButton == btnCourses) showCourses();
-        else if (activeButton == btnAssignments) showAssignments();
         else if (activeButton == btnPlanning) showPlanning();
         else if (activeButton == btnRevisions) showRevisions();
         else if (activeButton == btnProjects) showProjects();
         else if (activeButton == btnNotes) showNotes();
-        else if (activeButton == btnWellbeing) showWellbeing();
         else if (activeButton == btnStats) showStats();
         else if (activeButton == btnAdminUsers) showUsers();
         else if (activeButton == btnAdminAudit) showAuditLog();
+        else if (activeButton == btnStressQuestions) showStressQuestions();
+        else if (activeButton == btnRecommendations) showRecommendations();
         else if (activeButton == btnAdminAI) showAI();
         else showDashboard();
     }
@@ -157,21 +166,30 @@ public class AdminController implements Initializable {
         return activeButton == btnAdminDash
                 || activeButton == btnAdminUsers
                 || activeButton == btnAdminAudit
+                || activeButton == btnStressQuestions
+                || activeButton == btnRecommendations
                 || activeButton == btnAdminAI;
     }
 
     @FXML private void showDashboard() { showView(btnAdminDash, "views/admin/AdminDashboard.fxml"); }
     @FXML private void showCourses() { showView(btnCourses, "views/admin/AdminMatieres.fxml"); }
-    @FXML private void showAssignments() { showView(btnAssignments, "views/Assignments.fxml"); }
     @FXML private void showPlanning() { showView(btnPlanning, "views/Planning.fxml"); }
     @FXML private void showRevisions() { showView(btnRevisions, "views/Revisions.fxml"); }
-    @FXML private void showProjects() { showView(btnProjects, "views/Projects.fxml"); }
+    @FXML private void showProjects() { showView(btnProjects, "views/admin/AdminProjects.fxml"); }
     @FXML private void showNotes() { showView(btnNotes, "views/Notes.fxml"); }
-    @FXML private void showWellbeing() { showView(btnWellbeing, "views/Wellbeing.fxml"); }
     @FXML private void showStats() { showView(btnStats, "views/Statistics.fxml"); }
     @FXML private void showUsers() { showView(btnAdminUsers, "views/admin/AdminUsers.fxml"); }
     @FXML private void showAuditLog() { showView(btnAdminAudit, "views/admin/AdminAuditLog.fxml"); }
+    @FXML private void showStressQuestions() { showView(btnStressQuestions, "views/admin/AdminStressQuestions.fxml"); }
+    @FXML private void showRecommendations() { showView(btnRecommendations, "views/admin/AdminRecommendations.fxml"); }
     @FXML private void showAI() { showView(btnAdminAI, "views/admin/AdminAI.fxml"); }
+    @FXML private void showProfile() {
+        if (activeButton != null) {
+            activeButton.getStyleClass().remove("active");
+        }
+        activeButton = null;
+        loadContent("views/Profile.fxml");
+    }
 
     @FXML
     private void onSearchSubmit() {

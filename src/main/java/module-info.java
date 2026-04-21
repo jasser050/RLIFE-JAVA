@@ -9,7 +9,6 @@ module com.studyflow {
 
     requires java.sql;
     requires java.desktop;
-    requires java.prefs;
     requires java.net.http;
     requires jdk.httpserver;
 
@@ -22,6 +21,10 @@ module com.studyflow {
     requires com.fasterxml.jackson.databind;
     requires com.fasterxml.jackson.core;
     requires com.fasterxml.jackson.annotation;
+
+    requires kernel;
+    requires layout;
+    requires io;
 
     opens com.studyflow to javafx.fxml;
     opens com.studyflow.controllers to javafx.fxml;

@@ -1,12 +1,14 @@
 package com.studyflow.services;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -26,7 +28,9 @@ public class OpenRouterService {
                 .build();
         this.apiKey = firstNonBlank(
                 System.getenv("OPENROUTER_API_KEY"),
-                System.getenv("OPENAI_API_KEY")
+                System.getenv("OPENAI_API_KEY"),
+                readWindowsUserEnvironmentVariable("OPENROUTER_API_KEY"),
+                readWindowsUserEnvironmentVariable("OPENAI_API_KEY")
         );
     }
 
@@ -124,6 +128,56 @@ public class OpenRouterService {
         for (String value : values) {
             if (value != null && !value.isBlank()) {
                 return value;
+            }
+        }
+        return null;
+    }
+
+    private static String readWindowsUserEnvironmentVariable(String name) {
+        if (name == null || name.isBlank()) {
+            return null;
+        }
+        String os = System.getProperty("os.name", "");
+        if (!os.toLowerCase().contains("win")) {
+            return null;
+        }
+
+        Process process = null;
+        try {
+            process = new ProcessBuilder("reg", "query", "HKCU\\Environment", "/v", name)
+                    .redirectErrorStream(true)
+                    .start();
+            String output;
+            try (InputStream stream = process.getInputStream()) {
+                output = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+            }
+            int exitCode = process.waitFor();
+            if (exitCode != 0 || output == null || output.isBlank()) {
+                return null;
+            }
+
+            String[] lines = output.split("\\R");
+            for (String line : lines) {
+                String trimmed = line == null ? "" : line.trim();
+                if (!trimmed.startsWith(name + " ")) {
+                    continue;
+                }
+                String[] parts = trimmed.split("\\s{2,}");
+                if (parts.length >= 3) {
+                    return parts[2].trim();
+                }
+                List<String> compactParts = new ArrayList<>(List.of(trimmed.split("\\s+")));
+                if (compactParts.size() >= 3) {
+                    return compactParts.get(compactParts.size() - 1).trim();
+                }
+            }
+        } catch (IOException | InterruptedException ignored) {
+            if (ignored instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+        } finally {
+            if (process != null) {
+                process.destroy();
             }
         }
         return null;

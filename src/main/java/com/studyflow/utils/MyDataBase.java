@@ -6,25 +6,26 @@ import java.sql.SQLException;
 
 public class MyDataBase {
 
-    private static final String URL = "jdbc:mysql://localhost:3306/rlife?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC";
-    private static final String USER = "root";
-    private static final String PASSWORD = "";
+    final String URL = "jdbc:mysql://localhost:3306/rlife";
+    final String USER = "root";
+    final String PASSWORD = "";
 
+    
     private Connection connection;
+    private String lastError;
     private static MyDataBase instance;
 
     private MyDataBase() {
-        openConnection();
-    }
-
-    private void openConnection() {
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
             connection = DriverManager.getConnection(URL, USER, PASSWORD);
-            System.out.println("Connected");
-        } catch (SQLException | ClassNotFoundException e) {
-            connection = null;
-            System.err.println(e.getMessage());
+            System.out.println("Connected to database successfully");
+        } catch (ClassNotFoundException e) {
+            lastError = "MySQL driver not found: " + e.getMessage();
+            System.err.println("MySQL driver not found: " + e.getMessage());
+        } catch (SQLException e) {
+            lastError = e.getMessage();
+            System.err.println("Database connection failed: " + e.getMessage());
         }
     }
 
@@ -34,15 +35,30 @@ public class MyDataBase {
         return instance;
     }
 
-    public synchronized Connection getConnection() {
+    public Connection getConnection() {
         try {
             if (connection == null || connection.isClosed() || !connection.isValid(2)) {
-                openConnection();
+                connection = DriverManager.getConnection(URL, USER, PASSWORD);
+                lastError = null;
+                System.out.println("Reconnected to database");
             }
         } catch (SQLException e) {
-            connection = null;
-            openConnection();
+            lastError = e.getMessage();
+            System.err.println("DB reconnect failed: " + e.getMessage());
         }
         return connection;
+    }
+
+    public boolean isConnected() {
+        try {
+            return connection != null && !connection.isClosed() && connection.isValid(2);
+        } catch (SQLException e) {
+            lastError = e.getMessage();
+            return false;
+        }
+    }
+
+    public String getLastError() {
+        return lastError;
     }
 }

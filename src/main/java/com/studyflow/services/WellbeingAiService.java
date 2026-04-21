@@ -12,7 +12,6 @@ public class WellbeingAiService {
     public record ChatTurn(String role, String content) {}
     public record CoachReply(String reply, String source, String languageCode) {}
     public record RecommendationItem(String title, String description) {}
-    public record QuoteResult(String quote, String source, String type) {}
 
     public List<RecommendationItem> generateRecommendations(int stressLevel10, String mood, List<String> signals) {
         int safeStress = Math.max(1, Math.min(10, stressLevel10));
@@ -49,80 +48,6 @@ public class WellbeingAiService {
         }
 
         return fallbackRecommendations(safeStress, safeMood);
-    }
-
-    public QuoteResult generateMotivationQuote(String type) {
-        String normalizedType = normalizeQuoteType(type);
-
-        Map<String, List<String>> fallbackByType = Map.of(
-                "motivation", List.of(
-                        "Small progress every day beats perfect plans.",
-                        "Breathe. Focus on the next step, not the whole mountain.",
-                        "You do not need to finish everything today. Keep moving.",
-                        "Rest is part of performance, not the opposite of it.",
-                        "Your effort today is building tomorrow's confidence."
-                ),
-                "funny", List.of(
-                        "If stress had homework, we would both ignore it tonight.",
-                        "Deep breath. You are not a robot, even on deadline mode.",
-                        "Your brain is buffering. Hydrate and press refresh.",
-                        "Study plan: tea, tiny steps, dramatic success later.",
-                        "Even Wi-Fi drops. You can pause and reconnect too."
-                ),
-                "calm", List.of(
-                        "Slow breath in, slower breath out. You are safe now.",
-                        "Soft shoulders, relaxed jaw, one quiet moment at a time.",
-                        "Let today be gentle. Peace grows in small pauses.",
-                        "Calm is a skill. Practice one breath at a time.",
-                        "Be kind to yourself. Recovery is productive too."
-                ),
-                "focus", List.of(
-                        "One task. One timer. One win. Repeat.",
-                        "Start small, stay steady, finish strong.",
-                        "Close distractions. Open your next step.",
-                        "Progress loves consistency more than intensity.",
-                        "Done is built from focused minutes, not perfect hours."
-                )
-        );
-
-        List<String> fallbackQuotes = fallbackByType.getOrDefault(normalizedType, fallbackByType.get("motivation"));
-
-        if (!openRouterService.isConfigured()) {
-            return new QuoteResult(pickRandom(fallbackQuotes), "fallback", normalizedType);
-        }
-
-        try {
-            String style = switch (normalizedType) {
-                case "funny" -> "lightly funny";
-                case "calm" -> "calming";
-                case "focus" -> "focus-oriented";
-                default -> "motivational";
-            };
-
-            List<OpenRouterService.ChatMessage> payload = List.of(
-                    new OpenRouterService.ChatMessage(
-                            "system",
-                            "Return one short " + style + " quote for stressed students. 8 to 18 words."
-                    ),
-                    new OpenRouterService.ChatMessage(
-                            "user",
-                            "Type: " + normalizedType + ". Give one quote only, no hashtags, no emojis."
-                    )
-            );
-
-            String aiQuote = openRouterService.chat(payload, "anthropic/claude-3-haiku", 0.9, 60);
-            if (aiQuote == null || aiQuote.isBlank()) {
-                return new QuoteResult(pickRandom(fallbackQuotes), "fallback", normalizedType);
-            }
-
-            String cleaned = aiQuote.trim().replaceAll("^\"|\"$", "");
-            if (cleaned.isBlank()) {
-                return new QuoteResult(pickRandom(fallbackQuotes), "fallback", normalizedType);
-            }
-            return new QuoteResult(cleaned, "ai", normalizedType);
-        } catch (Exception ignored) {
-            return new QuoteResult(pickRandom(fallbackQuotes), "fallback", normalizedType);
-        }
     }
 
     public CoachReply coachReply(
@@ -491,30 +416,6 @@ public class WellbeingAiService {
             }
         }
         return items;
-    }
-
-    private String normalizeQuoteType(String type) {
-        String value = type == null ? "motivation" : type.trim().toLowerCase(Locale.ROOT);
-        Map<String, String> aliases = Map.of(
-                "fanny", "funny",
-                "fun", "funny",
-                "motivational", "motivation",
-                "relax", "calm",
-                "calme", "calm",
-                "study", "focus"
-        );
-        value = aliases.getOrDefault(value, value);
-        if (!List.of("motivation", "funny", "calm", "focus").contains(value)) {
-            return "motivation";
-        }
-        return value;
-    }
-
-    private String pickRandom(List<String> values) {
-        if (values == null || values.isEmpty()) {
-            return "Keep going.";
-        }
-        return values.get(ThreadLocalRandom.current().nextInt(values.size()));
     }
 
     private List<RecommendationItem> fallbackRecommendations(int stressLevel10, String mood) {
