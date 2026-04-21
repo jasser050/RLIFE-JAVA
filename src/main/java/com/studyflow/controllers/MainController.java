@@ -228,19 +228,26 @@ public class MainController implements Initializable {
             globalQuoteCard.setVisible(false);
             globalQuoteCard.setManaged(false);
             scheduleQuoteResumeTimer();
-        } else {
-            globalQuoteCard.setVisible(true);
-            globalQuoteCard.setManaged(true);
-            loadGlobalQuoteNow();
+            return;
         }
+
+        globalQuoteCard.setVisible(true);
+        globalQuoteCard.setManaged(true);
+        loadGlobalQuoteNow();
 
         quoteTicker = new Timeline(new KeyFrame(javafx.util.Duration.seconds(QUOTE_ROTATION_SECONDS), event -> {
             if (!isQuoteEnabled()) {
+                if (quoteTicker != null) {
+                    quoteTicker.stop();
+                }
                 globalQuoteCard.setVisible(false);
                 globalQuoteCard.setManaged(false);
                 return;
             }
             if (isQuoteDismissed()) {
+                if (quoteTicker != null) {
+                    quoteTicker.stop();
+                }
                 globalQuoteCard.setVisible(false);
                 globalQuoteCard.setManaged(false);
                 scheduleQuoteResumeTimer();
@@ -258,6 +265,10 @@ public class MainController implements Initializable {
     private void handleGlobalQuoteClose() {
         long until = System.currentTimeMillis() + QUOTE_DISMISS_MILLIS;
         preferences.putLong(PREF_QUOTE_DISMISSED_UNTIL, until);
+        if (quoteTicker != null) {
+            quoteTicker.stop();
+            quoteTicker = null;
+        }
         if (globalQuoteCard != null) {
             globalQuoteCard.setVisible(false);
             globalQuoteCard.setManaged(false);
@@ -286,11 +297,7 @@ public class MainController implements Initializable {
             if (!isQuoteEnabled() || isQuoteDismissed()) {
                 return;
             }
-            if (globalQuoteCard != null) {
-                globalQuoteCard.setVisible(true);
-                globalQuoteCard.setManaged(true);
-            }
-            loadGlobalQuoteNow();
+            initGlobalQuoteTicker();
         });
         quoteResumeTimer.playFromStart();
     }
