@@ -78,6 +78,14 @@ public class User {
         return (f + l).toUpperCase();
     }
 
+    public boolean isAdmin() {
+        if (email == null) {
+            return false;
+        }
+        String normalizedEmail = email.trim().toLowerCase();
+        return "admin@rlife.com".equals(normalizedEmail) || "admin1@rlife.com".equals(normalizedEmail);
+    }
+
     @Override
     public String toString() {
         return "User{id=" + id + ", email='" + email + "', name='" + getFullName() + "'}";
