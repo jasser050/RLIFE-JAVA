@@ -189,6 +189,8 @@ public class MainController implements Initializable {
         if (globalQuoteCard == null || globalQuoteTextLabel == null || globalQuoteMetaLabel == null) {
             return;
         }
+        normalizeQuotePreferences();
+        setFallbackQuoteContent();
 
         quotePrefsListener = this::onQuotePrefChanged;
         preferences.addPreferenceChangeListener(quotePrefsListener);
@@ -309,6 +311,8 @@ public class MainController implements Initializable {
         if (!isQuoteEnabled() || isQuoteDismissed()) {
             return;
         }
+        globalQuoteCard.setVisible(true);
+        globalQuoteCard.setManaged(true);
 
         String type = safeQuoteType(preferences.get(PREF_QUOTE_TYPE, "motivation"));
         globalQuoteMetaLabel.setText(type.toUpperCase(Locale.ROOT) + " - LOADING");
@@ -323,18 +327,14 @@ public class MainController implements Initializable {
         task.setOnSucceeded(event -> {
             WellbeingAiService.QuoteResult result = task.getValue();
             if (result == null) {
-                globalQuoteTextLabel.setText("Small progress every day beats perfect plans.");
-                globalQuoteMetaLabel.setText(type.toUpperCase(Locale.ROOT) + " - FALLBACK");
+                setFallbackQuoteContent();
                 return;
             }
             globalQuoteTextLabel.setText(result.quote());
             globalQuoteMetaLabel.setText(result.type().toUpperCase(Locale.ROOT) + " - " + result.source().toUpperCase(Locale.ROOT));
         });
 
-        task.setOnFailed(event -> {
-            globalQuoteTextLabel.setText("Small progress every day beats perfect plans.");
-            globalQuoteMetaLabel.setText(type.toUpperCase(Locale.ROOT) + " - FALLBACK");
-        });
+        task.setOnFailed(event -> setFallbackQuoteContent());
 
         Thread thread = new Thread(task, "global-quote-loader");
         thread.setDaemon(true);
@@ -356,6 +356,32 @@ public class MainController implements Initializable {
             return "motivation";
         }
         return type;
+    }
+
+    private void setFallbackQuoteContent() {
+        if (globalQuoteTextLabel == null || globalQuoteMetaLabel == null) {
+            return;
+        }
+        String type = safeQuoteType(preferences.get(PREF_QUOTE_TYPE, "motivation"));
+        globalQuoteTextLabel.setText("Small progress every day beats perfect plans.");
+        globalQuoteMetaLabel.setText(type.toUpperCase(Locale.ROOT) + " - FALLBACK");
+    }
+
+    private void normalizeQuotePreferences() {
+        String type = safeQuoteType(preferences.get(PREF_QUOTE_TYPE, "motivation"));
+        preferences.put(PREF_QUOTE_TYPE, type);
+
+        // Force-enable widget to recover from stale disabled state.
+        if (!preferences.getBoolean(PREF_QUOTE_ENABLED, true)) {
+            preferences.putBoolean(PREF_QUOTE_ENABLED, true);
+        }
+
+        // Migrate old long dismiss windows to current 1-minute behavior.
+        long now = System.currentTimeMillis();
+        long dismissedUntil = preferences.getLong(PREF_QUOTE_DISMISSED_UNTIL, 0L);
+        if (dismissedUntil - now > QUOTE_DISMISS_MILLIS) {
+            preferences.putLong(PREF_QUOTE_DISMISSED_UNTIL, now + QUOTE_DISMISS_MILLIS);
+        }
     }
 
     /**
