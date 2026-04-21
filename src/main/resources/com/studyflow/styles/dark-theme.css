@@ -54,19 +54,19 @@
     -fx-accent-600: #EA580C;
 
     /* Dark Theme Specific */
-    -fx-bg-body: #070B17;
-    -fx-bg-card: #141C2F;
-    -fx-bg-surface: #1B2540;
-    -fx-bg-hover: #22304D;
+    -fx-bg-body: #020617;
+    -fx-bg-card: #0F172A;
+    -fx-bg-surface: #1E293B;
+    -fx-bg-hover: #334155;
     -fx-text-primary: #F8FAFC;
-    -fx-text-secondary: #D7E2F1;
-    -fx-text-muted: #7F93B2;
-    -fx-border-default: #1C2840;
-    -fx-border-hover: #294061;
+    -fx-text-secondary: #E2E8F0;
+    -fx-text-muted: #94A3B8;
+    -fx-border-default: #1E293B;
+    -fx-border-hover: #334155;
 }
 
 .root {
-    -fx-background-color: #070B17;
+    -fx-background-color: #020617;
     -fx-font-family: "Segoe UI", "SF Pro Display", system-ui, sans-serif;
     -fx-font-size: 14px;
 }
@@ -76,8 +76,8 @@
    ============================================ */
 
 .sidebar {
-    -fx-background-color: #12192B;
-    -fx-border-color: #1C2840;
+    -fx-background-color: #0F172A;
+    -fx-border-color: #1E293B;
     -fx-border-width: 0 1 0 0;
     -fx-pref-width: 260;
     -fx-min-width: 260;
@@ -85,15 +85,17 @@
 
 .sidebar-header {
     -fx-padding: 20;
-    -fx-border-color: #1C2840;
+    -fx-border-color: #1E293B;
     -fx-border-width: 0 0 1 0;
 }
 
 .sidebar-logo {
-    -fx-pref-width: 40;
-    -fx-pref-height: 40;
-    -fx-background-color: linear-gradient(to bottom right, #8B5CF6, #6D28D9);
-    -fx-background-radius: 12;
+    -fx-pref-width: 44;
+    -fx-pref-height: 44;
+}
+
+.sidebar-logo-img {
+    -fx-effect: dropshadow(gaussian, rgba(139, 92, 246, 0.4), 10, 0.4, 0, 2);
 }
 
 .sidebar-logo .ikonli-font-icon {
@@ -170,12 +172,12 @@
    ============================================ */
 
 .main-content {
-    -fx-background-color: #070B17;
+    -fx-background-color: #020617;
     -fx-padding: 0;
 }
 
 .content-area {
-    -fx-background-color: #070B17;
+    -fx-background-color: #020617;
     -fx-padding: 24;
 }
 
@@ -184,22 +186,22 @@
    ============================================ */
 
 .topbar {
-    -fx-background-color: #12192B;
-    -fx-border-color: #1C2840;
+    -fx-background-color: #0F172A;
+    -fx-border-color: #334155;
     -fx-border-width: 0 0 1 0;
     -fx-padding: 12 24;
     -fx-spacing: 16;
 }
 
 .search-field {
-    -fx-background-color: #1D2740;
-    -fx-border-color: #22304D;
+    -fx-background-color: #1E293B;
+    -fx-border-color: #334155;
     -fx-border-width: 1;
     -fx-border-radius: 10;
     -fx-background-radius: 10;
     -fx-text-fill: #F1F5F9;
     -fx-prompt-text-fill: #64748B;
-    -fx-padding: 10 14 10 40;
+    -fx-padding: 10 14;
     -fx-pref-width: 320;
     -fx-font-size: 14px;
 }
@@ -252,21 +254,21 @@
    ============================================ */
 
 .card {
-    -fx-background-color: #141C2F;
+    -fx-background-color: #0F172A;
     -fx-background-radius: 16;
-    -fx-border-color: #1C2840;
+    -fx-border-color: #1E293B;
     -fx-border-radius: 16;
     -fx-border-width: 1;
     -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.1), 4, 0, 0, 2);
 }
 
 .card:hover {
-    -fx-border-color: #294061;
+    -fx-border-color: #334155;
 }
 
 .card-header {
     -fx-padding: 20;
-    -fx-border-color: #1B9E99;
+    -fx-border-color: #1E293B;
     -fx-border-width: 0 0 1 0;
 }
 
@@ -290,9 +292,9 @@
    ============================================ */
 
 .stat-card {
-    -fx-background-color: #141C2F;
+    -fx-background-color: #0F172A;
     -fx-background-radius: 16;
-    -fx-border-color: #1C2840;
+    -fx-border-color: #1E293B;
     -fx-border-radius: 16;
     -fx-border-width: 1;
     -fx-padding: 20;
@@ -300,7 +302,7 @@
 }
 
 .stat-card:hover {
-    -fx-border-color: #294061;
+    -fx-border-color: #334155;
     -fx-translate-y: -2;
 }
 
@@ -384,23 +386,28 @@
 }
 
 .badge.success {
-    -fx-background-color: rgba(16, 185, 129, 0.2);
-    -fx-text-fill: #6EE7B7;
+    -fx-background-color: #10B981;
+    -fx-text-fill: white;
+    -fx-padding: 8 16;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
 }
 
-.badge.secondary {
-    -fx-background-color: rgba(100, 116, 139, 0.2);
-    -fx-text-fill: #CBD5E1;
+.save-status-label {
+    -fx-padding: 8 16;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 6;
 }
 
-.badge.warning {
-    -fx-background-color: rgba(245, 158, 11, 0.2);
-    -fx-text-fill: #FCD34D;
+.save-status-label.success {
+    -fx-background-color: #10B981;
+    -fx-text-fill: white;
 }
 
-.badge.danger {
-    -fx-background-color: rgba(244, 63, 94, 0.2);
-    -fx-text-fill: #FDA4AF;
+.save-status-label.danger {
+    -fx-background-color: #EF4444;
+    -fx-text-fill: white;
 }
 
 .badge.accent {
@@ -421,25 +428,58 @@
 }
 
 .btn-primary {
-    -fx-background-color: linear-gradient(to bottom right, #635BFF, #5448F2);
+    -fx-background-color: linear-gradient(to bottom right, #7C3AED, #6D28D9);
     -fx-text-fill: white;
 }
 
 .btn-primary:hover {
-    -fx-background-color: linear-gradient(to bottom right, #726BFF, #635BFF);
+    -fx-background-color: linear-gradient(to bottom right, #8B5CF6, #7C3AED);
 }
 
 .btn-primary:pressed {
     -fx-background-color: #6D28D9;
 }
 
+.admin-export-btn {
+    -fx-background-color: linear-gradient(to bottom right, #8B5CF6, #7C3AED);
+    -fx-text-fill: white;
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+    -fx-background-radius: 10;
+    -fx-padding: 10 20;
+}
+
+.admin-export-btn:hover {
+    -fx-background-color: linear-gradient(to bottom right, #A78BFA, #8B5CF6);
+}
+
+.admin-export-btn > .arrow-button {
+    -fx-background-color: transparent;
+}
+
+.admin-export-btn .context-menu {
+    -fx-background-color: #1E293B;
+    -fx-border-color: #334155;
+    -fx-border-width: 1;
+    -fx-background-radius: 8;
+}
+
+.admin-export-btn .menu-item {
+    -fx-text-fill: #E2E8F0;
+    -fx-padding: 10 16;
+}
+
+.admin-export-btn .menu-item:hover {
+    -fx-background-color: #334155;
+}
+
 .btn-secondary {
-    -fx-background-color: #202B45;
+    -fx-background-color: #1E293B;
     -fx-text-fill: #E2E8F0;
 }
 
 .btn-secondary:hover {
-    -fx-background-color: #2A3857;
+    -fx-background-color: #334155;
 }
 
 .btn-ghost {
@@ -601,18 +641,23 @@
 
 /* Bar Chart */
 .default-color0.chart-bar {
-    -fx-bar-fill: #8B5CF6;
-    -fx-background-radius: 4 4 0 0;
+    -fx-bar-fill: linear-gradient(to top, #6D28D9, #A78BFA);
+    -fx-background-radius: 6 6 0 0;
+    -fx-border-color: transparent;
+    -fx-effect: dropshadow(gaussian, rgba(139, 92, 246, 0.25), 6, 0, 0, 2);
 }
 
 .default-color1.chart-bar {
-    -fx-bar-fill: #10B981;
-    -fx-background-radius: 4 4 0 0;
+    -fx-bar-fill: linear-gradient(to top, #059669, #34D399);
+    -fx-background-radius: 6 6 0 0;
+    -fx-border-color: transparent;
+    -fx-effect: dropshadow(gaussian, rgba(16, 185, 129, 0.25), 6, 0, 0, 2);
 }
 
 .default-color2.chart-bar {
-    -fx-bar-fill: #F59E0B;
-    -fx-background-radius: 4 4 0 0;
+    -fx-bar-fill: linear-gradient(to top, #D97706, #FCD34D);
+    -fx-background-radius: 6 6 0 0;
+    -fx-border-color: transparent;
 }
 
 /* Area Chart */
@@ -777,13 +822,6 @@
 
 .text-field:focused, .text-area:focused {
     -fx-border-color: #8B5CF6;
-    -fx-background-color: #0F172A;
-}
-.text-area .content {
-    -fx-background-color: #1E293B;
-    -fx-background-radius: 10;
-}
-.text-area:focused .content {
     -fx-background-color: #0F172A;
 }
 
@@ -1179,7 +1217,7 @@
 }
 
 .window-btn .ikonli-font-icon {
-    -fx-icon-color: #64748B;
+    -fx-icon-color: #94A3B8;
 }
 
 .window-btn:hover .ikonli-font-icon {
@@ -1708,16 +1746,6 @@
     -fx-background-color: #0F172A;
     -fx-effect: dropshadow(gaussian, rgba(139,92,246,0.25), 10, 0, 0, 0);
 }
-.auth-field.auth-field-error {
-    -fx-border-color: #F43F5E;
-    -fx-background-color: rgba(244,63,94,0.10);
-    -fx-text-fill: #FDE2E7;
-}
-.auth-field.auth-field-error:focused {
-    -fx-border-color: #F43F5E;
-    -fx-background-color: rgba(244,63,94,0.12);
-    -fx-effect: dropshadow(gaussian, rgba(244,63,94,0.35), 10, 0, 0, 0);
-}
 .auth-btn-primary {
     -fx-background-color: linear-gradient(to right, #8B5CF6, #7C3AED);
     -fx-text-fill: white;
@@ -1779,16 +1807,6 @@
     -fx-border-radius: 10;
     -fx-background-radius: 10;
     -fx-text-fill: #FB7185;
-    -fx-padding: 12 16;
-    -fx-font-size: 13px;
-}
-.auth-success {
-    -fx-background-color: rgba(16,185,129,0.12);
-    -fx-border-color: rgba(16,185,129,0.35);
-    -fx-border-width: 1;
-    -fx-border-radius: 10;
-    -fx-background-radius: 10;
-    -fx-text-fill: #6EE7B7;
     -fx-padding: 12 16;
     -fx-font-size: 13px;
 }
@@ -1949,7 +1967,8 @@
     -fx-text-fill: #CBD5E1;
     -fx-font-size: 14px;
 }
-.sidebar-user-row:hover { -fx-background-color: #1E293B; -fx-cursor: hand; }
+.sidebar-user-row { -fx-cursor: hand; }
+.sidebar-user-row:hover { -fx-background-color: #1E293B; }
 .btn-danger {
     -fx-background-color: rgba(244,63,94,0.12);
     -fx-border-color: rgba(244,63,94,0.3);
@@ -1967,353 +1986,30 @@
     -fx-background-color: rgba(244,63,94,0.22);
     -fx-border-color: #FB7185;
 }
+.btn-danger-outline {
+    -fx-background-color: transparent;
+    -fx-border-color: rgba(244,63,94,0.35);
+    -fx-border-width: 1;
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
+    -fx-text-fill: #FB7185;
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+    -fx-padding: 10 20;
+    -fx-cursor: hand;
+    -fx-graphic-text-gap: 8;
+}
+.btn-danger-outline .ikonli-font-icon {
+    -fx-icon-color: #FB7185;
+}
+.btn-danger-outline:hover {
+    -fx-background-color: rgba(244,63,94,0.15);
+    -fx-border-color: #FB7185;
+}
 .page-title {
     -fx-font-size: 26px;
     -fx-font-weight: bold;
     -fx-text-fill: #F8FAFC;
-}
-
-/* ============================================
-   WELLBEING
-   ============================================ */
-
-.wellbeing-list-item {
-    -fx-background-color: transparent;
-    -fx-background-radius: 14;
-    -fx-padding: 12;
-    -fx-border-color: #1C2840;
-    -fx-border-radius: 14;
-    -fx-border-width: 1;
-}
-.wellbeing-list-item:hover {
-    -fx-background-color: #182338;
-    -fx-border-color: #1B9E99;
-}
-.wellbeing-list-emoji {
-    -fx-font-size: 24px;
-    -fx-min-width: 36;
-    -fx-alignment: center;
-}
-.wellbeing-stat-compact {
-    -fx-padding: 14 18;
-    -fx-background-color: #141C2F;
-}
-.wellbeing-stat-compact .stat-value {
-    -fx-font-size: 22px;
-}
-.wellbeing-stat-compact .stat-label {
-    -fx-font-size: 12px;
-    -fx-text-fill: #18D5C3;
-}
-.wellbeing-mood-card {
-    -fx-background-color: #172035;
-    -fx-border-color: #1C2840;
-    -fx-border-width: 1;
-    -fx-border-radius: 14;
-    -fx-background-radius: 14;
-    -fx-padding: 16;
-    -fx-min-width: 96;
-    -fx-pref-width: 96;
-}
-.wellbeing-mood-emoji {
-    -fx-font-size: 28px;
-}
-.wellbeing-tool-card {
-    -fx-background-color: #151E33;
-    -fx-border-color: #0E7F86;
-    -fx-border-width: 1;
-    -fx-border-radius: 16;
-    -fx-background-radius: 16;
-    -fx-padding: 16;
-    -fx-pref-width: 220;
-}
-.wellbeing-tool-card:hover {
-    -fx-border-color: #14B8A6;
-    -fx-background-color: #18233A;
-}
-.wellbeing-empty-card {
-    -fx-background-color: rgba(15,23,42,0.8);
-    -fx-border-color: #1C2840;
-    -fx-border-width: 1;
-    -fx-border-radius: 14;
-    -fx-background-radius: 14;
-    -fx-padding: 16;
-}
-.wellbeing-history-item {
-    -fx-background-color: #151E33;
-    -fx-border-color: #1C2840;
-    -fx-border-width: 1;
-    -fx-border-radius: 14;
-    -fx-background-radius: 14;
-    -fx-padding: 14;
-}
-.wellbeing-history-item:hover {
-    -fx-border-color: #1B9E99;
-    -fx-background-color: #18233A;
-}
-.wellbeing-history-mood-box {
-    -fx-background-color: rgba(99,91,255,0.12);
-    -fx-border-color: rgba(99,91,255,0.2);
-    -fx-border-width: 1;
-    -fx-border-radius: 12;
-    -fx-background-radius: 12;
-    -fx-pref-width: 56;
-    -fx-pref-height: 56;
-    -fx-min-width: 56;
-    -fx-min-height: 56;
-}
-.wellbeing-choice-card {
-    -fx-background-color: #151E33;
-    -fx-border-color: rgba(255,255,255,0.7);
-    -fx-border-width: 2;
-    -fx-border-radius: 14;
-    -fx-background-radius: 14;
-    -fx-text-fill: #F8FAFC;
-    -fx-font-size: 16px;
-    -fx-font-weight: 700;
-    -fx-alignment: center;
-    -fx-text-alignment: center;
-    -fx-pref-height: 92;
-    -fx-min-width: 110;
-    -fx-max-width: 1.7976931348623157E308;
-    -fx-cursor: hand;
-    -fx-line-spacing: 6;
-    -fx-content-display: top;
-    -fx-graphic-text-gap: 8;
-}
-.wellbeing-choice-card:hover {
-    -fx-border-color: #635BFF;
-    -fx-background-color: #1A2540;
-}
-.wellbeing-choice-card.selected {
-    -fx-border-color: #635BFF;
-    -fx-background-color: rgba(99,91,255,0.18);
-}
-.wellbeing-sleep-card {
-    -fx-background-color: #151E33;
-    -fx-border-color: rgba(255,255,255,0.7);
-    -fx-border-width: 2;
-    -fx-border-radius: 14;
-    -fx-background-radius: 14;
-    -fx-text-fill: #F8FAFC;
-    -fx-font-size: 14px;
-    -fx-font-weight: 700;
-    -fx-alignment: center;
-    -fx-text-alignment: center;
-    -fx-pref-width: 106;
-    -fx-pref-height: 64;
-    -fx-cursor: hand;
-    -fx-line-spacing: 4;
-}
-.wellbeing-sleep-card:hover {
-    -fx-border-color: #14B8A6;
-    -fx-background-color: #1A2540;
-}
-.wellbeing-sleep-card.selected {
-    -fx-border-color: #14B8A6;
-    -fx-background-color: rgba(20,184,166,0.18);
-}
-.wellbeing-page {
-    -fx-background-color: #020617;
-}
-.wellbeing-hero {
-    -fx-background-color: linear-gradient(to right, rgba(15,23,42,0.92), rgba(19,33,68,0.9));
-    -fx-border-color: rgba(99,91,255,0.24);
-    -fx-border-width: 1;
-    -fx-border-radius: 20;
-    -fx-background-radius: 20;
-    -fx-padding: 22;
-    -fx-effect: dropshadow(gaussian, rgba(2,6,23,0.45), 26, 0, 0, 8);
-}
-.wellbeing-summary-card {
-    -fx-background-color: linear-gradient(to bottom right, #121b30, #17223c);
-    -fx-border-color: rgba(42,56,87,0.95);
-    -fx-padding: 14 16;
-}
-.wellbeing-summary-card:hover {
-    -fx-background-color: linear-gradient(to bottom right, #16223b, #1c2946);
-}
-.wellbeing-summary-value {
-    -fx-font-size: 18px;
-}
-.wellbeing-summary-icon {
-    -fx-background-radius: 10;
-}
-.wellbeing-panel {
-    -fx-background-color: linear-gradient(to bottom, #101827, #121c31);
-    -fx-border-color: #21304d;
-}
-.wellbeing-panel-header {
-    -fx-border-color: rgba(28,40,64,0.95);
-}
-.wellbeing-form-shell {
-    -fx-background-color: linear-gradient(to bottom, #101827, #131f37);
-    -fx-border-color: #243453;
-}
-.wellbeing-filter-bar {
-    -fx-background-color: linear-gradient(to right, #101827, #131d31);
-    -fx-border-color: #21304d;
-    -fx-border-radius: 16;
-    -fx-background-radius: 16;
-}
-.wellbeing-input-card {
-    -fx-background-color: rgba(15,23,42,0.72);
-    -fx-border-color: #243453;
-    -fx-border-width: 1;
-    -fx-border-radius: 16;
-    -fx-background-radius: 16;
-    -fx-padding: 16;
-}
-.wellbeing-choice-card {
-    -fx-pref-height: 92;
-    -fx-min-width: 110;
-    -fx-max-width: 1.7976931348623157E308;
-    -fx-background-color: linear-gradient(to bottom, #151E33, #18243d);
-    -fx-border-color: #2d3d61;
-    -fx-border-width: 1.5;
-    -fx-font-size: 14px;
-    -fx-content-display: top;
-    -fx-graphic-text-gap: 8;
-}
-.wellbeing-choice-card.selected {
-    -fx-border-color: #22C55E;
-    -fx-background-color: rgba(34,197,94,0.16);
-}
-.mood-emoji-image {
-    -fx-effect: dropshadow(gaussian, rgba(255, 190, 60, 0.25), 6, 0.2, 0, 1);
-}
-.wellbeing-sleep-card {
-    -fx-min-width: 104;
-    -fx-pref-width: 118;
-    -fx-pref-height: 60;
-    -fx-background-color: linear-gradient(to bottom, #151E33, #18243d);
-    -fx-border-color: #2d3d61;
-    -fx-border-width: 1.5;
-    -fx-alignment: center;
-    -fx-font-size: 12px;
-    -fx-font-weight: 700;
-}
-.wellbeing-sleep-card.selected {
-    -fx-border-color: #60A5FA;
-    -fx-background-color: rgba(96,165,250,0.16);
-}
-
-/* Wellbeing - Notes textarea visual fix */
-.wellbeing-notes-area {
-    -fx-background-color: #111b31;
-    -fx-control-inner-background: #111b31;
-    -fx-text-fill: #EAF2FF;
-    -fx-prompt-text-fill: #7FA0C8;
-    -fx-border-color: #2B3D63;
-    -fx-border-width: 1.4;
-    -fx-border-radius: 10;
-    -fx-background-radius: 10;
-}
-
-.wellbeing-notes-area .content {
-    -fx-background-color: #111b31;
-}
-
-.wellbeing-notes-area:focused {
-    -fx-background-color: #101a2d;
-    -fx-control-inner-background: #101a2d;
-    -fx-border-color: #5D7CB8;
-}
-.wellbeing-mood-card {
-    -fx-background-color: linear-gradient(to bottom, #141e33, #17243b);
-    -fx-border-color: #233453;
-    -fx-pref-width: 118;
-    -fx-min-width: 118;
-    -fx-padding: 14;
-}
-.wellbeing-tool-card {
-    -fx-background-color: linear-gradient(to bottom, #141d31, #172338);
-    -fx-border-color: #233453;
-    -fx-pref-width: 320;
-}
-.wellbeing-list-item,
-.wellbeing-history-item {
-    -fx-background-color: linear-gradient(to bottom, rgba(17,24,39,0.95), rgba(21,30,51,0.95));
-    -fx-border-color: #22304d;
-}
-.wellbeing-history-mood-box {
-    -fx-background-color: rgba(34,197,94,0.12);
-    -fx-border-color: rgba(34,197,94,0.24);
-}
-.wellbeing-page .stat-label {
-    -fx-font-size: 11px;
-}
-.wellbeing-page .card-title {
-    -fx-font-size: 17px;
-}
-.wellbeing-page .text-small {
-    -fx-font-size: 12px;
-    -fx-text-fill: #A9B7CD;
-}
-.wellbeing-page .text-muted {
-    -fx-text-fill: #97A9C6;
-}
-.wellbeing-page .text-subheading {
-    -fx-text-fill: #EAF1FF;
-}
-.wellbeing-page .text-body {
-    -fx-text-fill: #DCE7FA;
-}
-.wellbeing-page .text-area {
-    -fx-background-color: #1A2538;
-    -fx-border-color: #2B3C5C;
-    -fx-text-fill: #EAF1FF;
-    -fx-prompt-text-fill: #8EA4C5;
-}
-.wellbeing-page .text-area .content {
-    -fx-background-color: #1A2538;
-}
-.wellbeing-page .text-area:focused {
-    -fx-background-color: #132038;
-    -fx-border-color: #4F73A8;
-}
-.wellbeing-page .text-area:focused .content {
-    -fx-background-color: #132038;
-}
-.wellbeing-day-box {
-    -fx-background-color: #1C2438;
-    -fx-background-radius: 14;
-    -fx-border-color: #22304d;
-    -fx-border-width: 1;
-    -fx-border-radius: 14;
-    -fx-pref-width: 110;
-}
-.wellbeing-day-label {
-    -fx-text-fill: #64748B;
-    -fx-font-size: 11px;
-    -fx-font-weight: 600;
-}
-.wellbeing-day-mood {
-    -fx-text-fill: #94A3B8;
-    -fx-font-size: 11px;
-}
-.wellbeing-habit-item {
-    -fx-border-color: transparent transparent #1E293B transparent;
-    -fx-border-width: 0 0 1 0;
-}
-.wellbeing-habit-day {
-    -fx-text-fill: #475569;
-    -fx-font-size: 9px;
-}
-.wellbeing-session-item {
-    -fx-background-color: #1E293B;
-    -fx-background-radius: 12;
-    -fx-border-color: #243453;
-    -fx-border-width: 1;
-    -fx-border-radius: 12;
-}
-.wellbeing-session-item:hover {
-    -fx-background-color: #263247;
-    -fx-border-color: #334155;
-}
-.wellbeing-sleep-item {
-    -fx-border-color: transparent transparent #1E293B transparent;
-    -fx-border-width: 0 0 1 0;
 }
 
 /* ============================================
@@ -2534,6 +2230,7 @@
     -fx-background-radius: 12;
     -fx-pref-width: 48; -fx-pref-height: 48;
     -fx-min-width: 48;  -fx-min-height: 48;
+    -fx-max-width: 48;  -fx-max-height: 48;
 }
 .landing-feat-icon-purple { -fx-background-color: rgba(139,92,246,0.15); }
 .landing-feat-icon-blue   { -fx-background-color: rgba(96,165,250,0.15); }
@@ -2657,237 +2354,2027 @@
 }
 
 /* ============================================
-   ADMIN BACK OFFICE
+   AUTH — Theme Toggle Button
    ============================================ */
 
-.admin-sidebar {
-    -fx-background-color: linear-gradient(to bottom, #08111F, #0B1328);
-    -fx-border-color: rgba(59, 130, 246, 0.10);
-    -fx-border-width: 0 1 0 0;
-}
-.admin-sidebar-header {
-    -fx-padding: 22 20 18 20;
-}
-.admin-sidebar-logo {
-    -fx-background-color: linear-gradient(to bottom right, #2563EB, #1D4ED8);
-}
-.admin-main-content {
-    -fx-background-color: linear-gradient(to bottom, rgba(7,12,24,0.96), rgba(15,23,42,0.98));
-}
-.admin-topbar {
-    -fx-background-color: rgba(8, 15, 30, 0.92);
-    -fx-border-color: rgba(30, 41, 59, 0.7);
-    -fx-border-width: 0 0 1 0;
-}
-.admin-content-area {
-    -fx-padding: 18;
-}
-.admin-badge {
-    -fx-background-color: rgba(59, 130, 246, 0.16);
-    -fx-background-radius: 999;
-    -fx-border-color: rgba(96, 165, 250, 0.28);
-    -fx-border-radius: 999;
-    -fx-padding: 6 12;
-    -fx-text-fill: #BFDBFE;
-    -fx-font-size: 11px;
-    -fx-font-weight: 700;
-}
-.admin-panel {
-    -fx-background-color: linear-gradient(to bottom right, rgba(15,23,42,0.95), rgba(15,23,42,0.82));
-    -fx-border-color: rgba(30,41,59,0.92);
-    -fx-border-width: 1;
-    -fx-border-radius: 20;
-    -fx-background-radius: 20;
-}
-.admin-stat-card {
-    -fx-background-color: linear-gradient(to bottom right, rgba(13,24,45,0.95), rgba(10,19,35,0.9));
-    -fx-border-color: rgba(59, 130, 246, 0.12);
-}
-.admin-list-card {
-    -fx-background-color: rgba(2, 8, 23, 0.65);
-    -fx-border-color: rgba(30, 41, 59, 0.85);
-    -fx-border-width: 1;
-    -fx-border-radius: 18;
-    -fx-background-radius: 18;
-}
-.admin-user-row {
-    -fx-background-color: rgba(2, 8, 23, 0.72);
-    -fx-border-color: rgba(30, 41, 59, 0.9);
-    -fx-border-width: 1;
-    -fx-border-radius: 18;
-    -fx-background-radius: 18;
-}
-.admin-avatar,
-.admin-avatar-shell {
-    -fx-background-color: linear-gradient(to bottom right, #2563EB, #1E40AF);
-    -fx-background-radius: 14;
-}
-.admin-avatar-text {
-    -fx-text-fill: white;
-    -fx-font-size: 16px;
-    -fx-font-weight: 700;
-}
-.admin-subject-card {
-    -fx-pref-width: 280;
-    -fx-max-width: 280;
-    -fx-background-color: linear-gradient(to bottom right, rgba(15,23,42,0.95), rgba(12,20,35,0.88));
-    -fx-border-color: rgba(30,41,59,0.9);
-    -fx-border-width: 1;
-    -fx-border-radius: 20;
-    -fx-background-radius: 20;
-}
-.admin-user-shell {
-    -fx-border-color: rgba(30, 41, 59, 0.7);
-    -fx-border-width: 1 0 0 0;
-}
-.admin-shell {
-    -fx-background-color: #060B1F;
-}
-.admin-sidebar-2 {
-    -fx-background-color: #131C31;
-    -fx-border-color: rgba(51, 65, 85, 0.75);
-    -fx-border-width: 0 1 0 0;
-}
-.admin-brand-row {
-    -fx-border-color: rgba(51, 65, 85, 0.65);
-    -fx-border-width: 0 0 1 0;
-}
-.admin-brand-logo {
-    -fx-pref-width: 38;
-    -fx-pref-height: 38;
-    -fx-background-radius: 100;
-    -fx-background-color: linear-gradient(to bottom right, #B794F6, #60A5FA, #86EFAC);
-}
-.admin-brand-logo-text {
-    -fx-text-fill: #0F172A;
-    -fx-font-size: 18px;
-    -fx-font-weight: 800;
-}
-.admin-brand-title {
-    -fx-text-fill: white;
-    -fx-font-size: 14px;
-    -fx-font-weight: 800;
-}
-.admin-brand-subtitle {
-    -fx-text-fill: #64748B;
-    -fx-font-size: 11px;
-}
-.admin-nav-group {
-    -fx-padding: 0;
-}
-.admin-nav-section {
-    -fx-text-fill: #64748B;
-    -fx-font-size: 11px;
-    -fx-font-weight: 800;
-    -fx-padding: 0 10 8 10;
-}
-.admin-nav-btn {
+.theme-toggle-btn {
     -fx-background-color: transparent;
-    -fx-text-fill: #9FB2D8;
-    -fx-background-radius: 12;
     -fx-padding: 12 14;
-    -fx-alignment: CENTER_LEFT;
-    -fx-graphic-text-gap: 12;
-    -fx-font-size: 15px;
+    -fx-cursor: hand;
+    -fx-border-width: 0;
+    -fx-background-radius: 0;
+}
+.theme-toggle-btn .ikonli-font-icon {
+    -fx-icon-color: #64748B;
+}
+.theme-toggle-btn:hover {
+    -fx-background-color: rgba(139,92,246,0.12);
+}
+.theme-toggle-btn:hover .ikonli-font-icon {
+    -fx-icon-color: #A78BFA;
+}
+
+/* ============================================
+   AUTH — Vivid Logo Badge & Brand Label
+   ============================================ */
+
+.auth-logo-badge {
+    -fx-background-color: linear-gradient(to bottom right, #7C3AED, #6D28D9, #4C1D95);
+    -fx-background-radius: 18;
+    -fx-pref-width: 70;
+    -fx-pref-height: 70;
+    -fx-min-width: 70;
+    -fx-min-height: 70;
+    -fx-effect: dropshadow(gaussian, rgba(109,40,217,0.7), 24, 0, 0, 6);
+}
+
+.auth-brand-label {
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #F8FAFC;
+    -fx-effect: dropshadow(gaussian, rgba(139,92,246,0.4), 10, 0, 0, 0);
+}
+
+/* ============================================
+   AUTH — Vivid Right Panel
+   ============================================ */
+
+.auth-right-panel {
+    -fx-background-color: linear-gradient(to bottom right, #06041A, #130B35, #0B1632, #06041A);
+}
+
+/* Radial purple glow in center of right panel */
+.auth-right-glow {
+    -fx-background-color: radial-gradient(center 50% 45%, radius 55%, rgba(109,40,217,0.22) 0%, rgba(139,92,246,0.08) 40%, transparent 70%);
+    -fx-pref-width: 9999;
+    -fx-pref-height: 9999;
+}
+
+/* ============================================
+   PROFILE — Vivid Hero Redesign
+   ============================================ */
+
+/* Override the hero background to be more vivid */
+.profile-hero-bg {
+    -fx-background-color: linear-gradient(to bottom right, #1E0B4A, #2D1060, #0E1845, #1A0B3B);
+    -fx-background-radius: 20;
+}
+
+/* Blue accent glow bottom-left */
+.profile-glow-orb-blue {
+    -fx-background-color: radial-gradient(center 50% 50%, radius 50%, rgba(79,70,229,0.35) 0%, transparent 100%);
+    -fx-pref-width: 220;
+    -fx-pref-height: 220;
+    -fx-min-width: 220;
+    -fx-min-height: 220;
+}
+
+/* Horizontal accent shimmer line at bottom of banner */
+.profile-hero-accent-line {
+    -fx-background-color: linear-gradient(to right, transparent, rgba(139,92,246,0.6), rgba(167,139,250,0.4), rgba(96,165,250,0.3), transparent);
+    -fx-pref-height: 1;
+    -fx-min-height: 1;
+    -fx-max-height: 1;
+    -fx-pref-width: 99999;
+}
+
+/* Outer glow halo around avatar */
+.profile-avatar-glow {
+    -fx-background-color: radial-gradient(center 50% 50%, radius 50%, rgba(139,92,246,0.35) 0%, transparent 70%);
+    -fx-pref-width: 120;
+    -fx-pref-height: 120;
+    -fx-min-width: 120;
+    -fx-min-height: 120;
+}
+
+/* Multi-color gradient avatar ring */
+.profile-avatar-ring {
+    -fx-background-color: linear-gradient(to bottom right, #A78BFA, #EC4899, #3B82F6, #7C3AED);
+    -fx-background-radius: 100;
+    -fx-padding: 3;
+    -fx-pref-width: 100;  -fx-pref-height: 100;
+    -fx-min-width: 100;   -fx-min-height: 100;
+    -fx-effect: dropshadow(gaussian, rgba(139,92,246,0.7), 22, 0, 0, 0);
+}
+
+.profile-avatar-inner {
+    -fx-background-color: #0F172A;
+    -fx-background-radius: 100;
+    -fx-pref-width: 94;  -fx-pref-height: 94;
+    -fx-min-width: 94;   -fx-min-height: 94;
+}
+
+.profile-avatar-text {
+    -fx-font-size: 30px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #A78BFA;
+}
+
+/* Online badge pill */
+.profile-online-badge {
+    -fx-background-color: rgba(16,185,129,0.12);
+    -fx-border-color: rgba(16,185,129,0.25);
+    -fx-border-width: 1;
+    -fx-border-radius: 100;
+    -fx-background-radius: 100;
+    -fx-padding: 4 10;
+}
+
+/* Vivid stat chips */
+.profile-chip-vivid-purple {
+    -fx-background-color: rgba(139,92,246,0.18);
+    -fx-border-color: rgba(139,92,246,0.4);
+    -fx-effect: dropshadow(gaussian, rgba(139,92,246,0.2), 10, 0, 0, 3);
+}
+.profile-chip-vivid-blue {
+    -fx-background-color: rgba(59,130,246,0.18);
+    -fx-border-color: rgba(59,130,246,0.4);
+    -fx-effect: dropshadow(gaussian, rgba(59,130,246,0.2), 10, 0, 0, 3);
+}
+.profile-chip-vivid-green {
+    -fx-background-color: rgba(16,185,129,0.18);
+    -fx-border-color: rgba(16,185,129,0.4);
+    -fx-effect: dropshadow(gaussian, rgba(16,185,129,0.2), 10, 0, 0, 3);
+}
+.profile-chip-vivid-yellow {
+    -fx-background-color: rgba(251,191,36,0.18);
+    -fx-border-color: rgba(251,191,36,0.4);
+    -fx-effect: dropshadow(gaussian, rgba(251,191,36,0.2), 10, 0, 0, 3);
+}
+
+/* Vivid profile hero text */
+.profile-hero-name {
+    -fx-font-size: 30px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #F8FAFC;
+    -fx-effect: dropshadow(gaussian, rgba(139,92,246,0.3), 8, 0, 0, 0);
+}
+
+.profile-hero-email {
+    -fx-font-size: 14px;
+    -fx-text-fill: #94A3B8;
+}
+
+.profile-hero-username {
+    -fx-font-size: 14px;
+    -fx-text-fill: #A78BFA;
     -fx-font-weight: 600;
 }
-.admin-nav-btn:hover {
-    -fx-background-color: rgba(99, 91, 255, 0.10);
-    -fx-text-fill: #C4B5FD;
+
+/* ============================================
+   PROFILE — Symfony-matching Vivid Redesign
+   ============================================ */
+
+/* Hero background — vivid indigo→purple→pink like Symfony */
+.profile-hero-bg {
+    -fx-background-color: linear-gradient(to bottom right, #4338CA, #7C3AED, #9333EA, #EC4899);
+    -fx-background-radius: 20;
 }
-.admin-nav-btn.active {
-    -fx-background-color: rgba(99, 91, 255, 0.18);
-    -fx-text-fill: #C4B5FD;
-}
-.admin-nav-btn .ikonli-font-icon {
-    -fx-icon-color: #94A3B8;
-}
-.admin-nav-btn.active .ikonli-font-icon,
-.admin-nav-btn:hover .ikonli-font-icon {
-    -fx-icon-color: #C4B5FD;
-}
-.admin-profile-card {
-    -fx-background-color: rgba(255, 255, 255, 0.04);
-    -fx-background-radius: 16;
-    -fx-border-color: rgba(51, 65, 85, 0.75);
-    -fx-border-radius: 16;
+
+.profile-hero-banner {
+    -fx-background-radius: 20;
+    -fx-border-radius: 20;
+    -fx-border-color: rgba(139,92,246,0.35);
     -fx-border-width: 1;
-    -fx-margin: 12;
+    -fx-effect: dropshadow(gaussian, rgba(109,40,217,0.35), 30, 0, 0, 8);
 }
-.admin-profile-avatar {
+
+/* Float badge (Online) on banner */
+.profile-float-badge {
+    -fx-background-color: rgba(0,0,0,0.32);
+    -fx-border-color: rgba(255,255,255,0.22);
+    -fx-border-width: 1;
+    -fx-border-radius: 100;
+    -fx-background-radius: 100;
+    -fx-padding: 6 14;
+}
+.profile-float-badge-text {
+    -fx-text-fill: white;
+    -fx-font-size: 12px;
+    -fx-font-weight: 600;
+}
+
+/* Avatar glow halo */
+.profile-avatar-glow {
+    -fx-background-color: radial-gradient(center 50% 50%, radius 50%, rgba(139,92,246,0.45) 0%, transparent 70%);
+    -fx-pref-width: 128; -fx-pref-height: 128;
+    -fx-min-width: 128;  -fx-min-height: 128;
+}
+
+/* Multi-color gradient ring (indigo→purple→pink) */
+.profile-avatar-ring {
+    -fx-background-color: linear-gradient(to bottom right, #6366F1, #A855F7, #EC4899);
+    -fx-background-radius: 100;
+    -fx-padding: 3;
+    -fx-pref-width: 110; -fx-pref-height: 110;
+    -fx-min-width: 110;  -fx-min-height: 110;
+    -fx-effect: dropshadow(gaussian, rgba(139,92,246,0.8), 28, 0, 0, 0);
+}
+
+.profile-avatar-inner {
+    -fx-background-color: #0F172A;
+    -fx-background-radius: 100;
+    -fx-pref-width: 104; -fx-pref-height: 104;
+    -fx-min-width: 104;  -fx-min-height: 104;
+}
+
+.profile-avatar-text {
+    -fx-font-size: 34px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #A78BFA;
+}
+
+/* Green check badge */
+.profile-check-badge {
+    -fx-background-color: linear-gradient(to right, #22C55E, #16A34A);
+    -fx-background-radius: 100;
+    -fx-pref-width: 26; -fx-pref-height: 26;
+    -fx-min-width: 26;  -fx-min-height: 26;
+    -fx-border-color: #0F172A;
+    -fx-border-width: 2;
+    -fx-border-radius: 100;
+}
+
+/* Info pills on banner */
+.profile-info-pill {
+    -fx-border-radius: 100;
+    -fx-background-radius: 100;
+    -fx-padding: 6 14;
+}
+.profile-pill-dark {
+    -fx-background-color: rgba(0,0,0,0.3);
+    -fx-border-color: rgba(255,255,255,0.18);
+    -fx-border-width: 1;
+}
+.profile-pill-purple {
+    -fx-background-color: rgba(139,92,246,0.28);
+    -fx-border-color: rgba(139,92,246,0.5);
+    -fx-border-width: 1;
+}
+.profile-pill-text {
+    -fx-font-size: 13px;
+    -fx-text-fill: #94A3B8;
+}
+
+.profile-pill-text-purple {
+    -fx-font-size: 13px;
+    -fx-text-fill: #C4B5FD;
+}
+
+.profile-bio-text {
+    -fx-font-size: 14px;
+    -fx-text-fill: #CBD5E1;
+    -fx-wrap-text: true;
+    -fx-max-width: 500;
+}
+
+.profile-avatar-ring {
+    -fx-cursor: hand;
+}
+
+.avatar-edit-overlay {
+    -fx-background-color: rgba(139, 92, 246, 0.7);
+    -fx-background-radius: 50;
+    -fx-opacity: 0;
+    -fx-pref-width: 100;
+    -fx-pref-height: 100;
+    -fx-max-width: 100;
+    -fx-max-height: 100;
+}
+
+.profile-avatar-ring:hover .avatar-edit-overlay {
+    -fx-opacity: 1;
+}
+
+/* Avatar Quick Picker Popup */
+.avatar-quick-picker {
+    -fx-background-color: #1E293B;
+    -fx-background-radius: 12;
+    -fx-padding: 8;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.4), 15, 0.4, 0, 8);
+    -fx-border-color: #334155;
+    -fx-border-width: 1;
+    -fx-translate-y: 10;
+    -fx-min-width: 300;
+    -fx-pref-width: 300;
+}
+
+.quick-avatar-grid {
+    -fx-hgap: 8;
+    -fx-vgap: 8;
+    -fx-alignment: center;
+}
+
+.quick-avatar-grid .av-card {
+    -fx-pref-width: 60;
+    -fx-pref-height: 80;
+    -fx-max-width: 60;
+    -fx-max-height: 80;
+}
+.profile-pill-text-purple {
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #DDD6FE;
+}
+
+/* Active account green badge */
+.profile-active-badge {
+    -fx-background-color: linear-gradient(to right, #10B981, #059669);
+    -fx-background-radius: 100;
+    -fx-padding: 8 18;
+    -fx-max-width: 170;
+    -fx-effect: dropshadow(gaussian, rgba(16,185,129,0.45), 12, 0, 0, 3);
+}
+.profile-active-dot {
+    -fx-background-color: white;
+    -fx-background-radius: 100;
+    -fx-pref-width: 7; -fx-pref-height: 7;
+    -fx-min-width: 7;  -fx-min-height: 7;
+    -fx-effect: dropshadow(gaussian, white, 4, 0.8, 0, 0);
+}
+.profile-active-label {
+    -fx-text-fill: white;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+}
+
+/* Hero name on banner */
+.profile-hero-name {
+    -fx-font-size: 32px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #FFFFFF;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.4), 8, 0, 0, 2);
+}
+
+/* ── Gradient Stat Cards (Symfony-style) ── */
+.profile-grad-card {
+    -fx-border-radius: 16;
+    -fx-background-radius: 16;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.4), 14, 0, 0, 5);
+    -fx-cursor: hand;
+}
+.profile-grad-purple {
+    -fx-background-color: linear-gradient(to bottom right, #4F46E5, #7C3AED, #6D28D9);
+}
+.profile-grad-pink {
+    -fx-background-color: linear-gradient(to bottom right, #EC4899, #F43F5E, #DB2777);
+}
+.profile-grad-violet {
+    -fx-background-color: linear-gradient(to bottom right, #7C3AED, #9333EA, #A855F7);
+}
+.profile-grad-value {
+    -fx-font-size: 34px;
+    -fx-font-weight: bold;
+    -fx-text-fill: white;
+}
+.profile-grad-label {
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+    -fx-text-fill: rgba(255,255,255,0.82);
+}
+.profile-grad-icon {
+    -fx-background-color: rgba(255,255,255,0.18);
+    -fx-background-radius: 14;
+    -fx-pref-width: 54; -fx-pref-height: 54;
+    -fx-min-width: 54;  -fx-min-height: 54;
+}
+
+/* ============================================
+   THEME BUTTONS (Accessibility)
+   ============================================ */
+
+.theme-btn {
+    -fx-padding: 18 12;
+    -fx-background-radius: 14;
+    -fx-border-radius: 14;
+    -fx-background-color: #0F172A;
+    -fx-border-color: #1E293B;
+    -fx-border-width: 2;
+    -fx-text-fill: transparent;
+    -fx-font-size: 0;
+    -fx-cursor: hand;
+    -fx-content-display: graphic-only;
+}
+.theme-btn:hover {
+    -fx-background-color: #1E293B;
+    -fx-border-color: #334155;
+}
+.theme-btn.active {
+    -fx-background-color: rgba(139,92,246,0.12);
+    -fx-border-color: #8B5CF6;
+}
+.theme-icon-circle {
+    -fx-background-color: #1E293B;
+    -fx-background-radius: 100;
+    -fx-pref-width: 44;
+    -fx-pref-height: 44;
+    -fx-min-width: 44;
+    -fx-min-height: 44;
+    -fx-alignment: center;
+}
+.theme-btn.active .theme-icon-circle {
+    -fx-background-color: #8B5CF6;
+}
+.theme-btn .ikonli-font-icon {
+    -fx-icon-color: #64748B;
+}
+.theme-btn.active .ikonli-font-icon {
+    -fx-icon-color: white;
+}
+.theme-btn-label {
+    -fx-text-fill: #94A3B8;
+    -fx-font-size: 12px;
+    -fx-font-weight: 600;
+}
+.theme-btn.active .theme-btn-label {
+    -fx-text-fill: #A78BFA;
+}
+
+/* Font Size Preview */
+.font-size-preview {
+    -fx-font-size: 12px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #8B5CF6;
+    -fx-padding: 4 12;
+    -fx-background-radius: 8;
+    -fx-background-color: rgba(139,92,246,0.15);
+}
+
+/* Font Size Slider */
+.font-size-slider .track {
+    -fx-background-color: rgba(139,92,246,0.2);
+    -fx-background-radius: 6;
+    -fx-pref-height: 6;
+}
+.font-size-slider .thumb {
+    -fx-background-color: #8B5CF6;
+    -fx-background-radius: 100;
+    -fx-pref-width: 20;
+    -fx-pref-height: 20;
+    -fx-effect: dropshadow(gaussian, rgba(139,92,246,0.5), 8, 0, 0, 2);
+    -fx-cursor: hand;
+}
+.font-size-slider .thumb:hover {
+    -fx-background-color: #A78BFA;
+    -fx-effect: dropshadow(gaussian, rgba(139,92,246,0.7), 12, 0, 0, 2);
+}
+
+/* Font Size Tick Labels */
+.font-size-tick-label {
+    -fx-font-weight: 600;
+    -fx-text-fill: #475569;
+}
+
+/* Accent Color Picker */
+.accent-color-picker {
+    -fx-pref-width: 42;
+    -fx-pref-height: 42;
+    -fx-background-radius: 10;
+}
+.accent-color-btn {
+    -fx-background-radius: 10;
+    -fx-border-radius: 10;
+    -fx-border-width: 3;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 4, 0, 0, 2);
+}
+.accent-color-btn:hover {
+    -fx-opacity: 0.85;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.5), 8, 0, 0, 2);
+}
+.accent-color-btn.accent-active {
+    -fx-border-color: white !important;
+    -fx-effect: dropshadow(gaussian, rgba(255,255,255,0.3), 10, 0, 0, 0);
+    -fx-scale-x: 1.1;
+    -fx-scale-y: 1.1;
+}
+
+/* Toggle Cards */
+.toggle-card {
+    -fx-background-color: #0F172A;
+    -fx-border-color: #1E293B;
+    -fx-border-width: 1;
+    -fx-border-radius: 14;
+    -fx-background-radius: 14;
+    -fx-padding: 18;
+}
+.toggle-card:hover {
+    -fx-border-color: #334155;
+}
+.toggle-icon {
+    -fx-background-color: linear-gradient(to bottom right, #A855F7, #EC4899);
+    -fx-background-radius: 10;
     -fx-pref-width: 38;
     -fx-pref-height: 38;
-    -fx-background-radius: 12;
-    -fx-background-color: linear-gradient(to bottom right, #635BFF, #7C3AED);
+    -fx-min-width: 38;
+    -fx-min-height: 38;
 }
-.admin-profile-avatar-text {
-    -fx-text-fill: white;
+.toggle-icon-contrast {
+    -fx-background-color: linear-gradient(to bottom right, #3B82F6, #06B6D4);
+    -fx-background-radius: 10;
+    -fx-pref-width: 38;
+    -fx-pref-height: 38;
+    -fx-min-width: 38;
+    -fx-min-height: 38;
+}
+.toggle-title {
+    -fx-font-size: 14px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #F8FAFC;
+}
+.toggle-subtitle {
+    -fx-font-size: 12px;
+    -fx-text-fill: #64748B;
+}
+
+/* Toggle Switch (CheckBox styled) */
+.toggle-switch {
+    -fx-font-size: 14px;
+}
+.toggle-switch .box {
+    -fx-background-color: #334155;
+    -fx-border-color: #475569;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-padding: 4;
+    -fx-pref-width: 20;
+    -fx-pref-height: 20;
+}
+.toggle-switch:selected .box {
+    -fx-background-color: #8B5CF6;
+    -fx-border-color: #A78BFA;
+}
+.toggle-switch .mark {
+    -fx-background-color: white;
+}
+
+/* Gender Cards */
+.gender-card {
+    -fx-background-color: #0F172A;
+    -fx-border-color: #1E293B;
+    -fx-border-width: 2;
+    -fx-border-radius: 14;
+    -fx-background-radius: 14;
+    -fx-padding: 16 20;
+    -fx-cursor: hand;
+    -fx-content-display: graphic-only;
+}
+.gender-card:hover {
+    -fx-background-color: #1E293B;
+    -fx-border-color: #334155;
+}
+.gender-card:selected {
+    -fx-background-color: rgba(139,92,246,0.12);
+    -fx-border-color: #8B5CF6;
+}
+.gender-icon-box {
+    -fx-background-radius: 10;
+    -fx-pref-width: 36;
+    -fx-pref-height: 36;
+    -fx-min-width: 36;
+    -fx-min-height: 36;
+    -fx-alignment: center;
+}
+.gender-male-icon {
+    -fx-background-color: linear-gradient(to bottom right, #6366F1, #3B82F6);
+}
+.gender-female-icon {
+    -fx-background-color: linear-gradient(to bottom right, #EC4899, #F472B6);
+}
+.gender-card-title {
+    -fx-font-size: 14px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #E2E8F0;
+}
+.gender-card-sub {
+    -fx-font-size: 11px;
+    -fx-text-fill: #64748B;
+}
+.gender-card:selected .gender-card-title {
+    -fx-text-fill: #A78BFA;
+}
+
+/* Bio TextArea */
+.bio-textarea {
+    -fx-background-color: #0F172A;
+    -fx-border-color: #1E293B;
+    -fx-border-width: 2;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+    -fx-text-fill: #E2E8F0;
+    -fx-font-size: 14px;
+    -fx-padding: 14;
+    -fx-prompt-text-fill: #475569;
+}
+.bio-textarea:focused {
+    -fx-border-color: #8B5CF6;
+    -fx-background-color: #0F172A;
+}
+.bio-textarea .content {
+    -fx-background-color: transparent;
+}
+.bio-char-count {
+    -fx-font-size: 11px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #64748B;
+}
+
+/* Font Family Buttons */
+.font-family-btn {
+    -fx-background-color: #0F172A;
+    -fx-border-color: #1E293B;
+    -fx-border-width: 2;
+    -fx-border-radius: 14;
+    -fx-background-radius: 14;
+    -fx-padding: 14 8;
+    -fx-cursor: hand;
+    -fx-content-display: graphic-only;
+}
+.font-family-btn:hover {
+    -fx-background-color: #1E293B;
+    -fx-border-color: #334155;
+}
+.font-family-btn.font-active {
+    -fx-background-color: rgba(139,92,246,0.12);
+    -fx-border-color: #8B5CF6;
+}
+.font-family-name {
+    -fx-font-size: 11px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #64748B;
+}
+.font-family-btn.font-active .font-family-name {
+    -fx-text-fill: #A78BFA;
+}
+
+/* ============================================
+   WELLBEING QUIZ (Symfony-inspired)
+   ============================================ */
+
+.wellbeing-page #quizSection,
+.wellbeing-page #quizResultsSection {
+    -fx-background-color: linear-gradient(to bottom, rgba(15, 23, 42, 0.98), rgba(17, 24, 39, 0.98));
+    -fx-background-radius: 22;
+    -fx-border-color: rgba(251, 191, 36, 0.30);
+    -fx-border-radius: 22;
+    -fx-border-width: 1.2;
+    -fx-effect: dropshadow(gaussian, rgba(245, 158, 11, 0.18), 18, 0.22, 0, 4);
+}
+
+.wellbeing-page #quizModeSection {
+    -fx-background-color: linear-gradient(to right, rgba(6, 22, 50, 0.98), rgba(20, 18, 45, 0.98));
+    -fx-background-radius: 22;
+    -fx-border-color: rgba(30, 64, 175, 0.45);
+    -fx-border-radius: 22;
+    -fx-border-width: 1;
+    -fx-padding: 18 20 22 20;
+}
+
+.wellbeing-page #quizSection .card-header,
+.wellbeing-page #quizResultsSection .card-header {
+    -fx-background-color: linear-gradient(to right, rgba(251, 191, 36, 0.18), rgba(249, 115, 22, 0.16));
+    -fx-border-color: rgba(251, 191, 36, 0.22);
+    -fx-border-width: 0 0 1 0;
+}
+
+.wellbeing-page #quizSection .wellbeing-header-icon,
+.wellbeing-page #quizResultsSection .wellbeing-header-icon {
+    -fx-background-color: linear-gradient(to bottom right, #FBBF24, #F97316);
+    -fx-background-radius: 12;
+    -fx-pref-width: 36;
+    -fx-pref-height: 36;
+    -fx-min-width: 36;
+    -fx-min-height: 36;
+}
+
+.wellbeing-page #quizSection .wellbeing-header-icon .ikonli-font-icon,
+.wellbeing-page #quizResultsSection .wellbeing-header-icon .ikonli-font-icon {
+    -fx-icon-color: white;
+}
+
+#quizProgressBar {
+    -fx-pref-height: 10;
+    -fx-background-radius: 999;
+}
+
+#quizProgressBar > .track {
+    -fx-background-color: #334155;
+    -fx-background-radius: 999;
+    -fx-background-insets: 0;
+}
+
+#quizProgressBar > .bar {
+    -fx-background-color: linear-gradient(to right, #FBBF24, #F97316);
+    -fx-background-radius: 999;
+    -fx-background-insets: 0;
+}
+
+.quiz-option-card {
+    -fx-background-color: rgba(15, 23, 42, 0.88);
+    -fx-background-radius: 12;
+    -fx-border-color: #334155;
+    -fx-border-width: 2;
+    -fx-border-radius: 12;
+    -fx-padding: 12 14;
+    -fx-cursor: hand;
+}
+
+.quiz-option-card:hover {
+    -fx-border-color: rgba(251, 191, 36, 0.62);
+    -fx-background-color: rgba(30, 41, 59, 0.9);
+}
+
+.quiz-option-card.quiz-option-selected {
+    -fx-border-color: #FBBF24;
+    -fx-background-color: linear-gradient(to bottom right, rgba(251, 191, 36, 0.19), rgba(245, 158, 11, 0.10));
+    -fx-effect: dropshadow(gaussian, rgba(245, 158, 11, 0.34), 14, 0.15, 0, 3);
+}
+
+.quiz-option-radio .radio {
+    -fx-background-color: #0F172A;
+    -fx-border-color: #475569;
+    -fx-border-radius: 100;
+    -fx-background-radius: 100;
+}
+
+.quiz-option-radio:selected .radio {
+    -fx-background-color: #F59E0B;
+    -fx-border-color: #FBBF24;
+}
+
+.quiz-option-radio .dot {
+    -fx-background-color: white;
+}
+
+#quizResultEmojiLabel {
+    -fx-font-size: 52px;
+}
+
+#quizResultTitleLabel {
+    -fx-text-fill: #F8FAFC;
+    -fx-font-size: 30px;
     -fx-font-weight: 800;
 }
-.admin-profile-name {
-    -fx-text-fill: white;
-    -fx-font-size: 14px;
+
+#quizResultSubtitleLabel {
+    -fx-text-fill: #CBD5E1;
+}
+
+#quizResultScoreLabel {
+    -fx-text-fill: #FBBF24;
+    -fx-font-size: 32px;
+    -fx-font-weight: 900;
+}
+
+#quizRecommendationsBox .wellbeing-input-card {
+    -fx-background-color: linear-gradient(to right, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.92));
+    -fx-background-radius: 14;
+    -fx-border-color: rgba(96, 165, 250, 0.38);
+    -fx-border-radius: 14;
+    -fx-border-width: 1.1;
+}
+
+/* Quiz mode picker (Simple vs AI) */
+.quiz-mode-hero {
+    -fx-max-width: 820;
+}
+
+.quiz-mode-hero-icon {
+    -fx-background-color: linear-gradient(to bottom right, #F59E0B, #FB923C);
+    -fx-background-radius: 16;
+    -fx-pref-width: 64;
+    -fx-pref-height: 64;
+    -fx-min-width: 64;
+    -fx-min-height: 64;
+}
+
+.quiz-mode-hero-icon .ikonli-font-icon {
+    -fx-icon-color: #FFFFFF;
+}
+
+.quiz-mode-hero-title {
+    -fx-text-fill: #F8FAFC;
+    -fx-font-size: 34px;
+    -fx-font-weight: 800;
+}
+
+.quiz-mode-hero-subtitle {
+    -fx-text-fill: #18CED2;
+    -fx-font-size: 13px;
+    -fx-font-weight: 700;
+    -fx-max-width: 650;
+    -fx-alignment: center;
+    -fx-text-alignment: center;
+}
+
+.quiz-mode-shell {
+    -fx-background-color: rgba(8, 18, 47, 0.82);
+    -fx-background-radius: 16;
+    -fx-border-color: rgba(37, 99, 235, 0.45);
+    -fx-border-radius: 16;
+    -fx-border-width: 1;
+    -fx-padding: 16 18;
+    -fx-max-width: 760;
+}
+
+.quiz-mode-dialog {
+    -fx-background-color: linear-gradient(to bottom, #0F172A, #111827);
+    -fx-background-radius: 18;
+    -fx-border-color: rgba(148, 163, 184, 0.28);
+    -fx-border-radius: 18;
+    -fx-border-width: 1;
+}
+
+.quiz-mode-title {
+    -fx-font-size: 24px;
+    -fx-font-weight: 800;
+    -fx-text-fill: #F8FAFC;
+}
+
+.quiz-mode-subtitle {
+    -fx-font-size: 13px;
+    -fx-text-fill: #94A3B8;
+}
+
+.quiz-mode-card {
+    -fx-background-radius: 14;
+    -fx-border-radius: 14;
+    -fx-border-width: 2;
+    -fx-padding: 14 16;
+    -fx-cursor: hand;
+    -fx-alignment: TOP_LEFT;
+    -fx-content-display: graphic-only;
+    -fx-min-height: 86;
+    -fx-pref-height: 86;
+    -fx-max-height: 86;
+    -fx-min-width: 340;
+    -fx-pref-width: 340;
+}
+
+.quiz-mode-card-title {
+    -fx-font-size: 17px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #F8FAFC;
+}
+
+.quiz-mode-card-desc {
+    -fx-font-size: 12px;
+    -fx-text-fill: #20D1BE;
+}
+
+.quiz-mode-card-simple {
+    -fx-background-color: linear-gradient(to bottom right, rgba(251, 191, 36, 0.16), rgba(245, 158, 11, 0.10));
+    -fx-border-color: rgba(251, 191, 36, 0.55);
+}
+
+.quiz-mode-card-simple:hover {
+    -fx-background-color: linear-gradient(to bottom right, rgba(251, 191, 36, 0.24), rgba(245, 158, 11, 0.14));
+    -fx-border-color: rgba(251, 191, 36, 0.88);
+}
+
+.quiz-mode-card-ai {
+    -fx-background-color: linear-gradient(to bottom right, rgba(99, 102, 241, 0.16), rgba(79, 70, 229, 0.12));
+    -fx-border-color: rgba(129, 140, 248, 0.55);
+}
+
+.quiz-mode-card-ai:hover {
+    -fx-background-color: linear-gradient(to bottom right, rgba(99, 102, 241, 0.24), rgba(79, 70, 229, 0.16));
+    -fx-border-color: rgba(165, 180, 252, 0.88);
+}
+
+.quiz-ai-suggestion-card {
+    -fx-background-color: linear-gradient(to right, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.90));
+    -fx-border-color: rgba(148, 163, 184, 0.36);
+    -fx-border-width: 1;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+    -fx-cursor: hand;
+}
+
+.quiz-ai-suggestion-card:hover {
+    -fx-border-color: rgba(96, 165, 250, 0.72);
+    -fx-effect: dropshadow(gaussian, rgba(59, 130, 246, 0.20), 14, 0.15, 0, 2);
+}
+
+.quiz-ai-suggestion-card-selected {
+    -fx-border-color: rgba(34, 211, 238, 0.95);
+    -fx-effect: dropshadow(gaussian, rgba(34, 211, 238, 0.24), 16, 0.2, 0, 3);
+}
+
+.quiz-ai-suggestion-title {
+    -fx-text-fill: #F8FAFC;
+    -fx-font-size: 15px;
     -fx-font-weight: 700;
 }
-.admin-profile-role {
+
+.quiz-ai-suggestion-content {
+    -fx-text-fill: #CBD5E1;
+    -fx-font-size: 13px;
+}
+
+#quizSelectedRecommendationBox {
+    -fx-background-color: linear-gradient(to right, rgba(8, 145, 178, 0.16), rgba(6, 182, 212, 0.12));
+    -fx-border-color: rgba(34, 211, 238, 0.52);
+    -fx-border-width: 1;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+}
+
+/* Accent Default Reset Button */
+.accent-default-btn {
+    -fx-background-color: #1E293B;
+    -fx-border-color: #334155;
+    -fx-border-style: dashed;
+}
+
+/* Auth logo image effect */
+.auth-logo-img {
+    -fx-effect: dropshadow(gaussian, rgba(139,92,246,0.5), 20, 0, 0, 4);
+}
+
+/* ============================================
+   WIZARD STEP INDICATOR
+   ============================================ */
+
+.wizard-step-row {
+    -fx-padding: 0 8;
+}
+
+.wizard-step {
+    -fx-min-width: 64;
+    -fx-pref-width: 64;
+    -fx-alignment: CENTER;
+}
+
+/* Step circle — default (inactive) */
+.wizard-step-circle {
+    -fx-pref-width: 36;  -fx-pref-height: 36;
+    -fx-min-width: 36;   -fx-min-height: 36;
+    -fx-background-color: #1E293B;
+    -fx-background-radius: 100;
+    -fx-border-color: #334155;
+    -fx-border-width: 2;
+    -fx-border-radius: 100;
+    -fx-alignment: CENTER;
+}
+
+.wizard-step-circle .label,
+.wizard-step-num {
+    -fx-text-fill: #64748B;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+}
+
+/* Active step */
+.wizard-step-circle.wizard-step-active {
+    -fx-background-color: linear-gradient(to bottom right, #8B5CF6, #6D28D9);
+    -fx-border-color: transparent;
+    -fx-effect: dropshadow(gaussian, rgba(139,92,246,0.65), 14, 0, 0, 2);
+}
+.wizard-step-circle.wizard-step-active .label,
+.wizard-step-circle.wizard-step-active .wizard-step-num {
+    -fx-text-fill: white;
+}
+
+/* Completed step */
+.wizard-step-circle.wizard-step-done {
+    -fx-background-color: linear-gradient(to bottom right, #22C55E, #16A34A);
+    -fx-border-color: transparent;
+}
+.wizard-step-circle.wizard-step-done .label,
+.wizard-step-circle.wizard-step-done .wizard-step-num {
+    -fx-text-fill: white;
+    -fx-font-size: 13px;
+}
+
+/* Step labels */
+.wizard-step-label {
+    -fx-font-size: 11px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #475569;
+    -fx-text-alignment: CENTER;
+}
+.wizard-step-label-active {
+    -fx-text-fill: #A78BFA;
+}
+.wizard-step-label-done {
+    -fx-text-fill: #34D399;
+}
+
+/* Connector line between steps */
+.wizard-connector {
+    -fx-pref-height: 2;
+    -fx-min-height: 2;
+    -fx-max-height: 2;
+    -fx-background-color: #334155;
+    -fx-pref-width: 48;
+    -fx-min-width: 28;
+    -fx-alignment: CENTER;
+    -fx-translate-y: -14;
+}
+.wizard-connector.wizard-connector-active {
+    -fx-background-color: linear-gradient(to right, #22C55E, #16A34A);
+}
+
+/* Secondary button for wizard Back */
+.auth-btn-secondary {
+    -fx-background-color: rgba(255,255,255,0.05);
+    -fx-border-color: #334155;
+    -fx-border-width: 1;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+    -fx-text-fill: #94A3B8;
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-padding: 14 0;
+    -fx-cursor: hand;
+}
+.auth-btn-secondary:hover {
+    -fx-background-color: rgba(255,255,255,0.09);
+    -fx-text-fill: #CBD5E1;
+}
+
+/* WebView card (avatar gallery + face-id) */
+.wizard-webview-card {
+    -fx-background-color: rgba(255,255,255,0.03);
+    -fx-border-color: rgba(255,255,255,0.08);
+    -fx-border-width: 1;
+    -fx-border-radius: 16;
+    -fx-background-radius: 16;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.4), 20, 0, 0, 6);
+    -fx-overflow: hidden;
+}
+
+/* Avatar selection preview row */
+.wizard-avatar-preview {
+    -fx-background-color: rgba(34,197,94,0.08);
+    -fx-border-color: rgba(34,197,94,0.3);
+    -fx-border-width: 1;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+    -fx-padding: 12 16;
+}
+
+.wizard-avatar-mini {
+    -fx-background-color: linear-gradient(to bottom right, #8B5CF6, #6D28D9);
+    -fx-background-radius: 100;
+    -fx-pref-width: 48;  -fx-pref-height: 48;
+    -fx-min-width: 48;   -fx-min-height: 48;
+}
+
+.wizard-avatar-name {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #E2E8F0;
+}
+
+/* ============================================
+   PROFILE HERO — CLEAN FINAL OVERRIDES
+   These rules are last in the file so they win.
+   ============================================ */
+
+/* Avatar ring — indigo→purple→pink, NO green at all */
+.profile-avatar-ring {
+    -fx-background-color: linear-gradient(to bottom right, #6366F1, #8B5CF6, #EC4899);
+    -fx-background-radius: 100;
+    -fx-padding: 3;
+    -fx-pref-width: 108; -fx-pref-height: 108;
+    -fx-min-width: 108;  -fx-min-height: 108;
+    -fx-effect: dropshadow(gaussian, rgba(139,92,246,0.75), 22, 0, 0, 0);
+}
+
+/* Dark fill inside ring */
+.profile-avatar-inner {
+    -fx-background-color: #0F172A;
+    -fx-background-radius: 100;
+    -fx-pref-width: 102; -fx-pref-height: 102;
+    -fx-min-width: 102;  -fx-min-height: 102;
+}
+
+/* Initials / emoji text */
+.profile-avatar-text {
+    -fx-font-size: 32px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #A78BFA;
+}
+
+/* Online dot in profile float badge */
+.profile-online-dot {
+    -fx-background-color: #10B981;
+    -fx-background-radius: 100;
+    -fx-pref-width: 7; -fx-pref-height: 7;
+    -fx-min-width: 7;  -fx-min-height: 7;
+}
+
+/* Purple bottom-left glow — replaces the blue/green orb */
+.profile-glow-orb-purple {
+    -fx-background-color: radial-gradient(center 50% 50%, radius 50%, rgba(109,40,217,0.3) 0%, transparent 100%);
+    -fx-pref-width: 180; -fx-pref-height: 180;
+    -fx-min-width: 180;  -fx-min-height: 180;
+}
+
+/* ── Final definitive avatar ring — bigger for 3D avatar ── */
+.profile-avatar-ring {
+    -fx-background-color: linear-gradient(to bottom right, #6366F1, #8B5CF6, #EC4899);
+    -fx-background-radius: 100;
+    -fx-padding: 4;
+    -fx-pref-width: 150; -fx-pref-height: 150;
+    -fx-min-width: 150;  -fx-min-height: 150;
+    -fx-effect: dropshadow(gaussian, rgba(139,92,246,0.85), 30, 0, 0, 0);
+}
+.profile-avatar-inner {
+    -fx-background-color: #0F172A;
+    -fx-background-radius: 100;
+    -fx-pref-width: 142; -fx-pref-height: 142;
+    -fx-min-width: 142;  -fx-min-height: 142;
+}
+.profile-avatar-text {
+    -fx-font-size: 42px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #A78BFA;
+}
+
+/* ── Avatar gallery scroll + flow ──────────────────────────────────── */
+.wizard-avatar-scroll {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+    -fx-border-color: #1E293B;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+}
+.wizard-avatar-scroll > .viewport {
+    -fx-background-color: transparent;
+}
+.wizard-avatar-flow {
+    -fx-background-color: transparent;
+    -fx-alignment: TOP_LEFT;
+}
+
+/* ── AvatarCard base ─────────────────────────────────────────────── */
+.av-card {
+    -fx-background-color: #1E293B;
+    -fx-background-radius: 14;
+    -fx-border-color: #334155;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 14;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.25), 8, 0, 0, 2);
+    -fx-padding: 8 8 10 8;
+}
+.av-card:hover {
+    -fx-background-color: #263245;
+    -fx-border-color: #6366F1;
+    -fx-effect: dropshadow(gaussian, rgba(99,102,241,0.35), 14, 0, 0, 0);
+}
+.av-card-selected {
+    -fx-background-color: #1a1f3a;
+    -fx-border-color: #8B5CF6;
+    -fx-border-width: 2;
+    -fx-effect: dropshadow(gaussian, rgba(139,92,246,0.5), 18, 0, 0, 0);
+}
+
+/* ── AvatarCard name label ───────────────────────────────────────── */
+.av-card-name {
+    -fx-text-fill: #CBD5E1;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-alignment: CENTER;
+}
+
+/* ── Gender pills ────────────────────────────────────────────────── */
+.av-card-pill {
+    -fx-font-size: 9px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 20;
+    -fx-padding: 2 8 2 8;
+    -fx-alignment: CENTER;
+}
+.av-pill-male {
+    -fx-background-color: rgba(99,102,241,0.2);
+    -fx-text-fill: #818CF8;
+    -fx-border-color: rgba(99,102,241,0.4);
+    -fx-border-radius: 20;
+    -fx-border-width: 1;
+}
+.av-pill-female {
+    -fx-background-color: rgba(236,72,153,0.2);
+    -fx-text-fill: #F472B6;
+    -fx-border-color: rgba(236,72,153,0.4);
+    -fx-border-radius: 20;
+    -fx-border-width: 1;
+}
+
+/* ── Selection check badge (top-right corner) ────────────────────── */
+.av-card-check {
+    -fx-background-color: #8B5CF6;
+    -fx-background-radius: 20;
+    -fx-text-fill: white;
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+    -fx-padding: 2 5 2 5;
+    -fx-effect: dropshadow(gaussian, rgba(139,92,246,0.6), 6, 0, 0, 0);
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   MARKETING RIGHT PANEL
+   ══════════════════════════════════════════════════════════════════ */
+
+/* Decorative background orbs */
+.mrkt-orb-tr {
+    -fx-background-color: radial-gradient(center 50% 50%, radius 50%,
+        rgba(139,92,246,0.28) 0%, rgba(99,102,241,0.10) 45%, transparent 70%);
+    -fx-pref-width: 320; -fx-pref-height: 320;
+    -fx-min-width:  320; -fx-min-height:  320;
+    -fx-translate-x: 100; -fx-translate-y: -100;
+}
+.mrkt-orb-bl {
+    -fx-background-color: radial-gradient(center 50% 50%, radius 50%,
+        rgba(236,72,153,0.20) 0%, rgba(139,92,246,0.08) 45%, transparent 70%);
+    -fx-pref-width: 260; -fx-pref-height: 260;
+    -fx-min-width:  260; -fx-min-height:  260;
+    -fx-translate-x: -80; -fx-translate-y: 80;
+}
+
+/* Top pill badge */
+.mrkt-pill {
+    -fx-background-color: rgba(139,92,246,0.16);
+    -fx-border-color: rgba(139,92,246,0.40);
+    -fx-border-width: 1;
+    -fx-border-radius: 100;
+    -fx-background-radius: 100;
+    -fx-text-fill: #C4B5FD;
+    -fx-font-size: 11.5px;
+    -fx-font-weight: bold;
+    -fx-padding: 6 18 6 18;
+    -fx-effect: dropshadow(gaussian, rgba(139,92,246,0.20), 10, 0, 0, 0);
+}
+.mrkt-pill-green {
+    -fx-background-color: rgba(16,185,129,0.14);
+    -fx-border-color: rgba(16,185,129,0.35);
+    -fx-text-fill: #6EE7B7;
+}
+
+/* Headline */
+.mrkt-h1 {
+    -fx-font-size: 40px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #F8FAFC;
+    -fx-alignment: CENTER;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.6), 8, 0, 0, 2);
+}
+.mrkt-h1-purple {
+    -fx-text-fill: #A78BFA;
+    -fx-effect: dropshadow(gaussian, rgba(139,92,246,0.50), 18, 0, 0, 0);
+}
+
+/* Subtitle */
+.mrkt-sub {
+    -fx-text-fill: #94A3B8;
+    -fx-font-size: 13.5px;
+    -fx-alignment: CENTER;
+}
+
+/* Feature cards */
+.mrkt-card {
+    -fx-background-color: rgba(15,23,42,0.55);
+    -fx-background-radius: 14;
+    -fx-border-color: rgba(139,92,246,0.14);
+    -fx-border-width: 1;
+    -fx-border-radius: 14;
+    -fx-padding: 11 14 11 14;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.30), 10, 0, 0, 3);
+}
+.mrkt-card:hover {
+    -fx-background-color: rgba(30,41,59,0.70);
+    -fx-border-color: rgba(139,92,246,0.30);
+    -fx-effect: dropshadow(gaussian, rgba(139,92,246,0.18), 14, 0, 0, 0);
+}
+
+/* Icon circles */
+.mrkt-ic {
+    -fx-background-radius: 100;
+    -fx-background-color: linear-gradient(to bottom right, #7C3AED, #6366F1);
+    -fx-effect: dropshadow(gaussian, rgba(124,58,237,0.45), 10, 0, 0, 0);
+}
+.mrkt-ic-purple { -fx-background-color: linear-gradient(to bottom right, #7C3AED, #6366F1); }
+.mrkt-ic-blue   { -fx-background-color: linear-gradient(to bottom right, #1D4ED8, #0891B2);
+                  -fx-effect: dropshadow(gaussian, rgba(14,165,233,0.40), 10, 0, 0, 0); }
+.mrkt-ic-pink   { -fx-background-color: linear-gradient(to bottom right, #BE185D, #7C3AED);
+                  -fx-effect: dropshadow(gaussian, rgba(236,72,153,0.40), 10, 0, 0, 0); }
+.mrkt-ic-teal   { -fx-background-color: linear-gradient(to bottom right, #0F766E, #059669);
+                  -fx-effect: dropshadow(gaussian, rgba(20,184,166,0.40), 10, 0, 0, 0); }
+
+/* Icon color */
+.mrkt-ico { -fx-icon-color: white; }
+
+/* Feature card text */
+.mrkt-card-title {
+    -fx-text-fill: #E2E8F0;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+}
+.mrkt-card-sub {
+    -fx-text-fill: #64748B;
+    -fx-font-size: 11px;
+}
+
+/* Gradient divider */
+.mrkt-rule {
+    -fx-background-color: linear-gradient(to right,
+        transparent 0%, rgba(139,92,246,0.50) 30%,
+        rgba(139,92,246,0.50) 70%, transparent 100%);
+}
+
+/* Stats */
+.mrkt-sn {
+    -fx-text-fill: #A78BFA;
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+    -fx-alignment: CENTER;
+    -fx-effect: dropshadow(gaussian, rgba(139,92,246,0.40), 8, 0, 0, 0);
+}
+.mrkt-sl {
+    -fx-text-fill: #475569;
+    -fx-font-size: 10.5px;
+    -fx-alignment: CENTER;
+}
+.mrkt-sep {
+    -fx-background-color: rgba(139,92,246,0.22);
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   ADMIN TABLE STYLING
+   ══════════════════════════════════════════════════════════════════ */
+.admin-table {
+    -fx-background-color: transparent;
+    -fx-table-cell-border-color: #1E293B;
+    -fx-selection-bar: rgba(139,92,246,0.2);
+    -fx-selection-bar-non-focused: rgba(139,92,246,0.1);
+}
+.admin-table .column-header-background {
+    -fx-background-color: #0F172A;
+}
+.admin-table .column-header {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent transparent #1E293B transparent;
+    -fx-border-width: 0 0 1 0;
+}
+.admin-table .column-header .label {
+    -fx-text-fill: #94A3B8;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-padding: 8 12;
+}
+.admin-table .table-row-cell {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent transparent #0F172A transparent;
+    -fx-border-width: 0 0 1 0;
+    -fx-table-cell-border-color: transparent;
+}
+.admin-table .table-row-cell:hover {
+    -fx-background-color: rgba(139,92,246,0.06);
+}
+.admin-table .table-row-cell:selected {
+    -fx-background-color: rgba(139,92,246,0.15);
+}
+.admin-table .table-cell {
+    -fx-text-fill: #CBD5E1;
+    -fx-font-size: 13px;
+    -fx-padding: 10 12;
+}
+.admin-table .table-row-cell:selected .table-cell {
+    -fx-text-fill: #F8FAFC;
+}
+.admin-table .filler {
+    -fx-background-color: transparent;
+}
+.admin-table .placeholder .label {
+    -fx-text-fill: #475569;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   ADMIN USER CARDS
+   ══════════════════════════════════════════════════════════════════ */
+.admin-user-card {
+    -fx-background-color: #0F172A;
+    -fx-border-color: #1E293B;
+    -fx-border-width: 1;
+    -fx-border-radius: 14;
+    -fx-background-radius: 14;
+    -fx-cursor: hand;
+}
+.admin-user-card:hover {
+    -fx-background-color: #131C31;
+    -fx-border-color: #334155;
+}
+.admin-user-avatar {
+    -fx-background-color: linear-gradient(to bottom right, #6366F1, #8B5CF6);
+    -fx-background-radius: 100;
+    -fx-pref-width: 48;
+    -fx-pref-height: 48;
+    -fx-min-width: 48;
+    -fx-min-height: 48;
+    -fx-alignment: center;
+}
+.admin-user-avatar-banned {
+    -fx-background-color: linear-gradient(to bottom right, #991B1B, #F43F5E);
+}
+.admin-user-avatar-text {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: white;
+}
+.admin-user-name {
+    -fx-font-size: 15px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #F8FAFC;
+}
+.admin-user-pill {
+    -fx-background-color: rgba(30,41,59,0.7);
+    -fx-background-radius: 8;
+    -fx-padding: 3 8;
+}
+.admin-user-detail {
+    -fx-font-size: 12px;
+    -fx-text-fill: #94A3B8;
+}
+
+/* Status badges */
+.admin-status-badge {
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-padding: 5 14;
+    -fx-background-radius: 20;
+}
+.admin-status-active {
+    -fx-background-color: rgba(16,185,129,0.15);
+    -fx-text-fill: #34D399;
+    -fx-border-color: rgba(52,211,153,0.3);
+    -fx-border-width: 1;
+    -fx-border-radius: 20;
+}
+.admin-status-banned {
+    -fx-background-color: rgba(244,63,94,0.15);
+    -fx-text-fill: #FB7185;
+    -fx-border-color: rgba(244,63,94,0.3);
+    -fx-border-width: 1;
+    -fx-border-radius: 20;
+}
+
+/* Action buttons */
+.admin-action-btn {
+    -fx-background-color: #1E293B;
+    -fx-border-color: #334155;
+    -fx-border-width: 1;
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
+    -fx-padding: 6 14;
+    -fx-font-size: 12px;
+    -fx-font-weight: 600;
+    -fx-cursor: hand;
+}
+.admin-action-btn:hover {
+    -fx-background-color: #334155;
+}
+.admin-action-ban {
+    -fx-text-fill: #F43F5E;
+}
+.admin-action-unban {
+    -fx-text-fill: #34D399;
+}
+.admin-action-delete {
+    -fx-padding: 6 8;
+}
+.admin-action-delete:hover {
+    -fx-background-color: rgba(244,63,94,0.15);
+    -fx-border-color: #F43F5E;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   ADMIN AUDIT LOG CARDS
+   ══════════════════════════════════════════════════════════════════ */
+.admin-log-card {
+    -fx-background-color: #0F172A;
+    -fx-border-color: #1E293B;
+    -fx-border-width: 1;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+}
+.admin-log-card:hover {
+    -fx-background-color: #131C31;
+    -fx-border-color: #334155;
+}
+.admin-log-card-banned {
+    -fx-border-color: rgba(244,63,94,0.2);
+}
+.admin-log-card-banned:hover {
+    -fx-border-color: rgba(244,63,94,0.4);
+}
+.admin-log-icon {
+    -fx-background-radius: 10;
+    -fx-pref-width: 38;
+    -fx-pref-height: 38;
+    -fx-min-width: 38;
+    -fx-min-height: 38;
+    -fx-alignment: center;
+}
+.admin-log-icon-success {
+    -fx-background-color: linear-gradient(to bottom right, #059669, #10B981);
+}
+.admin-log-icon-danger {
+    -fx-background-color: linear-gradient(to bottom right, #991B1B, #EF4444);
+}
+.admin-log-name {
+    -fx-font-size: 14px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #E2E8F0;
+}
+.admin-log-action {
+    -fx-font-size: 12px;
+    -fx-text-fill: #94A3B8;
+}
+.admin-log-date {
+    -fx-font-size: 11px;
+    -fx-text-fill: #475569;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   BAN DIALOG
+   ══════════════════════════════════════════════════════════════════ */
+.ban-dialog-root {
+    -fx-background-color: #0F172A;
+    -fx-border-color: #334155;
+    -fx-border-width: 1;
+    -fx-border-radius: 18;
+    -fx-background-radius: 18;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.6), 40, 0, 0, 10);
+}
+.ban-dialog-header {
+    -fx-border-color: transparent transparent #1E293B transparent;
+    -fx-border-width: 0 0 1 0;
+}
+.ban-dialog-icon-box {
+    -fx-background-color: linear-gradient(to bottom right, #991B1B, #EF4444);
+    -fx-background-radius: 12;
+    -fx-pref-width: 46;
+    -fx-pref-height: 46;
+    -fx-min-width: 46;
+    -fx-min-height: 46;
+    -fx-alignment: center;
+}
+.ban-dialog-title {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #F8FAFC;
+}
+.ban-dialog-subtitle {
+    -fx-font-size: 13px;
+    -fx-text-fill: #94A3B8;
+}
+.ban-dialog-close {
+    -fx-background-color: transparent;
+    -fx-padding: 6;
+    -fx-cursor: hand;
+}
+.ban-dialog-close:hover {
+    -fx-background-color: #1E293B;
+    -fx-background-radius: 8;
+}
+.ban-dialog-label {
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #CBD5E1;
+}
+.ban-dialog-scroll {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+}
+.ban-dialog-scroll .viewport {
+    -fx-background-color: transparent;
+}
+.ban-dialog-radio {
+    -fx-text-fill: #E2E8F0;
+    -fx-font-size: 13px;
+    -fx-padding: 8 12;
+    -fx-background-color: #1E293B;
+    -fx-background-radius: 10;
+    -fx-cursor: hand;
+}
+.ban-dialog-radio:hover {
+    -fx-background-color: #334155;
+}
+.ban-dialog-radio:selected {
+    -fx-background-color: rgba(244,63,94,0.12);
+    -fx-text-fill: #FB7185;
+}
+.ban-dialog-radio .radio {
+    -fx-background-color: #0F172A;
+    -fx-border-color: #475569;
+}
+.ban-dialog-radio:selected .radio {
+    -fx-background-color: #F43F5E;
+    -fx-border-color: #F43F5E;
+}
+.ban-dialog-radio .dot {
+    -fx-background-color: white;
+}
+.ban-dialog-textarea {
+    -fx-background-color: #1E293B;
+    -fx-text-fill: #E2E8F0;
+    -fx-border-color: #334155;
+    -fx-border-width: 2;
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
+    -fx-padding: 10;
+    -fx-prompt-text-fill: #475569;
+    -fx-font-size: 13px;
+}
+.ban-dialog-textarea .content {
+    -fx-background-color: transparent;
+}
+.ban-dialog-textarea:focused {
+    -fx-border-color: #F43F5E;
+}
+.ban-dialog-footer {
+    -fx-border-color: #1E293B transparent transparent transparent;
+    -fx-border-width: 1 0 0 0;
+}
+.ban-dialog-cancel-btn {
+    -fx-background-color: #1E293B;
+    -fx-text-fill: #CBD5E1;
+    -fx-border-color: #334155;
+    -fx-border-width: 1;
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
+    -fx-padding: 10 24;
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+    -fx-cursor: hand;
+}
+.ban-dialog-cancel-btn:hover {
+    -fx-background-color: #334155;
+}
+.ban-dialog-ban-btn {
+    -fx-background-color: linear-gradient(to right, #DC2626, #EF4444);
+    -fx-text-fill: white;
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
+    -fx-padding: 10 24;
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+    -fx-cursor: hand;
+}
+.ban-dialog-ban-btn:hover {
+    -fx-background-color: linear-gradient(to right, #EF4444, #F87171);
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   AI AGENT TERMINAL / CHAT
+   ══════════════════════════════════════════════════════════════════ */
+.ai-header-icon {
+    -fx-background-color: linear-gradient(to bottom right, #6366F1, #8B5CF6);
+    -fx-background-radius: 14;
+    -fx-pref-width: 48;
+    -fx-pref-height: 48;
+    -fx-min-width: 48;
+    -fx-min-height: 48;
+    -fx-alignment: center;
+    -fx-effect: dropshadow(gaussian, rgba(99,102,241,0.4), 12, 0, 0, 4);
+}
+.ai-status-dot {
+    -fx-background-color: #34D399;
+    -fx-background-radius: 100;
+    -fx-pref-width: 8;
+    -fx-pref-height: 8;
+    -fx-effect: dropshadow(gaussian, #34D399, 6, 0.8, 0, 0);
+}
+
+/* Chat scroll */
+.chat-scroll {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+}
+.chat-scroll .viewport {
+    -fx-background-color: transparent;
+}
+.chat-container {
+    -fx-background-color: transparent;
+}
+
+/* User bubble */
+.chat-bubble-user {
+    -fx-background-color: linear-gradient(to bottom right, #6366F1, #8B5CF6);
+    -fx-background-radius: 16 16 4 16;
+    -fx-max-width: 500;
+}
+.chat-text-user {
+    -fx-text-fill: white;
+    -fx-font-size: 13px;
+}
+
+/* Bot bubble */
+.chat-bubble-bot {
+    -fx-background-color: #1E293B;
+    -fx-border-color: #334155;
+    -fx-border-width: 1;
+    -fx-border-radius: 16 16 16 4;
+    -fx-background-radius: 16 16 16 4;
+    -fx-max-width: 500;
+}
+.chat-text-bot {
+    -fx-text-fill: #E2E8F0;
+    -fx-font-size: 13px;
+    -fx-line-spacing: 3;
+}
+
+/* Bot avatar */
+.chat-bot-avatar {
+    -fx-background-color: linear-gradient(to bottom right, #6366F1, #8B5CF6);
+    -fx-background-radius: 100;
+    -fx-pref-width: 34;
+    -fx-pref-height: 34;
+    -fx-min-width: 34;
+    -fx-min-height: 34;
+    -fx-alignment: center;
+}
+
+/* System message (action result) */
+.chat-bubble-system {
+    -fx-background-color: rgba(16,185,129,0.08);
+    -fx-border-color: rgba(52,211,153,0.2);
+    -fx-border-width: 1;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+    -fx-max-width: 500;
+}
+.chat-text-system {
+    -fx-text-fill: #34D399;
+    -fx-font-size: 12px;
+    -fx-font-weight: 600;
+}
+
+/* Typing dots */
+.typing-dot {
+    -fx-background-color: #64748B;
+    -fx-background-radius: 100;
+    -fx-pref-width: 8;
+    -fx-pref-height: 8;
+}
+
+/* Input bar */
+.chat-input-bar {
+    -fx-background-color: #0F172A;
+    -fx-border-color: #1E293B;
+    -fx-border-width: 1 0 0 0;
+}
+.chat-input {
+    -fx-background-color: #1E293B;
+    -fx-border-color: #334155;
+    -fx-border-width: 2;
+    -fx-border-radius: 14;
+    -fx-background-radius: 14;
+    -fx-text-fill: #E2E8F0;
+    -fx-prompt-text-fill: #475569;
+    -fx-font-size: 13px;
+    -fx-padding: 12 18;
+}
+.chat-input:focused {
+    -fx-border-color: #6366F1;
+}
+.chat-send-btn {
+    -fx-background-color: linear-gradient(to right, #6366F1, #8B5CF6);
+    -fx-background-radius: 14;
+    -fx-padding: 12 16;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(99,102,241,0.4), 8, 0, 0, 2);
+}
+.chat-send-btn:hover {
+    -fx-background-color: linear-gradient(to right, #818CF8, #A78BFA);
+}
+.chat-send-btn:disabled {
+    -fx-opacity: 0.5;
+}
+
+/* ── Pie Chart styling ─────────────────────────────────────────── */
+.chart-pie-label {
+    -fx-fill: #CBD5E1;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+}
+.chart-pie-label-line {
+    -fx-stroke: #475569;
+    -fx-stroke-width: 1;
+}
+.default-color0.chart-pie { -fx-pie-color: #6366F1; }
+.default-color1.chart-pie { -fx-pie-color: #EC4899; }
+.default-color2.chart-pie { -fx-pie-color: #F59E0B; }
+.chart-legend {
+    -fx-background-color: transparent;
+    -fx-padding: 8 16;
+}
+.chart-legend-item {
     -fx-text-fill: #94A3B8;
     -fx-font-size: 12px;
 }
-.admin-main-shell {
+.default-color0.chart-legend-item-symbol { -fx-background-color: #6366F1; }
+.default-color1.chart-legend-item-symbol { -fx-background-color: #EC4899; }
+.default-color2.chart-legend-item-symbol { -fx-background-color: #F59E0B; }
+
+/* ── MenuButton styling for admin ──────────────────────────────── */
+.btn-primary.menu-button {
+    -fx-background-color: linear-gradient(to right, #7C3AED, #6366F1);
+    -fx-text-fill: white;
+    -fx-background-radius: 10;
+    -fx-padding: 8 16;
+    -fx-cursor: hand;
+    -fx-font-weight: 600;
+    -fx-effect: dropshadow(gaussian, rgba(124,58,237,0.4), 10, 0, 0, 2);
+}
+.btn-primary.menu-button:hover {
+    -fx-background-color: linear-gradient(to right, #6D28D9, #4F46E5);
+}
+.btn-primary.menu-button > .arrow-button {
+    -fx-background-color: transparent;
+}
+.btn-primary.menu-button > .arrow-button > .arrow {
+    -fx-background-color: white;
+}
+
+/* ============================================
+   ADMIN WELLNESS (Stress Questions + Recommendations)
+   Imported from RLIFE-JAVA-main_fi design
+   ============================================ */
+.stress-root {
     -fx-background-color: #060B1F;
 }
-.admin-topbar-2 {
-    -fx-background-color: #11192E;
-    -fx-border-color: rgba(51, 65, 85, 0.75);
-    -fx-border-width: 0 0 1 0;
+.stress-page {
+    -fx-background-color: #060B1F;
 }
-.admin-topbar-title {
+.stress-title {
     -fx-text-fill: white;
-    -fx-font-size: 18px;
+    -fx-font-size: 32px;
     -fx-font-weight: 800;
 }
-.admin-top-icon {
-    -fx-background-color: rgba(255,255,255,0.04);
-    -fx-text-fill: #CBD5E1;
-    -fx-background-radius: 10;
-    -fx-padding: 8;
+.stress-subtitle {
+    -fx-text-fill: #22D3EE;
+    -fx-font-size: 15px;
 }
-.admin-top-icon .ikonli-font-icon {
-    -fx-icon-color: #CBD5E1;
-}
-.admin-top-icon.danger:hover {
-    -fx-background-color: rgba(239, 68, 68, 0.18);
-}
-.admin-content-shell {
-    -fx-background-color: #060B1F;
-    -fx-padding: 24;
-}
-.admin-toolbar {
-    -fx-background-color: rgba(15, 23, 42, 0.95);
-    -fx-border-color: rgba(51, 65, 85, 0.85);
+.stress-stat-card {
+    -fx-background-radius: 20;
+    -fx-border-radius: 20;
     -fx-border-width: 1;
-    -fx-border-radius: 18;
-    -fx-background-radius: 18;
+    -fx-padding: 18 22;
 }
-.admin-input,
-.admin-textarea,
-.combo-box {
-    -fx-background-color: #253247;
-    -fx-background-radius: 14;
-    -fx-border-color: #475569;
-    -fx-border-radius: 14;
+.stress-stat-card.blue {
+    -fx-background-color: linear-gradient(to bottom right, rgba(59, 130, 246, 0.18), rgba(30, 41, 59, 0.92));
+    -fx-border-color: rgba(59, 130, 246, 0.20);
+}
+.stress-stat-card.green {
+    -fx-background-color: linear-gradient(to bottom right, rgba(34, 197, 94, 0.16), rgba(18, 40, 52, 0.92));
+    -fx-border-color: rgba(34, 197, 94, 0.20);
+}
+.stress-stat-card.gray {
+    -fx-background-color: linear-gradient(to bottom right, rgba(148, 163, 184, 0.12), rgba(30, 41, 59, 0.92));
+    -fx-border-color: rgba(148, 163, 184, 0.20);
+}
+.stress-stat-card.warning {
+    -fx-background-color: linear-gradient(to bottom right, rgba(245, 158, 11, 0.16), rgba(45, 31, 22, 0.92));
+    -fx-border-color: rgba(245, 158, 11, 0.20);
+}
+.stress-stat-card.danger {
+    -fx-background-color: linear-gradient(to bottom right, rgba(239, 68, 68, 0.16), rgba(48, 24, 24, 0.92));
+    -fx-border-color: rgba(239, 68, 68, 0.20);
+}
+.stress-stat-number {
+    -fx-text-fill: white;
+    -fx-font-size: 34px;
+    -fx-font-weight: 800;
+}
+.stress-stat-label {
+    -fx-text-fill: #22D3EE;
+    -fx-font-size: 14px;
+}
+.stress-search-card {
+    -fx-background-color: #151F35;
+    -fx-background-radius: 20;
+    -fx-border-color: rgba(71, 85, 105, 0.65);
+    -fx-border-radius: 20;
+    -fx-border-width: 1;
+}
+.stress-table-shell {
+    -fx-background-color: #151F35;
+    -fx-background-radius: 22;
+    -fx-border-radius: 22;
+    -fx-border-color: rgba(71, 85, 105, 0.55);
+    -fx-border-width: 1;
+}
+.stress-form-card {
+    -fx-max-width: 760;
+    -fx-background-color: #151F35;
+    -fx-background-radius: 22;
+    -fx-border-radius: 22;
+    -fx-border-color: rgba(71, 85, 105, 0.55);
+    -fx-border-width: 1;
+}
+.stress-table-header {
+    -fx-background-color: rgba(30, 41, 59, 0.92);
+    -fx-border-color: rgba(71, 85, 105, 0.65);
+    -fx-border-width: 0 0 1 0;
+}
+.stress-table-head-label {
+    -fx-text-fill: #93C5FD;
+    -fx-font-size: 12px;
+    -fx-font-weight: 700;
+}
+.stress-table-row {
+    -fx-background-color: rgba(15, 23, 42, 0.86);
+    -fx-border-color: rgba(51, 65, 85, 0.55);
+    -fx-border-width: 0 0 1 0;
+}
+.stress-table-row:hover {
+    -fx-background-color: rgba(30, 41, 59, 0.94);
+}
+.stress-table-num {
+    -fx-text-fill: #E2E8F0;
+    -fx-font-size: 13px;
+    -fx-font-weight: 700;
+}
+.stress-table-question {
+    -fx-text-fill: #E2E8F0;
+    -fx-font-size: 13px;
+}
+.stress-table-date {
+    -fx-text-fill: #94A3B8;
+    -fx-font-size: 12px;
+}
+.stress-action-btn {
+    -fx-padding: 6 10;
+    -fx-font-size: 12px;
+    -fx-font-weight: 700;
+    -fx-min-width: 62;
+}
+.stress-draggable-row {
+    -fx-cursor: open-hand;
+}
+.stress-drag-source {
+    -fx-opacity: 0.72;
+}
+.stress-drag-target {
+    -fx-border-color: #60A5FA;
+    -fx-border-width: 1;
+}
+.stress-list-item {
+    -fx-background-color: rgba(15, 23, 42, 0.82);
+    -fx-border-color: rgba(51, 65, 85, 0.65);
+    -fx-border-width: 1;
+    -fx-border-radius: 16;
+    -fx-background-radius: 16;
+}
+.stress-list-item:hover {
+    -fx-background-color: rgba(30, 41, 59, 0.95);
+    -fx-border-color: rgba(96, 165, 250, 0.35);
+}
+.stress-list-number {
+    -fx-min-width: 34;
+    -fx-pref-width: 34;
+    -fx-min-height: 34;
+    -fx-pref-height: 34;
+    -fx-alignment: center;
+    -fx-background-color: rgba(59, 130, 246, 0.18);
+    -fx-background-radius: 999;
+    -fx-border-color: rgba(96, 165, 250, 0.35);
+    -fx-border-radius: 999;
+    -fx-text-fill: #BFDBFE;
+    -fx-font-size: 13px;
+    -fx-font-weight: 800;
+}
+.stress-list-question {
+    -fx-text-fill: #E2E8F0;
+    -fx-font-size: 14px;
+}
+.stress-list-date {
+    -fx-text-fill: #94A3B8;
+    -fx-font-size: 12px;
+}
+.reco-list-item {
+    -fx-background-color: rgba(15, 23, 42, 0.82);
+    -fx-border-color: rgba(51, 65, 85, 0.65);
+    -fx-border-width: 1;
+    -fx-border-radius: 16;
+    -fx-background-radius: 16;
+}
+.reco-list-item:hover {
+    -fx-background-color: rgba(30, 41, 59, 0.95);
+    -fx-border-color: rgba(96, 165, 250, 0.35);
+}
+.reco-list-title {
     -fx-text-fill: #F8FAFC;
-    -fx-prompt-text-fill: #64748B;
-    -fx-padding: 12 14;
+    -fx-font-size: 15px;
+    -fx-font-weight: 700;
 }
-.admin-input.admin-field-error,
-.admin-textarea.admin-field-error,
-.combo-box.admin-field-error {
-    -fx-border-color: #F43F5E;
-    -fx-background-color: rgba(244,63,94,0.10);
-}
-.admin-textarea.admin-field-error .content {
-    -fx-background-color: rgba(244,63,94,0.10);
+.reco-list-preview {
+    -fx-text-fill: #CBD5E1;
+    -fx-font-size: 13px;
 }
 .reco-actions .button {
     -fx-padding: 6 10;
@@ -2895,21 +4382,461 @@
     -fx-font-weight: 700;
 }
 
-/* Wellbeing Field Error Style */
-.text-area.wellbeing-field-error {
-    -fx-border-color: #F43F5E;
-    -fx-border-width: 2;
-    -fx-background-color: rgba(244,63,94,0.10);
+/* Dark-mode form controls for admin wellness forms */
+.stress-root .admin-input,
+.stress-root .combo-box.admin-input,
+.stress-root .text-field.admin-input {
+    -fx-background-color: #0F172A;
+    -fx-border-color: rgba(71, 85, 105, 0.85);
+    -fx-border-width: 1;
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
+    -fx-text-fill: #E2E8F0;
+    -fx-prompt-text-fill: #64748B;
 }
 
-.text-area.wellbeing-field-error .content {
-    -fx-background-color: rgba(244,63,94,0.10);
+.stress-root .admin-input:focused,
+.stress-root .combo-box.admin-input:focused,
+.stress-root .text-field.admin-input:focused {
+    -fx-border-color: #60A5FA;
+    -fx-background-color: #0B1324;
 }
 
-.wellbeing-field-error, .error-border {
-    -fx-border-color: #FB7185 !important;
-    -fx-border-width: 2px !important;
-    -fx-border-radius: 8px !important;
-    -fx-background-radius: 8px !important;
+.stress-root .combo-box.admin-input .list-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: #E2E8F0;
 }
 
+.stress-root .combo-box-popup .list-view {
+    -fx-background-color: #0F172A;
+    -fx-border-color: rgba(71, 85, 105, 0.85);
+}
+
+.stress-root .admin-textarea {
+    -fx-background-color: #0F172A;
+    -fx-border-color: rgba(71, 85, 105, 0.85);
+    -fx-border-width: 1;
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
+    -fx-text-fill: #E2E8F0;
+    -fx-prompt-text-fill: #64748B;
+    -fx-highlight-fill: rgba(59, 130, 246, 0.45);
+    -fx-highlight-text-fill: #FFFFFF;
+}
+
+.stress-root .admin-textarea:focused {
+    -fx-border-color: #60A5FA;
+    -fx-background-color: #0B1324;
+}
+
+.stress-root .admin-textarea .content {
+    -fx-background-color: transparent;
+}
+
+/* Dark-mode wellbeing check-in controls */
+.wellbeing-page .wellbeing-input-card {
+    -fx-background-color: linear-gradient(to bottom right, rgba(15, 23, 42, 0.92), rgba(17, 24, 39, 0.88));
+    -fx-border-color: rgba(71, 85, 105, 0.7);
+    -fx-border-width: 1;
+    -fx-border-radius: 16;
+    -fx-background-radius: 16;
+    -fx-padding: 16;
+}
+
+.wellbeing-page .wellbeing-tools-page {
+    -fx-background-color: linear-gradient(to right, rgba(8, 19, 49, 0.98), rgba(22, 20, 48, 0.96));
+    -fx-background-radius: 16;
+    -fx-border-color: rgba(30, 64, 175, 0.4);
+    -fx-border-width: 1;
+    -fx-border-radius: 16;
+    -fx-padding: 16 20 10 20;
+}
+
+.wellbeing-page .tools-main-title {
+    -fx-text-fill: #EAF2FF;
+    -fx-font-size: 34px;
+    -fx-font-weight: 800;
+}
+
+.wellbeing-page .tools-main-subtitle {
+    -fx-text-fill: #9CA7BE;
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+}
+
+.wellbeing-page .wellbeing-choice-card {
+    -fx-background-color: #111827;
+    -fx-border-color: #334155;
+    -fx-border-width: 1;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+    -fx-text-fill: #E2E8F0;
+    -fx-font-size: 13px;
+    -fx-font-weight: 700;
+    -fx-padding: 10 12;
+}
+
+.wellbeing-page .wellbeing-choice-card:hover {
+    -fx-background-color: #1E293B;
+    -fx-border-color: #475569;
+}
+
+.wellbeing-page .wellbeing-choice-card.selected {
+    -fx-background-color: linear-gradient(to right, rgba(59, 130, 246, 0.34), rgba(14, 165, 233, 0.30));
+    -fx-border-color: #60A5FA;
+    -fx-text-fill: #F8FAFC;
+}
+
+.wellbeing-page .wellbeing-sleep-card {
+    -fx-background-color: #111827;
+    -fx-border-color: #334155;
+    -fx-border-width: 1;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+    -fx-text-fill: #E2E8F0;
+    -fx-font-size: 13px;
+    -fx-font-weight: 700;
+    -fx-padding: 10 12;
+}
+
+.wellbeing-page .wellbeing-sleep-card:hover {
+    -fx-background-color: #1E293B;
+    -fx-border-color: #475569;
+}
+
+.wellbeing-page .wellbeing-sleep-card.selected {
+    -fx-background-color: linear-gradient(to right, rgba(99, 102, 241, 0.35), rgba(139, 92, 246, 0.32));
+    -fx-border-color: #818CF8;
+    -fx-text-fill: #F8FAFC;
+}
+
+.wellbeing-page .wellbeing-notes-area {
+    -fx-background-color: #0F172A;
+    -fx-border-color: #334155;
+    -fx-border-width: 1;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+    -fx-text-fill: #E2E8F0;
+    -fx-prompt-text-fill: #64748B;
+    -fx-padding: 12;
+}
+
+.wellbeing-page .wellbeing-notes-area:focused {
+    -fx-background-color: #0B1324;
+    -fx-border-color: #818CF8;
+}
+
+.wellbeing-page .wellbeing-notes-area .content {
+    -fx-background-color: transparent;
+}
+
+/* Wellbeing quotes card */
+.wellbeing-page .wellbeing-quote-shell .check-box .text {
+    -fx-fill: #CBD5E1;
+}
+
+.wellbeing-page .wellbeing-quote-card {
+    -fx-background-color: linear-gradient(to bottom right, rgba(15,23,42,0.98), rgba(30,41,59,0.92));
+    -fx-background-radius: 16;
+    -fx-border-color: rgba(167,139,250,0.45);
+    -fx-border-radius: 16;
+    -fx-border-width: 1;
+    -fx-padding: 18 18 16 18;
+}
+
+.wellbeing-page .wellbeing-quote-mark {
+    -fx-font-size: 30px;
+    -fx-text-fill: #A78BFA;
+}
+
+.wellbeing-page .wellbeing-quote-text {
+    -fx-font-size: 15px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #F8FAFC;
+}
+
+.wellbeing-page .wellbeing-quote-meta {
+    -fx-font-size: 11px;
+    -fx-text-fill: #93C5FD;
+    -fx-font-weight: 700;
+}
+
+.wellbeing-page .wellbeing-quote-controls {
+    -fx-background-color: rgba(15, 23, 42, 0.55);
+    -fx-background-radius: 12;
+    -fx-padding: 10 12;
+}
+
+.wellbeing-page .tools-control-bar {
+    -fx-background-color: rgba(9, 18, 44, 0.9);
+    -fx-border-color: rgba(30, 64, 175, 0.55);
+    -fx-border-width: 1;
+    -fx-border-radius: 12;
+}
+
+.wellbeing-page .tools-control-hint {
+    -fx-text-fill: #95A3BE;
+    -fx-font-size: 12px;
+}
+
+.wellbeing-page .tools-reset-btn {
+    -fx-background-color: #1E2D48;
+    -fx-text-fill: #E2E8F0;
+}
+
+.wellbeing-page .tools-highlight-banner {
+    -fx-background-color: linear-gradient(to right, rgba(99, 102, 241, 0.9), rgba(38, 180, 193, 0.95));
+    -fx-background-radius: 14;
+    -fx-padding: 18 20;
+}
+
+.wellbeing-page .tools-highlight-title {
+    -fx-text-fill: #F8FAFC;
+    -fx-font-size: 34px;
+    -fx-font-weight: 800;
+}
+
+.wellbeing-page .tools-highlight-subtitle {
+    -fx-text-fill: #D9EAF6;
+    -fx-font-size: 13px;
+    -fx-font-weight: 700;
+}
+
+.wellbeing-page .tools-highlight-btn {
+    -fx-background-color: rgba(248, 250, 252, 0.95);
+    -fx-text-fill: #4F46E5;
+    -fx-font-weight: 800;
+    -fx-background-radius: 16;
+}
+
+.wellbeing-page .wellbeing-tool-card {
+    -fx-background-color: rgba(7, 17, 43, 0.9);
+    -fx-border-color: rgba(37, 99, 235, 0.4);
+    -fx-border-width: 1;
+    -fx-border-radius: 14;
+    -fx-background-radius: 14;
+    -fx-padding: 16 18;
+}
+
+.wellbeing-page .wellbeing-tool-icon {
+    -fx-pref-width: 48;
+    -fx-pref-height: 48;
+    -fx-min-width: 48;
+    -fx-min-height: 48;
+    -fx-background-radius: 14;
+}
+
+.wellbeing-page .wellbeing-tool-icon .ikonli-font-icon {
+    -fx-icon-color: #A5B4FC;
+}
+
+.wellbeing-page .tool-icon-breathing_exercise {
+    -fx-background-color: rgba(99, 102, 241, 0.18);
+}
+
+.wellbeing-page .tool-icon-gratitude_journal,
+.wellbeing-page .tool-icon-ai_chat_coach {
+    -fx-background-color: rgba(217, 119, 6, 0.20);
+}
+
+.wellbeing-page .tool-icon-nature_sounds,
+.wellbeing-page .tool-icon-yoga_coach {
+    -fx-background-color: rgba(5, 150, 105, 0.20);
+}
+
+.wellbeing-page .tool-icon-gratitude_journal .ikonli-font-icon,
+.wellbeing-page .tool-icon-ai_chat_coach .ikonli-font-icon {
+    -fx-icon-color: #FBBF24;
+}
+
+.wellbeing-page .tool-icon-nature_sounds .ikonli-font-icon,
+.wellbeing-page .tool-icon-yoga_coach .ikonli-font-icon {
+    -fx-icon-color: #4ADE80;
+}
+
+.wellbeing-page .tools-card-title {
+    -fx-text-fill: #F8FAFC;
+    -fx-font-size: 15px;
+    -fx-font-weight: 800;
+}
+
+.wellbeing-page .tools-card-desc {
+    -fx-text-fill: #CFD8EA;
+    -fx-font-size: 12px;
+    -fx-font-weight: 600;
+}
+
+.wellbeing-page .tools-start-btn {
+    -fx-background-color: linear-gradient(to right, #06B6D4, #0891B2);
+    -fx-text-fill: #EAFBFF;
+    -fx-font-weight: 800;
+    -fx-background-radius: 14;
+    -fx-padding: 8 22;
+}
+
+.wellbeing-page .tools-card-badge {
+    -fx-background-radius: 10;
+    -fx-padding: 3 9;
+    -fx-font-size: 11px;
+    -fx-font-weight: 800;
+}
+
+.wellbeing-page .tools-card-badge-time {
+    -fx-background-color: rgba(71, 85, 105, 0.55);
+    -fx-text-fill: #CBD5E1;
+}
+
+.wellbeing-page .tools-card-badge-ongoing {
+    -fx-background-color: rgba(22, 163, 74, 0.35);
+    -fx-text-fill: #86EFAC;
+}
+
+.wellbeing-page .tools-card-badge-anytime {
+    -fx-background-color: rgba(30, 41, 59, 0.7);
+    -fx-text-fill: #E2E8F0;
+}
+
+.wellbeing-page .tools-tips-shell {
+    -fx-background-color: rgba(7, 17, 43, 0.75);
+    -fx-border-color: rgba(37, 99, 235, 0.35);
+    -fx-border-width: 1;
+    -fx-border-radius: 14;
+    -fx-background-radius: 14;
+    -fx-padding: 14 18 16 18;
+}
+
+.wellbeing-page .tools-tips-title {
+    -fx-text-fill: #EAF2FF;
+    -fx-font-size: 15px;
+    -fx-font-weight: 800;
+}
+
+.wellbeing-page .tools-tip-card {
+    -fx-padding: 8 10;
+}
+
+.wellbeing-page .tools-tip-emoji {
+    -fx-font-size: 20px;
+}
+
+.wellbeing-page .tools-tip-title {
+    -fx-text-fill: #E5ECF9;
+    -fx-font-size: 13px;
+    -fx-font-weight: 800;
+}
+
+.wellbeing-page .tools-tip-desc {
+    -fx-text-fill: #B9C5DA;
+    -fx-font-size: 12px;
+    -fx-font-weight: 600;
+}
+
+.wellbeing-page .wellbeing-tools-preview-shell {
+    -fx-background-color: rgba(8, 18, 44, 0.92);
+    -fx-border-color: rgba(37, 99, 235, 0.42);
+    -fx-border-width: 1;
+    -fx-border-radius: 16;
+    -fx-background-radius: 16;
+}
+
+.wellbeing-page .wellbeing-tool-preview-card {
+    -fx-background-color: rgba(8, 19, 49, 0.84);
+    -fx-border-color: rgba(20, 184, 166, 0.55);
+    -fx-border-width: 1;
+    -fx-border-radius: 14;
+    -fx-background-radius: 14;
+    -fx-padding: 14 16;
+}
+
+/* Unify all wellbeing sections with coping-tools palette */
+.wellbeing-page .card,
+.wellbeing-page .wellbeing-kpi-card,
+.wellbeing-page #formSection,
+.wellbeing-page #historySection .card,
+.wellbeing-page #quizSection,
+.wellbeing-page #quizResultsSection,
+.wellbeing-page #quizModeSection,
+.wellbeing-page #inlineToolSection {
+    -fx-background-color: linear-gradient(to right, rgba(8, 19, 49, 0.96), rgba(22, 20, 48, 0.92));
+    -fx-border-color: rgba(30, 64, 175, 0.42);
+    -fx-border-width: 1;
+    -fx-border-radius: 16;
+    -fx-background-radius: 16;
+}
+
+.wellbeing-page .card-header,
+.wellbeing-page #quizSection .card-header,
+.wellbeing-page #quizResultsSection .card-header {
+    -fx-background-color: rgba(7, 17, 43, 0.92);
+    -fx-border-color: rgba(20, 184, 166, 0.45);
+    -fx-border-width: 0 0 1 0;
+}
+
+.wellbeing-page .card-title,
+.wellbeing-page .text-heading,
+.wellbeing-page .text-subheading,
+.wellbeing-page .text-body {
+    -fx-text-fill: #EAF2FF;
+}
+
+.wellbeing-page .text-small,
+.wellbeing-page .text-muted,
+.wellbeing-page .wellbeing-kpi-label {
+    -fx-text-fill: #9CA7BE;
+}
+
+.wellbeing-page .wellbeing-quote-controls .check-box .text {
+    -fx-fill: #CBD5E1;
+}
+
+/* Global quote widget */
+.global-quote-card {
+    -fx-min-width: 310;
+    -fx-pref-width: 310;
+    -fx-max-width: 310;
+    -fx-min-height: 155;
+    -fx-pref-height: 155;
+    -fx-max-height: 155;
+    -fx-padding: 8 10 8 10;
+    -fx-background-color: linear-gradient(to bottom right, rgba(5,14,34,0.98), rgba(8,22,51,0.95));
+    -fx-border-color: rgba(56,189,248,0.55);
+    -fx-border-width: 1;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+}
+
+.global-quote-top {
+    -fx-text-fill: #7DD3FC;
+    -fx-font-size: 10px;
+    -fx-font-weight: 700;
+}
+
+.global-quote-mark {
+    -fx-text-fill: #38BDF8;
+    -fx-font-size: 18px;
+}
+
+.global-quote-text {
+    -fx-text-fill: #E6F3FF;
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+}
+
+.global-quote-meta {
+    -fx-text-fill: #67E8F9;
+    -fx-font-size: 10px;
+    -fx-font-weight: 700;
+}
+
+.global-quote-close-btn {
+    -fx-background-color: transparent;
+    -fx-text-fill: #94A3B8;
+    -fx-padding: 2 6;
+    -fx-font-size: 12px;
+}
+
+.global-quote-close-btn:hover {
+    -fx-background-color: rgba(148,163,184,0.14);
+    -fx-background-radius: 8;
+    -fx-text-fill: #E2E8F0;
+}
