@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.geometry.Insets?>
+<?import org.kordamp.ikonli.javafx.FontIcon?>
+
+<VBox xmlns="http://javafx.com/javafx/21"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.studyflow.controllers.AdminAIController"
+      style="-fx-background-color:#020617;"
+      spacing="24">
+    <padding><Insets top="0" right="0" bottom="24" left="0"/></padding>
+
+    <!-- Header -->
+    <HBox alignment="CENTER_LEFT" spacing="16">
+        <VBox spacing="4" HBox.hgrow="ALWAYS">
+            <Label text="AI Rating Analysis" style="-fx-text-fill:#F8FAFC;-fx-font-size:22px;-fx-font-weight:800;"/>
+            <Label text="Notifications generated from student deck ratings" style="-fx-text-fill:#64748B;-fx-font-size:12px;"/>
+        </VBox>
+        <Button fx:id="refreshBtn" text=" Refresh" onAction="#refresh"
+                style="-fx-background-color:#1E293B;-fx-text-fill:#A78BFA;-fx-font-size:12px;-fx-font-weight:700;
+                       -fx-background-radius:10;-fx-cursor:hand;-fx-padding:8 18;-fx-border-color:#334155;
+                       -fx-border-radius:10;-fx-border-width:1;">
+            <graphic><FontIcon iconLiteral="fth-refresh-cw" iconSize="13" iconColor="#A78BFA"/></graphic>
+        </Button>
+        <Button fx:id="markAllReadBtn" text=" Mark all read" onAction="#markAllRead"
+                style="-fx-background-color:rgba(52,211,153,0.12);-fx-text-fill:#34D399;-fx-font-size:12px;-fx-font-weight:700;
+                       -fx-background-radius:10;-fx-cursor:hand;-fx-padding:8 18;-fx-border-color:rgba(52,211,153,0.3);
+                       -fx-border-radius:10;-fx-border-width:1;">
+            <graphic><FontIcon iconLiteral="fth-check-circle" iconSize="13" iconColor="#34D399"/></graphic>
+        </Button>
+    </HBox>
+
+    <!-- Summary Stats -->
+    <HBox spacing="16">
+        <VBox style="-fx-background-color:#0F172A;-fx-background-radius:16;-fx-border-color:#1E293B;
+                     -fx-border-radius:16;-fx-border-width:1;-fx-padding:14 18;" spacing="6" HBox.hgrow="ALWAYS">
+            <HBox alignment="CENTER_LEFT" spacing="10">
+                <StackPane prefWidth="38" prefHeight="38"
+                           style="-fx-background-color:rgba(251,113,133,0.15);-fx-background-radius:12;">
+                    <FontIcon iconLiteral="fth-alert-circle" iconSize="18" iconColor="#FB7185"/>
+                </StackPane>
+                <VBox spacing="1">
+                    <Label fx:id="criticalCountLabel" text="0"
+                           style="-fx-text-fill:#FB7185;-fx-font-size:22px;-fx-font-weight:800;"/>
+                    <Label text="Critical" style="-fx-text-fill:#64748B;-fx-font-size:11px;-fx-font-weight:500;"/>
+                </VBox>
+            </HBox>
+        </VBox>
+
+        <VBox style="-fx-background-color:#0F172A;-fx-background-radius:16;-fx-border-color:#1E293B;
+                     -fx-border-radius:16;-fx-border-width:1;-fx-padding:14 18;" spacing="6" HBox.hgrow="ALWAYS">
+            <HBox alignment="CENTER_LEFT" spacing="10">
+                <StackPane prefWidth="38" prefHeight="38"
+                           style="-fx-background-color:rgba(251,191,36,0.15);-fx-background-radius:12;">
+                    <FontIcon iconLiteral="fth-alert-triangle" iconSize="18" iconColor="#FBBF24"/>
+                </StackPane>
+                <VBox spacing="1">
+                    <Label fx:id="moderateCountLabel" text="0"
+                           style="-fx-text-fill:#FBBF24;-fx-font-size:22px;-fx-font-weight:800;"/>
+                    <Label text="Moderate" style="-fx-text-fill:#64748B;-fx-font-size:11px;-fx-font-weight:500;"/>
+                </VBox>
+            </HBox>
+        </VBox>
+
+        <VBox style="-fx-background-color:#0F172A;-fx-background-radius:16;-fx-border-color:#1E293B;
+                     -fx-border-radius:16;-fx-border-width:1;-fx-padding:14 18;" spacing="6" HBox.hgrow="ALWAYS">
+            <HBox alignment="CENTER_LEFT" spacing="10">
+                <StackPane prefWidth="38" prefHeight="38"
+                           style="-fx-background-color:rgba(167,139,250,0.15);-fx-background-radius:12;">
+                    <FontIcon iconLiteral="fth-bell" iconSize="18" iconColor="#A78BFA"/>
+                </StackPane>
+                <VBox spacing="1">
+                    <Label fx:id="pendingCountLabel" text="0"
+                           style="-fx-text-fill:#A78BFA;-fx-font-size:22px;-fx-font-weight:800;"/>
+                    <Label text="Pending" style="-fx-text-fill:#64748B;-fx-font-size:11px;-fx-font-weight:500;"/>
+                </VBox>
+            </HBox>
+        </VBox>
+
+        <VBox style="-fx-background-color:#0F172A;-fx-background-radius:16;-fx-border-color:#1E293B;
+                     -fx-border-radius:16;-fx-border-width:1;-fx-padding:14 18;" spacing="6" HBox.hgrow="ALWAYS">
+            <HBox alignment="CENTER_LEFT" spacing="10">
+                <StackPane prefWidth="38" prefHeight="38"
+                           style="-fx-background-color:rgba(52,211,153,0.15);-fx-background-radius:12;">
+                    <FontIcon iconLiteral="fth-check-circle" iconSize="18" iconColor="#34D399"/>
+                </StackPane>
+                <VBox spacing="1">
+                    <Label fx:id="resolvedCountLabel" text="0"
+                           style="-fx-text-fill:#34D399;-fx-font-size:22px;-fx-font-weight:800;"/>
+                    <Label text="Resolved" style="-fx-text-fill:#64748B;-fx-font-size:11px;-fx-font-weight:500;"/>
+                </VBox>
+            </HBox>
+        </VBox>
+    </HBox>
+
+    <!-- Filter bar -->
+    <HBox spacing="10" alignment="CENTER_LEFT">
+        <Label text="Filter:" style="-fx-text-fill:#94A3B8;-fx-font-size:12px;-fx-font-weight:600;"/>
+        <ComboBox fx:id="urgencyFilter" prefWidth="160" promptText="All urgencies"
+                  style="-fx-background-color:#1E293B;-fx-border-color:#334155;-fx-border-radius:10;
+                         -fx-background-radius:10;-fx-font-size:12px;"/>
+        <ComboBox fx:id="statusFilter" prefWidth="160" promptText="All statuses"
+                  style="-fx-background-color:#1E293B;-fx-border-color:#334155;-fx-border-radius:10;
+                         -fx-background-radius:10;-fx-font-size:12px;"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Label fx:id="resultCountLabel" text=""
+               style="-fx-text-fill:#475569;-fx-font-size:11px;-fx-font-weight:600;"/>
+    </HBox>
+
+    <!-- Notification list -->
+    <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS"
+                style="-fx-background-color:transparent;-fx-background:transparent;">
+        <VBox fx:id="notificationsBox" spacing="14"/>
+    </ScrollPane>
+
+</VBox>

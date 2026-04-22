@@ -206,9 +206,9 @@
         <!-- HERO COMPACT — HBox au lieu de AnchorPane (fix erreur controller) -->
         <HBox fx:id="deckHeroPane" spacing="0" alignment="CENTER_LEFT"
               style="-fx-background-color:linear-gradient(to bottom right,#0F172A,#130926,#0F172A);
-                     -fx-background-radius:18;-fx-border-color:#1E293B;
-                     -fx-border-radius:18;-fx-border-width:1;
-                     -fx-min-height:110;-fx-max-height:130;">
+                      -fx-background-radius:18;-fx-border-color:#1E293B;
+                      -fx-border-radius:18;-fx-border-width:1;
+                      -fx-min-height:168;-fx-max-height:190;">
 
             <!-- Vignette gauche -->
             <StackPane fx:id="deckIconBox" prefWidth="130" prefHeight="130"
@@ -353,6 +353,73 @@
     </VBox>
 
     <!-- VIEW 3 — Form (loaded dynamically) -->
+    <VBox fx:id="ratingView" spacing="22" visible="false" managed="false">
+        <padding><Insets top="0" right="0" bottom="24" left="0"/></padding>
+
+        <HBox alignment="CENTER_LEFT" spacing="10">
+            <Button onAction="#handleRatingBack"
+                    style="-fx-background-color:#1E293B;-fx-background-radius:10;-fx-cursor:hand;-fx-padding:8 12;-fx-border-color:#334155;-fx-border-radius:10;-fx-border-width:1;">
+                <graphic><FontIcon iconLiteral="fth-arrow-left" iconSize="14" iconColor="#94A3B8"/></graphic>
+            </Button>
+            <Label text="My Flashcards" style="-fx-text-fill:#475569;-fx-font-size:13px;"/>
+            <Label text="›" style="-fx-text-fill:#334155;-fx-font-size:14px;"/>
+            <Label text="Deck Rating" style="-fx-text-fill:#F8FAFC;-fx-font-size:13px;-fx-font-weight:700;"/>
+        </HBox>
+
+        <HBox alignment="CENTER_LEFT" spacing="16">
+            <VBox spacing="4" HBox.hgrow="ALWAYS">
+                <Label text="Rate This Deck" styleClass="text-heading"/>
+                <Label text="Open a deck rating page, select 1 to 5, then save your feedback." styleClass="text-muted"/>
+            </VBox>
+        </HBox>
+
+        <VBox styleClass="card" spacing="0">
+            <HBox styleClass="card-header" alignment="CENTER_LEFT" spacing="12">
+                <StackPane styleClass="stat-icon-box, accent" prefWidth="40" prefHeight="40">
+                    <FontIcon iconLiteral="fth-star" iconSize="18"/>
+                </StackPane>
+                <VBox spacing="2" HBox.hgrow="ALWAYS">
+                    <Label fx:id="ratingDeckTitleLabel" text="Deck rating" styleClass="card-title"/>
+                    <Label fx:id="ratingDeckMetaLabel" text="Choose a deck from My Flashcards." styleClass="text-small"/>
+                </VBox>
+            </HBox>
+
+            <VBox styleClass="card-body" spacing="18">
+                <VBox spacing="10">
+                    <Label text="Choose your rating" style="-fx-text-fill:#CBD5E1;-fx-font-size:13px;-fx-font-weight:700;"/>
+                    <HBox spacing="12" alignment="CENTER_LEFT">
+                        <Button fx:id="ratingStarBtn1" text="1" onAction="#selectRating1"/>
+                        <Button fx:id="ratingStarBtn2" text="2" onAction="#selectRating2"/>
+                        <Button fx:id="ratingStarBtn3" text="3" onAction="#selectRating3"/>
+                        <Button fx:id="ratingStarBtn4" text="4" onAction="#selectRating4"/>
+                        <Button fx:id="ratingStarBtn5" text="5" onAction="#selectRating5"/>
+                    </HBox>
+                    <Label fx:id="selectedStarsLabel" text="No rating selected"
+                           style="-fx-text-fill:#94A3B8;-fx-font-size:12px;-fx-font-weight:600;"/>
+                </VBox>
+
+                <VBox spacing="8">
+                    <Label text="Comment (optional)" style="-fx-text-fill:#CBD5E1;-fx-font-size:13px;-fx-font-weight:700;"/>
+                    <TextArea fx:id="ratingCommentArea" promptText="Example: this deck is difficult / easy / needs simpler explanations..."
+                              prefRowCount="4"
+                              style="-fx-control-inner-background:#1E293B;-fx-background-color:#1E293B;-fx-text-fill:#F8FAFC;-fx-prompt-text-fill:#475569;-fx-border-color:#334155;-fx-border-width:1.5;-fx-border-radius:10;-fx-background-radius:10;-fx-font-size:13px;"/>
+                </VBox>
+
+                <HBox alignment="CENTER_LEFT" spacing="12">
+                    <Button text="Submit Rating" onAction="#submitDeckRating"
+                            style="-fx-background-color:linear-gradient(to right,#EC4899,#C026D3);-fx-text-fill:white;-fx-font-size:13px;-fx-font-weight:700;-fx-background-radius:12;-fx-cursor:hand;-fx-padding:10 22;">
+                        <graphic><FontIcon iconLiteral="fth-send" iconSize="14" iconColor="white"/></graphic>
+                    </Button>
+                    <Button text="Cancel" onAction="#handleRatingBack"
+                            style="-fx-background-color:#1E293B;-fx-text-fill:#CBD5E1;-fx-font-size:13px;-fx-font-weight:700;-fx-background-radius:12;-fx-cursor:hand;-fx-padding:10 18;-fx-border-color:#334155;-fx-border-radius:12;-fx-border-width:1;"/>
+                </HBox>
+
+                <Label fx:id="ratingStatusLabel" text="Rate a deck from the list to continue."
+                       style="-fx-text-fill:#64748B;-fx-font-size:11px;"/>
+            </VBox>
+        </VBox>
+    </VBox>
+
     <StackPane fx:id="formHost" visible="false" managed="false"/>
 
 </StackPane>

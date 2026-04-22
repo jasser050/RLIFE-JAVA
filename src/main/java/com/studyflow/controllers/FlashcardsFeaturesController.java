@@ -2,9 +2,12 @@ package com.studyflow.controllers;
 
 import com.studyflow.models.Deck;
 import com.studyflow.models.Flashcard;
+import com.studyflow.models.Rating;
+import com.studyflow.services.AIRatingAnalysisService;
 import com.studyflow.services.AITranslationService;
 import com.studyflow.services.DeckService;
 import com.studyflow.services.FlashcardService;
+import com.studyflow.services.RatingService;
 import com.studyflow.services.SpeechService;
 import com.studyflow.utils.UserSession;
 import javafx.application.Platform;
@@ -15,12 +18,16 @@ import javafx.fxml.Initializable;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
+import javafx.stage.StageStyle;
 import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.awt.Desktop;
@@ -89,6 +96,19 @@ public abstract class FlashcardsFeaturesController implements Initializable {
     @FXML protected Button           clearFcFiltersBtn;
     @FXML protected FlowPane         flashcardsGrid;
 
+    // ── VIEW 2B — Rating page ───────────────────────────────────────────
+    @FXML protected VBox             ratingView;
+    @FXML protected Label            ratingDeckTitleLabel;
+    @FXML protected Label            ratingDeckMetaLabel;
+    @FXML protected Label            selectedStarsLabel;
+    @FXML protected Label            ratingStatusLabel;
+    @FXML protected TextArea         ratingCommentArea;
+    @FXML protected Button           ratingStarBtn1;
+    @FXML protected Button           ratingStarBtn2;
+    @FXML protected Button           ratingStarBtn3;
+    @FXML protected Button           ratingStarBtn4;
+    @FXML protected Button           ratingStarBtn5;
+
     // ── VIEW 3 — Form ─────────────────────────────────────────────────────
     @FXML protected VBox             formView;
     @FXML protected Label            formTitle;
@@ -104,15 +124,19 @@ public abstract class FlashcardsFeaturesController implements Initializable {
     @FXML protected ComboBox<String> combEtat;
 
     // ── Global state ──────────────────────────────────────────────────────
-    protected final DeckService      deckService      = new DeckService();
-    protected final FlashcardService flashcardService = new FlashcardService();
-    protected final AITranslationService translationService = new AITranslationService();
-    protected final SpeechService speechService = new SpeechService();
+    protected final DeckService           deckService        = new DeckService();
+    protected final FlashcardService      flashcardService   = new FlashcardService();
+    protected final AITranslationService  translationService = new AITranslationService();
+    protected final AIRatingAnalysisService aiRatingAnalysisService = new AIRatingAnalysisService();
+    protected final SpeechService         speechService      = new SpeechService();
+    protected final RatingService         ratingService      = new RatingService();
     protected List<Deck>      allDecks;
     protected Deck            currentDeck;
+    protected Deck            ratingDeck;
     protected List<Flashcard> currentFlashcards;
     protected Flashcard       selectedFlashcard = null;
     protected int             currentUserId;
+    protected int             selectedRatingStars = 0;
 
     private final Map<String, AITranslationService.TranslationResult> translationCache = new ConcurrentHashMap<>();
     private static final LinkedHashMap<String, String> SUPPORTED_LANGUAGES = new LinkedHashMap<>();
@@ -185,6 +209,7 @@ public abstract class FlashcardsFeaturesController implements Initializable {
         setupFormCharCounters();
         setupDeckTabs();
         setupViewModeToggles();
+        setupRatingView();
 
         goToList();
         refreshDeckList();
@@ -288,6 +313,16 @@ public abstract class FlashcardsFeaturesController implements Initializable {
         }
         if (listViewBtn != null)
             listViewBtn.setOnAction(e -> { isDeckGridMode = false; updateViewModeStyles(); applyDeckFilters(); });
+    }
+
+    private void setupRatingView() {
+        updateRatingSelection(0);
+        if (ratingCommentArea != null) {
+            ratingCommentArea.setStyle("-fx-control-inner-background:#1E293B;-fx-background-color:#1E293B;" +
+                    "-fx-text-fill:#F8FAFC;-fx-prompt-text-fill:#475569;" +
+                    "-fx-border-color:#334155;-fx-border-radius:10;-fx-background-radius:10;-fx-font-size:13px;");
+        }
+        clearRatingViewState();
     }
 
     private void updateViewModeStyles() {
@@ -428,8 +463,6 @@ public abstract class FlashcardsFeaturesController implements Initializable {
         if (sortFcCombo      != null) sortFcCombo.setValue("Default");
     }
 
-    // ✅ FIX PRINCIPAL : utilise getByDeck() au lieu de getByDeckAndUser()
-    // pour afficher TOUTES les flashcards du deck, y compris celles générées par l'IA
     protected void refreshFlashcards() {
         if (currentDeck == null) return;
         String kw    = searchFcField    != null ? searchFcField.getText().trim()    : "";
@@ -437,10 +470,6 @@ public abstract class FlashcardsFeaturesController implements Initializable {
         String etat  = filterEtat       != null ? safe(filterEtat.getValue())       : "All Status";
         String diff  = filterDifficulty != null ? safe(filterDifficulty.getValue()) : "All Levels";
 
-        // ✅ CORRECTION : getByDeck() au lieu de getByDeckAndUser()
-        // Les cartes AI sont sauvegardées avec created_by=currentUserId mais
-        // getByDeckAndUser filtrait et cachait parfois les cartes si l'userId
-        // ne correspondait pas exactement. On affiche maintenant toutes les cartes du deck.
         List<Flashcard> base = flashcardService.getByDeck(currentDeck.getIdDeck());
         Stream<Flashcard> stream = base.stream();
 
@@ -559,6 +588,7 @@ public abstract class FlashcardsFeaturesController implements Initializable {
     private void goToList() {
         show(listView);
         hide(flashcardsView);
+        hide(ratingView);
         hide(formView);
         if (formHost != null) { formHost.setVisible(false); formHost.setManaged(false); }
     }
@@ -566,6 +596,7 @@ public abstract class FlashcardsFeaturesController implements Initializable {
     protected void goToFlashcards() {
         hide(listView);
         show(flashcardsView);
+        hide(ratingView);
         hide(formView);
         if (formHost != null) { formHost.setVisible(false); formHost.setManaged(false); }
     }
@@ -573,8 +604,17 @@ public abstract class FlashcardsFeaturesController implements Initializable {
     protected void goToForm() {
         hide(listView);
         hide(flashcardsView);
+        hide(ratingView);
         show(formView);
         if (formHost != null) { formHost.setVisible(true); formHost.setManaged(true); }
+    }
+
+    protected void goToRatingView() {
+        hide(listView);
+        hide(flashcardsView);
+        hide(formView);
+        show(ratingView);
+        if (formHost != null) { formHost.setVisible(false); formHost.setManaged(false); }
     }
 
     private void show(VBox v) { if (v != null) { v.setVisible(true);  v.setManaged(true);  } }
@@ -584,7 +624,6 @@ public abstract class FlashcardsFeaturesController implements Initializable {
     //  VIEW 1 — DECK LIST
     // ═════════════════════════════════════════════════════════════════════
 
-    /** ✅ FIX bouton back : retour à la liste des decks */
     @FXML public void goBackToList() {
         currentDeck = null;
         goToList();
@@ -703,14 +742,25 @@ public abstract class FlashcardsFeaturesController implements Initializable {
         Label badge = new Label(count + " cards");
         badge.setStyle("-fx-background-color:rgba(139,92,246,0.12);-fx-text-fill:#A78BFA;" +
                 "-fx-font-size:10px;-fx-font-weight:700;-fx-padding:3 8;-fx-background-radius:20;");
+        Button ratingBtn = chipBtn("Rating", "rgba(236,72,153,0.15)", "#F472B6", "rgba(236,72,153,0.28)");
+        ratingBtn.setOnAction(e -> openRatingPage(deck));
         Button open = new Button("Open →");
         open.setStyle("-fx-background-color:rgba(124,58,237,0.15);-fx-text-fill:#A78BFA;" +
                 "-fx-font-size:11px;-fx-font-weight:700;-fx-background-radius:8;-fx-cursor:hand;-fx-padding:6 14;");
         open.setOnAction(e -> openDeck(deck));
-        row.getChildren().addAll(dot, info, badge, open);
-        row.setOnMouseClicked(e -> { if (e.getTarget() != open) openDeck(deck); });
+        row.getChildren().addAll(dot, info, badge, ratingBtn, open);
+        row.setOnMouseClicked(e -> {
+            Node target = e.getTarget() instanceof Node node ? node : null;
+            if (!isInsideButton(target, open) && !isInsideButton(target, ratingBtn)) {
+                openDeck(deck);
+            }
+        });
         return row;
     }
+
+    // ═════════════════════════════════════════════════════════════════════
+    //  DECK CARD
+    // ═════════════════════════════════════════════════════════════════════
 
     private VBox buildDeckCard(Deck deck, String color, String iconLit) {
         VBox card = new VBox(0);
@@ -722,35 +772,57 @@ public abstract class FlashcardsFeaturesController implements Initializable {
         card.setStyle(sN);
         card.setOnMouseEntered(e -> card.setStyle(sH));
         card.setOnMouseExited (e -> card.setStyle(sN));
+
         StackPane header = buildDeckHeader(deck, color, iconLit);
+
         VBox body = new VBox(6);
         body.setPadding(new Insets(14));
+
         Label name = new Label(deck.getTitre());
         name.setStyle("-fx-text-fill:#F8FAFC;-fx-font-weight:700;-fx-font-size:13px;");
         name.setWrapText(true);
+
         Label sub = new Label(deck.getMatiere() + " • " + deck.getNiveau());
         sub.setStyle("-fx-text-fill:#64748B;-fx-font-size:11px;");
+
         int count = flashcardService.getByDeck(deck.getIdDeck()).size();
         Label countBadge = new Label(count + " card" + (count != 1 ? "s" : ""));
         countBadge.setStyle("-fx-background-color:rgba(139,92,246,0.15);-fx-text-fill:#A78BFA;" +
                 "-fx-font-size:10px;-fx-font-weight:700;-fx-padding:3 8;-fx-background-radius:20;");
+
         body.getChildren().addAll(name, sub, countBadge);
+
         if (deck.getDescription() != null && !deck.getDescription().isEmpty()) {
             Label desc = new Label(deck.getDescription());
             desc.setStyle("-fx-text-fill:#94A3B8;-fx-font-size:11px;");
-            desc.setWrapText(true); desc.setMaxHeight(30);
+            desc.setWrapText(true);
+            desc.setMaxHeight(30);
             body.getChildren().add(desc);
         }
+
+        Button ratingBtn = new Button("Rating");
+        ratingBtn.setStyle("-fx-background-color:rgba(236,72,153,0.15);-fx-text-fill:#F472B6;" +
+                "-fx-font-size:11px;-fx-font-weight:700;-fx-background-radius:8;" +
+                "-fx-cursor:hand;-fx-padding:7 14;-fx-max-width:Infinity;");
+        ratingBtn.setMaxWidth(Double.MAX_VALUE);
+        ratingBtn.setOnAction(e -> openRatingPage(deck));
         Button open = new Button("Open Deck →");
         open.setStyle("-fx-background-color:" + grad(color) + ";-fx-text-fill:white;" +
                 "-fx-font-size:11px;-fx-font-weight:700;-fx-background-radius:8;" +
                 "-fx-cursor:hand;-fx-padding:7 14;-fx-max-width:Infinity;");
         open.setMaxWidth(Double.MAX_VALUE);
         open.setOnAction(e -> openDeck(deck));
-        VBox btnBox = new VBox(open);
+
+        VBox btnBox = new VBox(8, ratingBtn, open);
         btnBox.setPadding(new Insets(0, 14, 14, 14));
+
         card.getChildren().addAll(header, body, btnBox);
-        card.setOnMouseClicked(e -> { if (e.getTarget() != open) openDeck(deck); });
+        card.setOnMouseClicked(e -> {
+            Node target = e.getTarget() instanceof Node node ? node : null;
+            if (!isInsideButton(target, open) && !isInsideButton(target, ratingBtn)) {
+                openDeck(deck);
+            }
+        });
         return card;
     }
 
@@ -784,8 +856,162 @@ public abstract class FlashcardsFeaturesController implements Initializable {
         return header;
     }
 
+    protected void openRatingPage(Deck deck) {
+        ratingDeck = deck;
+        Rating existing = ratingService.getRatingByUserAndDeck(currentUserId, deck.getIdDeck());
+
+        if (ratingDeckTitleLabel != null) {
+            ratingDeckTitleLabel.setText(deck.getTitre());
+        }
+        if (ratingDeckMetaLabel != null) {
+            ratingDeckMetaLabel.setText(deck.getMatiere() + " • " + deck.getNiveau());
+        }
+        if (ratingCommentArea != null) {
+            ratingCommentArea.setText(existing != null && existing.getComment() != null ? existing.getComment() : "");
+        }
+        if (ratingStatusLabel != null) {
+            ratingStatusLabel.setText(existing == null
+                    ? "Select a rating from 1 to 5 and submit."
+                    : "Update your rating for this deck.");
+            ratingStatusLabel.setStyle("-fx-text-fill:#64748B;-fx-font-size:11px;");
+        }
+
+        updateRatingSelection(existing != null ? existing.getStars() : 0);
+        goToRatingView();
+    }
+
+    @FXML
+    protected void handleRatingBack() {
+        clearRatingViewState();
+        goToList();
+        refreshDeckList();
+    }
+
+    @FXML
+    protected void selectRating1() { updateRatingSelection(1); }
+
+    @FXML
+    protected void selectRating2() { updateRatingSelection(2); }
+
+    @FXML
+    protected void selectRating3() { updateRatingSelection(3); }
+
+    @FXML
+    protected void selectRating4() { updateRatingSelection(4); }
+
+    @FXML
+    protected void selectRating5() { updateRatingSelection(5); }
+
+    @FXML
+    protected void submitDeckRating() {
+        if (ratingDeck == null) {
+            return;
+        }
+        if (selectedRatingStars < 1 || selectedRatingStars > 5) {
+            if (ratingStatusLabel != null) {
+                ratingStatusLabel.setText("Please choose a rating between 1 and 5.");
+                ratingStatusLabel.setStyle("-fx-text-fill:#FB7185;-fx-font-size:11px;-fx-font-weight:700;");
+            }
+            return;
+        }
+
+        Rating rating = new Rating(currentUserId, ratingDeck.getIdDeck(), selectedRatingStars);
+        rating.setDeckName(ratingDeck.getTitre());
+        rating.setDeckSubject(ratingDeck.getMatiere());
+        if (ratingCommentArea != null) {
+            rating.setComment(safe(ratingCommentArea.getText()).trim());
+        }
+        ratingService.upsertRating(rating);
+
+        String studentName = UserSession.getInstance().getCurrentUser() != null
+                ? UserSession.getInstance().getCurrentUser().getUsername()
+                : "Student";
+        List<Rating> allRatings = ratingService.getAllRatingsByUser(currentUserId);
+        Thread aiThread = new Thread(() ->
+                aiRatingAnalysisService.analyzeRatings(currentUserId, studentName, allRatings),
+                "rating-ai-analysis");
+        aiThread.setDaemon(true);
+        aiThread.start();
+
+        if (ratingStatusLabel != null) {
+            ratingStatusLabel.setText("Your rating was saved successfully. AI analysis has been triggered.");
+            ratingStatusLabel.setStyle("-fx-text-fill:#34D399;-fx-font-size:11px;-fx-font-weight:700;");
+        }
+
+        refreshDeckList();
+        goToList();
+    }
+
+    protected void updateRatingSelection(int stars) {
+        selectedRatingStars = stars;
+        styleRatingButton(ratingStarBtn1, 1, stars);
+        styleRatingButton(ratingStarBtn2, 2, stars);
+        styleRatingButton(ratingStarBtn3, 3, stars);
+        styleRatingButton(ratingStarBtn4, 4, stars);
+        styleRatingButton(ratingStarBtn5, 5, stars);
+        if (selectedStarsLabel != null) {
+            selectedStarsLabel.setText(stars == 0 ? "No rating selected" : ratingMeaning(stars));
+        }
+    }
+
+    private void styleRatingButton(Button button, int buttonValue, int selectedValue) {
+        if (button == null) {
+            return;
+        }
+        boolean selected = buttonValue <= selectedValue && selectedValue > 0;
+        String background = selected ? "rgba(236,72,153,0.24)" : "#1E293B";
+        String border = selected ? "#F472B6" : "#334155";
+        String textColor = selected ? "#F472B6" : "#94A3B8";
+        button.setStyle("-fx-background-color:" + background + ";" +
+                "-fx-text-fill:" + textColor + ";" +
+                "-fx-border-color:" + border + ";" +
+                "-fx-border-radius:12;-fx-background-radius:12;" +
+                "-fx-border-width:1.5;-fx-font-size:18px;-fx-font-weight:700;" +
+                "-fx-cursor:hand;-fx-padding:10 16;");
+    }
+
+    private void clearRatingViewState() {
+        ratingDeck = null;
+        updateRatingSelection(0);
+        if (ratingDeckTitleLabel != null) {
+            ratingDeckTitleLabel.setText("Deck rating");
+        }
+        if (ratingDeckMetaLabel != null) {
+            ratingDeckMetaLabel.setText("Choose a deck from My Flashcards.");
+        }
+        if (ratingCommentArea != null) {
+            ratingCommentArea.clear();
+        }
+        if (ratingStatusLabel != null) {
+            ratingStatusLabel.setText("Rate a deck from the list to continue.");
+            ratingStatusLabel.setStyle("-fx-text-fill:#64748B;-fx-font-size:11px;");
+        }
+    }
+
+    private String ratingMeaning(int stars) {
+        return switch (stars) {
+            case 1 -> "1 star - Very difficult";
+            case 2 -> "2 stars - Difficult";
+            case 3 -> "3 stars - Medium";
+            case 4 -> "4 stars - Easy";
+            case 5 -> "5 stars - Very easy";
+            default -> "No rating selected";
+        };
+    }
+
+    private boolean isInsideButton(Node target, Button button) {
+        Node current = target;
+        while (current != null) {
+            if (current == button) {
+                return true;
+            }
+            current = current.getParent();
+        }
+        return false;
+    }
+
     // ═════════════════════════════════════════════════════════════════════
-    //  VIEW 2 — OPEN DECK (hero avec image + PDF stylish)
+    //  VIEW 2 — OPEN DECK
     // ═════════════════════════════════════════════════════════════════════
 
     private int getDeckColorIndex(Deck deck) { return Math.abs(deck.getIdDeck()) % COLORS.length; }
@@ -794,11 +1020,9 @@ public abstract class FlashcardsFeaturesController implements Initializable {
     private void openDeck(Deck deck) {
         currentDeck = deck;
 
-        // ── Infos texte ──────────────────────────────────────────────────
         if (deckTitleLabel != null) deckTitleLabel.setText(deck.getTitre());
         if (deckSubLabel   != null) deckSubLabel  .setText(deck.getMatiere() + " • " + deck.getNiveau());
 
-        // ── Couleur / icône ──────────────────────────────────────────────
         int ci = getDeckColorIndex(deck);
         int ii = getDeckIconIndex(deck);
         String colorKey = COLORS[ci];
@@ -812,12 +1036,10 @@ public abstract class FlashcardsFeaturesController implements Initializable {
             deckIconGlyph.setIconColor(Color.WHITE);
         }
 
-        // ── Hero pane : on reconstruit le contenu ──
         if (deckHeroPane != null) {
             buildHeroContent(deck, gradient, glowRgb, hexColor, iconLit, colorKey);
         }
 
-        // ── Reset filtres ────────────────────────────────────────────────
         if (searchFcField    != null) searchFcField.clear();
         if (filterEtat       != null) filterEtat.setValue("All Status");
         if (filterDifficulty != null) filterDifficulty.setValue("All Levels");
@@ -827,12 +1049,6 @@ public abstract class FlashcardsFeaturesController implements Initializable {
         refreshFlashcards();
     }
 
-    /**
-     * Reconstruit le contenu du hero HBox compact avec :
-     * - Vignette image/icône à gauche
-     * - Titre + badge + stats au centre
-     * - Boutons Back + Add à droite
-     */
     private void buildHeroContent(Deck deck, String gradient, String glowRgb,
                                   String hexColor, String iconLit, String colorKey) {
 
@@ -841,10 +1057,9 @@ public abstract class FlashcardsFeaturesController implements Initializable {
                 "-fx-background-color:linear-gradient(to bottom right,#0F172A,#130926,#0F172A);" +
                         "-fx-background-radius:18;-fx-border-color:#1E293B;" +
                         "-fx-border-radius:18;-fx-border-width:1;" +
-                        "-fx-min-height:110;-fx-max-height:130;"
+                        "-fx-min-height:168;-fx-max-height:190;"
         );
 
-        // ── VIGNETTE GAUCHE (image ou icône) ─────────────────────────
         StackPane thumbPane = new StackPane();
         thumbPane.setPrefSize(130, 130);
         thumbPane.setMaxSize(130, 130);
@@ -882,14 +1097,13 @@ public abstract class FlashcardsFeaturesController implements Initializable {
             thumbPane.getChildren().add(ico);
         }
 
-        // ── CENTRE : titre + badge + stats ────────────────────────────
-        VBox centerBox = new VBox(6);
+        VBox centerBox = new VBox(8);
         HBox.setHgrow(centerBox, Priority.ALWAYS);
-        centerBox.setPadding(new Insets(12, 16, 12, 16));
+        centerBox.setPadding(new Insets(14, 18, 14, 18));
         centerBox.setAlignment(Pos.CENTER_LEFT);
 
         Label titleLbl = new Label(deck.getTitre());
-        titleLbl.setStyle("-fx-text-fill:#F8FAFC;-fx-font-size:16px;-fx-font-weight:800;");
+        titleLbl.setStyle("-fx-text-fill:#F8FAFC;-fx-font-size:18px;-fx-font-weight:800;");
         titleLbl.setWrapText(true);
         titleLbl.setMaxWidth(Double.MAX_VALUE);
 
@@ -900,14 +1114,19 @@ public abstract class FlashcardsFeaturesController implements Initializable {
                         "-fx-padding:3 10;-fx-background-radius:20;"
         );
 
+        Label helperLbl = new Label("Review, edit or generate new cards for this deck.");
+        helperLbl.setStyle("-fx-text-fill:#64748B;-fx-font-size:11px;");
+        helperLbl.setWrapText(true);
+        helperLbl.setMaxWidth(Double.MAX_VALUE);
+
         if (deck.getDescription() != null && !deck.getDescription().isEmpty()) {
             Label descLbl = new Label(deck.getDescription());
-            descLbl.setStyle("-fx-text-fill:#64748B;-fx-font-size:11px;");
+            descLbl.setStyle("-fx-text-fill:#94A3B8;-fx-font-size:11px;");
             descLbl.setWrapText(true);
             descLbl.setMaxWidth(Double.MAX_VALUE);
-            centerBox.getChildren().addAll(titleLbl, subLbl, descLbl);
+            centerBox.getChildren().addAll(titleLbl, subLbl, descLbl, helperLbl);
         } else {
-            centerBox.getChildren().addAll(titleLbl, subLbl);
+            centerBox.getChildren().addAll(titleLbl, subLbl, helperLbl);
         }
 
         HBox statsBar = new HBox(8);
@@ -920,100 +1139,42 @@ public abstract class FlashcardsFeaturesController implements Initializable {
         );
         centerBox.getChildren().add(statsBar);
 
-        // ── DROITE : boutons Back + Add ───────────────────────────────
-        VBox btnBox = new VBox(8);
-        btnBox.setAlignment(Pos.CENTER);
-        btnBox.setPadding(new Insets(12, 16, 12, 0));
+        VBox btnBox = new VBox(12);
+        btnBox.setAlignment(Pos.TOP_RIGHT);
+        btnBox.setPadding(new Insets(14, 16, 14, 0));
+        btnBox.setPrefWidth(215);
 
-        Button backBtn = new Button();
-        backBtn.setGraphic(makeIcon("fth-arrow-left", 13, "#94A3B8"));
-        backBtn.setStyle(
-                "-fx-background-color:#1E293B;-fx-text-fill:#94A3B8;" +
-                        "-fx-font-size:11px;-fx-font-weight:600;-fx-background-radius:10;" +
-                        "-fx-cursor:hand;-fx-padding:7 14;-fx-border-color:#334155;" +
-                        "-fx-border-radius:10;-fx-border-width:1;"
-        );
-        backBtn.setOnMouseEntered(e -> backBtn.setStyle(
-                "-fx-background-color:#334155;-fx-text-fill:#F8FAFC;" +
-                        "-fx-font-size:11px;-fx-font-weight:600;-fx-background-radius:10;" +
-                        "-fx-cursor:hand;-fx-padding:7 14;-fx-border-color:#7C3AED;" +
-                        "-fx-border-radius:10;-fx-border-width:1;"
-        ));
-        backBtn.setOnMouseExited(e -> backBtn.setStyle(
-                "-fx-background-color:#1E293B;-fx-text-fill:#94A3B8;" +
-                        "-fx-font-size:11px;-fx-font-weight:600;-fx-background-radius:10;" +
-                        "-fx-cursor:hand;-fx-padding:7 14;-fx-border-color:#334155;" +
-                        "-fx-border-radius:10;-fx-border-width:1;"
-        ));
+        HBox utilityRow = new HBox(10);
+        utilityRow.setAlignment(Pos.CENTER_RIGHT);
+
+        Button backBtn = createHeroGhostButton("Back", "fth-arrow-left", "#94A3B8",
+                "#1E293B", "#334155", "#F8FAFC", "#7C3AED");
         backBtn.setOnAction(e -> goBackToList());
 
-        Button addBtn = new Button("Add Flashcards");
-        addBtn.setGraphic(makeIcon("fth-plus", 13, "white"));
-        addBtn.setStyle(
-                "-fx-background-color:" + gradient + ";" +
-                        "-fx-text-fill:white;-fx-font-size:12px;-fx-font-weight:700;" +
-                        "-fx-background-radius:10;-fx-cursor:hand;-fx-padding:8 18;" +
-                        "-fx-effect:dropshadow(gaussian," + glowRgb + ",10,0,0,3);"
-        );
-        addBtn.setOnMouseEntered(e -> addBtn.setStyle(
-                "-fx-background-color:" + gradient + ";" +
-                        "-fx-text-fill:white;-fx-font-size:12px;-fx-font-weight:700;" +
-                        "-fx-background-radius:10;-fx-cursor:hand;-fx-padding:8 18;" +
-                        "-fx-effect:dropshadow(gaussian," + glowRgb + ",16,0,0,5);" +
-                        "-fx-scale-x:1.03;-fx-scale-y:1.03;"
-        ));
-        addBtn.setOnMouseExited(e -> addBtn.setStyle(
-                "-fx-background-color:" + gradient + ";" +
-                        "-fx-text-fill:white;-fx-font-size:12px;-fx-font-weight:700;" +
-                        "-fx-background-radius:10;-fx-cursor:hand;-fx-padding:8 18;" +
-                        "-fx-effect:dropshadow(gaussian," + glowRgb + ",10,0,0,3);"
-        ));
+        Button addBtn = createHeroPrimaryButton(
+                "Add Flashcards", "Create cards manually", "fth-plus", gradient, glowRgb);
         addBtn.setOnAction(e -> showAddFlashcardForm());
 
-        Button aiBtn = new Button("AI");
-        aiBtn.setGraphic(makeIcon("fth-cpu", 13, "white"));
-        aiBtn.setStyle(
-                "-fx-background-color:linear-gradient(to right,#059669,#10B981);" +
-                        "-fx-text-fill:white;-fx-font-size:12px;-fx-font-weight:700;" +
-                        "-fx-background-radius:10;-fx-cursor:hand;-fx-padding:8 18;" +
-                        "-fx-effect:dropshadow(gaussian,rgba(16,185,129,0.45),10,0,0,3);"
-        );
-        aiBtn.setOnMouseEntered(e -> aiBtn.setStyle(
-                "-fx-background-color:linear-gradient(to right,#059669,#10B981);" +
-                        "-fx-text-fill:white;-fx-font-size:12px;-fx-font-weight:700;" +
-                        "-fx-background-radius:10;-fx-cursor:hand;-fx-padding:8 18;" +
-                        "-fx-effect:dropshadow(gaussian,rgba(16,185,129,0.45),16,0,0,5);" +
-                        "-fx-scale-x:1.03;-fx-scale-y:1.03;"
-        ));
-        aiBtn.setOnMouseExited(e -> aiBtn.setStyle(
-                "-fx-background-color:linear-gradient(to right,#059669,#10B981);" +
-                        "-fx-text-fill:white;-fx-font-size:12px;-fx-font-weight:700;" +
-                        "-fx-background-radius:10;-fx-cursor:hand;-fx-padding:8 18;" +
-                        "-fx-effect:dropshadow(gaussian,rgba(16,185,129,0.45),10,0,0,3);"
-        ));
+        Button aiBtn = createHeroPrimaryButton(
+                "Generate with AI", "Auto-build cards faster", "fth-cpu",
+                "linear-gradient(to right,#047857,#10B981)", "rgba(16,185,129,0.45)");
         aiBtn.setOnAction(e -> showAIGenerator());
 
         String pdfPath = deck.getPdf();
         if (pdfPath != null && !pdfPath.trim().isEmpty()) {
-            Button pdfBtn = new Button("PDF");
-            pdfBtn.setGraphic(makeIcon("fth-file-text", 11, "#F472B6"));
-            pdfBtn.setStyle(
-                    "-fx-background-color:rgba(244,114,182,0.12);-fx-text-fill:#F472B6;" +
-                            "-fx-font-size:10px;-fx-font-weight:700;-fx-background-radius:8;" +
-                            "-fx-cursor:hand;-fx-padding:5 10;-fx-border-color:#F472B6;" +
-                            "-fx-border-radius:8;-fx-border-width:1;"
-            );
+            Button pdfBtn = createHeroGhostButton("PDF", "fth-file-text", "#F472B6",
+                    "rgba(244,114,182,0.12)", "#F472B6", "#FBCFE8", "#F472B6");
             pdfBtn.setOnAction(e -> {
                 try { Desktop.getDesktop().open(new File(pdfPath)); } catch (Exception ignored) {}
             });
-            btnBox.getChildren().add(pdfBtn);
+            utilityRow.getChildren().add(pdfBtn);
         }
 
-        btnBox.getChildren().addAll(backBtn, addBtn, aiBtn);
+        utilityRow.getChildren().add(backBtn);
+        btnBox.getChildren().addAll(utilityRow, addBtn, aiBtn);
         deckHeroPane.getChildren().addAll(thumbPane, centerBox, btnBox);
     }
 
-    /** Construit un badge stats compact pour le hero HBox */
     private VBox buildCompactStatBox(Label existingLabel, String caption, String color) {
         VBox box = new VBox(1);
         box.setAlignment(Pos.CENTER);
@@ -1033,180 +1194,6 @@ public abstract class FlashcardsFeaturesController implements Initializable {
         cap.setStyle("-fx-text-fill:#475569;-fx-font-size:9px;-fx-font-weight:700;");
         box.getChildren().add(cap);
         return box;
-    }
-
-    /** Construit le bloc image hero avec overlay gradient */
-    private StackPane buildHeroImage(String imgPath, String gradient, String hexColor) {
-        try {
-            String raw = imgPath.trim();
-            Image img;
-            if (raw.startsWith("http://") || raw.startsWith("https://")) {
-                img = new Image(raw, 700, 200, false, true, true);
-            } else {
-                File f = new File(raw);
-                if (!f.exists()) f = new File(System.getProperty("user.dir"), raw);
-                if (!f.exists()) return null;
-                img = new Image(f.toURI().toString(), 700, 200, false, true, true);
-            }
-            if (img.isError()) return null;
-
-            StackPane container = new StackPane();
-            container.setMaxWidth(680);
-            container.setPrefHeight(180);
-
-            ImageView iv = new ImageView(img);
-            iv.setFitWidth(680);
-            iv.setFitHeight(180);
-            iv.setPreserveRatio(false);
-            iv.setSmooth(true);
-
-            Rectangle clip = new Rectangle(680, 180);
-            clip.setArcWidth(28); clip.setArcHeight(28);
-            iv.setClip(clip);
-
-            Region overlay = new Region();
-            overlay.setMaxWidth(680);
-            overlay.setPrefHeight(180);
-            overlay.setStyle(
-                    "-fx-background-color:linear-gradient(" +
-                            "from 0% 0% to 0% 100%," +
-                            "rgba(0,0,0,0.05) 0%," +
-                            "rgba(0,0,0,0.15) 50%," +
-                            "rgba(2,6,23,0.75) 100%);" +
-                            "-fx-background-radius:14;"
-            );
-
-            Label coverBadge = new Label("📸 COVER");
-            coverBadge.setStyle(
-                    "-fx-background-color:rgba(0,0,0,0.55);" +
-                            "-fx-text-fill:" + hexColor + ";-fx-font-size:9px;-fx-font-weight:700;" +
-                            "-fx-padding:4 10;-fx-background-radius:20;" +
-                            "-fx-border-color:" + hexColor + "55;-fx-border-radius:20;-fx-border-width:1;"
-            );
-            StackPane.setAlignment(coverBadge, Pos.TOP_RIGHT);
-            StackPane.setMargin(coverBadge, new Insets(10, 10, 0, 0));
-
-            container.getChildren().addAll(iv, overlay, coverBadge);
-            container.setStyle(
-                    "-fx-effect:dropshadow(gaussian,rgba(0,0,0,0.5),20,0,0,6);" +
-                            "-fx-background-radius:14;"
-            );
-            return container;
-
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
-    /** Construit la carte PDF cliquable et stylée */
-    private HBox buildPdfCard(String pdfPath, String hexColor, String colorKey) {
-        File pdfFile = new File(pdfPath.trim());
-        String fileName = pdfFile.getName();
-        boolean exists = pdfFile.exists();
-
-        HBox card = new HBox(12);
-        card.setAlignment(Pos.CENTER_LEFT);
-        card.setPadding(new Insets(14, 20, 14, 16));
-        card.setStyle(
-                "-fx-background-color:rgba(15,23,42,0.9);" +
-                        "-fx-border-color:" + hexColor + "55;" +
-                        "-fx-border-radius:14;-fx-background-radius:14;-fx-border-width:1;" +
-                        "-fx-cursor:" + (exists ? "hand" : "default") + ";" +
-                        "-fx-effect:dropshadow(gaussian,rgba(0,0,0,0.4),12,0,0,3);"
-        );
-
-        StackPane pdfIcon = new StackPane();
-        pdfIcon.setPrefSize(42, 42);
-        pdfIcon.setStyle(
-                "-fx-background-color:rgba(244,63,94,0.2);" +
-                        "-fx-background-radius:12;" +
-                        "-fx-border-color:rgba(244,63,94,0.35);-fx-border-radius:12;-fx-border-width:1;"
-        );
-        FontIcon pdfIco = new FontIcon("fth-file-text");
-        pdfIco.setIconSize(20); pdfIco.setIconColor(Color.web("#FB7185"));
-        pdfIcon.getChildren().add(pdfIco);
-
-        VBox pdfText = new VBox(3);
-        Label pdfTitle = new Label("PDF Document");
-        pdfTitle.setStyle("-fx-text-fill:#CBD5E1;-fx-font-size:11px;-fx-font-weight:700;");
-        String shortName = fileName.length() > 22 ? fileName.substring(0, 22) + "…" : fileName;
-        Label pdfName = new Label(shortName);
-        pdfName.setStyle("-fx-text-fill:#64748B;-fx-font-size:10px;");
-        Label pdfStatus = new Label(exists ? "✓ Available" : "⚠ File not found");
-        pdfStatus.setStyle("-fx-text-fill:" + (exists ? "#34D399" : "#FB7185") + ";-fx-font-size:9px;-fx-font-weight:700;");
-        pdfText.getChildren().addAll(pdfTitle, pdfName, pdfStatus);
-
-        Button openPdf = new Button("Open");
-        openPdf.setStyle(
-                "-fx-background-color:rgba(251,113,133,0.15);" +
-                        "-fx-text-fill:#FB7185;-fx-font-size:11px;-fx-font-weight:700;" +
-                        "-fx-background-radius:10;-fx-cursor:" + (exists ? "hand" : "default") + ";-fx-padding:7 14;" +
-                        "-fx-border-color:rgba(251,113,133,0.3);-fx-border-radius:10;-fx-border-width:1;"
-        );
-        openPdf.setDisable(!exists);
-        if (exists) {
-            openPdf.setOnAction(e -> {
-                try {
-                    Desktop.getDesktop().open(pdfFile);
-                } catch (IOException ex) {
-                    alert("Impossible d'ouvrir le PDF : " + ex.getMessage());
-                }
-            });
-            card.setOnMouseEntered(e -> card.setStyle(
-                    "-fx-background-color:rgba(30,41,59,0.95);" +
-                            "-fx-border-color:" + hexColor + "99;" +
-                            "-fx-border-radius:14;-fx-background-radius:14;-fx-border-width:1;" +
-                            "-fx-cursor:hand;" +
-                            "-fx-effect:dropshadow(gaussian," + glowRgba(colorKey) + ",16,0,0,4);"
-            ));
-            card.setOnMouseExited(e -> card.setStyle(
-                    "-fx-background-color:rgba(15,23,42,0.9);" +
-                            "-fx-border-color:" + hexColor + "55;" +
-                            "-fx-border-radius:14;-fx-background-radius:14;-fx-border-width:1;" +
-                            "-fx-cursor:hand;" +
-                            "-fx-effect:dropshadow(gaussian,rgba(0,0,0,0.4),12,0,0,3);"
-            ));
-            card.setOnMouseClicked(e -> {
-                try { Desktop.getDesktop().open(pdfFile); }
-                catch (IOException ex) { alert("Impossible d'ouvrir le PDF : " + ex.getMessage()); }
-            });
-        }
-
-        card.getChildren().addAll(pdfIcon, pdfText, openPdf);
-        return card;
-    }
-
-    /** Construit une mini-box de stat pour la stats bar du hero */
-    private VBox buildStatBox(Label existingLabel, String labelText, String color) {
-        VBox box = new VBox(4);
-        box.setAlignment(Pos.CENTER);
-        box.setPadding(new Insets(12, 22, 12, 22));
-        box.setStyle(
-                "-fx-background-color:rgba(15,23,42,0.75);" +
-                        "-fx-border-color:#1E293B;-fx-border-radius:14;-fx-background-radius:14;-fx-border-width:1;"
-        );
-        if (existingLabel != null) {
-            existingLabel.setStyle(
-                    "-fx-text-fill:" + color + ";-fx-font-size:22px;-fx-font-weight:800;"
-            );
-            box.getChildren().add(existingLabel);
-        } else {
-            Label val = new Label("0");
-            val.setStyle("-fx-text-fill:" + color + ";-fx-font-size:22px;-fx-font-weight:800;");
-            box.getChildren().add(val);
-        }
-        Label lbl = new Label(labelText);
-        lbl.setStyle("-fx-text-fill:#475569;-fx-font-size:10px;-fx-font-weight:700;");
-        box.getChildren().add(lbl);
-        return box;
-    }
-
-    /** Helper : crée une FontIcon */
-    private FontIcon makeIcon(String literal, int size, String color) {
-        FontIcon fi = new FontIcon(literal);
-        fi.setIconSize(size);
-        fi.setIconColor(Color.web(color));
-        return fi;
     }
 
     // ═════════════════════════════════════════════════════════════════════
@@ -1232,62 +1219,7 @@ public abstract class FlashcardsFeaturesController implements Initializable {
     }
 
     private VBox buildFlashcardCard(Flashcard fc) {
-        if (System.nanoTime() >= 0) {
-            return buildInteractiveFlashcardCard(fc);
-        }
-        String etatColor = switch (fc.getEtat()) {
-            case "mastered" -> "#34D399"; case "learning" -> "#FBBF24"; default -> "#94A3B8"; };
-        String diffColor = switch (fc.getNiveauDifficulte()) {
-            case 3 -> "#FB7185"; case 2 -> "#FBBF24"; default -> "#34D399"; };
-        VBox card = new VBox(0);
-        card.setPrefWidth(260); card.setMaxWidth(260);
-        String sN = "-fx-background-color:#0F172A;-fx-background-radius:14;-fx-cursor:hand;" +
-                "-fx-effect:dropshadow(gaussian,rgba(0,0,0,0.3),10,0,0,3);";
-        String sH = "-fx-background-color:#1E293B;-fx-background-radius:14;-fx-cursor:hand;" +
-                "-fx-effect:dropshadow(gaussian,rgba(0,0,0,0.5),18,0,0,6);";
-        card.setStyle(sN);
-        card.setOnMouseEntered(e -> card.setStyle(sH));
-        card.setOnMouseExited (e -> card.setStyle(sN));
-        Region stripe = new Region();
-        stripe.setPrefHeight(4);
-        stripe.setStyle("-fx-background-color:" + etatColor + ";-fx-background-radius:14 14 0 0;");
-        VBox body = new VBox(10);
-        body.setPadding(new Insets(14));
-        HBox titleRow = new HBox(8);
-        titleRow.setAlignment(Pos.CENTER_LEFT);
-        Label title = new Label(fc.getTitre());
-        title.setStyle("-fx-text-fill:#F8FAFC;-fx-font-weight:700;-fx-font-size:13px;");
-        title.setWrapText(true);
-        HBox.setHgrow(title, Priority.ALWAYS);
-        Label diffBadge = new Label(fc.getDifficultyLabel());
-        diffBadge.setStyle("-fx-background-color:rgba(0,0,0,0.3);-fx-text-fill:" + diffColor +
-                ";-fx-font-size:9px;-fx-font-weight:700;-fx-padding:2 7;-fx-background-radius:20;");
-        titleRow.getChildren().addAll(title, diffBadge);
-        Label qLabel = new Label("Q: " + fc.getQuestion());
-        qLabel.setStyle("-fx-text-fill:#94A3B8;-fx-font-size:11px;");
-        qLabel.setWrapText(true); qLabel.setMaxHeight(36);
-        Label etatBadge = new Label(fc.getEtat().toUpperCase());
-        etatBadge.setStyle("-fx-background-color:rgba(0,0,0,0.25);-fx-text-fill:" + etatColor +
-                ";-fx-font-size:9px;-fx-font-weight:700;-fx-padding:2 7;-fx-background-radius:20;");
-        HBox actions = new HBox(8);
-        actions.setAlignment(Pos.CENTER_RIGHT);
-        actions.setPadding(new Insets(6, 0, 0, 0));
-        Button editBtn = chipBtn("Edit",   "rgba(99,102,241,0.15)", "#818CF8", "rgba(99,102,241,0.3)");
-        Button delBtn  = chipBtn("Delete", "rgba(244,63,94,0.15)",  "#FB7185", "rgba(244,63,94,0.3)");
-        Button mastBtn;
-        if ("mastered".equals(fc.getEtat())) {
-            mastBtn = chipBtn("Unlearn", "rgba(251,191,36,0.15)", "#FBBF24", "rgba(251,191,36,0.3)");
-            mastBtn.setOnAction(e -> { flashcardService.updateEtat(fc.getIdFlashcard(), "learning"); refreshFlashcards(); });
-        } else {
-            mastBtn = chipBtn("✓ Mastered", "rgba(52,211,153,0.15)", "#34D399", "rgba(52,211,153,0.3)");
-            mastBtn.setOnAction(e -> { flashcardService.updateEtat(fc.getIdFlashcard(), "mastered"); refreshFlashcards(); });
-        }
-        editBtn.setOnAction(e -> openEditForm(fc));
-        delBtn .setOnAction(e -> handleDelete(fc));
-        actions.getChildren().addAll(mastBtn, editBtn, delBtn);
-        body.getChildren().addAll(titleRow, qLabel, etatBadge, actions);
-        card.getChildren().addAll(stripe, body);
-        return card;
+        return buildInteractiveFlashcardCard(fc);
     }
 
     private VBox buildInteractiveFlashcardCard(Flashcard fc) {
@@ -1303,8 +1235,8 @@ public abstract class FlashcardsFeaturesController implements Initializable {
         };
 
         VBox card = new VBox(0);
-        card.setPrefWidth(300);
-        card.setMaxWidth(300);
+        card.setPrefWidth(316);
+        card.setMaxWidth(316);
         String normalStyle = "-fx-background-color:#0F172A;-fx-background-radius:14;-fx-cursor:hand;" +
                 "-fx-effect:dropshadow(gaussian,rgba(0,0,0,0.3),10,0,0,3);";
         String hoverStyle = "-fx-background-color:#1E293B;-fx-background-radius:14;-fx-cursor:hand;" +
@@ -1317,8 +1249,8 @@ public abstract class FlashcardsFeaturesController implements Initializable {
         stripe.setPrefHeight(4);
         stripe.setStyle("-fx-background-color:" + etatColor + ";-fx-background-radius:14 14 0 0;");
 
-        VBox body = new VBox(10);
-        body.setPadding(new Insets(14));
+        VBox body = new VBox(12);
+        body.setPadding(new Insets(16));
 
         HBox titleRow = new HBox(8);
         titleRow.setAlignment(Pos.CENTER_LEFT);
@@ -1346,101 +1278,28 @@ public abstract class FlashcardsFeaturesController implements Initializable {
         etatBadge.setStyle("-fx-background-color:rgba(0,0,0,0.25);-fx-text-fill:" + etatColor +
                 ";-fx-font-size:9px;-fx-font-weight:700;-fx-padding:2 7;-fx-background-radius:20;");
 
-        HBox utilityActions = new HBox(8);
-        utilityActions.setAlignment(Pos.CENTER_LEFT);
-        Button translateBtn = chipBtn("Translate", "rgba(124,58,237,0.15)", "#A78BFA", "rgba(124,58,237,0.28)");
-        Button speakQBtn = chipBtn("Listen Q", "rgba(14,165,233,0.15)", "#38BDF8", "rgba(14,165,233,0.28)");
-        Button speakABtn = chipBtn("Listen A", "rgba(16,185,129,0.15)", "#34D399", "rgba(16,185,129,0.28)");
-        utilityActions.getChildren().addAll(translateBtn, speakQBtn, speakABtn);
-
-        VBox translationPanel = new VBox(8);
-        translationPanel.setPadding(new Insets(10));
-        translationPanel.setStyle(
-                "-fx-background-color:rgba(15,23,42,0.75);" +
-                        "-fx-border-color:#334155;-fx-border-radius:12;-fx-background-radius:12;"
+        VBox contentPanel = new VBox(8);
+        contentPanel.setPadding(new Insets(12));
+        contentPanel.setStyle(
+                "-fx-background-color:rgba(15,23,42,0.72);" +
+                        "-fx-border-color:#1E293B;-fx-border-radius:12;-fx-background-radius:12;"
         );
-        setNodeVisible(translationPanel, false);
+        contentPanel.getChildren().addAll(qLabel, aLabel);
 
-        Label translationStatus = new Label("Choose a language to translate this flashcard.");
-        translationStatus.setWrapText(true);
-        translationStatus.setStyle("-fx-text-fill:#94A3B8;-fx-font-size:10px;");
+        Button toolsBtn = chipBtn("Translate & Audio", "rgba(124,58,237,0.18)", "#C4B5FD", "rgba(124,58,237,0.32)");
+        toolsBtn.setGraphic(makeIcon("fth-globe", 11, "#C4B5FD"));
+        toolsBtn.setOnAction(e -> showTranslationPopup(fc));
 
-        FlowPane languageButtons = new FlowPane();
-        languageButtons.setHgap(6);
-        languageButtons.setVgap(6);
+        HBox utilityRow = new HBox(10);
+        utilityRow.setAlignment(Pos.CENTER_LEFT);
+        Region utilitySpacer = new Region();
+        HBox.setHgrow(utilitySpacer, Priority.ALWAYS);
+        utilityRow.getChildren().addAll(etatBadge, utilitySpacer, toolsBtn);
 
-        Label translatedTitle = new Label();
-        translatedTitle.setWrapText(true);
-        translatedTitle.setStyle("-fx-text-fill:#F8FAFC;-fx-font-size:12px;-fx-font-weight:700;");
-        setNodeVisible(translatedTitle, false);
-
-        Label translatedQuestion = new Label();
-        translatedQuestion.setWrapText(true);
-        translatedQuestion.setStyle("-fx-text-fill:#E2E8F0;-fx-font-size:11px;");
-        setNodeVisible(translatedQuestion, false);
-
-        Label translatedAnswer = new Label();
-        translatedAnswer.setWrapText(true);
-        translatedAnswer.setStyle("-fx-text-fill:#A5B4FC;-fx-font-size:11px;");
-        setNodeVisible(translatedAnswer, false);
-
-        final String[] activeLanguageCode = {null};
-        for (Map.Entry<String, String> entry : SUPPORTED_LANGUAGES.entrySet()) {
-            String languageCode = entry.getKey();
-            String languageLabel = entry.getValue();
-            Button langBtn = chipBtn(languageCode.toUpperCase(),
-                    "rgba(30,41,59,0.95)", "#E2E8F0", "rgba(51,65,85,0.95)");
-            langBtn.setOnAction(e -> {
-                activeLanguageCode[0] = languageCode;
-                loadTranslation(fc, languageCode, languageLabel, translationStatus,
-                        translatedTitle, translatedQuestion, translatedAnswer);
-            });
-            languageButtons.getChildren().add(langBtn);
-        }
-
-        translateBtn.setOnAction(e -> {
-            boolean show = !translationPanel.isVisible();
-            setNodeVisible(translationPanel, show);
-            if (show && activeLanguageCode[0] == null) {
-                translationStatus.setText("Choose a language to translate this flashcard.");
-            }
-        });
-
-        speakQBtn.setOnAction(e -> {
-            String languageCode = activeLanguageCode[0];
-            String text = fc.getQuestion();
-            if (languageCode != null) {
-                AITranslationService.TranslationResult translated = translationCache.get(translationCacheKey(fc, languageCode));
-                if (translated != null) {
-                    text = translated.question();
-                }
-            }
-            speechService.speakAsync(text, speechLanguageTag(languageCode));
-        });
-
-        speakABtn.setOnAction(e -> {
-            String languageCode = activeLanguageCode[0];
-            String text = fc.getReponse();
-            if (languageCode != null) {
-                AITranslationService.TranslationResult translated = translationCache.get(translationCacheKey(fc, languageCode));
-                if (translated != null) {
-                    text = translated.answer();
-                }
-            }
-            speechService.speakAsync(text, speechLanguageTag(languageCode));
-        });
-
-        translationPanel.getChildren().addAll(
-                languageButtons,
-                translationStatus,
-                translatedTitle,
-                translatedQuestion,
-                translatedAnswer
-        );
-
-        HBox actions = new HBox(8);
-        actions.setAlignment(Pos.CENTER_RIGHT);
-        actions.setPadding(new Insets(6, 0, 0, 0));
+        FlowPane actions = new FlowPane();
+        actions.setHgap(8);
+        actions.setVgap(8);
+        actions.setPrefWrapLength(260);
         Button editBtn = chipBtn("Edit", "rgba(99,102,241,0.15)", "#818CF8", "rgba(99,102,241,0.3)");
         Button delBtn = chipBtn("Delete", "rgba(244,63,94,0.15)", "#FB7185", "rgba(244,63,94,0.3)");
         Button mastBtn;
@@ -1461,9 +1320,179 @@ public abstract class FlashcardsFeaturesController implements Initializable {
         delBtn.setOnAction(e -> handleDelete(fc));
         actions.getChildren().addAll(mastBtn, editBtn, delBtn);
 
-        body.getChildren().addAll(titleRow, qLabel, aLabel, etatBadge, utilityActions, translationPanel, actions);
+        body.getChildren().addAll(titleRow, contentPanel, utilityRow, actions);
         card.getChildren().addAll(stripe, body);
         return card;
+    }
+
+    private void showTranslationPopup(Flashcard fc) {
+        Node anchor = flashcardsView != null ? flashcardsView : flashcardsGrid;
+        if (anchor == null || anchor.getScene() == null) {
+            showInfo("Open a flashcard deck before using translation tools.");
+            return;
+        }
+
+        Stage dialog = new Stage(StageStyle.TRANSPARENT);
+        dialog.initModality(Modality.WINDOW_MODAL);
+        dialog.initOwner(anchor.getScene().getWindow());
+
+        StackPane overlay = new StackPane();
+        overlay.setStyle("-fx-background-color:rgba(2,6,23,0.82);-fx-padding:28;");
+
+        VBox panel = new VBox(18);
+        panel.setMaxWidth(560);
+        panel.setPadding(new Insets(24));
+        panel.setStyle(
+                "-fx-background-color:linear-gradient(to bottom right,#0F172A,#111827,#0B1220);" +
+                        "-fx-border-color:#334155;-fx-border-width:1;" +
+                        "-fx-border-radius:24;-fx-background-radius:24;" +
+                        "-fx-effect:dropshadow(gaussian,rgba(0,0,0,0.55),28,0,0,10);"
+        );
+        panel.setOnMouseClicked(e -> e.consume());
+        overlay.setOnMouseClicked(e -> dialog.close());
+
+        HBox header = new HBox(12);
+        header.setAlignment(Pos.CENTER_LEFT);
+
+        StackPane iconBadge = new StackPane(makeIcon("fth-globe", 18, "#C4B5FD"));
+        iconBadge.setPrefSize(40, 40);
+        iconBadge.setStyle(
+                "-fx-background-color:rgba(124,58,237,0.16);" +
+                        "-fx-border-color:rgba(196,181,253,0.25);" +
+                        "-fx-border-radius:14;-fx-background-radius:14;"
+        );
+
+        VBox headerText = new VBox(3);
+        Label titleLbl = new Label("Translate and Listen");
+        titleLbl.setStyle("-fx-text-fill:#F8FAFC;-fx-font-size:18px;-fx-font-weight:800;");
+        Label subtitleLbl = new Label("Translate this flashcard and play audio in the selected language.");
+        subtitleLbl.setStyle("-fx-text-fill:#94A3B8;-fx-font-size:11px;");
+        subtitleLbl.setWrapText(true);
+        headerText.getChildren().addAll(titleLbl, subtitleLbl);
+
+        Region headerSpacer = new Region();
+        HBox.setHgrow(headerSpacer, Priority.ALWAYS);
+
+        Button closeBtn = createHeroGhostButton("", "fth-x", "#94A3B8",
+                "rgba(15,23,42,0.95)", "#334155", "#F8FAFC", "#7C3AED");
+        closeBtn.setOnAction(e -> dialog.close());
+
+        header.getChildren().addAll(iconBadge, headerText, headerSpacer, closeBtn);
+
+        VBox originalPanel = new VBox(8);
+        originalPanel.setPadding(new Insets(14));
+        originalPanel.setStyle(
+                "-fx-background-color:rgba(15,23,42,0.78);" +
+                        "-fx-border-color:#1E293B;-fx-border-radius:16;-fx-background-radius:16;"
+        );
+        Label originalTitle = new Label("Original flashcard");
+        originalTitle.setStyle("-fx-text-fill:#C4B5FD;-fx-font-size:11px;-fx-font-weight:700;");
+        Label originalQuestion = new Label("Q: " + safe(fc.getQuestion()));
+        originalQuestion.setWrapText(true);
+        originalQuestion.setStyle("-fx-text-fill:#E2E8F0;-fx-font-size:12px;");
+        Label originalAnswer = new Label("A: " + safe(fc.getReponse()));
+        originalAnswer.setWrapText(true);
+        originalAnswer.setStyle("-fx-text-fill:#94A3B8;-fx-font-size:12px;");
+        originalPanel.getChildren().addAll(originalTitle, originalQuestion, originalAnswer);
+
+        VBox toolPanel = new VBox(12);
+        toolPanel.setPadding(new Insets(14));
+        toolPanel.setStyle(
+                "-fx-background-color:rgba(8,15,28,0.95);" +
+                        "-fx-border-color:#1E293B;-fx-border-radius:16;-fx-background-radius:16;"
+        );
+
+        Label languageTitle = new Label("Choose translation language");
+        languageTitle.setStyle("-fx-text-fill:#F8FAFC;-fx-font-size:12px;-fx-font-weight:700;");
+
+        FlowPane languageButtons = new FlowPane();
+        languageButtons.setHgap(8);
+        languageButtons.setVgap(8);
+
+        Label translationStatus = new Label("Select a language to translate this flashcard.");
+        translationStatus.setWrapText(true);
+        translationStatus.setStyle("-fx-text-fill:#94A3B8;-fx-font-size:11px;");
+
+        HBox audioRow = new HBox(10);
+        audioRow.setAlignment(Pos.CENTER_LEFT);
+        Button listenQuestionBtn = chipBtn("Listen Question", "rgba(14,165,233,0.15)", "#38BDF8", "rgba(14,165,233,0.28)");
+        listenQuestionBtn.setGraphic(makeIcon("fth-volume-2", 11, "#38BDF8"));
+        Button listenAnswerBtn = chipBtn("Listen Answer", "rgba(16,185,129,0.15)", "#34D399", "rgba(16,185,129,0.28)");
+        listenAnswerBtn.setGraphic(makeIcon("fth-headphones", 11, "#34D399"));
+        audioRow.getChildren().addAll(listenQuestionBtn, listenAnswerBtn);
+
+        VBox translatedPanel = new VBox(8);
+        translatedPanel.setPadding(new Insets(14));
+        translatedPanel.setStyle(
+                "-fx-background-color:linear-gradient(to bottom right,rgba(30,41,59,0.9),rgba(17,24,39,0.95));" +
+                        "-fx-border-color:rgba(167,139,250,0.25);" +
+                        "-fx-border-radius:16;-fx-background-radius:16;"
+        );
+
+        Label translatedSectionTitle = new Label("Translated preview");
+        translatedSectionTitle.setStyle("-fx-text-fill:#DDD6FE;-fx-font-size:11px;-fx-font-weight:700;");
+        Label translatedTitle = new Label();
+        translatedTitle.setWrapText(true);
+        translatedTitle.setStyle("-fx-text-fill:#F8FAFC;-fx-font-size:13px;-fx-font-weight:700;");
+        setNodeVisible(translatedTitle, false);
+
+        Label translatedQuestion = new Label();
+        translatedQuestion.setWrapText(true);
+        translatedQuestion.setStyle("-fx-text-fill:#E2E8F0;-fx-font-size:12px;");
+        setNodeVisible(translatedQuestion, false);
+
+        Label translatedAnswer = new Label();
+        translatedAnswer.setWrapText(true);
+        translatedAnswer.setStyle("-fx-text-fill:#C4B5FD;-fx-font-size:12px;");
+        setNodeVisible(translatedAnswer, false);
+
+        translatedPanel.getChildren().addAll(
+                translatedSectionTitle, translationStatus,
+                translatedTitle, translatedQuestion, translatedAnswer
+        );
+
+        final String[] activeLanguageCode = {null};
+        for (Map.Entry<String, String> entry : SUPPORTED_LANGUAGES.entrySet()) {
+            String languageCode = entry.getKey();
+            String languageLabel = entry.getValue();
+            Button langBtn = chipBtn(languageCode.toUpperCase() + " • " + languageLabel,
+                    "rgba(30,41,59,0.95)", "#E2E8F0", "rgba(51,65,85,0.95)");
+            langBtn.setOnAction(e -> {
+                activeLanguageCode[0] = languageCode;
+                loadTranslation(fc, languageCode, languageLabel, translationStatus,
+                        translatedTitle, translatedQuestion, translatedAnswer);
+            });
+            languageButtons.getChildren().add(langBtn);
+        }
+
+        listenQuestionBtn.setOnAction(e -> {
+            String languageCode = activeLanguageCode[0];
+            String text = fc.getQuestion();
+            if (languageCode != null) {
+                AITranslationService.TranslationResult translated = translationCache.get(translationCacheKey(fc, languageCode));
+                if (translated != null) text = translated.question();
+            }
+            speechService.speakAsync(text, speechLanguageTag(languageCode));
+        });
+
+        listenAnswerBtn.setOnAction(e -> {
+            String languageCode = activeLanguageCode[0];
+            String text = fc.getReponse();
+            if (languageCode != null) {
+                AITranslationService.TranslationResult translated = translationCache.get(translationCacheKey(fc, languageCode));
+                if (translated != null) text = translated.answer();
+            }
+            speechService.speakAsync(text, speechLanguageTag(languageCode));
+        });
+
+        toolPanel.getChildren().addAll(languageTitle, languageButtons, audioRow);
+        panel.getChildren().addAll(header, originalPanel, toolPanel, translatedPanel);
+        overlay.getChildren().add(panel);
+
+        Scene scene = new Scene(overlay);
+        scene.setFill(Color.TRANSPARENT);
+        dialog.setScene(scene);
+        dialog.showAndWait();
     }
 
     // ═════════════════════════════════════════════════════════════════════
@@ -1478,6 +1507,10 @@ public abstract class FlashcardsFeaturesController implements Initializable {
     protected abstract void openEditForm(Flashcard fc);
     protected abstract boolean validateForm();
     protected abstract void clearForm();
+
+    // ═════════════════════════════════════════════════════════════════════
+    //  TRANSLATION
+    // ═════════════════════════════════════════════════════════════════════
 
     private void loadTranslation(Flashcard fc, String languageCode, String languageLabel,
                                  Label statusLabel, Label titleLabel, Label questionLabel, Label answerLabel) {
@@ -1571,6 +1604,76 @@ public abstract class FlashcardsFeaturesController implements Initializable {
         return b;
     }
 
+    private Button createHeroGhostButton(String text, String iconLiteral, String baseTextColor,
+                                         String baseBackground, String baseBorder,
+                                         String hoverTextColor, String hoverBorder) {
+        String baseStyle = "-fx-background-color:" + baseBackground + ";" +
+                "-fx-text-fill:" + baseTextColor + ";-fx-font-size:11px;-fx-font-weight:700;" +
+                "-fx-background-radius:12;-fx-border-radius:12;-fx-border-width:1;" +
+                "-fx-border-color:" + baseBorder + ";-fx-cursor:hand;-fx-padding:8 12;";
+        String hoverStyle = "-fx-background-color:#334155;" +
+                "-fx-text-fill:" + hoverTextColor + ";-fx-font-size:11px;-fx-font-weight:700;" +
+                "-fx-background-radius:12;-fx-border-radius:12;-fx-border-width:1;" +
+                "-fx-border-color:" + hoverBorder + ";-fx-cursor:hand;-fx-padding:8 12;";
+        Button button = new Button(text);
+        button.setGraphic(makeIcon(iconLiteral, 12, baseTextColor));
+        button.setStyle(baseStyle);
+        button.setOnMouseEntered(e -> {
+            button.setStyle(hoverStyle);
+            if (button.getGraphic() instanceof FontIcon fi) fi.setIconColor(Color.web(hoverTextColor));
+        });
+        button.setOnMouseExited(e -> {
+            button.setStyle(baseStyle);
+            if (button.getGraphic() instanceof FontIcon fi) fi.setIconColor(Color.web(baseTextColor));
+        });
+        return button;
+    }
+
+    private Button createHeroPrimaryButton(String title, String subtitle, String iconLiteral,
+                                           String background, String glowRgb) {
+        String baseStyle = "-fx-background-color:" + background + ";" +
+                "-fx-background-radius:16;-fx-cursor:hand;-fx-padding:12 14;" +
+                "-fx-effect:dropshadow(gaussian," + glowRgb + ",12,0,0,4);";
+        String hoverStyle = "-fx-background-color:" + background + ";" +
+                "-fx-background-radius:16;-fx-cursor:hand;-fx-padding:12 14;" +
+                "-fx-effect:dropshadow(gaussian," + glowRgb + ",18,0,0,6);" +
+                "-fx-scale-x:1.02;-fx-scale-y:1.02;";
+
+        StackPane iconWrap = new StackPane(makeIcon(iconLiteral, 16, "white"));
+        iconWrap.setPrefSize(34, 34);
+        iconWrap.setStyle("-fx-background-color:rgba(255,255,255,0.16);-fx-background-radius:12;");
+
+        VBox textBox = new VBox(2);
+        Label titleLbl = new Label(title);
+        titleLbl.setStyle("-fx-text-fill:white;-fx-font-size:12px;-fx-font-weight:800;");
+        Label subtitleLbl = new Label(subtitle);
+        subtitleLbl.setStyle("-fx-text-fill:rgba(255,255,255,0.72);-fx-font-size:10px;-fx-font-weight:600;");
+        textBox.getChildren().addAll(titleLbl, subtitleLbl);
+
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+
+        HBox content = new HBox(10, iconWrap, textBox, spacer, makeIcon("fth-arrow-right", 12, "white"));
+        content.setAlignment(Pos.CENTER_LEFT);
+
+        Button button = new Button();
+        button.setGraphic(content);
+        button.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
+        button.setMaxWidth(Double.MAX_VALUE);
+        button.setPrefWidth(190);
+        button.setStyle(baseStyle);
+        button.setOnMouseEntered(e -> button.setStyle(hoverStyle));
+        button.setOnMouseExited(e -> button.setStyle(baseStyle));
+        return button;
+    }
+
+    private FontIcon makeIcon(String literal, int size, String color) {
+        FontIcon fi = new FontIcon(literal);
+        fi.setIconSize(size);
+        fi.setIconColor(Color.web(color));
+        return fi;
+    }
+
     @FXML public void goBackToFlashcards() { goToFlashcards(); refreshFlashcards(); }
 
     protected void alert(String msg) { new Alert(Alert.AlertType.WARNING, msg, ButtonType.OK).showAndWait(); }
@@ -1608,17 +1711,6 @@ public abstract class FlashcardsFeaturesController implements Initializable {
             case "danger"  -> "rgba(220,38,38,0.55)";
             case "accent"  -> "rgba(234,88,12,0.55)";
             default        -> "rgba(71,85,105,0.45)";
-        };
-    }
-
-    private String darken(String hexColor) {
-        return switch (hexColor) {
-            case "#A78BFA" -> "#1a0a33";
-            case "#34D399" -> "#041a10";
-            case "#FBBF24" -> "#1a1200";
-            case "#FB7185" -> "#1a0509";
-            case "#FB923C" -> "#1a0a00";
-            default        -> "#0d1520";
         };
     }
 }

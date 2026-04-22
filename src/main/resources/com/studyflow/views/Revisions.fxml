@@ -171,6 +171,58 @@
         </HBox>
     </VBox>
 
+    <VBox fx:id="ratingView" visible="false" managed="false" spacing="20" style="-fx-background-color:#020617;">
+        <padding>
+            <Insets top="0" right="0" bottom="24" left="0"/>
+        </padding>
+
+        <HBox alignment="CENTER_LEFT" spacing="10" style="-fx-padding:0 0 8 0;">
+            <Button onAction="#handleRatingBack"
+                    style="-fx-background-color:#1E293B;-fx-background-radius:10;-fx-cursor:hand;-fx-padding:8 12;-fx-border-color:#334155;-fx-border-radius:10;-fx-border-width:1;">
+                <graphic>
+                    <FontIcon iconLiteral="fth-arrow-left" iconSize="14" iconColor="#94A3B8"/>
+                </graphic>
+            </Button>
+            <Label text="Flashcards" style="-fx-text-fill:#475569;-fx-font-size:13px;"/>
+            <Label text="›" style="-fx-text-fill:#334155;-fx-font-size:14px;"/>
+            <Label text="Deck Ratings" style="-fx-text-fill:#F8FAFC;-fx-font-size:13px;-fx-font-weight:700;"/>
+        </HBox>
+
+        <HBox alignment="CENTER_LEFT" spacing="16">
+            <VBox spacing="4" HBox.hgrow="ALWAYS">
+                <Label text="Deck Ratings" style="-fx-text-fill:#F8FAFC;-fx-font-size:22px;-fx-font-weight:800;"/>
+                <Label fx:id="ratingsSummaryLabel" text="Click Rating on a deck to see who rated it." style="-fx-text-fill:#64748B;-fx-font-size:12px;"/>
+            </VBox>
+
+            <Button text="Back to Decks" onAction="#handleRatingBack"
+                    style="-fx-background-color:#1E293B;-fx-text-fill:#CBD5E1;-fx-font-size:12px;-fx-font-weight:700;-fx-background-radius:12;-fx-cursor:hand;-fx-padding:9 18;-fx-border-color:#334155;-fx-border-radius:12;-fx-border-width:1;">
+                <graphic>
+                    <FontIcon iconLiteral="fth-layers" iconSize="13" iconColor="#CBD5E1"/>
+                </graphic>
+            </Button>
+        </HBox>
+
+        <VBox style="-fx-background-color:#0F172A;-fx-background-radius:18;-fx-border-color:#1E293B;-fx-border-radius:18;-fx-border-width:1;-fx-padding:18 20;" spacing="14">
+            <HBox alignment="CENTER_LEFT" spacing="12">
+                <StackPane prefWidth="42" prefHeight="42" style="-fx-background-color:linear-gradient(to bottom right,#7C3AED,#EC4899);-fx-background-radius:12;">
+                    <FontIcon iconLiteral="fth-star" iconSize="18" iconColor="white"/>
+                </StackPane>
+                <VBox spacing="3" HBox.hgrow="ALWAYS">
+                    <Label fx:id="selectedRatingDeckLabel" text="No deck selected" style="-fx-text-fill:#F8FAFC;-fx-font-size:18px;-fx-font-weight:800;"/>
+                    <Label text="See who rated this deck, their stars, comment and date." style="-fx-text-fill:#64748B;-fx-font-size:11px;"/>
+                </VBox>
+            </HBox>
+
+            <ScrollPane fitToWidth="true" hbarPolicy="NEVER" VBox.vgrow="ALWAYS"
+                        style="-fx-background-color:transparent;-fx-background:transparent;">
+                <VBox fx:id="ratingsListContainer" spacing="10" style="-fx-padding:2 0 2 0;">
+                    <Label text="No ratings loaded yet." style="-fx-text-fill:#64748B;-fx-font-size:11px;"/>
+                </VBox>
+            </ScrollPane>
+        </VBox>
+
+    </VBox>
+
     <!-- Form View -->
     <VBox fx:id="formView" visible="false" managed="false" spacing="0" style="-fx-background-color:#020617;">
         <padding>

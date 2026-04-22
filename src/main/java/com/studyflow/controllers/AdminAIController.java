@@ -281,7 +281,7 @@ public class AdminAIController implements Initializable {
         sb.append("Found ").append(users.size()).append(" user(s):\n");
         for (User u : users) {
             sb.append("  • ").append(u.getFullName().trim())
-              .append(" — ").append(u.getEmail());
+                    .append(" — ").append(u.getEmail());
             if (u.isBanned()) sb.append(" [BANNED]");
             sb.append("\n");
         }
