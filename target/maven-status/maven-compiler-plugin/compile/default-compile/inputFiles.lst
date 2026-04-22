@@ -5,6 +5,7 @@ C:\Users\minok\Downloads\RLIFE-JAVA-main (1)2\RLIFE-JAVA-main\src\main\java\com\
 C:\Users\minok\Downloads\RLIFE-JAVA-main (1)2\RLIFE-JAVA-main\src\main\java\com\studyflow\controllers\AdminMatieresController.java
 C:\Users\minok\Downloads\RLIFE-JAVA-main (1)2\RLIFE-JAVA-main\src\main\java\com\studyflow\services\AIFlashcardService.java
 C:\Users\minok\Downloads\RLIFE-JAVA-main (1)2\RLIFE-JAVA-main\src\main\java\com\studyflow\controllers\PlanningController.java
+C:\Users\minok\Downloads\RLIFE-JAVA-main (1)2\RLIFE-JAVA-main\src\main\java\com\studyflow\services\FraudEvent.java
 C:\Users\minok\Downloads\RLIFE-JAVA-main (1)2\RLIFE-JAVA-main\src\main\java\com\studyflow\controllers\RevisionsController.java
 C:\Users\minok\Downloads\RLIFE-JAVA-main (1)2\RLIFE-JAVA-main\src\main\java\com\studyflow\models\Course.java
 C:\Users\minok\Downloads\RLIFE-JAVA-main (1)2\RLIFE-JAVA-main\src\main\java\com\studyflow\services\EvalMatService.java
@@ -20,6 +21,7 @@ C:\Users\minok\Downloads\RLIFE-JAVA-main (1)2\RLIFE-JAVA-main\src\main\java\com\
 C:\Users\minok\Downloads\RLIFE-JAVA-main (1)2\RLIFE-JAVA-main\src\main\java\com\studyflow\controllers\AIGeneratorController.java
 C:\Users\minok\Downloads\RLIFE-JAVA-main (1)2\RLIFE-JAVA-main\src\main\java\com\studyflow\App.java
 C:\Users\minok\Downloads\RLIFE-JAVA-main (1)2\RLIFE-JAVA-main\src\main\java\com\studyflow\controllers\AdminStatisticsController.java
+C:\Users\minok\Downloads\RLIFE-JAVA-main (1)2\RLIFE-JAVA-main\src\main\java\com\studyflow\services\FraudLogger.java
 C:\Users\minok\Downloads\RLIFE-JAVA-main (1)2\RLIFE-JAVA-main\src\main\java\com\studyflow\controllers\NotesController.java
 C:\Users\minok\Downloads\RLIFE-JAVA-main (1)2\RLIFE-JAVA-main\src\main\java\com\studyflow\controllers\CoursesController.java
 C:\Users\minok\Downloads\RLIFE-JAVA-main (1)2\RLIFE-JAVA-main\src\main\java\com\studyflow\controllers\ProjectsController.java
@@ -35,6 +37,7 @@ C:\Users\minok\Downloads\RLIFE-JAVA-main (1)2\RLIFE-JAVA-main\src\main\java\com\
 C:\Users\minok\Downloads\RLIFE-JAVA-main (1)2\RLIFE-JAVA-main\src\main\java\com\studyflow\utils\PdfExporter.java
 C:\Users\minok\Downloads\RLIFE-JAVA-main (1)2\RLIFE-JAVA-main\src\main\java\com\studyflow\controllers\CourseCardController.java
 C:\Users\minok\Downloads\RLIFE-JAVA-main (1)2\RLIFE-JAVA-main\src\main\java\com\studyflow\utils\GlbLoader.java
+C:\Users\minok\Downloads\RLIFE-JAVA-main (1)2\RLIFE-JAVA-main\src\main\java\com\studyflow\services\AntiFraudEngine.java
 C:\Users\minok\Downloads\RLIFE-JAVA-main (1)2\RLIFE-JAVA-main\src\main\java\com\studyflow\models\Assignment.java
 C:\Users\minok\Downloads\RLIFE-JAVA-main (1)2\RLIFE-JAVA-main\src\main\java\com\studyflow\services\SpeechService.java
 C:\Users\minok\Downloads\RLIFE-JAVA-main (1)2\RLIFE-JAVA-main\src\main\java\com\studyflow\controllers\AdminDashboardController.java
