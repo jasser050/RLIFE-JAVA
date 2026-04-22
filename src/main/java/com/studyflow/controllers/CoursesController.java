@@ -151,14 +151,19 @@ public class CoursesController implements Initializable {
     private static final PseudoClass SELECTED = PseudoClass.getPseudoClass("selected");
 
     // ══════════════════════════════════════════════════════════════════════════
-    //  QUIZ MODEL
+    //  QUIZ MODEL — avec champ explanation
     // ══════════════════════════════════════════════════════════════════════════
     private static class QuizQuestion {
-        String question, correctAnswer, userAnswer, difficulty, category;
+        String question, correctAnswer, userAnswer, difficulty, category, explanation;
         List<String> options;
-        QuizQuestion(String q, List<String> opts, String correct, String diff, String cat) {
-            question = q; options = opts; correctAnswer = correct;
-            difficulty = diff; category = cat;
+
+        QuizQuestion(String q, List<String> opts, String correct, String diff, String cat, String expl) {
+            question    = q;
+            options     = opts;
+            correctAnswer = correct;
+            difficulty  = diff;
+            category    = cat;
+            explanation = expl;
         }
     }
 
@@ -586,7 +591,7 @@ public class CoursesController implements Initializable {
     @FXML public void handleShowQuiz() { showView("quiz"); }
 
     // ══════════════════════════════════════════════════════════════════════════
-    //  QUIZ
+    //  QUIZ — section change
     // ══════════════════════════════════════════════════════════════════════════
     @FXML private void handleQuizSectionChange() {
         String section = cmbQuizSection.getValue();
@@ -601,6 +606,7 @@ public class CoursesController implements Initializable {
         } catch (Exception e) { e.printStackTrace(); }
     }
 
+    // ── Quiz fallback (sans IA) ───────────────────────────────────────────────
     @FXML private void handleStartQuiz() {
         lblQuizSetupError.setText("");
         if (cmbQuizSection.getValue() == null) { lblQuizSetupError.setText("⚠ Please select a section."); return; }
@@ -635,37 +641,50 @@ public class CoursesController implements Initializable {
 
         if (ls.contains("math") || ls.contains("mathématiques")) {
             questions.add(new QuizQuestion("What is the derivative of x²?",
-                    Arrays.asList("x","2x","x²","2"), "2x", difficulty, "Mathematics"));
+                    Arrays.asList("x","2x","x²","2"), "2x", difficulty, "Mathematics",
+                    "The derivative of xⁿ is n·xⁿ⁻¹. For x², n=2, so the derivative is 2x¹ = 2x."));
             questions.add(new QuizQuestion("Solve: 2x + 5 = 13",
-                    Arrays.asList("x = 4","x = 6","x = 8","x = 10"), "x = 4", difficulty, "Mathematics"));
+                    Arrays.asList("x = 4","x = 6","x = 8","x = 10"), "x = 4", difficulty, "Mathematics",
+                    "Subtract 5 from both sides: 2x = 8. Divide by 2: x = 4. Verify: 2(4)+5 = 13 ✓"));
             questions.add(new QuizQuestion("What is π (pi) approximately?",
-                    Arrays.asList("2.14","3.14","4.14","5.14"), "3.14", difficulty, "Mathematics"));
+                    Arrays.asList("2.14","3.14","4.14","5.14"), "3.14", difficulty, "Mathematics",
+                    "Pi (π) is the ratio of a circle's circumference to its diameter, approximately 3.14159…"));
         } else if (ls.contains("phys")) {
             questions.add(new QuizQuestion("What is Newton's second law?",
-                    Arrays.asList("F = ma","E = mc²","V = IR","P = VI"), "F = ma", difficulty, "Physics"));
+                    Arrays.asList("F = ma","E = mc²","V = IR","P = VI"), "F = ma", difficulty, "Physics",
+                    "Newton's second law states that Force equals mass times acceleration (F = ma). E=mc² is Einstein's mass-energy equivalence, V=IR is Ohm's law."));
             questions.add(new QuizQuestion("What is the unit of force?",
-                    Arrays.asList("Joule","Watt","Newton","Pascal"), "Newton", difficulty, "Physics"));
+                    Arrays.asList("Joule","Watt","Newton","Pascal"), "Newton", difficulty, "Physics",
+                    "The SI unit of force is the Newton (N), named after Isaac Newton. Joule measures energy, Watt measures power, Pascal measures pressure."));
         } else if (ls.contains("prog") || ls.contains("java")) {
             questions.add(new QuizQuestion("What does JVM stand for?",
                     Arrays.asList("Java Virtual Machine","Java Variable Method","Java Version Manager","Java Visual Machine"),
-                    "Java Virtual Machine", difficulty, "Programming"));
+                    "Java Virtual Machine", difficulty, "Programming",
+                    "JVM stands for Java Virtual Machine — it's the runtime environment that executes Java bytecode, enabling the 'write once, run anywhere' capability."));
             questions.add(new QuizQuestion("Which is a Java keyword?",
-                    Arrays.asList("integer","String","static","float"), "static", difficulty, "Programming"));
+                    Arrays.asList("integer","String","static","float"), "static", difficulty, "Programming",
+                    "'static' is a Java keyword used to declare class-level members. 'String' is a class (not a primitive keyword), 'integer' doesn't exist (it's 'int' or 'Integer'), and 'float' is a primitive type but 'Float' is its wrapper class."));
         }
 
         if (questions.size() < count) {
             questions.add(new QuizQuestion("Capital of France?",
-                    Arrays.asList("London","Berlin","Paris","Madrid"), "Paris", difficulty, "General"));
+                    Arrays.asList("London","Berlin","Paris","Madrid"), "Paris", difficulty, "General",
+                    "Paris is the capital and largest city of France. London is the capital of the UK, Berlin of Germany, and Madrid of Spain."));
             questions.add(new QuizQuestion("The Red Planet?",
-                    Arrays.asList("Mars","Jupiter","Venus","Saturn"), "Mars", difficulty, "General"));
+                    Arrays.asList("Mars","Jupiter","Venus","Saturn"), "Mars", difficulty, "General",
+                    "Mars is called the Red Planet because its surface is covered in iron oxide (rust), giving it a reddish appearance."));
             questions.add(new QuizQuestion("Largest ocean?",
-                    Arrays.asList("Atlantic","Indian","Arctic","Pacific"), "Pacific", difficulty, "General"));
+                    Arrays.asList("Atlantic","Indian","Arctic","Pacific"), "Pacific", difficulty, "General",
+                    "The Pacific Ocean is the largest and deepest ocean, covering about 165 million km² — more than all Earth's land combined."));
         }
 
         Collections.shuffle(questions);
         return questions.subList(0, Math.min(count, questions.size()));
     }
 
+    // ══════════════════════════════════════════════════════════════════════════
+    //  QUIZ SESSION
+    // ══════════════════════════════════════════════════════════════════════════
     private void startQuizSession() { showQuizSubView("quiz"); startQuizTimer(); showQuizQuestion(); }
 
     private void startQuizTimer() {
@@ -715,60 +734,174 @@ public class CoursesController implements Initializable {
     private void handleQuizOptionSelected(Button clicked, String opt) {
         quizSelectedOpt = opt;
         btnQuizNext.setDisable(false);
-        quizVboxOptions.getChildren().forEach(n -> { if (n instanceof Button b) b.setStyle(quizDefaultOptionStyle()); });
+        // Juste marquer la sélection — PAS de feedback correct/incorrect ici
+        quizVboxOptions.getChildren().forEach(n -> {
+            if (n instanceof Button b) b.setStyle(quizDefaultOptionStyle());
+        });
         clicked.setStyle(quizSelectedOptionStyle());
     }
 
+    /**
+     * Passer à la question suivante sans révéler la bonne réponse.
+     * Les corrections et explications sont affichées uniquement à la fin.
+     */
     @FXML private void handleQuizNextQuestion() {
         QuizQuestion q = quizQuestions.get(quizCurrentIndex);
         q.userAnswer = quizSelectedOpt;
+
         boolean correct = quizSelectedOpt != null && quizSelectedOpt.equals(q.correctAnswer);
         if (correct) quizScore++;
         if (quizSelectedOpt != null) quizAnsweredCount++;
-        showQuizFeedback(correct, q.correctAnswer);
+
+        // Avancer directement — AUCUN feedback coloré pendant le quiz
+        quizCurrentIndex++;
+        showQuizQuestion();
     }
 
-    private void showQuizFeedback(boolean correct, String correctAnswer) {
-        btnQuizNext.setDisable(true);
-        quizVboxOptions.getChildren().forEach(n -> {
-            if (n instanceof Button b) {
-                String raw = b.getText().length() > 4 ? b.getText().substring(4) : b.getText();
-                if (raw.equals(correctAnswer)) b.setStyle(quizCorrectOptionStyle());
-                else if (raw.equals(quizSelectedOpt) && !correct) b.setStyle(quizWrongOptionStyle());
-            }
-        });
-        new Timeline(new KeyFrame(Duration.millis(900), e -> { quizCurrentIndex++; showQuizQuestion(); })).play();
-    }
-
+    // ══════════════════════════════════════════════════════════════════════════
+    //  FINISH QUIZ — Résultats détaillés avec explications IA
+    // ══════════════════════════════════════════════════════════════════════════
     private void finishQuiz() {
         stopQuizTimer();
         showQuizSubView("results");
-        int total = quizQuestions.size();
+
+        int total   = quizQuestions.size();
         int percent = total > 0 ? (int)((quizScore * 100.0) / total) : 0;
+
         lblQuizFinalScore.setText(quizScore + " / " + total);
         lblQuizFinalPercent.setText(percent + "%");
         lblQuizCorrectCount.setText(String.valueOf(quizScore));
         lblQuizWrongCount.setText(String.valueOf(total - quizScore));
         lblQuizTotalTime.setText(String.format("%d:%02d", quizSecondsElapsed/60, quizSecondsElapsed%60));
 
-        if (percent >= 80) { lblQuizFinalLevel.setText("Excellent 🎉"); lblQuizFinalLevel.setStyle("-fx-text-fill:#34D399;-fx-font-size:20px;-fx-font-weight:700;"); }
-        else if (percent >= 60) { lblQuizFinalLevel.setText("Good 👍"); lblQuizFinalLevel.setStyle("-fx-text-fill:#60A5FA;-fx-font-size:20px;-fx-font-weight:700;"); }
-        else { lblQuizFinalLevel.setText("Need Improvement 📚"); lblQuizFinalLevel.setStyle("-fx-text-fill:#FB7185;-fx-font-size:20px;-fx-font-weight:700;"); }
+        if (percent >= 80) {
+            lblQuizFinalLevel.setText("Excellent 🎉");
+            lblQuizFinalLevel.setStyle("-fx-text-fill:#34D399;-fx-font-size:20px;-fx-font-weight:700;");
+        } else if (percent >= 60) {
+            lblQuizFinalLevel.setText("Good 👍");
+            lblQuizFinalLevel.setStyle("-fx-text-fill:#60A5FA;-fx-font-size:20px;-fx-font-weight:700;");
+        } else {
+            lblQuizFinalLevel.setText("Need Improvement 📚");
+            lblQuizFinalLevel.setStyle("-fx-text-fill:#FB7185;-fx-font-size:20px;-fx-font-weight:700;");
+        }
 
+        // ── Résultats détaillés avec correction + explication IA ─────────────
         quizVboxDetailedResults.getChildren().clear();
+
         for (int i = 0; i < quizQuestions.size(); i++) {
-            QuizQuestion q = quizQuestions.get(i);
-            boolean ok = q.correctAnswer.equals(q.userAnswer);
-            VBox c = new VBox(6);
-            c.setStyle("-fx-background-color:" + (ok?"#064E3B":"#4C0519") + ";-fx-border-color:" + (ok?"#34D399":"#FB7185") + ";-fx-border-width:1.5;-fx-border-radius:10;-fx-background-radius:10;-fx-padding:12 16;");
-            Label lq = new Label((i+1) + ".  " + q.question); lq.setWrapText(true);
-            lq.setStyle("-fx-text-fill:#F8FAFC;-fx-font-size:13px;-fx-font-weight:600;");
-            Label la = new Label("Your answer: " + (q.userAnswer != null ? q.userAnswer : "Not answered"));
-            la.setStyle("-fx-text-fill:" + (ok?"#34D399":"#FB7185") + ";-fx-font-size:12px;");
-            Label lc = new Label("✓  Correct: " + q.correctAnswer);
-            lc.setStyle("-fx-text-fill:#34D399;-fx-font-size:12px;");
-            c.getChildren().addAll(lq, la, lc);
-            quizVboxDetailedResults.getChildren().add(c);
+            QuizQuestion q  = quizQuestions.get(i);
+            boolean ok      = q.correctAnswer.equals(q.userAnswer);
+            String accentColor  = ok ? "#34D399" : "#FB7185";
+            String bgColor      = ok ? "#064E3B" : "#4C0519";
+            String borderColor  = ok ? "#34D399" : "#FB7185";
+
+            VBox card = new VBox(10);
+            card.setStyle(
+                    "-fx-background-color:" + bgColor + ";" +
+                            "-fx-border-color:" + borderColor + ";" +
+                            "-fx-border-width:1.5;" +
+                            "-fx-border-radius:12;" +
+                            "-fx-background-radius:12;" +
+                            "-fx-padding:14 16;"
+            );
+
+            // ── En-tête question ─────────────────────────────────────────
+            HBox questionHeader = new HBox(10);
+            questionHeader.setAlignment(Pos.TOP_LEFT);
+
+            Label numBadge = new Label(String.valueOf(i + 1));
+            numBadge.setStyle(
+                    "-fx-background-color:" + accentColor + ";" +
+                            "-fx-text-fill:#0F172A;" +
+                            "-fx-font-size:11px;-fx-font-weight:800;" +
+                            "-fx-padding:3 8;-fx-background-radius:20;" +
+                            "-fx-min-width:24;-fx-alignment:CENTER;"
+            );
+
+            Label questionText = new Label(q.question);
+            questionText.setWrapText(true);
+            questionText.setStyle("-fx-text-fill:#F8FAFC;-fx-font-size:13px;-fx-font-weight:600;-fx-line-spacing:2;");
+            HBox.setHgrow(questionText, Priority.ALWAYS);
+
+            Label resultIcon = new Label(ok ? "✅" : "❌");
+            resultIcon.setStyle("-fx-font-size:18px;");
+
+            questionHeader.getChildren().addAll(numBadge, questionText, resultIcon);
+
+            // ── Réponse de l'utilisateur ─────────────────────────────────
+            HBox userAnswerRow = new HBox(8);
+            userAnswerRow.setAlignment(Pos.CENTER_LEFT);
+            Label userAnswerLabel = new Label("Your answer:");
+            userAnswerLabel.setStyle("-fx-text-fill:#94A3B8;-fx-font-size:12px;");
+            Label userAnswerValue = new Label(q.userAnswer != null ? q.userAnswer : "Not answered");
+            userAnswerValue.setWrapText(true);
+            userAnswerValue.setStyle("-fx-text-fill:" + accentColor + ";-fx-font-size:12px;-fx-font-weight:600;");
+            HBox.setHgrow(userAnswerValue, Priority.ALWAYS);
+            userAnswerRow.getChildren().addAll(userAnswerLabel, userAnswerValue);
+
+            card.getChildren().addAll(questionHeader, userAnswerRow);
+
+            // ── Bonne réponse (toujours affichée) ────────────────────────
+            if (!ok) {
+                HBox correctRow = new HBox(8);
+                correctRow.setAlignment(Pos.CENTER_LEFT);
+                Label correctLabel = new Label("✓  Correct answer:");
+                correctLabel.setStyle("-fx-text-fill:#94A3B8;-fx-font-size:12px;");
+                Label correctValue = new Label(q.correctAnswer);
+                correctValue.setWrapText(true);
+                correctValue.setStyle("-fx-text-fill:#34D399;-fx-font-size:12px;-fx-font-weight:700;");
+                HBox.setHgrow(correctValue, Priority.ALWAYS);
+                correctRow.getChildren().addAll(correctLabel, correctValue);
+                card.getChildren().add(correctRow);
+            }
+
+            // ── Séparateur ───────────────────────────────────────────────
+            if (q.explanation != null && !q.explanation.isBlank()) {
+                Region sep = new Region();
+                sep.setPrefHeight(1);
+                sep.setStyle("-fx-background-color:rgba(255,255,255,0.08);");
+
+                // ── Bloc explication IA ──────────────────────────────────
+                VBox explBox = new VBox(6);
+                explBox.setStyle(
+                        "-fx-background-color:rgba(124,58,237,0.12);" +
+                                "-fx-border-color:rgba(167,139,250,0.4);" +
+                                "-fx-border-width:1;" +
+                                "-fx-border-radius:8;" +
+                                "-fx-background-radius:8;" +
+                                "-fx-padding:10 12;"
+                );
+
+                HBox explHeader = new HBox(6);
+                explHeader.setAlignment(Pos.CENTER_LEFT);
+                Label explIconLabel = new Label("💡");
+                explIconLabel.setStyle("-fx-font-size:13px;");
+                Label explTitle = new Label("AI Explanation");
+                explTitle.setStyle(
+                        "-fx-text-fill:#A78BFA;" +
+                                "-fx-font-size:11px;" +
+                                "-fx-font-weight:700;" +
+                                "-fx-letter-spacing:0.5;"
+                );
+                Label poweredBy = new Label("· OpenRouter AI");
+                poweredBy.setStyle("-fx-text-fill:#534AB7;-fx-font-size:10px;");
+                Region explSpacer = new Region();
+                HBox.setHgrow(explSpacer, Priority.ALWAYS);
+                explHeader.getChildren().addAll(explIconLabel, explTitle, poweredBy, explSpacer);
+
+                Label explText = new Label(q.explanation);
+                explText.setWrapText(true);
+                explText.setStyle(
+                        "-fx-text-fill:#CBD5E1;" +
+                                "-fx-font-size:12px;" +
+                                "-fx-line-spacing:3;"
+                );
+
+                explBox.getChildren().addAll(explHeader, explText);
+                card.getChildren().addAll(sep, explBox);
+            }
+
+            quizVboxDetailedResults.getChildren().add(card);
         }
     }
 
@@ -781,25 +914,92 @@ public class CoursesController implements Initializable {
 
     @FXML private void handleQuizBackToSetup() { stopQuizTimer(); showQuizSubView("setup"); }
 
+    // ── Styles des options ────────────────────────────────────────────────────
     private String quizDefaultOptionStyle() {
         return "-fx-background-color:#0F172A;-fx-border-color:#334155;-fx-border-width:1.5;" +
                 "-fx-border-radius:10;-fx-background-radius:10;-fx-padding:12 16;" +
                 "-fx-font-size:14px;-fx-text-fill:#CBD5E1;-fx-alignment:CENTER_LEFT;-fx-cursor:hand;";
     }
     private String quizSelectedOptionStyle() {
-        return "-fx-background-color:#1E1B4B;-fx-border-color:#7C3AED;-fx-border-width:1.5;" +
+        return "-fx-background-color:#1E1B4B;-fx-border-color:#7C3AED;-fx-border-width:2;" +
                 "-fx-border-radius:10;-fx-background-radius:10;-fx-padding:12 16;" +
-                "-fx-font-size:14px;-fx-text-fill:white;-fx-alignment:CENTER_LEFT;-fx-cursor:hand;";
+                "-fx-font-size:14px;-fx-text-fill:white;-fx-alignment:CENTER_LEFT;-fx-cursor:hand;" +
+                "-fx-effect:dropshadow(gaussian,rgba(124,58,237,0.3),8,0,0,2);";
     }
-    private String quizCorrectOptionStyle() {
-        return "-fx-background-color:#064E3B;-fx-border-color:#34D399;-fx-border-width:1.5;" +
-                "-fx-border-radius:10;-fx-background-radius:10;-fx-padding:12 16;" +
-                "-fx-font-size:14px;-fx-text-fill:#34D399;-fx-alignment:CENTER_LEFT;";
+
+    // ══════════════════════════════════════════════════════════════════════════
+    //  AI QUIZ GENERATION
+    // ══════════════════════════════════════════════════════════════════════════
+    @FXML private void handleGenerateAIQuiz() {
+        lblQuizSetupError.setText("");
+        if (cmbQuizSection.getValue() == null) { lblQuizSetupError.setText("⚠ Please select a section."); return; }
+        Matiere selected = cmbQuizMatiere.getValue();
+        if (selected == null) { lblQuizSetupError.setText("⚠ Please select a subject."); return; }
+
+        String matiere    = selected.getNomMatiere();
+        String section    = cmbQuizSection.getValue();
+        String difficulty = cmbQuizDifficulty.getValue() != null ? cmbQuizDifficulty.getValue() : "Medium";
+        int    count      = cmbQuizCount.getValue() != null ? cmbQuizCount.getValue() : 10;
+        String level      = detectLevel(getStudentGradeForSubject(selected.getId()));
+
+        showQuizLoading(true);
+        lblQuizLoadingStatus.setText("Claude AI is generating your questions with explanations…");
+
+        new Thread(() -> {
+            try {
+                AIQuizService service = new AIQuizService();
+                List<AIQuizService.ParsedQuestion> parsed = service.generateQuizQuestions(matiere, section, level, count);
+                Platform.runLater(() -> {
+                    showQuizLoading(false);
+                    if (parsed.isEmpty()) {
+                        lblQuizSetupError.setText("⚠ AI returned no questions. Check your API key.");
+                        showQuizSubView("setup"); return;
+                    }
+                    quizQuestions.clear();
+                    for (AIQuizService.ParsedQuestion pq : parsed) {
+                        quizQuestions.add(new QuizQuestion(
+                                pq.question,
+                                pq.options,
+                                pq.correct,
+                                pq.difficulty,
+                                pq.category,
+                                pq.explanation   // ← explication IA
+                        ));
+                    }
+                    quizCurrentIndex = 0; quizScore = 0; quizAnsweredCount = 0;
+                    startQuizSession();
+                });
+            } catch (Exception e) {
+                e.printStackTrace();
+                Platform.runLater(() -> {
+                    showQuizLoading(false);
+                    String msg = e.getMessage();
+                    if (msg != null && msg.contains("401")) lblQuizSetupError.setText("⚠ Invalid API key.");
+                    else if (msg != null && msg.contains("429")) lblQuizSetupError.setText("⚠ Rate limit. Wait and retry.");
+                    else lblQuizSetupError.setText("⚠ AI error: " + (msg != null ? msg : "Unknown"));
+                    showQuizSubView("setup");
+                });
+            }
+        }).start();
     }
-    private String quizWrongOptionStyle() {
-        return "-fx-background-color:#4C0519;-fx-border-color:#FB7185;-fx-border-width:1.5;" +
-                "-fx-border-radius:10;-fx-background-radius:10;-fx-padding:12 16;" +
-                "-fx-font-size:14px;-fx-text-fill:#FB7185;-fx-alignment:CENTER_LEFT;";
+
+    private void showQuizLoading(boolean show) {
+        if (btnGenerateAIQuiz != null) {
+            btnGenerateAIQuiz.setDisable(show);
+            btnGenerateAIQuiz.setText(show ? "⏳ AI is generating..." : "🤖  Generate AI Quiz with Claude");
+        }
+        if (show) showQuizSubView("loading");
+    }
+
+    private String detectLevel(double note) {
+        if (note < 10) return "easy";
+        else if (note < 14) return "medium";
+        else return "hard";
+    }
+
+    private double getStudentGradeForSubject(int matiereId) {
+        return allEvals.stream().filter(e -> e.getMatiereId() == matiereId)
+                .mapToDouble(EvaluationMatiere::getScoreEval).average().orElse(10.0);
     }
 
     // ══════════════════════════════════════════════════════════════════════════
@@ -883,7 +1083,7 @@ public class CoursesController implements Initializable {
     }
 
     // ══════════════════════════════════════════════════════════════════════════
-    //  STATISTICS — using native JavaFX charts (no WebView, no CDN)
+    //  STATISTICS
     // ══════════════════════════════════════════════════════════════════════════
     @FXML private void handleShowStats() {
         if (allEvals.isEmpty()) {
@@ -899,10 +1099,8 @@ public class CoursesController implements Initializable {
         statsView.setSpacing(16);
         statsView.setPadding(new Insets(0, 0, 24, 0));
 
-        // Row 1 — KPI cards
         statsView.getChildren().add(buildKpiRow());
 
-        // Row 2 — Subject bars + Priority rings (pure JavaFX)
         HBox row2 = new HBox(16);
         VBox subjectCard = buildSubjectBarsCard();
         VBox priorityCard = buildPriorityRingsCard();
@@ -911,7 +1109,6 @@ public class CoursesController implements Initializable {
         row2.getChildren().addAll(subjectCard, priorityCard);
         statsView.getChildren().add(row2);
 
-        // Row 3 — Line chart + Bar chart (native JavaFX)
         HBox row3 = new HBox(16);
         VBox lineCard = buildLineChartCard();
         VBox barCard  = buildBarChartCard();
@@ -920,14 +1117,10 @@ public class CoursesController implements Initializable {
         row3.getChildren().addAll(lineCard, barCard);
         statsView.getChildren().add(row3);
 
-        // Row 4 — Heatmap
         statsView.getChildren().add(buildHeatmapCard());
-
-        // Row 5 — Insights
         statsView.getChildren().add(buildInsightsCard());
     }
 
-    // ── Native JavaFX Line Chart ───────────────────────────────────────────
     private VBox buildLineChartCard() {
         VBox card = cardContainer("Score trend");
 
@@ -955,16 +1148,11 @@ public class CoursesController implements Initializable {
                 ));
 
         chart.getData().add(series);
-
-        // Style the line and dots purple
-        chart.setStyle(chart.getStyle() +
-                " -fx-stroke:#A78BFA; -fx-background-color:transparent;");
-
+        chart.setStyle(chart.getStyle() + " -fx-stroke:#A78BFA; -fx-background-color:transparent;");
         card.getChildren().add(chart);
         return card;
     }
 
-    // ── Native JavaFX Bar Chart ────────────────────────────────────────────
     private VBox buildBarChartCard() {
         VBox card = cardContainer("Avg by subject");
 
@@ -998,7 +1186,6 @@ public class CoursesController implements Initializable {
         return card;
     }
 
-    // ── KPI Row ───────────────────────────────────────────────────────────────
     private HBox buildKpiRow() {
         HBox row = new HBox(12);
         double avg      = allEvals.stream().mapToDouble(EvaluationMatiere::getScoreEval).average().orElse(0);
@@ -1087,7 +1274,6 @@ public class CoursesController implements Initializable {
         return card;
     }
 
-    // ── Priority rings using JavaFX StackPane + ProgressIndicator ─────────
     private VBox buildPriorityRingsCard() {
         VBox card = cardContainer("Score rings by priority");
 
@@ -1260,74 +1446,6 @@ public class CoursesController implements Initializable {
         Label badge = new Label(text);
         badge.setStyle("-fx-text-fill:"+textColor+";-fx-background-color:"+bgColor+";-fx-font-size:12px;-fx-padding:6 12;-fx-background-radius:20;");
         flow.getChildren().add(badge);
-    }
-
-    // ══════════════════════════════════════════════════════════════════════════
-    //  AI QUIZ GENERATION
-    // ══════════════════════════════════════════════════════════════════════════
-    @FXML private void handleGenerateAIQuiz() {
-        lblQuizSetupError.setText("");
-        if (cmbQuizSection.getValue() == null) { lblQuizSetupError.setText("⚠ Please select a section."); return; }
-        Matiere selected = cmbQuizMatiere.getValue();
-        if (selected == null) { lblQuizSetupError.setText("⚠ Please select a subject."); return; }
-
-        String matiere    = selected.getNomMatiere();
-        String section    = cmbQuizSection.getValue();
-        String difficulty = cmbQuizDifficulty.getValue() != null ? cmbQuizDifficulty.getValue() : "Medium";
-        int    count      = cmbQuizCount.getValue() != null ? cmbQuizCount.getValue() : 10;
-        String level      = detectLevel(getStudentGradeForSubject(selected.getId()));
-
-        showQuizLoading(true);
-        lblQuizLoadingStatus.setText("Claude AI is generating your questions...");
-
-        new Thread(() -> {
-            try {
-                AIQuizService service = new AIQuizService();
-                List<AIQuizService.ParsedQuestion> parsed = service.generateQuizQuestions(matiere, section, level, count);
-                Platform.runLater(() -> {
-                    showQuizLoading(false);
-                    if (parsed.isEmpty()) {
-                        lblQuizSetupError.setText("⚠ AI returned no questions. Check your API key.");
-                        showQuizSubView("setup"); return;
-                    }
-                    quizQuestions.clear();
-                    for (AIQuizService.ParsedQuestion pq : parsed) {
-                        quizQuestions.add(new QuizQuestion(pq.question, pq.options, pq.correct, pq.difficulty, pq.category));
-                    }
-                    quizCurrentIndex = 0; quizScore = 0; quizAnsweredCount = 0;
-                    startQuizSession();
-                });
-            } catch (Exception e) {
-                e.printStackTrace();
-                Platform.runLater(() -> {
-                    showQuizLoading(false);
-                    String msg = e.getMessage();
-                    if (msg != null && msg.contains("401")) lblQuizSetupError.setText("⚠ Invalid API key.");
-                    else if (msg != null && msg.contains("429")) lblQuizSetupError.setText("⚠ Rate limit. Wait and retry.");
-                    else lblQuizSetupError.setText("⚠ AI error: " + (msg != null ? msg : "Unknown"));
-                    showQuizSubView("setup");
-                });
-            }
-        }).start();
-    }
-
-    private void showQuizLoading(boolean show) {
-        if (btnGenerateAIQuiz != null) {
-            btnGenerateAIQuiz.setDisable(show);
-            btnGenerateAIQuiz.setText(show ? "⏳ AI is generating..." : "🤖  Generate AI Quiz with Claude");
-        }
-        if (show) showQuizSubView("loading");
-    }
-
-    private String detectLevel(double note) {
-        if (note < 10) return "easy";
-        else if (note < 14) return "medium";
-        else return "hard";
-    }
-
-    private double getStudentGradeForSubject(int matiereId) {
-        return allEvals.stream().filter(e -> e.getMatiereId() == matiereId)
-                .mapToDouble(EvaluationMatiere::getScoreEval).average().orElse(10.0);
     }
 
     // ══════════════════════════════════════════════════════════════════════════

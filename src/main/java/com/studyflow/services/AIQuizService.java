@@ -22,15 +22,15 @@ public class AIQuizService {
     // ✅ Clé lue depuis variable d'environnement
     private static final String API_KEY = System.getenv("OPENROUTER_API_KEY") != null
             ? System.getenv("OPENROUTER_API_KEY")
-            : "//METTEZ_VOTRE_CLE_OPENROUTER_ICI"; //METTEZ_VOTRE_CLE_OPENROUTER_ICI  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
+            : "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";
 
     // Modèles gratuits disponibles sur OpenRouter :
     // "mistralai/mistral-7b-instruct:free"
     // "google/gemma-3-27b-it:free"
     // "meta-llama/llama-3.1-8b-instruct:free"
     // "deepseek/deepseek-chat-v3-0324:free"
-// Remplacez la ligne 28 par celle-ci :
-    private static final String MODEL = "openrouter/free";    private static final String OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
+    private static final String MODEL = "openrouter/free";
+    private static final String OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
     /**
      * Génère un quiz AI via OpenRouter pour une matière et section donnée.
@@ -38,10 +38,9 @@ public class AIQuizService {
     public List<ParsedQuestion> generateQuizQuestions(String matiere, String section, String level, int count) throws Exception {
         String prompt = buildPrompt(matiere, section, level, count);
 
-        // Format OpenAI-compatible (utilisé par OpenRouter)
         String jsonBody = "{"
                 + "\"model\": \"" + MODEL + "\","
-                + "\"max_tokens\": 2048,"
+                + "\"max_tokens\": 3000,"
                 + "\"messages\": ["
                 + "  {"
                 + "    \"role\": \"user\","
@@ -54,8 +53,8 @@ public class AIQuizService {
                 .uri(URI.create(OPENROUTER_URL))
                 .header("Content-Type", "application/json")
                 .header("Authorization", "Bearer " + API_KEY)
-                .header("HTTP-Referer", "https://studyflow.app")   // recommandé par OpenRouter
-                .header("X-Title", "StudyFlow")                     // nom de l'app
+                .header("HTTP-Referer", "https://studyflow.app")
+                .header("X-Title", "StudyFlow")
                 .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
                 .build();
 
@@ -83,38 +82,44 @@ public class AIQuizService {
             for (int j = 0; j < q.options.size(); j++) {
                 sb.append((char) ('A' + j)).append(") ").append(q.options.get(j)).append("\n");
             }
-            sb.append("Answer: ").append(q.correct).append("\n\n");
+            sb.append("Answer: ").append(q.correct).append("\n");
+            if (q.explanation != null && !q.explanation.isBlank()) {
+                sb.append("Explanation: ").append(q.explanation).append("\n");
+            }
+            sb.append("\n");
         }
         return sb.toString();
     }
 
     /**
-     * Prompt structuré — force JSON pour parsing fiable.
+     * Prompt structuré — force JSON avec explication pour chaque question.
      */
     private String buildPrompt(String matiere, String section, String level, int count) {
         return "You are an expert teacher. Generate exactly " + count + " multiple choice questions "
                 + "for a student studying the subject: \"" + matiere + "\" "
                 + "in the section: \"" + section + "\". "
                 + "The difficulty level is: " + level + ".\n\n"
-                + "Return ONLY a valid JSON array, no explanation, no markdown. Format:\n"
+                + "Return ONLY a valid JSON array, no explanation outside the JSON, no markdown backticks. Format:\n"
                 + "[\n"
                 + "  {\n"
                 + "    \"question\": \"What is ...?\",\n"
                 + "    \"options\": [\"Option A\", \"Option B\", \"Option C\", \"Option D\"],\n"
                 + "    \"correct\": \"Option A\",\n"
+                + "    \"explanation\": \"Option A is correct because ... The other options are wrong because ...\",\n"
                 + "    \"difficulty\": \"" + level + "\",\n"
                 + "    \"category\": \"" + matiere + "\"\n"
                 + "  }\n"
                 + "]\n\n"
-                + "Generate exactly " + count + " questions. Return ONLY the JSON array.";
+                + "IMPORTANT:\n"
+                + "- Generate exactly " + count + " questions.\n"
+                + "- The 'explanation' field must be a clear, educational explanation (2-3 sentences) of why the correct answer is right and why the others are wrong.\n"
+                + "- Return ONLY the JSON array, nothing else.";
     }
 
     /**
      * Extrait le texte de la réponse OpenRouter (format OpenAI-compatible).
-     * Format: {"choices": [{"message": {"content": "..."}}]}
      */
     private String extractTextFromOpenRouterResponse(String jsonResponse) {
-        // Chercher "content" dans choices[0].message.content
         int choicesIdx = jsonResponse.indexOf("\"choices\"");
         if (choicesIdx == -1) {
             throw new RuntimeException("Unexpected response format: " + jsonResponse);
@@ -130,7 +135,6 @@ public class AIQuizService {
             throw new RuntimeException("Malformed content field: " + jsonResponse);
         }
 
-        // Trouver le premier guillemet après ':'
         int quoteStart = jsonResponse.indexOf('"', colonIdx + 1);
         if (quoteStart == -1) {
             throw new RuntimeException("No string value for content: " + jsonResponse);
@@ -139,7 +143,6 @@ public class AIQuizService {
         int quoteEnd = findJsonStringEnd(jsonResponse, quoteStart + 1);
         String rawText = jsonResponse.substring(quoteStart + 1, quoteEnd);
 
-        // Dé-échapper les caractères JSON
         return rawText
                 .replace("\\n", "\n")
                 .replace("\\\"", "\"")
@@ -178,7 +181,6 @@ public class AIQuizService {
         if (jsonText.endsWith("```"))       jsonText = jsonText.substring(0, jsonText.length() - 3);
         jsonText = jsonText.trim();
 
-        // Parser chaque bloc { ... }
         int i = 0;
         while (i < jsonText.length()) {
             int objStart = jsonText.indexOf('{', i);
@@ -205,10 +207,11 @@ public class AIQuizService {
     private ParsedQuestion parseQuestion(String obj) {
         try {
             ParsedQuestion q = new ParsedQuestion();
-            q.question   = extractJsonString(obj, "question");
-            q.correct    = extractJsonString(obj, "correct");
-            q.difficulty = extractJsonString(obj, "difficulty");
-            q.category   = extractJsonString(obj, "category");
+            q.question    = extractJsonString(obj, "question");
+            q.correct     = extractJsonString(obj, "correct");
+            q.explanation = extractJsonString(obj, "explanation");
+            q.difficulty  = extractJsonString(obj, "difficulty");
+            q.category    = extractJsonString(obj, "category");
 
             // Parser le tableau d'options
             int optStart = obj.indexOf("\"options\"");
@@ -307,11 +310,12 @@ public class AIQuizService {
     //  Modèle de question parsée
     // ══════════════════════════════════════════════════════════════════════════
     public static class ParsedQuestion {
-        public String       question   = "";
-        public List<String> options    = new ArrayList<>();
-        public String       correct    = "";
-        public String       difficulty = "Medium";
-        public String       category   = "General";
+        public String       question    = "";
+        public List<String> options     = new ArrayList<>();
+        public String       correct     = "";
+        public String       explanation = "";   // ← Explication IA de la bonne réponse
+        public String       difficulty  = "Medium";
+        public String       category    = "General";
         public char[]       correctAnswer; // gardé pour compatibilité
     }
 }
