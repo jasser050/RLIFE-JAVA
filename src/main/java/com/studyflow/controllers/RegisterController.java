@@ -1,0 +1,639 @@
+package com.studyflow.controllers;
+
+import com.studyflow.App;
+import com.studyflow.LocalServer;
+import com.studyflow.models.User;
+import com.studyflow.services.ServiceUser;
+import com.studyflow.utils.AvatarCard;
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.EncodeHintType;
+import com.google.zxing.WriterException;
+import com.google.zxing.common.BitMatrix;
+import com.google.zxing.qrcode.QRCodeWriter;
+import javafx.application.Platform;
+import javafx.fxml.FXML;
+import javafx.fxml.Initializable;
+import javafx.scene.control.*;
+import javafx.scene.image.ImageView;
+import javafx.scene.image.PixelWriter;
+import javafx.scene.image.WritableImage;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.FlowPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
+import javafx.scene.web.WebView;
+import javafx.scene.paint.Color;
+import javafx.stage.Stage;
+import org.kordamp.ikonli.javafx.FontIcon;
+
+import java.io.IOException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.ResourceBundle;
+
+public class RegisterController implements Initializable {
+
+    // Title bar
+    @FXML private Button themeBtn;
+    @FXML private Label titleBarSubtitle;
+
+
+    // Step indicator circles and connectors
+    @FXML private StackPane stepCircle1, stepCircle2, stepCircle3, stepCircle4;
+    @FXML private StackPane connector1, connector2, connector3;
+    @FXML private Label stepLabel1, stepLabel2, stepLabel3, stepLabel4;
+
+    // Step panels
+    @FXML private VBox step1Panel, step2Panel, step3Panel, step4Panel;
+
+    // Step 1 fields
+    @FXML private TextField firstNameField;
+    @FXML private TextField lastNameField;
+    @FXML private TextField usernameField;
+    @FXML private TextField emailField;
+    @FXML private PasswordField passwordField;
+    @FXML private PasswordField confirmPasswordField;
+
+    // Step 2 fields
+    @FXML private TextField phoneField;
+    @FXML private TextField universityField;
+    @FXML private TextField studentIdField;
+    @FXML private RadioButton genderMale;
+    @FXML private RadioButton genderFemale;
+
+    // Step 3 - Avatar
+    @FXML private FlowPane avatarContainer;
+    @FXML private HBox avatarPreviewBox;
+    @FXML private Label avatarPreviewIcon;
+    @FXML private Label avatarPreviewName;
+
+    private final List<AvatarCard> avatarCards = new ArrayList<>();
+
+    // Step 4 - Face ID (QR code)
+    @FXML private ImageView qrCodeImage;
+    @FXML private StackPane qrCodeContainer;
+    @FXML private Label faceIdSubtitle;
+    @FXML private Label qrStatusLabel;
+    @FXML private FontIcon qrStatusIcon;
+    @FXML private HBox qrStatusBox;
+
+    // Right panel — 3D robot
+    @FXML private StackPane robotContainer;
+    @FXML private WebView splineWebView;
+
+    // Shared
+    @FXML private Label errorLabel;
+    @FXML private Button registerBtn;
+
+    private final ServiceUser serviceUser = new ServiceUser();
+    private double xOffset = 0;
+    private double yOffset = 0;
+    private boolean lightMode = false;
+
+    private int currentStep = 1;
+    private String selectedAvatar = null;
+    private boolean faceIdDone = false;
+    private volatile boolean pollingActive = false;
+
+    private static final String[] STEP_TITLES = {
+        "Create Account", "Preferences", "Choose Avatar", "Face ID"
+    };
+    private static final String[] AVATAR_EMOJIS = {
+        "👨", "🧑", "👦", "🧑‍💻", "🧑‍🎓", "🧑‍🔬", "🧑‍🎨", "🧑‍⚕️",
+        "👩", "👩‍💻", "👩‍🎓"
+    };
+    private static final String[] AVATAR_NAMES = {
+        "Classic", "Explorer", "Scholar", "Coder", "Graduate",
+        "Scientist", "Creative", "Medic", "Classic", "Tech Lady", "Scholar"
+    };
+    private static final String[] AVATAR_KEYS = {
+        "male-avatar", "male-avatar1", "male-avatar2", "male-avatar3",
+        "male-avatar4", "male-avatar5", "male-avatar6", "male-avatar7",
+        "female-avatar", "female-avatar2", "female-avatar3"
+    };
+
+    @Override
+    public void initialize(URL location, ResourceBundle resources) {
+
+        // Gender toggle group
+        ToggleGroup genderGroup = new ToggleGroup();
+        genderMale.setToggleGroup(genderGroup);
+        genderFemale.setToggleGroup(genderGroup);
+        genderMale.setSelected(true);
+
+        // Build native JavaFX AvatarCards for each .glb file
+        for (int i = 0; i < AVATAR_KEYS.length; i++) {
+            final String key  = AVATAR_KEYS[i];
+            final String name = AVATAR_NAMES[i];
+            final String gen  = key.startsWith("female") ? "female" : "male";
+            AvatarCard card = new AvatarCard(key, name, gen, () -> onAvatarSelected(key));
+            avatarCards.add(card);
+            avatarContainer.getChildren().add(card);
+        }
+
+        // Generate QR code for Face ID (phone scan)
+        generateQrCode();
+
+        // Load marketing page with 3D robot in the right panel
+        String htmlPath = getClass().getResource("/com/studyflow/views/spline.html").toExternalForm();
+        splineWebView.getEngine().load(htmlPath);
+        
+        // Make WebView fill the container
+        splineWebView.prefWidthProperty().bind(robotContainer.widthProperty());
+        splineWebView.prefHeightProperty().bind(robotContainer.heightProperty());
+
+        showStep(1);
+    }
+
+    private void generateQrCode() {
+        String faceIdUrl = LocalServer.lanUrl("/views/face-id-mobile.html");
+        System.out.println("[FaceID] QR URL: " + faceIdUrl);
+
+        try {
+            QRCodeWriter writer = new QRCodeWriter();
+            BitMatrix matrix = writer.encode(faceIdUrl, BarcodeFormat.QR_CODE, 260, 260,
+                    Map.of(EncodeHintType.MARGIN, 1));
+
+            WritableImage image = new WritableImage(260, 260);
+            PixelWriter pw = image.getPixelWriter();
+
+            for (int y = 0; y < 260; y++) {
+                for (int x = 0; x < 260; x++) {
+                    pw.setColor(x, y, matrix.get(x, y)
+                            ? Color.web("#E2E8F0")   // QR dots — light for dark background
+                            : Color.web("#0F172A"));  // Background — dark
+                }
+            }
+
+            qrCodeImage.setImage(image);
+        } catch (WriterException e) {
+            System.err.println("Failed to generate QR code: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Start polling the server for face ID completion (called when step 4 becomes visible).
+     */
+    private void startFaceIdPolling() {
+        LocalServer.resetFaceIdStatus();
+        pollingActive = true;
+
+        Thread poller = new Thread(() -> {
+            while (pollingActive && !faceIdDone) {
+                try { Thread.sleep(800); } catch (InterruptedException e) { break; }
+
+                String status = LocalServer.getFaceIdStatus();
+                if ("captured".equals(status)) {
+                    Platform.runLater(() -> {
+                        faceIdDone = true;
+                        pollingActive = false;
+                        registerBtn.setText("Create Account  ✓");
+                        qrStatusLabel.setText("Face captured successfully!");
+                        qrStatusLabel.setStyle("-fx-text-fill: #34D399; -fx-font-size: 13px; -fx-font-weight: bold;");
+                        qrStatusIcon.setIconLiteral("fth-check-circle");
+                        qrStatusIcon.setStyle("-fx-icon-color: #34D399;");
+                        faceIdSubtitle.setText("Face ID has been set up — you're ready to go!");
+                    });
+                } else if ("skipped".equals(status)) {
+                    Platform.runLater(() -> {
+                        faceIdDone = true;
+                        pollingActive = false;
+                        registerBtn.setText("Create Account →");
+                        qrStatusLabel.setText("Face ID skipped");
+                        qrStatusLabel.setStyle("-fx-text-fill: #F59E0B; -fx-font-size: 13px;");
+                        qrStatusIcon.setIconLiteral("fth-alert-circle");
+                        qrStatusIcon.setStyle("-fx-icon-color: #F59E0B;");
+                    });
+                }
+            }
+        });
+        poller.setDaemon(true);
+        poller.start();
+    }
+
+    private void stopFaceIdPolling() {
+        pollingActive = false;
+    }
+
+    private void onAvatarSelected(String avatarKey) {
+        selectedAvatar = avatarKey;
+
+        // Deselect all cards, then select the chosen one
+        for (AvatarCard c : avatarCards) {
+            c.setSelected(c.getAvatarKey().equals(avatarKey));
+        }
+
+        // Find name for the selected avatar
+        String name = avatarKey;
+        String emoji = "👤";
+        for (int i = 0; i < AVATAR_KEYS.length; i++) {
+            if (AVATAR_KEYS[i].equals(avatarKey)) {
+                emoji = AVATAR_EMOJIS[i];
+                name = AVATAR_NAMES[i];
+                break;
+            }
+        }
+
+        avatarPreviewIcon.setText(emoji);
+        avatarPreviewName.setText(name);
+        avatarPreviewBox.setVisible(true);
+        avatarPreviewBox.setManaged(true);
+    }
+
+    @FXML
+    private void nextStep() {
+        try {
+            hideError();
+            if (currentStep == 1) {
+                if (!validateStep1()) return;
+            }
+            if (currentStep == 2) {
+                if (!validateStep2()) return;
+            }
+            if (currentStep < 4) {
+                showStep(currentStep + 1);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            showError("Error: " + e.getMessage());
+        }
+    }
+
+    private boolean validateStep2() {
+        String phone = phoneField.getText().trim();
+        String university = universityField.getText().trim();
+
+        if (!phone.isEmpty() && !phone.matches("^\\+?[0-9]{8,15}$")) {
+            showError("Please enter a valid phone number.");
+            return false;
+        }
+        return true;
+    }
+
+    @FXML
+    private void prevStep() {
+        if (currentStep > 1) {
+            showStep(currentStep - 1);
+        }
+    }
+
+    private void showStep(int step) {
+        currentStep = step;
+
+        // Update title bar
+        titleBarSubtitle.setText(STEP_TITLES[step - 1]);
+
+        // Hide all panels
+        setPanel(step1Panel, step == 1);
+        setPanel(step2Panel, step == 2);
+        setPanel(step3Panel, step == 3);
+        setPanel(step4Panel, step == 4);
+
+        // Update step indicator circles
+        updateStepIndicator(stepCircle1, stepLabel1, step, 1);
+        updateStepIndicator(stepCircle2, stepLabel2, step, 2);
+        updateStepIndicator(stepCircle3, stepLabel3, step, 3);
+        updateStepIndicator(stepCircle4, stepLabel4, step, 4);
+
+        // Update connectors
+        updateConnector(connector1, step > 1);
+        updateConnector(connector2, step > 2);
+        updateConnector(connector3, step > 3);
+
+        // Start/stop face ID polling
+        if (step == 4 && !faceIdDone) {
+            startFaceIdPolling();
+        } else {
+            stopFaceIdPolling();
+        }
+    }
+
+    private void setPanel(VBox panel, boolean show) {
+        panel.setVisible(show);
+        panel.setManaged(show);
+    }
+
+    private void updateStepIndicator(StackPane circle, Label label, int currentStep, int thisStep) {
+        circle.getStyleClass().removeAll("wizard-step-active", "wizard-step-done");
+        label.getStyleClass().removeAll("wizard-step-label-active", "wizard-step-label-done");
+
+        if (currentStep == thisStep) {
+            circle.getStyleClass().add("wizard-step-active");
+            label.getStyleClass().add("wizard-step-label-active");
+        } else if (currentStep > thisStep) {
+            circle.getStyleClass().add("wizard-step-done");
+            label.getStyleClass().add("wizard-step-label-done");
+            // Set check icon
+            if (!circle.getChildren().isEmpty() && circle.getChildren().get(0) instanceof Label) {
+                ((Label) circle.getChildren().get(0)).setText("✓");
+            }
+        } else {
+            // Reset text back to number
+            if (!circle.getChildren().isEmpty() && circle.getChildren().get(0) instanceof Label) {
+                ((Label) circle.getChildren().get(0)).setText(String.valueOf(thisStep));
+            }
+        }
+    }
+
+    private void updateConnector(StackPane connector, boolean active) {
+        connector.getStyleClass().removeAll("wizard-connector-active");
+        if (active) connector.getStyleClass().add("wizard-connector-active");
+    }
+
+    private boolean validateStep1() {
+        String firstName = firstNameField.getText().trim();
+        String lastName  = lastNameField.getText().trim();
+        String username  = usernameField.getText().trim();
+        String email     = emailField.getText().trim();
+        String password  = passwordField.getText();
+        String confirm   = confirmPasswordField.getText();
+
+        if (firstName.isEmpty()) {
+            showError("First name is required.");
+            return false;
+        }
+        if (firstName.length() < 2) {
+            showError("First name must be at least 2 characters.");
+            return false;
+        }
+        if (!firstName.matches("^[a-zA-Z\\s]+$")) {
+            showError("First name can only contain letters.");
+            return false;
+        }
+
+        if (lastName.isEmpty()) {
+            showError("Last name is required.");
+            return false;
+        }
+        if (lastName.length() < 2) {
+            showError("Last name must be at least 2 characters.");
+            return false;
+        }
+        if (!lastName.matches("^[a-zA-Z\\s]+$")) {
+            showError("Last name can only contain letters.");
+            return false;
+        }
+
+        if (username.isEmpty()) {
+            showError("Username is required.");
+            return false;
+        }
+        if (username.length() < 4) {
+            showError("Username must be at least 4 characters.");
+            return false;
+        }
+        if (!username.matches(".*\\d.*")) {
+            showError("Username must contain at least one number.");
+            return false;
+        }
+        if (!username.matches("^[a-zA-Z0-9_]+$")) {
+            showError("Username can only contain letters, numbers and underscores.");
+            return false;
+        }
+
+        if (email.isEmpty()) {
+            showError("Email is required.");
+            return false;
+        }
+        if (!email.contains("@")) {
+            showError("Email must contain @ symbol.");
+            return false;
+        }
+        if (!email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$")) {
+            showError("Please enter a valid email address.");
+            return false;
+        }
+
+        if (password.isEmpty()) {
+            showError("Password is required.");
+            return false;
+        }
+        if (password.length() < 8) {
+            showError("Password must be at least 8 characters.");
+            return false;
+        }
+        if (!password.matches(".*[0-9].*")) {
+            showError("Password must contain at least one number.");
+            return false;
+        }
+        if (!password.matches(".*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>/?].*")) {
+            showError("Password must contain at least one special character.");
+            return false;
+        }
+        if (!password.matches(".*[a-zA-Z].*")) {
+            showError("Password must contain at least one letter.");
+            return false;
+        }
+
+        if (!password.equals(confirm)) {
+            showError("Passwords do not match.");
+            return false;
+        }
+        try {
+            if (serviceUser.findByEmail(email) != null) {
+                showError("An account with this email already exists.");
+                return false;
+            }
+        } catch (Exception e) {
+            System.err.println("DB check failed: " + e.getMessage());
+        }
+        return true;
+    }
+
+    @FXML
+    private void handleRegister() {
+        hideError();
+
+        // Validate inputs
+        String validationError = validateInputs();
+        if (validationError != null) {
+            showError(validationError);
+            return;
+        }
+
+        registerBtn.setDisable(true);
+        registerBtn.setText("Creating account...");
+
+        User user = new User();
+        user.setFirstName(firstNameField.getText().trim());
+        user.setLastName(lastNameField.getText().trim());
+        user.setUsername(usernameField.getText().trim());
+        user.setEmail(emailField.getText().trim());
+        user.setPassword(passwordField.getText());
+        user.setPhoneNumber(phoneField.getText().trim());
+        user.setUniversity(universityField.getText().trim());
+        user.setStudentId(studentIdField.getText().trim());
+        user.setGender(genderMale.isSelected() ? "male" : "female");
+        if (selectedAvatar != null) {
+            user.setProfilePic(selectedAvatar);
+        }
+
+        try {
+            serviceUser.add(user);
+            // Link the face image captured via QR to this user's email
+            if (faceIdDone) {
+                LocalServer.linkFaceToEmail(user.getEmail());
+            }
+            App.setRoot("views/Login");
+        } catch (RuntimeException e) {
+            showError(e.getMessage());
+            registerBtn.setDisable(false);
+            registerBtn.setText("Create Account  ✓");
+        } catch (IOException e) {
+            showError("Account created! Please go to Sign In.");
+            registerBtn.setDisable(false);
+            registerBtn.setText("Create Account  ✓");
+        }
+    }
+
+    private String validateInputs() {
+        String firstName = firstNameField.getText().trim();
+        String lastName = lastNameField.getText().trim();
+        String username = usernameField.getText().trim();
+        String email = emailField.getText().trim();
+        String password = passwordField.getText();
+        String phone = phoneField.getText().trim();
+        String university = universityField.getText().trim();
+
+        if (firstName.isEmpty()) {
+            return "First name is required";
+        }
+        if (firstName.length() < 2) {
+            return "First name must be at least 2 characters";
+        }
+        if (!firstName.matches("^[a-zA-Z\\s]+$")) {
+            return "First name can only contain letters";
+        }
+
+        if (lastName.isEmpty()) {
+            return "Last name is required";
+        }
+        if (lastName.length() < 2) {
+            return "Last name must be at least 2 characters";
+        }
+        if (!lastName.matches("^[a-zA-Z\\s]+$")) {
+            return "Last name can only contain letters";
+        }
+
+        if (username.isEmpty()) {
+            return "Username is required";
+        }
+        if (username.length() < 4) {
+            return "Username must be at least 4 characters";
+        }
+        if (!username.matches(".*\\d.*")) {
+            return "Username must contain at least one number";
+        }
+        if (!username.matches("^[a-zA-Z0-9_]+$")) {
+            return "Username can only contain letters, numbers and underscores";
+        }
+
+        if (email.isEmpty()) {
+            return "Email is required";
+        }
+        if (!email.contains("@")) {
+            return "Email must contain @ symbol";
+        }
+        if (!email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$")) {
+            return "Please enter a valid email address";
+        }
+
+        if (password.isEmpty()) {
+            return "Password is required";
+        }
+        if (password.length() < 8) {
+            return "Password must be at least 8 characters";
+        }
+        if (!password.matches(".*[0-9].*")) {
+            return "Password must contain at least one number";
+        }
+        if (!password.matches(".*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>/?].*")) {
+            return "Password must contain at least one special character";
+        }
+        if (!password.matches(".*[a-zA-Z].*")) {
+            return "Password must contain at least one letter";
+        }
+
+        if (phone.isEmpty()) {
+            return "Phone number is required";
+        }
+        if (!phone.matches("^\\+?[0-9]{8,15}$")) {
+            return "Please enter a valid phone number";
+        }
+
+        if (university.isEmpty()) {
+            return "University is required";
+        }
+
+        return null;
+    }
+
+    @FXML
+    private void toggleTheme() {
+        lightMode = !lightMode;
+        String lightCss = getClass().getResource("/com/studyflow/styles/auth-light.css").toExternalForm();
+        javafx.scene.Scene scene = themeBtn.getScene();
+        if (lightMode) {
+            if (!scene.getStylesheets().contains(lightCss)) {
+                scene.getStylesheets().add(lightCss);
+            }
+            FontIcon icon = new FontIcon("fth-moon");
+            icon.setIconSize(13);
+            themeBtn.setGraphic(icon);
+            
+            // Update right panel theme
+            if (splineWebView != null) {
+                splineWebView.getEngine().executeScript("window.javaThemeChange(true);");
+            }
+        } else {
+            scene.getStylesheets().remove(lightCss);
+            FontIcon icon = new FontIcon("fth-sun");
+            icon.setIconSize(13);
+            themeBtn.setGraphic(icon);
+            
+            // Update right panel theme
+            if (splineWebView != null) {
+                splineWebView.getEngine().executeScript("window.javaThemeChange(false);");
+            }
+        }
+    }
+
+    @FXML
+    private void goToLogin() throws IOException { App.setRoot("views/Login"); }
+
+    @FXML
+    private void goToLanding() throws IOException { App.setRoot("views/Landing"); }
+
+    @FXML
+    private void onDragStart(MouseEvent e) {
+        xOffset = App.getPrimaryStage().getX() - e.getScreenX();
+        yOffset = App.getPrimaryStage().getY() - e.getScreenY();
+    }
+
+    @FXML
+    private void onDragged(MouseEvent e) {
+        App.getPrimaryStage().setX(e.getScreenX() + xOffset);
+        App.getPrimaryStage().setY(e.getScreenY() + yOffset);
+    }
+
+    @FXML private void minimizeWindow() { App.getPrimaryStage().setIconified(true); }
+    @FXML private void maximizeWindow() {
+        Stage stage = App.getPrimaryStage();
+        stage.setMaximized(!stage.isMaximized());
+    }
+    @FXML private void closeWindow() { Platform.exit(); }
+
+    private void showError(String msg) {
+        errorLabel.setText(msg);
+        errorLabel.setVisible(true);
+        errorLabel.setManaged(true);
+    }
+
+    private void hideError() {
+        errorLabel.setVisible(false);
+        errorLabel.setManaged(false);
+    }
+}
