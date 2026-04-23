@@ -154,8 +154,9 @@ public class WellbeingAiService {
             payload.add(new OpenRouterService.ChatMessage(
                     "system",
                     """
-                    You are RLIFE Wellbeing AI Coach for students.
+                    You are RLIFE AI Assistant for students.
                     Rules:
+                    - You can answer both general questions and wellbeing questions.
                     - Be warm, practical, and supportive.
                     - Reply ONLY in %s.
                     - Use the student's last message explicitly and respond directly.
@@ -362,36 +363,167 @@ public class WellbeingAiService {
     }
 
     private String generalFallbackReply(String message, String languageCode) {
+        String text = message == null ? "" : message.toLowerCase(Locale.ROOT);
         String topic = summarizeMessage(message);
-        boolean wellbeingRelated = isWellbeingRelated(message);
+
+        if (isChocolateCakeRequest(text)) {
+            return chocolateCakeReply(languageCode);
+        }
+        if (isEmailRequest(text)) {
+            return emailHelpReply(languageCode);
+        }
+        if (isConceptRequest(text)) {
+            return conceptHelpReply(languageCode);
+        }
+        if (isMovieRequest(text)) {
+            return movieRecommendationReply(languageCode, text);
+        }
+        String generalIntent = detectGeneralIntent(text);
+        if (!"unknown".equals(generalIntent)) {
+            return generalIntentReply(languageCode, generalIntent, topic);
+        }
 
         if ("fr-FR".equals(languageCode)) {
-            if (!wellbeingRelated) {
-                return "J'ai bien lu: \"" + topic + "\".\nJe suis surtout un coach bien-etre (stress, sommeil, focus, motivation).\nSi tu veux, je peux t'aider a transformer ta demande en plan anti-stress ou plan d'organisation.";
-            }
-            return "Tu as dit: \"" + topic + "\".\nPlan rapide:\n- Definis ton objectif des 20 prochaines minutes.\n- Fais une seule action courte maintenant.\n- Note ce qui te bloque pour que je t'aide a le debloquer.";
+            return "J'ai bien lu: \"" + topic + "\".\nJe peux t'aider sur presque toute demande. Donne-moi juste 1 detail en plus (objectif, niveau ou contrainte), et je te reponds directement.";
         }
 
         if ("ar-TN".equals(languageCode) || "ar-SA".equals(languageCode)) {
-            if (!wellbeingRelated) {
-                return "Fhemtk: \"" + topic + "\".\nEna akther coach wellbeing (stress, noum, focus, motivation).\nNajem n3awnek n7awlou talbek l plan sghir y9allek stress w y7assen tanthimk.";
-            }
-            return "Fhemt mni7: \"" + topic + "\".\nPlan sghir taw:\n- 7added objectif l 20 minute jeyin.\n- A3mel awel khotwa sghira taw.\n- 9olli chnoua li y3atlek besh nfasskhou m3a ba3dhna.";
+            return "Fhemtk: \"" + topic + "\".\nNajem n3awnek fi akther talab. Zidni b detail wa7ed (objectif/niveau/contraintes) w njawbik direct b chay moufid.";
         }
 
-        if (!wellbeingRelated) {
-            return "I read your message: \"" + topic + "\".\nI am mainly a wellbeing coach (stress, sleep, focus, motivation).\nIf you want, I can turn your request into a short wellbeing/action plan.";
-        }
-        return "I got your message: \"" + topic + "\".\nQuick plan:\n- Define one goal for the next 20 minutes.\n- Do one small action now.\n- Tell me what blocks you most so I can help you unblock it.";
+        return "I read your message: \"" + topic + "\".\nI can handle most requests. Give me one extra detail (goal, level, or constraint) and I will answer directly.";
     }
 
-    private boolean isWellbeingRelated(String message) {
-        String text = message == null ? "" : message.toLowerCase(Locale.ROOT);
+    private boolean isChocolateCakeRequest(String text) {
         return containsAny(text,
-                "stress", "stressed", "anxiety", "panic", "overwhelm",
-                "sleep", "insomnia", "dormir", "sommeil", "noum", "n3ass",
-                "focus", "concentr", "study", "exam", "revision", "motivation",
-                "sad", "depressed", "hopeless", "triste", "burnout", "fatigue");
+                "chocolate cake", "cake au chocolat", "gateau au chocolat", "gateau chocolat", "recette gateau");
+    }
+
+    private boolean isEmailRequest(String text) {
+        return containsAny(text,
+                "email", "e-mail", "mail", "courriel", "write an email", "ecrire un email", "rediger un email");
+    }
+
+    private boolean isConceptRequest(String text) {
+        return containsAny(text,
+                "explain", "what is", "definition", "concept", "explique", "c'est quoi", "definir", "definition");
+    }
+
+    private boolean isMovieRequest(String text) {
+        return containsAny(text,
+                "movie", "film", "serie", "series", "comedie", "comedia", "comedy", "netflix", "prime video");
+    }
+
+    private String chocolateCakeReply(String languageCode) {
+        if ("fr-FR".equals(languageCode)) {
+            return "Recette simple gateau au chocolat:\n- Ingredients: 200g chocolat noir, 120g beurre, 120g sucre, 4 oeufs, 80g farine.\n- Fais fondre chocolat + beurre.\n- Ajoute sucre, puis oeufs un par un.\n- Ajoute farine, melange doucement.\n- Four 180C, 22 a 28 min.\n- Laisse tiedir 10 min avant de servir.";
+        }
+        if ("ar-TN".equals(languageCode) || "ar-SA".equals(languageCode)) {
+            return "Recette sahlat chocolate cake:\n- Ingredients: 200g chocolat, 120g zebda, 120g sokkar, 4 bidh, 80g farina.\n- Dhoueb chocolat m3a zebda.\n- Zid sokkar, ba3d kol mara bidha.\n- Zid farina b chwaya.\n- Four 180C moddet 22-28 d9i9a.\n- Khallih 10 d9aye9 ybared ba3d okhrojou.";
+        }
+        return "Simple chocolate cake recipe:\n- Ingredients: 200g dark chocolate, 120g butter, 120g sugar, 4 eggs, 80g flour.\n- Melt chocolate and butter.\n- Mix in sugar, then eggs one by one.\n- Fold in flour.\n- Bake at 180C for 22-28 minutes.\n- Let it rest 10 minutes before serving.";
+    }
+
+    private String emailHelpReply(String languageCode) {
+        if ("fr-FR".equals(languageCode)) {
+            return "Modele email rapide:\nObjet: [Sujet]\nBonjour [Nom],\nJe vous contacte concernant [contexte].\nJe souhaite [demande claire].\nMerci d'avance pour votre retour.\nCordialement,\n[Votre nom]";
+        }
+        if ("ar-TN".equals(languageCode) || "ar-SA".equals(languageCode)) {
+            return "Template email srii3:\nSubject: [Sujet]\nBonjour [Nom],\nNekteblek b khas [contexte].\nNheb [demande claire].\nMerci 3la radd.\nCordialement,\n[Ismek]";
+        }
+        return "Quick email template:\nSubject: [Topic]\nHello [Name],\nI am writing regarding [context].\nI would like to [clear request].\nThank you for your time.\nBest regards,\n[Your name]";
+    }
+
+    private String conceptHelpReply(String languageCode) {
+        if ("fr-FR".equals(languageCode)) {
+            return "Donne-moi le concept exact et ton niveau (debutant/intermediaire). Je te repondrai avec:\n- Definition simple\n- Exemple concret\n- Mini resume en 3 points";
+        }
+        if ("ar-TN".equals(languageCode) || "ar-SA".equals(languageCode)) {
+            return "Aatini esm el concept w niveau mte3ek (debutant/intermediaire). Taw njawbik b:\n- Ta3rif basit\n- Mithal wa9i3i\n- Kholasa fi 3 points";
+        }
+        return "Send the exact concept and your level (beginner/intermediate). I will reply with:\n- A simple definition\n- One concrete example\n- A 3-point summary";
+    }
+
+    private String movieRecommendationReply(String languageCode, String text) {
+        boolean comedy = containsAny(text, "comedie", "comedia", "comedy");
+        if ("fr-FR".equals(languageCode)) {
+            if (comedy) {
+                return "Top comedies a voir:\n- The Intouchables\n- Superbad\n- The Grand Budapest Hotel\n- Palm Springs\n- Jojo Rabbit\nDis-moi ton style (romcom, absurd, famille) et je te donne une liste plus precise.";
+            }
+            return "Suggestions films/series:\n- Inception\n- The Social Network\n- Interstellar\n- Whiplash\n- The Bear (serie)\nDis-moi le genre que tu veux et je te fais une liste ciblee.";
+        }
+        if ("ar-TN".equals(languageCode) || "ar-SA".equals(languageCode)) {
+            if (comedy) {
+                return "Comedy films behyin:\n- The Intouchables\n- Superbad\n- The Grand Budapest Hotel\n- Palm Springs\n- Jojo Rabbit\n9olli style elli t7eb (romcom/famille/black comedy) w na3tik liste ad9a.";
+            }
+            return "Film/series suggestions:\n- Inception\n- The Social Network\n- Interstellar\n- Whiplash\n- The Bear\n9olli genre mte3ek w na3tik recommandations ala 9addak.";
+        }
+        if (comedy) {
+            return "Great comedy picks:\n- The Intouchables\n- Superbad\n- The Grand Budapest Hotel\n- Palm Springs\n- Jojo Rabbit\nTell me your style (romcom, dark, family) and I will narrow it down.";
+        }
+        return "Movie/series suggestions:\n- Inception\n- The Social Network\n- Interstellar\n- Whiplash\n- The Bear (series)\nTell me your genre and I will give a targeted list.";
+    }
+
+    private String detectGeneralIntent(String text) {
+        if (containsAny(text, "recommend", "recommande", "donne moi", "suggest", "propose")) {
+            return "recommendation";
+        }
+        if (containsAny(text, "comment", "how to", "how do i", "how can i", "faire", "build", "create")) {
+            return "how_to";
+        }
+        if (containsAny(text, "write", "ecris", "redige", "message", "letter", "lettre", "post")) {
+            return "writing";
+        }
+        if (containsAny(text, "translate", "traduit", "traduire", "translate to")) {
+            return "translation";
+        }
+        if (containsAny(text, "code", "bug", "java", "python", "sql", "api", "algorithm")) {
+            return "coding";
+        }
+        if (containsAny(text, "resume", "summarize", "summary", "explain this text", "simplify")) {
+            return "summarize";
+        }
+        if (containsAny(text, "plan", "planning", "organize", "organise", "schedule", "emploi du temps")) {
+            return "planning";
+        }
+        return "unknown";
+    }
+
+    private String generalIntentReply(String languageCode, String intent, String topic) {
+        if ("fr-FR".equals(languageCode)) {
+            return switch (intent) {
+                case "recommendation" -> "Voici une reponse directe pour: \"" + topic + "\".\n- Je peux te donner 5 recommandations tout de suite.\n- Dis-moi juste ton style/budget/duree preferee.";
+                case "how_to" -> "Pour \"" + topic + "\" je peux te guider pas a pas:\n1. Preparation\n2. Execution\n3. Verification finale\nDonne-moi ton niveau pour adapter les etapes.";
+                case "writing" -> "Je peux rediger le texte complet pour: \"" + topic + "\".\nEnvoie: destinataire + ton (pro/poli/simple) + longueur, et je te donne la version finale.";
+                case "translation" -> "Je peux traduire directement.\nColle le texte et precise la langue cible (ex: FR -> EN).";
+                case "coding" -> "Je peux aider sur code/debug pour: \"" + topic + "\".\nEnvoie le code + erreur exacte, et je te propose une correction complete.";
+                case "summarize" -> "Je peux resumer ce contenu en 3 niveaux (court/moyen/detaille).\nColle le texte et je te fais le resume.";
+                case "planning" -> "Je peux construire un planning concret.\nDonne: objectif, deadline, heures dispo/jour, et je te fais un plan final.";
+                default -> "Je peux traiter cette demande. Donne un detail en plus et je reponds directement.";
+            };
+        }
+        if ("ar-TN".equals(languageCode) || "ar-SA".equals(languageCode)) {
+            return switch (intent) {
+                case "recommendation" -> "Najem na3tik recommandations direct l: \"" + topic + "\".\n9olli style/budget/wa9t bach n3tik liste madbouuta.";
+                case "how_to" -> "Najem nfassarlek \"" + topic + "\" marhala b marhala.\n9olli niveau mte3ek bach na3tik steps mlaymin.";
+                case "writing" -> "Najem nekteblek texte kamel.\nAatini destinataire + tone + tool, w na3tik version final.";
+                case "translation" -> "Najem nترجم direct.\nAb3ath texte w 9olli men ena l ena (ex FR->EN).";
+                case "coding" -> "Najem n3awnek fi code/debug.\nAb3ath code + erreur exacte w na3tik correction kamla.";
+                case "summarize" -> "Najem n3mllek resume (sghir/moyen/kbir).\nAb3ath texte w nabda.";
+                case "planning" -> "Najem na3mllek planning wadha7.\nAatini objectif + deadline + wa9t dispo fi nhar.";
+                default -> "Najem n3awnek. Zidni b detail wa7ed w njawbik direct.";
+            };
+        }
+        return switch (intent) {
+            case "recommendation" -> "I can give direct recommendations for: \"" + topic + "\".\nShare your style/budget/time and I will return a targeted list.";
+            case "how_to" -> "I can guide you step by step for: \"" + topic + "\".\nTell me your level and constraints, and I will provide exact steps.";
+            case "writing" -> "I can write the full text for: \"" + topic + "\".\nSend recipient + tone + length, and I will draft it.";
+            case "translation" -> "I can translate directly.\nPaste the text and target language (for example FR -> EN).";
+            case "coding" -> "I can help with coding/debugging for: \"" + topic + "\".\nSend code + exact error and I will provide a fix.";
+            case "summarize" -> "I can summarize your text in short/medium/detailed formats.\nPaste the content and I will do it.";
+            case "planning" -> "I can build a concrete plan.\nShare goal, deadline, and available hours per day.";
+            default -> "I can handle this request. Give one extra detail and I will answer directly.";
+        };
     }
 
     private String summarizeMessage(String message) {
