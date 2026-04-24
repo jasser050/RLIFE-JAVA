@@ -14,6 +14,7 @@ import com.studyflow.services.ProjectService;
 import com.studyflow.utils.CrudViewContext;
 import com.studyflow.utils.PdfExportUtil;
 import com.studyflow.utils.UserSession;
+import javafx.animation.PauseTransition;
 import javafx.collections.FXCollections;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
@@ -1210,40 +1211,47 @@ public class AssignmentsController implements Initializable {
         }
         showFeedback("Generating AI assignment suggestions for \"" + project.getTitle() + "\"...", false);
 
-        Task<List<Assignment>> task = new Task<>() {
-            @Override
-            protected List<Assignment> call() {
-                return aiAssignmentGeneratorService.generateSuggestionsForProject(project, getCurrentUser().getId());
-            }
-        };
+        PauseTransition pause = new PauseTransition(javafx.util.Duration.millis(75));
+        pause.setOnFinished(event -> {
+            Task<List<Assignment>> task = new Task<>() {
+                @Override
+                protected List<Assignment> call() {
+                    return aiAssignmentGeneratorService.generateSuggestionsForProject(project, getCurrentUser().getId());
+                }
+            };
 
-        task.setOnSucceeded(event -> {
-            setAiLoadingState(false, null, null);
-            if (generateAiAssignmentsButton != null) {
-                generateAiAssignmentsButton.setDisable(false);
-            }
+            task.setOnSucceeded(successEvent -> {
+                setAiLoadingState(false, null, null);
+                if (generateAiAssignmentsButton != null) {
+                    generateAiAssignmentsButton.setDisable(false);
+                }
 
-            CrudViewContext.setAiAssignmentSuggestions(task.getValue(), project, "views/Assignments.fxml");
-            CrudViewContext.rememberProjectSelection(project.getId());
-            MainController.loadContentInMainArea("views/AiAssignmentReview.fxml");
+                CrudViewContext.setAiAssignmentSuggestions(task.getValue(), project, "views/Assignments.fxml");
+                CrudViewContext.rememberProjectSelection(project.getId());
+                MainController.loadContentInMainArea("views/AiAssignmentReview.fxml");
+            });
+
+            task.setOnFailed(failedEvent -> {
+                setAiLoadingState(false, null, null);
+                if (generateAiAssignmentsButton != null) {
+                    generateAiAssignmentsButton.setDisable(false);
+                }
+                Throwable error = task.getException();
+                showFeedback("AI generation failed: " + (error == null ? "unknown error" : error.getMessage()), true);
+            });
+
+            Thread thread = new Thread(task, "assignment-ai-generator");
+            thread.setDaemon(true);
+            thread.start();
         });
-
-        task.setOnFailed(event -> {
-            setAiLoadingState(false, null, null);
-            if (generateAiAssignmentsButton != null) {
-                generateAiAssignmentsButton.setDisable(false);
-            }
-            Throwable error = task.getException();
-            showFeedback("AI generation failed: " + (error == null ? "unknown error" : error.getMessage()), true);
-        });
-
-        Thread thread = new Thread(task, "assignment-ai-generator");
-        thread.setDaemon(true);
-        thread.start();
+        pause.play();
     }
 
     private void setAiLoadingState(boolean loading, String title, String subtitle) {
         if (aiLoadingOverlay != null) {
+            if (loading) {
+                aiLoadingOverlay.toFront();
+            }
             aiLoadingOverlay.setVisible(loading);
             aiLoadingOverlay.setManaged(loading);
         }

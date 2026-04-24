@@ -10,6 +10,7 @@ import com.studyflow.services.ProjectService;
 import com.studyflow.utils.CrudViewContext;
 import com.studyflow.utils.PdfExportUtil;
 import com.studyflow.utils.UserSession;
+import javafx.animation.PauseTransition;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -23,6 +24,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
+import javafx.util.Duration;
 import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.io.File;
@@ -100,30 +102,33 @@ public class ProjectAiWorkspaceController implements Initializable {
         analyzeDependenciesButton.setDisable(true);
         setLoadingState(true, "Analyzing project dependencies...");
         showFeedback("Analyzing project dependencies...", false);
+        PauseTransition pause = new PauseTransition(Duration.millis(75));
+        pause.setOnFinished(event -> {
+            Task<List<AssignmentDependency>> task = new Task<>() {
+                @Override
+                protected List<AssignmentDependency> call() {
+                    return aiProjectInsightsService.analyzeDependencies(project, assignments);
+                }
+            };
 
-        Task<List<AssignmentDependency>> task = new Task<>() {
-            @Override
-            protected List<AssignmentDependency> call() {
-                return aiProjectInsightsService.analyzeDependencies(project, assignments);
-            }
-        };
+            task.setOnSucceeded(successEvent -> {
+                int saved = assignmentService.replaceProjectDependencies(project.getId(), getCurrentUser().getId(), task.getValue());
+                analyzeDependenciesButton.setDisable(false);
+                refreshWorkspaceAsync("Refreshing AI workspace...", () -> showFeedback(saved + " dependency link(s) saved.", false));
+            });
 
-        task.setOnSucceeded(event -> {
-            int saved = assignmentService.replaceProjectDependencies(project.getId(), getCurrentUser().getId(), task.getValue());
-            analyzeDependenciesButton.setDisable(false);
-            refreshWorkspaceAsync("Refreshing AI workspace...", () -> showFeedback(saved + " dependency link(s) saved.", false));
+            task.setOnFailed(failedEvent -> {
+                analyzeDependenciesButton.setDisable(false);
+                setLoadingState(false, null);
+                Throwable error = task.getException();
+                showFeedback("Dependency analysis failed: " + (error == null ? "unknown error" : error.getMessage()), true);
+            });
+
+            Thread thread = new Thread(task, "project-ai-dependencies");
+            thread.setDaemon(true);
+            thread.start();
         });
-
-        task.setOnFailed(event -> {
-            analyzeDependenciesButton.setDisable(false);
-            setLoadingState(false, null);
-            Throwable error = task.getException();
-            showFeedback("Dependency analysis failed: " + (error == null ? "unknown error" : error.getMessage()), true);
-        });
-
-        Thread thread = new Thread(task, "project-ai-dependencies");
-        thread.setDaemon(true);
-        thread.start();
+        pause.play();
     }
 
     @FXML
@@ -135,43 +140,46 @@ public class ProjectAiWorkspaceController implements Initializable {
         generateReportButton.setDisable(true);
         setLoadingState(true, "Generating AI PDF report...");
         showFeedback("Generating AI PDF report...", false);
+        PauseTransition pause = new PauseTransition(Duration.millis(75));
+        pause.setOnFinished(event -> {
+            Task<File> task = new Task<>() {
+                @Override
+                protected File call() throws Exception {
+                    AiProjectInsightsService.ProjectReportInsights insights =
+                            aiProjectInsightsService.buildProjectReportInsights(project, assignments, dependencies);
+                    File file = PdfExportUtil.defaultExportFile(defaultFilename());
+                    PdfExportUtil.exportProjectIntelligenceReport(
+                            file,
+                            project,
+                            assignments,
+                            dependencies,
+                            insights.executiveSummary(),
+                            insights.recommendations()
+                    );
+                    return file;
+                }
+            };
 
-        Task<File> task = new Task<>() {
-            @Override
-            protected File call() throws Exception {
-                AiProjectInsightsService.ProjectReportInsights insights =
-                        aiProjectInsightsService.buildProjectReportInsights(project, assignments, dependencies);
-                File file = PdfExportUtil.defaultExportFile(defaultFilename());
-                PdfExportUtil.exportProjectIntelligenceReport(
-                        file,
-                        project,
-                        assignments,
-                        dependencies,
-                        insights.executiveSummary(),
-                        insights.recommendations()
-                );
-                return file;
-            }
-        };
+            task.setOnSucceeded(successEvent -> {
+                generateReportButton.setDisable(false);
+                File file = task.getValue();
+                exportPathLabel.setText(file.getAbsolutePath());
+                setLoadingState(false, null);
+                showFeedback("AI PDF report exported to " + file.getAbsolutePath(), false);
+            });
 
-        task.setOnSucceeded(event -> {
-            generateReportButton.setDisable(false);
-            File file = task.getValue();
-            exportPathLabel.setText(file.getAbsolutePath());
-            setLoadingState(false, null);
-            showFeedback("AI PDF report exported to " + file.getAbsolutePath(), false);
+            task.setOnFailed(failedEvent -> {
+                generateReportButton.setDisable(false);
+                setLoadingState(false, null);
+                Throwable error = task.getException();
+                showFeedback("Report generation failed: " + (error == null ? "unknown error" : error.getMessage()), true);
+            });
+
+            Thread thread = new Thread(task, "project-ai-report");
+            thread.setDaemon(true);
+            thread.start();
         });
-
-        task.setOnFailed(event -> {
-            generateReportButton.setDisable(false);
-            setLoadingState(false, null);
-            Throwable error = task.getException();
-            showFeedback("Report generation failed: " + (error == null ? "unknown error" : error.getMessage()), true);
-        });
-
-        Thread thread = new Thread(task, "project-ai-report");
-        thread.setDaemon(true);
-        thread.start();
+        pause.play();
     }
 
     @FXML
@@ -350,6 +358,9 @@ public class ProjectAiWorkspaceController implements Initializable {
 
     private void setLoadingState(boolean loading, String message) {
         if (loadingOverlay != null) {
+            if (loading) {
+                loadingOverlay.toFront();
+            }
             loadingOverlay.setVisible(loading);
             loadingOverlay.setManaged(loading);
         }
@@ -357,7 +368,17 @@ public class ProjectAiWorkspaceController implements Initializable {
             loadingLabel.setText(message);
         }
         if (loadingSubtitleLabel != null && message != null && !message.isBlank()) {
-            loadingSubtitleLabel.setText("This usually takes a few seconds while AI analyzes the project.");
+            loadingSubtitleLabel.setText(switch (message) {
+                case "Opening AI workspace...", "Analyzing project health..." ->
+                        "Preparing project assignments, dependency intelligence, and AI insights.";
+                case "Analyzing project dependencies..." ->
+                        "Scanning assignments to build the AI dependency map.";
+                case "Generating AI PDF report..." ->
+                        "Preparing project intelligence and exporting the PDF report.";
+                case "Refreshing AI workspace..." ->
+                        "Updating dependencies, health insights, and report preview.";
+                default -> "This usually takes a few seconds while AI analyzes the project.";
+            });
         }
         if (analyzeDependenciesButton != null && loading) {
             analyzeDependenciesButton.setDisable(true);

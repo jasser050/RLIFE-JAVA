@@ -14,6 +14,7 @@ module com.studyflow {
 
     requires mysql.connector.j;
     requires jgltf.model;
+    requires org.eclipse.jgit;
     requires org.apache.pdfbox;
     requires jakarta.mail;
     requires com.google.zxing;

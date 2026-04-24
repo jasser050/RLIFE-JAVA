@@ -12,6 +12,7 @@ import com.studyflow.services.ProjectService;
 import com.studyflow.utils.CrudViewContext;
 import com.studyflow.utils.PdfExportUtil;
 import com.studyflow.utils.UserSession;
+import javafx.animation.PauseTransition;
 import javafx.collections.FXCollections;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
@@ -40,6 +41,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.util.Duration;
 import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.io.File;
@@ -373,7 +375,22 @@ public class ProjectsController implements Initializable {
         }
         CrudViewContext.setProjectContext(selectedProject);
         CrudViewContext.rememberProjectSelection(selectedProject.getId());
-        MainController.loadContentInMainArea("views/ProjectAiWorkspace.fxml");
+        if (openProjectAiWorkspaceButton != null) {
+            openProjectAiWorkspaceButton.setDisable(true);
+        }
+        setAiLoadingState(true, "Opening AI workspace", "Preparing the AI workspace for \"" + selectedProject.getTitle() + "\".");
+        PauseTransition pause = new PauseTransition(Duration.millis(90));
+        pause.setOnFinished(event -> {
+            try {
+                MainController.loadContentInMainArea("views/ProjectAiWorkspace.fxml");
+            } finally {
+                setAiLoadingState(false, null, null);
+                if (openProjectAiWorkspaceButton != null) {
+                    openProjectAiWorkspaceButton.setDisable(false);
+                }
+            }
+        });
+        pause.play();
     }
 
     @FXML
@@ -909,46 +926,53 @@ public class ProjectsController implements Initializable {
         }
         showFeedback("Generating AI assignment suggestions for \"" + project.getTitle() + "\"...", false);
 
-        Task<List<Assignment>> task = new Task<>() {
-            @Override
-            protected List<Assignment> call() {
-                return aiAssignmentGeneratorService.generateSuggestionsForProject(project, getCurrentUser().getId());
-            }
-        };
+        PauseTransition pause = new PauseTransition(Duration.millis(75));
+        pause.setOnFinished(event -> {
+            Task<List<Assignment>> task = new Task<>() {
+                @Override
+                protected List<Assignment> call() {
+                    return aiAssignmentGeneratorService.generateSuggestionsForProject(project, getCurrentUser().getId());
+                }
+            };
 
-        task.setOnSucceeded(event -> {
-            setAiLoadingState(false, null, null);
-            if (generateProjectAiTasksButton != null) {
-                generateProjectAiTasksButton.setDisable(false);
-            }
-            if (createProjectButton != null) {
-                createProjectButton.setDisable(false);
-            }
+            task.setOnSucceeded(successEvent -> {
+                setAiLoadingState(false, null, null);
+                if (generateProjectAiTasksButton != null) {
+                    generateProjectAiTasksButton.setDisable(false);
+                }
+                if (createProjectButton != null) {
+                    createProjectButton.setDisable(false);
+                }
 
-            CrudViewContext.setAiAssignmentSuggestions(task.getValue(), project, "views/Projects.fxml");
-            CrudViewContext.rememberProjectSelection(project.getId());
-            MainController.loadContentInMainArea("views/AiAssignmentReview.fxml");
+                CrudViewContext.setAiAssignmentSuggestions(task.getValue(), project, "views/Projects.fxml");
+                CrudViewContext.rememberProjectSelection(project.getId());
+                MainController.loadContentInMainArea("views/AiAssignmentReview.fxml");
+            });
+
+            task.setOnFailed(failedEvent -> {
+                setAiLoadingState(false, null, null);
+                if (generateProjectAiTasksButton != null) {
+                    generateProjectAiTasksButton.setDisable(false);
+                }
+                if (createProjectButton != null) {
+                    createProjectButton.setDisable(false);
+                }
+                Throwable error = task.getException();
+                showFeedback("AI generation failed: " + (error == null ? "unknown error" : error.getMessage()), true);
+            });
+
+            Thread thread = new Thread(task, "project-ai-assignment-generator");
+            thread.setDaemon(true);
+            thread.start();
         });
-
-        task.setOnFailed(event -> {
-            setAiLoadingState(false, null, null);
-            if (generateProjectAiTasksButton != null) {
-                generateProjectAiTasksButton.setDisable(false);
-            }
-            if (createProjectButton != null) {
-                createProjectButton.setDisable(false);
-            }
-            Throwable error = task.getException();
-            showFeedback("AI generation failed: " + (error == null ? "unknown error" : error.getMessage()), true);
-        });
-
-        Thread thread = new Thread(task, "project-ai-assignment-generator");
-        thread.setDaemon(true);
-        thread.start();
+        pause.play();
     }
 
     private void setAiLoadingState(boolean loading, String title, String subtitle) {
         if (aiLoadingOverlay != null) {
+            if (loading) {
+                aiLoadingOverlay.toFront();
+            }
             aiLoadingOverlay.setVisible(loading);
             aiLoadingOverlay.setManaged(loading);
         }
