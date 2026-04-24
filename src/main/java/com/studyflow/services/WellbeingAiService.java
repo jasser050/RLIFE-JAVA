@@ -12,6 +12,34 @@ public class WellbeingAiService {
     public record ChatTurn(String role, String content) {}
     public record CoachReply(String reply, String source, String languageCode) {}
     public record RecommendationItem(String title, String description) {}
+    public record QuoteResult(String quote, String type, String source) {}
+
+    public QuoteResult generateMotivationQuote(String type) {
+        String safeType = normalizeQuoteType(type);
+
+        if (openRouterService.isConfigured()) {
+            List<OpenRouterService.ChatMessage> payload = new ArrayList<>();
+            payload.add(new OpenRouterService.ChatMessage(
+                    "system",
+                    """
+                    You generate one short quote for a student dashboard.
+                    Return only the quote text.
+                    Keep it under 18 words.
+                    No quotation marks, no author, no markdown.
+                    """
+            ));
+            payload.add(new OpenRouterService.ChatMessage(
+                    "user",
+                    "Quote type: " + safeType + ". Make it practical and student-friendly."
+            ));
+            String response = openRouterService.chat(payload, "anthropic/claude-3-haiku", 0.55, 80);
+            if (response != null && !response.isBlank()) {
+                return new QuoteResult(limit(response.replace("\n", " ").trim(), 140), safeType, "ai");
+            }
+        }
+
+        return new QuoteResult(fallbackQuote(safeType), safeType, "fallback");
+    }
 
     public List<RecommendationItem> generateRecommendations(int stressLevel10, String mood, List<String> signals) {
         int safeStress = Math.max(1, Math.min(10, stressLevel10));
@@ -588,5 +616,39 @@ public class WellbeingAiService {
 
         int count = Math.min(3, source.size());
         return new ArrayList<>(source.subList(0, count));
+    }
+
+    private String normalizeQuoteType(String value) {
+        String type = value == null ? "motivation" : value.trim().toLowerCase(Locale.ROOT);
+        if (!containsAny(type, "motivation", "focus", "calm", "funny")) {
+            return "motivation";
+        }
+        return type;
+    }
+
+    private String fallbackQuote(String type) {
+        List<String> quotes = switch (type) {
+            case "focus" -> List.of(
+                    "One clear task beats ten vague intentions.",
+                    "Protect your focus before you protect your speed.",
+                    "Start with the next step, not the whole mountain."
+            );
+            case "calm" -> List.of(
+                    "Slow breathing is still progress.",
+                    "Calm decisions usually create better days.",
+                    "You do not need to solve everything tonight."
+            );
+            case "funny" -> List.of(
+                    "Your to-do list is loud, but you are still in charge.",
+                    "Surviving one tab at a time still counts as productivity.",
+                    "Even your deadlines want you to drink water."
+            );
+            default -> List.of(
+                    "Small progress every day beats perfect plans.",
+                    "Start before you feel fully ready.",
+                    "Consistency makes hard things look easy later."
+            );
+        };
+        return quotes.get(ThreadLocalRandom.current().nextInt(quotes.size()));
     }
 }

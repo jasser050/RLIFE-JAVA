@@ -15,8 +15,10 @@ import javafx.fxml.Initializable;
 import javafx.geometry.Bounds;
 import javafx.geometry.Point2D;
 import javafx.scene.Parent;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -41,8 +43,10 @@ import java.util.prefs.Preferences;
  * Handles navigation, content switching, and window controls
  */
 public class MainController implements Initializable {
+    private static MainController activeInstance;
 
     @FXML private StackPane contentArea;
+    @FXML private ScrollPane contentScroll;
     @FXML private TextField searchField;
     @FXML private HBox titleBar;
     @FXML private FontIcon maximizeIcon;
@@ -64,6 +68,9 @@ public class MainController implements Initializable {
     @FXML private Button btnNotes;
     @FXML private Button btnWellbeing;
     @FXML private Button btnStats;
+    @FXML private Button notificationsButton;
+    @FXML private Button themeToggleButton;
+    @FXML private FontIcon themeToggleIcon;
     @FXML private VBox globalQuoteCard;
     @FXML private Label globalQuoteTextLabel;
     @FXML private Label globalQuoteMetaLabel;
@@ -96,7 +103,9 @@ public class MainController implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+        activeInstance = this;
         activeButton = btnDashboard;
+        syncThemeToggleUi();
         showDashboard();
 
         // Load sidebar logo
@@ -211,6 +220,37 @@ public class MainController implements Initializable {
             errorLabel.getStyleClass().add("text-small");
             errorLabel.setStyle("-fx-text-fill: #FCA5A5; -fx-padding: 20;");
             contentArea.getChildren().setAll(errorLabel);
+        }
+    }
+
+    public static void loadContentInMainArea(String fxmlPath) {
+        if (activeInstance == null) {
+            return;
+        }
+        activeInstance.loadContentInMainAreaInternal(fxmlPath);
+    }
+
+    private void loadContentInMainAreaInternal(String fxmlPath) {
+        syncActiveButtonForView(fxmlPath);
+        loadContent(fxmlPath);
+    }
+
+    private void syncActiveButtonForView(String fxmlPath) {
+        if (fxmlPath == null || fxmlPath.isBlank()) {
+            return;
+        }
+        switch (fxmlPath) {
+            case "views/Dashboard.fxml" -> setActiveButton(btnDashboard);
+            case "views/Courses.fxml" -> setActiveButton(btnCourses);
+            case "views/Assignments.fxml" -> setActiveButton(btnAssignments);
+            case "views/Planning.fxml" -> setActiveButton(btnPlanning);
+            case "views/Revisions.fxml", "views/Flashcards.fxml" -> setActiveButton(btnRevisions);
+            case "views/Projects.fxml" -> setActiveButton(btnProjects);
+            case "views/Notes.fxml" -> setActiveButton(btnNotes);
+            case "views/Wellbeing.fxml" -> setActiveButton(btnWellbeing);
+            case "views/Statistics.fxml" -> setActiveButton(btnStats);
+            default -> {
+            }
         }
     }
 
@@ -526,6 +566,33 @@ public class MainController implements Initializable {
         preferences.putDouble(PREF_QUOTE_POS_Y, globalQuoteCard.getLayoutY());
     }
 
+    @FXML
+    private void showNotifications() {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.initOwner(App.getPrimaryStage());
+        alert.setTitle("Notifications");
+        alert.setHeaderText("Notifications");
+        alert.setContentText("Notifications are not wired yet in this build.");
+        alert.showAndWait();
+    }
+
+    @FXML
+    private void toggleTheme() {
+        App.toggleTheme();
+        syncThemeToggleUi();
+    }
+
+    private void syncThemeToggleUi() {
+        if (themeToggleButton == null) {
+            return;
+        }
+        boolean darkTheme = App.isDarkTheme();
+        themeToggleButton.setText(darkTheme ? "Light" : "Dark");
+        if (themeToggleIcon != null) {
+            themeToggleIcon.setIconLiteral(darkTheme ? "fth-sun" : "fth-moon");
+        }
+    }
+
     /**
      * Update active navigation button
      */
@@ -564,7 +631,7 @@ public class MainController implements Initializable {
     @FXML
     private void showRevisions() {
         setActiveButton(btnRevisions);
-        loadContent("views/Revisions.fxml");
+        loadContent("views/Flashcards.fxml");
     }
 
     @FXML
