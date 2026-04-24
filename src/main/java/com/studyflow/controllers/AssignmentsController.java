@@ -147,6 +147,7 @@ public class AssignmentsController implements Initializable {
     @FXML private VBox deletePanel;
     @FXML private VBox commentsPanel;
     @FXML private VBox sharePanel;
+    @FXML private VBox sharedAssignmentUsersList;
     @FXML private VBox gitPanel;
     @FXML private VBox statsPanel;
     @FXML private StackPane actionPanelStack;
@@ -805,20 +806,6 @@ public class AssignmentsController implements Initializable {
         titleLabel.getStyleClass().add("item-title");
         titleLabel.setWrapText(true);
 
-        HBox badges = new HBox(8);
-        badges.setAlignment(Pos.CENTER_LEFT);
-        badges.getChildren().addAll(
-                createBadge(displayStatus(assignment), statusStyleClass(assignment)),
-                createBadge(assignment.isOverdue() ? "Overdue" : "On Track", assignment.isOverdue() ? "danger" : "secondary"),
-                createBadge(assignment.isOwnedByCurrentUser() ? "Owned" : "Shared", assignment.isOwnedByCurrentUser() ? "primary" : "accent")
-        );
-        if (!isBlank(assignment.getComplexityLevel())) {
-            badges.getChildren().add(createBadge(assignment.getComplexityLevel() + " complexity", assignment.getComplexityStyleClass()));
-        }
-        if (assignment.getAiSuggestedDueDate() != null) {
-            badges.getChildren().add(createBadge("AI due " + formatDate(assignment.getAiSuggestedDueDate()), "accent"));
-        }
-
         Label descriptionLabel = new Label(defaultText(assignment.getDescription()));
         descriptionLabel.getStyleClass().add("item-desc");
         descriptionLabel.setWrapText(true);
@@ -852,7 +839,7 @@ public class AssignmentsController implements Initializable {
             event.consume();
         });
 
-        card.getChildren().addAll(tagsRow, titleLabel, badges);
+        card.getChildren().addAll(tagsRow, titleLabel);
         if (!descriptionLabel.getText().isEmpty()) {
             card.getChildren().add(descriptionLabel);
         }
@@ -1027,6 +1014,87 @@ public class AssignmentsController implements Initializable {
         boolean enabled = assignment != null && assignment.isOwnedByCurrentUser();
         shareAssignmentEmailField.setDisable(!enabled);
         shareAssignmentButton.setDisable(!enabled);
+        renderSharedAssignmentUsers(assignment);
+    }
+
+    private void renderSharedAssignmentUsers(Assignment assignment) {
+        if (sharedAssignmentUsersList == null) {
+            return;
+        }
+        sharedAssignmentUsersList.getChildren().clear();
+
+        if (assignment == null) {
+            sharedAssignmentUsersList.getChildren().add(createSharedUserEmptyState("Select an assignment to view shared users."));
+            return;
+        }
+
+        List<User> sharedUsers = assignmentService.getSharedUsers(assignment.getId());
+        if (sharedUsers.isEmpty()) {
+            sharedAssignmentUsersList.getChildren().add(createSharedUserEmptyState("This assignment is not shared with anyone yet."));
+            return;
+        }
+
+        for (User sharedUser : sharedUsers) {
+            sharedAssignmentUsersList.getChildren().add(createSharedUserRow(sharedUser));
+        }
+    }
+
+    private VBox createSharedUserRow(User user) {
+        VBox row = new VBox(2);
+        row.setPadding(new Insets(10, 12, 10, 12));
+        row.getStyleClass().add("detail-row");
+
+        Label nameLabel = new Label(buildSharedUserName(user));
+        nameLabel.getStyleClass().add("form-label");
+        nameLabel.setWrapText(true);
+
+        Label metaLabel = new Label(buildSharedUserMeta(user));
+        metaLabel.getStyleClass().addAll("item-desc", "text-muted");
+        metaLabel.setWrapText(true);
+
+        row.getChildren().addAll(nameLabel, metaLabel);
+        return row;
+    }
+
+    private Label createSharedUserEmptyState(String message) {
+        Label label = new Label(message);
+        label.getStyleClass().addAll("item-desc", "text-muted");
+        label.setWrapText(true);
+        return label;
+    }
+
+    private String buildSharedUserName(User user) {
+        String fullName = defaultText(user.getFullName()).trim();
+        if (!fullName.isEmpty()) {
+            return fullName;
+        }
+        String username = defaultText(user.getUsername()).trim();
+        if (!username.isEmpty()) {
+            return username;
+        }
+        return defaultText(user.getEmail()).trim();
+    }
+
+    private String buildSharedUserMeta(User user) {
+        List<String> details = new ArrayList<>();
+        String username = defaultText(user.getUsername()).trim();
+        String email = defaultText(user.getEmail()).trim();
+        String studentId = defaultText(user.getStudentId()).trim();
+
+        if (!username.isEmpty()) {
+            details.add("@" + username);
+        }
+        if (!email.isEmpty()) {
+            details.add(email);
+        }
+        if (!studentId.isEmpty()) {
+            details.add("ID " + studentId);
+        }
+
+        if (details.isEmpty()) {
+            return "User details unavailable";
+        }
+        return String.join(" | ", details);
     }
 
     private void populateGitPanel(Assignment assignment) {

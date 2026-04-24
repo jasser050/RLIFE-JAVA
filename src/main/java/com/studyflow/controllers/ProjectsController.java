@@ -120,6 +120,7 @@ public class ProjectsController implements Initializable {
     @FXML private VBox editProjectPanel;
     @FXML private VBox deleteProjectPanel;
     @FXML private VBox shareProjectPanel;
+    @FXML private VBox sharedProjectUsersList;
     @FXML private VBox gitProjectPanel;
     @FXML private VBox statsProjectPanel;
     @FXML private VBox gitGuidePanel;
@@ -811,6 +812,87 @@ public class ProjectsController implements Initializable {
         shareProjectEmailField.setDisable(!enabled);
         shareProjectRoleCombo.setDisable(!enabled);
         shareProjectButton.setDisable(!enabled);
+        renderSharedProjectUsers(project);
+    }
+
+    private void renderSharedProjectUsers(Project project) {
+        if (sharedProjectUsersList == null) {
+            return;
+        }
+        sharedProjectUsersList.getChildren().clear();
+
+        if (project == null) {
+            sharedProjectUsersList.getChildren().add(createSharedUserEmptyState("Select a project to view shared users."));
+            return;
+        }
+
+        List<User> sharedUsers = projectService.getSharedUsers(project.getId());
+        if (sharedUsers.isEmpty()) {
+            sharedProjectUsersList.getChildren().add(createSharedUserEmptyState("This project is not shared with anyone yet."));
+            return;
+        }
+
+        for (User sharedUser : sharedUsers) {
+            sharedProjectUsersList.getChildren().add(createSharedUserRow(sharedUser));
+        }
+    }
+
+    private VBox createSharedUserRow(User user) {
+        VBox row = new VBox(2);
+        row.setPadding(new Insets(10, 12, 10, 12));
+        row.getStyleClass().add("detail-row");
+
+        Label nameLabel = new Label(buildSharedUserName(user));
+        nameLabel.getStyleClass().add("form-label");
+        nameLabel.setWrapText(true);
+
+        Label metaLabel = new Label(buildSharedUserMeta(user));
+        metaLabel.getStyleClass().addAll("item-desc", "text-muted");
+        metaLabel.setWrapText(true);
+
+        row.getChildren().addAll(nameLabel, metaLabel);
+        return row;
+    }
+
+    private Label createSharedUserEmptyState(String message) {
+        Label label = new Label(message);
+        label.getStyleClass().addAll("item-desc", "text-muted");
+        label.setWrapText(true);
+        return label;
+    }
+
+    private String buildSharedUserName(User user) {
+        String fullName = defaultText(user.getFullName()).trim();
+        if (!fullName.isEmpty()) {
+            return fullName;
+        }
+        String username = defaultText(user.getUsername()).trim();
+        if (!username.isEmpty()) {
+            return username;
+        }
+        return defaultText(user.getEmail()).trim();
+    }
+
+    private String buildSharedUserMeta(User user) {
+        List<String> details = new ArrayList<>();
+        String username = defaultText(user.getUsername()).trim();
+        String email = defaultText(user.getEmail()).trim();
+        String studentId = defaultText(user.getStudentId()).trim();
+
+        if (!username.isEmpty()) {
+            details.add("@" + username);
+        }
+        if (!email.isEmpty()) {
+            details.add(email);
+        }
+        if (!studentId.isEmpty()) {
+            details.add("ID " + studentId);
+        }
+
+        if (details.isEmpty()) {
+            return "User details unavailable";
+        }
+        return String.join(" | ", details);
     }
 
     private void populateGitProjectPanel(Project project) {

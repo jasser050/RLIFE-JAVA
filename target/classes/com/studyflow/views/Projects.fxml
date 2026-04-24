@@ -175,6 +175,11 @@
                     <ComboBox fx:id="shareProjectRoleCombo" maxWidth="Infinity" styleClass="form-combo"/>
                 </VBox>
 
+                <VBox spacing="8">
+                    <Label text="Shared With" styleClass="form-label"/>
+                    <VBox fx:id="sharedProjectUsersList" spacing="8"/>
+                </VBox>
+
                 <Button fx:id="shareProjectButton" text="Share Project" onAction="#handleShareProject" styleClass="btn-primary" maxWidth="Infinity"/>
             </VBox>
 

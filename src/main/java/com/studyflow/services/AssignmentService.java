@@ -281,6 +281,37 @@ public class AssignmentService implements IService<Assignment> {
         return false;
     }
 
+    public List<User> getSharedUsers(int assignmentId) {
+        List<User> sharedUsers = new ArrayList<>();
+        if (!ensureConnection("AssignmentService.getSharedUsers")) {
+            return sharedUsers;
+        }
+
+        String sql = "SELECT u.id, u.email, u.first_name, u.last_name, u.username, u.phone_number, u.student_id " +
+                "FROM assignment_collaborator ac " +
+                "INNER JOIN `user` u ON u.id = ac.user_id " +
+                "WHERE ac.assignment_id = ? " +
+                "ORDER BY COALESCE(u.first_name, ''), COALESCE(u.last_name, ''), COALESCE(u.username, '')";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, assignmentId);
+            ResultSet rs = statement.executeQuery();
+            while (rs.next()) {
+                User user = new User();
+                user.setId(rs.getInt("id"));
+                user.setEmail(rs.getString("email"));
+                user.setFirstName(rs.getString("first_name"));
+                user.setLastName(rs.getString("last_name"));
+                user.setUsername(rs.getString("username"));
+                user.setPhoneNumber(rs.getString("phone_number"));
+                user.setStudentId(rs.getString("student_id"));
+                sharedUsers.add(user);
+            }
+        } catch (SQLException e) {
+            System.out.println("AssignmentService.getSharedUsers: " + e.getMessage());
+        }
+        return sharedUsers;
+    }
+
     public boolean addComment(int assignmentId, int userId, String content) {
         if (!ensureConnection("AssignmentService.addComment") || content == null || content.trim().isEmpty()) {
             return false;
