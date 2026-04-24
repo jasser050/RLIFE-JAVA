@@ -30,11 +30,18 @@ public class AdminMainController implements Initializable {
     @FXML private Label workspaceBadge;
 
     @FXML private Button btnDashboard;
+    @FXML private Button btnCourses;
+    @FXML private Button btnAssignments;
+    @FXML private Button btnPlanning;
     @FXML private Button btnUsers;
     @FXML private Button btnMatieres;
+    @FXML private Button btnProjects;
+    @FXML private Button btnNotes;
     @FXML private Button btnStressQuestions;
     @FXML private Button btnRecommendations;
     @FXML private Button btnStats;
+    @FXML private Button btnAuditLog;
+    @FXML private Button btnAiAgent;
     @FXML private Button btnSettings;
 
     private Button activeButton;
@@ -119,9 +126,39 @@ public class AdminMainController implements Initializable {
     }
 
     @FXML
+    private void showCoursesAdmin() {
+        setActiveButton(btnCourses);
+        showFallbackContent("Courses module is managed from student workspace in this version.");
+    }
+
+    @FXML
+    private void showAssignmentsAdmin() {
+        setActiveButton(btnAssignments);
+        showFallbackContent("Assignments module is managed from student workspace in this version.");
+    }
+
+    @FXML
+    private void showPlanningAdmin() {
+        setActiveButton(btnPlanning);
+        showFallbackContent("Planning module is managed from student workspace in this version.");
+    }
+
+    @FXML
     private void showMatieres() {
         setActiveButton(btnMatieres);
         loadContent("views/admin/AdminMatieres.fxml");
+    }
+
+    @FXML
+    private void showProjectsAdmin() {
+        setActiveButton(btnProjects);
+        showFallbackContent("Projects module is managed from student workspace in this version.");
+    }
+
+    @FXML
+    private void showNotesAdmin() {
+        setActiveButton(btnNotes);
+        showFallbackContent("Notes module is managed from student workspace in this version.");
     }
 
     @FXML
@@ -146,6 +183,18 @@ public class AdminMainController implements Initializable {
     private void showSettings() {
         setActiveButton(btnSettings);
         loadContent("views/admin/AdminSettings.fxml");
+    }
+
+    @FXML
+    private void showAuditLog() {
+        setActiveButton(btnAuditLog);
+        showFallbackContent("Audit Log view is not configured yet.");
+    }
+
+    @FXML
+    private void showAiAgent() {
+        setActiveButton(btnAiAgent);
+        showFallbackContent("AI Agent view is not configured yet.");
     }
 
     @FXML

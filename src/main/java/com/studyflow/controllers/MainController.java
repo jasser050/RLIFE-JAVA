@@ -12,6 +12,8 @@ import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
+import javafx.geometry.Bounds;
+import javafx.geometry.Point2D;
 import javafx.scene.Parent;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -20,6 +22,7 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
@@ -64,6 +67,7 @@ public class MainController implements Initializable {
     @FXML private VBox globalQuoteCard;
     @FXML private Label globalQuoteTextLabel;
     @FXML private Label globalQuoteMetaLabel;
+    @FXML private Pane quoteOverlayPane;
 
     private Button activeButton;
     private final WellbeingAiService wellbeingAiService = new WellbeingAiService();
@@ -74,8 +78,15 @@ public class MainController implements Initializable {
     private static final String PREF_QUOTE_TYPE = "global.quote.type";
     private static final String PREF_QUOTE_ENABLED = "global.quote.enabled";
     private static final String PREF_QUOTE_DISMISSED_UNTIL = "global.quote.dismissed.until";
+    private static final String PREF_QUOTE_POS_X = "global.quote.position.x";
+    private static final String PREF_QUOTE_POS_Y = "global.quote.position.y";
     private static final long QUOTE_DISMISS_MILLIS = 60_000L;
     private static final int QUOTE_ROTATION_SECONDS = 20;
+    private static final double QUOTE_MARGIN = 16.0;
+    private double quoteDragStartX;
+    private double quoteDragStartY;
+    private double quoteStartLayoutX;
+    private double quoteStartLayoutY;
 
     // Window dragging
     private double xOffset = 0;
@@ -112,6 +123,7 @@ public class MainController implements Initializable {
         if (userInfoBox != null) {
             userInfoBox.setOnMouseClicked(event -> showProfile());
         }
+        setupGlobalQuoteDrag();
         setupGlobalQuoteWidget();
     }
 
@@ -190,6 +202,15 @@ public class MainController implements Initializable {
             contentArea.getChildren().add(content);
         } catch (Exception e) {
             e.printStackTrace();
+            Label errorLabel = new Label(
+                    "Unable to load page: " + fxmlPath + "\n"
+                            + e.getClass().getSimpleName()
+                            + (e.getMessage() == null ? "" : " - " + e.getMessage())
+            );
+            errorLabel.setWrapText(true);
+            errorLabel.getStyleClass().add("text-small");
+            errorLabel.setStyle("-fx-text-fill: #FCA5A5; -fx-padding: 20;");
+            contentArea.getChildren().setAll(errorLabel);
         }
     }
 
@@ -208,10 +229,20 @@ public class MainController implements Initializable {
 
     private void onQuotePrefChanged(PreferenceChangeEvent event) {
         String key = event.getKey();
-        if (!PREF_QUOTE_TYPE.equals(key) && !PREF_QUOTE_ENABLED.equals(key) && !PREF_QUOTE_DISMISSED_UNTIL.equals(key)) {
+        if (!PREF_QUOTE_TYPE.equals(key)
+                && !PREF_QUOTE_ENABLED.equals(key)
+                && !PREF_QUOTE_DISMISSED_UNTIL.equals(key)
+                && !PREF_QUOTE_POS_X.equals(key)
+                && !PREF_QUOTE_POS_Y.equals(key)) {
             return;
         }
-        Platform.runLater(this::initGlobalQuoteTicker);
+        Platform.runLater(() -> {
+            if (PREF_QUOTE_POS_X.equals(key) || PREF_QUOTE_POS_Y.equals(key)) {
+                applySavedQuotePosition();
+                return;
+            }
+            initGlobalQuoteTicker();
+        });
     }
 
     private void initGlobalQuoteTicker() {
@@ -243,6 +274,7 @@ public class MainController implements Initializable {
 
         globalQuoteCard.setVisible(true);
         globalQuoteCard.setManaged(true);
+        applySavedQuotePosition();
         loadGlobalQuoteNow();
 
         quoteTicker = new Timeline(new KeyFrame(javafx.util.Duration.seconds(QUOTE_ROTATION_SECONDS), event -> {
@@ -384,12 +416,114 @@ public class MainController implements Initializable {
             preferences.putBoolean(PREF_QUOTE_ENABLED, true);
         }
 
-        // Migrate old long dismiss windows to current 1-minute behavior.
-        long now = System.currentTimeMillis();
-        long dismissedUntil = preferences.getLong(PREF_QUOTE_DISMISSED_UNTIL, 0L);
-        if (dismissedUntil - now > QUOTE_DISMISS_MILLIS) {
-            preferences.putLong(PREF_QUOTE_DISMISSED_UNTIL, now + QUOTE_DISMISS_MILLIS);
+        // Always show quotes by default when app starts.
+        preferences.putLong(PREF_QUOTE_DISMISSED_UNTIL, 0L);
+    }
+
+    private void setupGlobalQuoteDrag() {
+        if (globalQuoteCard == null || quoteOverlayPane == null) {
+            return;
         }
+        globalQuoteCard.setOnMousePressed(event -> {
+            quoteDragStartX = event.getSceneX();
+            quoteDragStartY = event.getSceneY();
+            quoteStartLayoutX = globalQuoteCard.getLayoutX();
+            quoteStartLayoutY = globalQuoteCard.getLayoutY();
+            event.consume();
+        });
+
+        globalQuoteCard.setOnMouseDragged(event -> {
+            double deltaX = event.getSceneX() - quoteDragStartX;
+            double deltaY = event.getSceneY() - quoteDragStartY;
+            setQuoteCardPosition(quoteStartLayoutX + deltaX, quoteStartLayoutY + deltaY);
+            event.consume();
+        });
+
+        globalQuoteCard.setOnMouseReleased(event -> {
+            saveQuoteCardPosition();
+            event.consume();
+        });
+
+        quoteOverlayPane.widthProperty().addListener((obs, oldVal, newVal) -> clampQuoteCardToOverlay());
+        quoteOverlayPane.heightProperty().addListener((obs, oldVal, newVal) -> clampQuoteCardToOverlay());
+        Platform.runLater(this::applySavedQuotePosition);
+    }
+
+    private void applySavedQuotePosition() {
+        if (globalQuoteCard == null || quoteOverlayPane == null) {
+            return;
+        }
+        double savedX = preferences.getDouble(PREF_QUOTE_POS_X, Double.NaN);
+        double savedY = preferences.getDouble(PREF_QUOTE_POS_Y, Double.NaN);
+        if (Double.isNaN(savedX) || Double.isNaN(savedY)) {
+            setDefaultQuoteCardPosition();
+            return;
+        }
+        setQuoteCardPosition(savedX, savedY);
+    }
+
+    private void setDefaultQuoteCardPosition() {
+        if (globalQuoteCard == null || quoteOverlayPane == null) {
+            return;
+        }
+        globalQuoteCard.applyCss();
+        globalQuoteCard.autosize();
+
+        double defaultX = QUOTE_MARGIN;
+        double defaultY;
+
+        if (btnStats != null && btnStats.getScene() != null && quoteOverlayPane.getScene() != null) {
+            Bounds statsBoundsScene = btnStats.localToScene(btnStats.getBoundsInLocal());
+            Point2D belowStats = quoteOverlayPane.sceneToLocal(statsBoundsScene.getMinX(), statsBoundsScene.getMaxY() + 10);
+            defaultX = belowStats.getX();
+            defaultY = belowStats.getY();
+        } else {
+            double overlayHeight = quoteOverlayPane.getHeight();
+            double cardHeight = globalQuoteCard.prefHeight(-1);
+            defaultY = overlayHeight > 0 ? Math.max(QUOTE_MARGIN, overlayHeight - cardHeight - QUOTE_MARGIN) : QUOTE_MARGIN;
+        }
+
+        setQuoteCardPosition(defaultX, defaultY);
+        saveQuoteCardPosition();
+    }
+
+    private void setQuoteCardPosition(double x, double y) {
+        if (globalQuoteCard == null || quoteOverlayPane == null) {
+            return;
+        }
+        globalQuoteCard.applyCss();
+        globalQuoteCard.autosize();
+
+        double cardWidth = globalQuoteCard.prefWidth(-1);
+        double cardHeight = globalQuoteCard.prefHeight(-1);
+        double overlayWidth = quoteOverlayPane.getWidth();
+        double overlayHeight = quoteOverlayPane.getHeight();
+
+        double minX = QUOTE_MARGIN;
+        double minY = QUOTE_MARGIN;
+        double maxX = overlayWidth > 0 ? Math.max(minX, overlayWidth - cardWidth - QUOTE_MARGIN) : x;
+        double maxY = overlayHeight > 0 ? Math.max(minY, overlayHeight - cardHeight - QUOTE_MARGIN) : y;
+
+        double clampedX = Math.max(minX, Math.min(x, maxX));
+        double clampedY = Math.max(minY, Math.min(y, maxY));
+        globalQuoteCard.setLayoutX(clampedX);
+        globalQuoteCard.setLayoutY(clampedY);
+    }
+
+    private void clampQuoteCardToOverlay() {
+        if (globalQuoteCard == null) {
+            return;
+        }
+        setQuoteCardPosition(globalQuoteCard.getLayoutX(), globalQuoteCard.getLayoutY());
+        saveQuoteCardPosition();
+    }
+
+    private void saveQuoteCardPosition() {
+        if (globalQuoteCard == null) {
+            return;
+        }
+        preferences.putDouble(PREF_QUOTE_POS_X, globalQuoteCard.getLayoutX());
+        preferences.putDouble(PREF_QUOTE_POS_Y, globalQuoteCard.getLayoutY());
     }
 
     /**

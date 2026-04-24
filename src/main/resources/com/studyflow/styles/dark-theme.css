@@ -4840,3 +4840,204 @@
     -fx-background-radius: 8;
     -fx-text-fill: #E2E8F0;
 }
+
+/* ===============================
+   Admin Sidebar / Layout (v2)
+   =============================== */
+.admin-shell {
+    -fx-background-color: #020b24;
+}
+
+.admin-sidebar-2 {
+    -fx-background-color: linear-gradient(to bottom, #0B1631 0%, #0A1430 100%);
+    -fx-border-color: #1A2947;
+    -fx-border-width: 0 1 0 0;
+}
+
+.admin-sidebar-scroll,
+.admin-sidebar-scroll > .viewport {
+    -fx-background-color: transparent;
+}
+
+.admin-sidebar-content {
+    -fx-background-color: transparent;
+}
+
+.admin-brand-row {
+    -fx-border-color: #1A2947;
+    -fx-border-width: 0 0 1 0;
+}
+
+.admin-brand-logo {
+    -fx-min-width: 34;
+    -fx-min-height: 34;
+    -fx-pref-width: 34;
+    -fx-pref-height: 34;
+    -fx-max-width: 34;
+    -fx-max-height: 34;
+    -fx-background-color: radial-gradient(radius 100%, #8B5CF6 0%, #7C3AED 50%, #1E293B 100%);
+    -fx-background-radius: 999;
+}
+
+.admin-brand-logo .ikonli-font-icon {
+    -fx-icon-color: #C4B5FD;
+}
+
+.admin-brand-logo-text {
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 14px;
+    -fx-font-weight: 800;
+}
+
+.admin-brand-title {
+    -fx-text-fill: #f8fafc;
+    -fx-font-size: 17px;
+    -fx-font-weight: 800;
+}
+
+.admin-brand-subtitle {
+    -fx-text-fill: #8EA4CA;
+    -fx-font-size: 12px;
+}
+
+.admin-nav-group {
+    -fx-padding: 0 0 2 0;
+}
+
+.admin-nav-section {
+    -fx-text-fill: #64748B;
+    -fx-font-size: 11px;
+    -fx-font-weight: 800;
+    -fx-padding: 10 10 4 10;
+}
+
+.admin-nav-btn {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+    -fx-padding: 12 14;
+    -fx-text-fill: #94A3B8;
+    -fx-font-size: 15px;
+    -fx-font-weight: 600;
+    -fx-alignment: CENTER_LEFT;
+    -fx-graphic-text-gap: 10;
+    -fx-cursor: hand;
+}
+
+.admin-nav-btn .ikonli-font-icon {
+    -fx-icon-color: #8498B8;
+}
+
+.admin-nav-btn:hover {
+    -fx-background-color: rgba(58, 78, 119, 0.24);
+    -fx-text-fill: #C5D3EA;
+}
+
+.admin-nav-btn:hover .ikonli-font-icon {
+    -fx-icon-color: #B7C6E0;
+}
+
+.admin-nav-btn.active {
+    -fx-background-color: #2A2857;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+    -fx-text-fill: #B7A7FF;
+}
+
+.admin-nav-btn.active .ikonli-font-icon {
+    -fx-icon-color: #B7A7FF;
+}
+
+.admin-profile-card {
+    -fx-border-color: #1A2947;
+    -fx-border-width: 1 0 0 0;
+    -fx-background-color: rgba(7, 17, 37, 0.9);
+}
+
+.admin-profile-avatar {
+    -fx-min-width: 34;
+    -fx-min-height: 34;
+    -fx-pref-width: 34;
+    -fx-pref-height: 34;
+    -fx-background-color: linear-gradient(to bottom right, #EF4444, #A855F7);
+    -fx-background-radius: 999;
+}
+
+.admin-profile-avatar-text {
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 12px;
+    -fx-font-weight: 800;
+}
+
+.admin-profile-name {
+    -fx-text-fill: #e2e8f0;
+    -fx-font-size: 13px;
+    -fx-font-weight: 700;
+}
+
+.admin-profile-role {
+    -fx-text-fill: #7389AD;
+    -fx-font-size: 12px;
+}
+
+.admin-profile-card .btn-ghost {
+    -fx-background-color: transparent;
+    -fx-text-fill: #7389AD;
+    -fx-padding: 8;
+    -fx-background-radius: 8;
+    -fx-border-color: transparent;
+}
+
+.admin-profile-card .btn-ghost:hover {
+    -fx-background-color: rgba(58, 84, 136, 0.22);
+    -fx-text-fill: #B7C7E7;
+}
+
+.admin-main-shell {
+    -fx-background-color: #020b24;
+}
+
+.admin-topbar-2 {
+    -fx-background-color: rgba(4, 15, 42, 0.96);
+    -fx-border-color: #0f2850;
+    -fx-border-width: 0 0 1 0;
+}
+
+.admin-topbar-title {
+    -fx-text-fill: #94a3b8;
+    -fx-font-size: 24px;
+    -fx-font-weight: 700;
+}
+
+.admin-top-icon {
+    -fx-min-width: 44;
+    -fx-min-height: 36;
+    -fx-background-color: rgba(15, 23, 42, 0.94);
+    -fx-border-color: #2d3c59;
+    -fx-border-width: 1;
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
+    -fx-cursor: hand;
+}
+
+.admin-top-icon .ikonli-font-icon {
+    -fx-icon-color: #e2e8f0;
+}
+
+.admin-top-icon:hover {
+    -fx-background-color: rgba(30, 41, 59, 0.98);
+}
+
+.admin-top-icon.danger {
+    -fx-border-color: #7f1d1d;
+}
+
+.admin-top-icon.danger:hover {
+    -fx-background-color: rgba(127, 29, 29, 0.35);
+}
+
+.admin-content-shell {
+    -fx-background-color: #030f30;
+}

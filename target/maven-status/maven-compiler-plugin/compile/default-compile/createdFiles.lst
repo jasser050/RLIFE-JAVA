@@ -24,11 +24,11 @@ module-info.class
 com\studyflow\controllers\WellbeingController$MindfulnessSession.class
 com\studyflow\controllers\WellbeingController$QuizMode.class
 com\studyflow\models\WellbeingJournalEntry.class
+com\studyflow\models\Assignment$1.class
 com\studyflow\controllers\WellbeingController$2.class
 com\studyflow\controllers\RevisionsController$DeckData.class
 com\studyflow\controllers\WellbeingController$AiSuggestionItem.class
 com\studyflow\controllers\admin\AdminStatsController.class
-com\studyflow\services\WindowsSpeechRecognitionService.class
 com\studyflow\models\QuestionStress.class
 com\studyflow\services\WellbeingAiService$ChatTurn.class
 com\studyflow\controllers\admin\AdminRecommendationsController.class
@@ -51,6 +51,7 @@ com\studyflow\controllers\admin\AdminViewFactory.class
 com\studyflow\controllers\RevisionsController.class
 com\studyflow\controllers\admin\AdminSettingsController.class
 com\studyflow\services\OpenRouterService.class
+com\studyflow\services\SpeechToTextService$TranscriptionResult.class
 com\studyflow\services\ServiceRecommendationStress.class
 com\studyflow\controllers\NotesController$NoteData.class
 com\studyflow\models\QuizStress.class

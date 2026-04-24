@@ -204,6 +204,8 @@ public class WellbeingController implements Initializable {
     private static final String PREF_QUOTE_TYPE = "global.quote.type";
     private static final String PREF_QUOTE_ENABLED = "global.quote.enabled";
     private static final String PREF_QUOTE_DISMISSED_UNTIL = "global.quote.dismissed.until";
+    private static final String PREF_QUOTE_POS_X = "global.quote.position.x";
+    private static final String PREF_QUOTE_POS_Y = "global.quote.position.y";
     private static final int MOOD_EMOJI_SIZE = 56;
     private static final int MOOD_EMOJI_FALLBACK_FONT_SIZE = 50;
     private final Preferences preferences = Preferences.userNodeForPackage(MainController.class);
@@ -259,6 +261,14 @@ public class WellbeingController implements Initializable {
         showGlobalMessage("Quote settings updated.", false);
     }
 
+    @FXML
+    private void handleResetQuotePosition() {
+        preferences.remove(PREF_QUOTE_POS_X);
+        preferences.remove(PREF_QUOTE_POS_Y);
+        preferences.putLong(PREF_QUOTE_DISMISSED_UNTIL, 0L);
+        showGlobalMessage("Quote position reset.", false);
+    }
+
     private void setupFilters() {
         if (overviewSortCombo != null) {
             overviewSortCombo.setItems(FXCollections.observableArrayList(
@@ -290,13 +300,18 @@ public class WellbeingController implements Initializable {
     }
 
     private void setupForm() {
+        if (stressSlider == null || energySlider == null || stressValueLabel == null || energyValueLabel == null) {
+            return;
+        }
         stressSlider.valueProperty().addListener((obs, oldVal, newVal) -> stressValueLabel.setText(String.valueOf(newVal.intValue())));
         energySlider.valueProperty().addListener((obs, oldVal, newVal) -> energyValueLabel.setText(String.valueOf(newVal.intValue())));
         stressValueLabel.setText(String.valueOf((int) stressSlider.getValue()));
         energyValueLabel.setText(String.valueOf((int) energySlider.getValue()));
         configureMoodButtons();
-        cancelEditButton.setVisible(false);
-        cancelEditButton.setManaged(false);
+        if (cancelEditButton != null) {
+            cancelEditButton.setVisible(false);
+            cancelEditButton.setManaged(false);
+        }
         updateChoiceSelection(moodButtonsBox, selectedMood);
         updateChoiceSelection(sleepButtonsBox, String.valueOf((int) selectedSleepHours));
     }
@@ -338,12 +353,22 @@ public class WellbeingController implements Initializable {
         Integer currentUserId = getCurrentUserId();
         if (currentUserId == null || currentUserId <= 0) {
             allCheckins.clear();
+            refreshOverview();
+            refreshHistoryTable();
             showError("Please log in with a valid account to access your wellbeing data.");
             return;
         }
-        allCheckins.setAll(serviceWellBeing.findAllForUser(currentUserId));
-        refreshOverview();
-        refreshHistoryTable();
+        try {
+            allCheckins.setAll(serviceWellBeing.findAllForUser(currentUserId));
+            refreshOverview();
+            refreshHistoryTable();
+        } catch (RuntimeException e) {
+            allCheckins.clear();
+            refreshOverview();
+            refreshHistoryTable();
+            String message = e.getMessage() == null ? "Unable to load wellbeing data." : e.getMessage();
+            showError(message);
+        }
     }
 
     private void refreshOverview() {
@@ -3866,149 +3891,99 @@ public class WellbeingController implements Initializable {
     private void showOverviewMode() {
         handleCloseInlineTool();
         hideGlobalMessage();
-        statsSection.setVisible(true);
-        statsSection.setManaged(true);
-        overviewSection.setVisible(true);
-        overviewSection.setManaged(true);
-        historySection.setVisible(false);
-        historySection.setManaged(false);
-        toolsSection.setVisible(false);
-        toolsSection.setManaged(false);
-        formSection.setVisible(false);
-        formSection.setManaged(false);
-        quizModeSection.setVisible(false);
-        quizModeSection.setManaged(false);
-        quizSection.setVisible(false);
-        quizSection.setManaged(false);
-        quizResultsSection.setVisible(false);
-        quizResultsSection.setManaged(false);
+        setNodeVisibility(statsSection, true);
+        setNodeVisibility(overviewSection, true);
+        setNodeVisibility(historySection, false);
+        setNodeVisibility(toolsSection, false);
+        setNodeVisibility(formSection, false);
+        setNodeVisibility(quizModeSection, false);
+        setNodeVisibility(quizSection, false);
+        setNodeVisibility(quizResultsSection, false);
     }
 
     private void showCopingToolsMode() {
         hideGlobalMessage();
-        statsSection.setVisible(false);
-        statsSection.setManaged(false);
-        overviewSection.setVisible(false);
-        overviewSection.setManaged(false);
-        historySection.setVisible(false);
-        historySection.setManaged(false);
-        formSection.setVisible(false);
-        formSection.setManaged(false);
-        quizModeSection.setVisible(false);
-        quizModeSection.setManaged(false);
-        quizSection.setVisible(false);
-        quizSection.setManaged(false);
-        quizResultsSection.setVisible(false);
-        quizResultsSection.setManaged(false);
-        toolsSection.setVisible(true);
-        toolsSection.setManaged(true);
+        setNodeVisibility(statsSection, false);
+        setNodeVisibility(overviewSection, false);
+        setNodeVisibility(historySection, false);
+        setNodeVisibility(formSection, false);
+        setNodeVisibility(quizModeSection, false);
+        setNodeVisibility(quizSection, false);
+        setNodeVisibility(quizResultsSection, false);
+        setNodeVisibility(toolsSection, true);
     }
 
     private void showCheckinMode() {
         handleCloseInlineTool();
         hideGlobalMessage();
-        statsSection.setVisible(false);
-        statsSection.setManaged(false);
-        overviewSection.setVisible(false);
-        overviewSection.setManaged(false);
-        historySection.setVisible(false);
-        historySection.setManaged(false);
-        toolsSection.setVisible(false);
-        toolsSection.setManaged(false);
-        formSection.setVisible(true);
-        formSection.setManaged(true);
-        quizModeSection.setVisible(false);
-        quizModeSection.setManaged(false);
-        quizSection.setVisible(false);
-        quizSection.setManaged(false);
-        quizResultsSection.setVisible(false);
-        quizResultsSection.setManaged(false);
+        setNodeVisibility(statsSection, false);
+        setNodeVisibility(overviewSection, false);
+        setNodeVisibility(historySection, false);
+        setNodeVisibility(toolsSection, false);
+        setNodeVisibility(formSection, true);
+        setNodeVisibility(quizModeSection, false);
+        setNodeVisibility(quizSection, false);
+        setNodeVisibility(quizResultsSection, false);
     }
 
     private void showHistoryMode() {
         handleCloseInlineTool();
         hideGlobalMessage();
-        statsSection.setVisible(false);
-        statsSection.setManaged(false);
-        overviewSection.setVisible(false);
-        overviewSection.setManaged(false);
-        toolsSection.setVisible(false);
-        toolsSection.setManaged(false);
-        formSection.setVisible(false);
-        formSection.setManaged(false);
-        historySection.setVisible(true);
-        historySection.setManaged(true);
-        quizModeSection.setVisible(false);
-        quizModeSection.setManaged(false);
-        quizSection.setVisible(false);
-        quizSection.setManaged(false);
-        quizResultsSection.setVisible(false);
-        quizResultsSection.setManaged(false);
+        setNodeVisibility(statsSection, false);
+        setNodeVisibility(overviewSection, false);
+        setNodeVisibility(toolsSection, false);
+        setNodeVisibility(formSection, false);
+        setNodeVisibility(historySection, true);
+        setNodeVisibility(quizModeSection, false);
+        setNodeVisibility(quizSection, false);
+        setNodeVisibility(quizResultsSection, false);
     }
 
     private void showQuizMode() {
         handleCloseInlineTool();
         hideGlobalMessage();
-        statsSection.setVisible(false);
-        statsSection.setManaged(false);
-        overviewSection.setVisible(false);
-        overviewSection.setManaged(false);
-        historySection.setVisible(false);
-        historySection.setManaged(false);
-        toolsSection.setVisible(false);
-        toolsSection.setManaged(false);
-        formSection.setVisible(false);
-        formSection.setManaged(false);
-        quizModeSection.setVisible(false);
-        quizModeSection.setManaged(false);
-        quizResultsSection.setVisible(false);
-        quizResultsSection.setManaged(false);
-        quizSection.setVisible(true);
-        quizSection.setManaged(true);
+        setNodeVisibility(statsSection, false);
+        setNodeVisibility(overviewSection, false);
+        setNodeVisibility(historySection, false);
+        setNodeVisibility(toolsSection, false);
+        setNodeVisibility(formSection, false);
+        setNodeVisibility(quizModeSection, false);
+        setNodeVisibility(quizResultsSection, false);
+        setNodeVisibility(quizSection, true);
     }
 
     private void showQuizResultsMode() {
         handleCloseInlineTool();
         hideGlobalMessage();
-        statsSection.setVisible(false);
-        statsSection.setManaged(false);
-        overviewSection.setVisible(false);
-        overviewSection.setManaged(false);
-        historySection.setVisible(false);
-        historySection.setManaged(false);
-        toolsSection.setVisible(false);
-        toolsSection.setManaged(false);
-        formSection.setVisible(false);
-        formSection.setManaged(false);
-        quizModeSection.setVisible(false);
-        quizModeSection.setManaged(false);
-        quizSection.setVisible(false);
-        quizSection.setManaged(false);
-        quizResultsSection.setVisible(true);
-        quizResultsSection.setManaged(true);
+        setNodeVisibility(statsSection, false);
+        setNodeVisibility(overviewSection, false);
+        setNodeVisibility(historySection, false);
+        setNodeVisibility(toolsSection, false);
+        setNodeVisibility(formSection, false);
+        setNodeVisibility(quizModeSection, false);
+        setNodeVisibility(quizSection, false);
+        setNodeVisibility(quizResultsSection, true);
     }
 
     private void showQuizModePickerInline() {
         handleCloseInlineTool();
         hideGlobalMessage();
-        statsSection.setVisible(false);
-        statsSection.setManaged(false);
-        overviewSection.setVisible(false);
-        overviewSection.setManaged(false);
-        historySection.setVisible(false);
-        historySection.setManaged(false);
-        toolsSection.setVisible(false);
-        toolsSection.setManaged(false);
-        formSection.setVisible(false);
-        formSection.setManaged(false);
-        quizSection.setVisible(false);
-        quizSection.setManaged(false);
-        quizResultsSection.setVisible(false);
-        quizResultsSection.setManaged(false);
-        if (quizModeSection != null) {
-            quizModeSection.setVisible(true);
-            quizModeSection.setManaged(true);
+        setNodeVisibility(statsSection, false);
+        setNodeVisibility(overviewSection, false);
+        setNodeVisibility(historySection, false);
+        setNodeVisibility(toolsSection, false);
+        setNodeVisibility(formSection, false);
+        setNodeVisibility(quizSection, false);
+        setNodeVisibility(quizResultsSection, false);
+        setNodeVisibility(quizModeSection, true);
+    }
+
+    private void setNodeVisibility(Node node, boolean visible) {
+        if (node == null) {
+            return;
         }
+        node.setVisible(visible);
+        node.setManaged(visible);
     }
 
     private void updateStatsLabels(List<WellBeing> items, Label total, Label stress, Label energy, Label sleep) {
