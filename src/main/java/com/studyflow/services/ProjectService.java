@@ -117,7 +117,9 @@ public class ProjectService implements IService<Project> {
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             ResultSet rs = statement.executeQuery();
             while (rs.next()) {
-                projects.add(mapProject(rs, rs.getInt("user_id")));
+                Project project = mapProject(rs, rs.getInt("user_id"));
+                applyCurrentUserGitSettings(project, rs.getInt("user_id"));
+                projects.add(project);
             }
         } catch (SQLException e) {
             System.out.println("ProjectService.getAll: " + e.getMessage());
@@ -175,7 +177,9 @@ public class ProjectService implements IService<Project> {
             statement.setInt(7, userId);
             ResultSet rs = statement.executeQuery();
             while (rs.next()) {
-                projects.add(mapProject(rs, userId));
+                Project project = mapProject(rs, userId);
+                applyCurrentUserGitSettings(project, userId);
+                projects.add(project);
             }
         } catch (SQLException e) {
             System.out.println("ProjectService.getByUserId: " + e.getMessage());
@@ -270,7 +274,9 @@ public class ProjectService implements IService<Project> {
             statement.setInt(1, projectId);
             ResultSet rs = statement.executeQuery();
             if (rs.next()) {
-                return mapProject(rs, rs.getInt("user_id"));
+                Project project = mapProject(rs, rs.getInt("user_id"));
+                applyCurrentUserGitSettings(project, rs.getInt("user_id"));
+                return project;
             }
         } catch (SQLException e) {
             System.out.println("ProjectService.getProjectById: " + e.getMessage());
@@ -295,6 +301,7 @@ public class ProjectService implements IService<Project> {
         Project project = new Project();
         project.setId(rs.getInt("id"));
         project.setUserId(rs.getInt("user_id"));
+        project.setCurrentUserId(currentUserId);
         project.setOwnerUserId(rs.getInt("user_id"));
         project.setTitle(rs.getString("titre"));
         project.setDescription(rs.getString("description"));
@@ -310,6 +317,57 @@ public class ProjectService implements IService<Project> {
         return project;
     }
 
+<<<<<<< Updated upstream
+=======
+    public void updateGitSettings(Project project) {
+        if (!ensureConnection("ProjectService.updateGitSettings") || project == null || project.getId() <= 0) {
+            return;
+        }
+        ensureGitSupport();
+        int actorUserId = resolveActorUserId(project);
+        boolean owner = project.getOwnerUserId() == actorUserId || project.isOwnedByCurrentUser();
+
+        if (owner) {
+            String sql = "UPDATE project SET git_repo_path = ?, git_remote_url = ?, git_default_branch = ?, git_username = ?, git_access_token = ?, git_last_status_summary = ?, git_last_sync_at = ?, updated_at = NOW() WHERE id = ? AND user_id = ?";
+            try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                setNullableString(statement, 1, project.getGitRepoPath());
+                setNullableString(statement, 2, project.getGitRemoteUrl());
+                setNullableString(statement, 3, project.getGitDefaultBranch());
+                setNullableString(statement, 4, project.getGitUsername());
+                setNullableString(statement, 5, project.getGitAccessToken());
+                setNullableString(statement, 6, project.getGitLastStatusSummary());
+                setNullableDateTime(statement, 7, project.getGitLastSyncAt());
+                statement.setInt(8, project.getId());
+                statement.setInt(9, actorUserId);
+                statement.executeUpdate();
+            } catch (SQLException e) {
+                System.out.println("ProjectService.updateGitSettings(owner): " + e.getMessage());
+            }
+        } else {
+            String sql = "UPDATE project p " +
+                    "LEFT JOIN project_share ps ON ps.project_id = p.id AND ps.shared_with_user_id = ? " +
+                    "SET p.updated_at = NOW() " +
+                    "WHERE p.id = ? AND ps.role = 'editor'";
+            try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                statement.setInt(1, actorUserId);
+                statement.setInt(2, project.getId());
+                statement.executeUpdate();
+            } catch (SQLException e) {
+                System.out.println("ProjectService.updateGitSettings(editor-check): " + e.getMessage());
+            }
+        }
+
+        upsertUserGitSettings(project, actorUserId);
+    }
+
+    private int resolveActorUserId(Project project) {
+        if (project == null) {
+            return 0;
+        }
+        return project.getCurrentUserId() > 0 ? project.getCurrentUserId() : project.getUserId();
+    }
+
+>>>>>>> Stashed changes
     private LocalDate readDate(ResultSet rs, String column) throws SQLException {
         Date value = rs.getDate(column);
         return value == null ? null : value.toLocalDate();
@@ -360,4 +418,147 @@ public class ProjectService implements IService<Project> {
     private String safe(String value) {
         return value == null ? "" : value.trim();
     }
+<<<<<<< Updated upstream
+=======
+
+    private void ensureGitSupport() {
+        if (!ensureConnection("ProjectService.ensureGitSupport")) {
+            return;
+        }
+        ensureColumnExists("project", "git_repo_path", "ALTER TABLE project ADD COLUMN git_repo_path VARCHAR(600) NULL");
+        ensureColumnExists("project", "git_remote_url", "ALTER TABLE project ADD COLUMN git_remote_url VARCHAR(600) NULL");
+        ensureColumnExists("project", "git_default_branch", "ALTER TABLE project ADD COLUMN git_default_branch VARCHAR(120) NULL");
+        ensureColumnExists("project", "git_username", "ALTER TABLE project ADD COLUMN git_username VARCHAR(255) NULL");
+        ensureColumnExists("project", "git_access_token", "ALTER TABLE project ADD COLUMN git_access_token VARCHAR(600) NULL");
+        ensureColumnExists("project", "git_last_status_summary", "ALTER TABLE project ADD COLUMN git_last_status_summary VARCHAR(600) NULL");
+        ensureColumnExists("project", "git_last_sync_at", "ALTER TABLE project ADD COLUMN git_last_sync_at DATETIME NULL");
+        ensureGitUserSettingsSupport();
+    }
+
+    private void ensureGitUserSettingsSupport() {
+        String sql = """
+                CREATE TABLE IF NOT EXISTS project_git_user_settings (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    project_id INT NOT NULL,
+                    user_id INT NOT NULL,
+                    git_repo_path VARCHAR(600) NULL,
+                    git_default_branch VARCHAR(120) NULL,
+                    git_username VARCHAR(255) NULL,
+                    git_access_token VARCHAR(600) NULL,
+                    git_last_status_summary VARCHAR(600) NULL,
+                    git_last_sync_at DATETIME NULL,
+                    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    UNIQUE KEY uq_project_git_user_settings_project_user (project_id, user_id)
+                )
+                """;
+        try (Statement statement = connection.createStatement()) {
+            statement.executeUpdate(sql);
+        } catch (SQLException e) {
+            System.out.println("ProjectService.ensureGitUserSettingsSupport: " + e.getMessage());
+        }
+    }
+
+    private void applyCurrentUserGitSettings(Project project, int currentUserId) {
+        if (project == null || currentUserId <= 0) {
+            return;
+        }
+        String sharedRemoteUrl = project.getGitRemoteUrl();
+        String ownerDefaultBranch = project.getGitDefaultBranch();
+        String ownerStatusSummary = project.getGitLastStatusSummary();
+        LocalDateTime ownerLastSyncAt = project.getGitLastSyncAt();
+
+        String sql = "SELECT git_repo_path, git_default_branch, git_username, git_access_token, git_last_status_summary, git_last_sync_at " +
+                "FROM project_git_user_settings WHERE project_id = ? AND user_id = ? LIMIT 1";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, project.getId());
+            statement.setInt(2, currentUserId);
+            ResultSet rs = statement.executeQuery();
+            if (rs.next()) {
+                project.setGitRepoPath(readString(rs, "git_repo_path"));
+                project.setGitDefaultBranch(readString(rs, "git_default_branch"));
+                project.setGitUsername(readString(rs, "git_username"));
+                project.setGitAccessToken(readString(rs, "git_access_token"));
+                project.setGitLastStatusSummary(readString(rs, "git_last_status_summary"));
+                project.setGitLastSyncAt(readDateTime(rs, "git_last_sync_at"));
+            } else if (!project.isOwnedByCurrentUser()) {
+                project.setGitRepoPath(null);
+                project.setGitUsername(null);
+                project.setGitAccessToken(null);
+                project.setGitLastStatusSummary(ownerStatusSummary);
+                project.setGitLastSyncAt(ownerLastSyncAt);
+            }
+        } catch (SQLException e) {
+            System.out.println("ProjectService.applyCurrentUserGitSettings: " + e.getMessage());
+        }
+
+        project.setGitRemoteUrl(sharedRemoteUrl);
+        if (project.getGitDefaultBranch() == null || project.getGitDefaultBranch().isBlank()) {
+            project.setGitDefaultBranch(ownerDefaultBranch);
+        }
+    }
+
+    private void upsertUserGitSettings(Project project, int userId) {
+        if (project == null || project.getId() <= 0 || userId <= 0) {
+            return;
+        }
+        ensureGitUserSettingsSupport();
+        String sql = "INSERT INTO project_git_user_settings " +
+                "(project_id, user_id, git_repo_path, git_default_branch, git_username, git_access_token, git_last_status_summary, git_last_sync_at, created_at, updated_at) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW()) " +
+                "ON DUPLICATE KEY UPDATE " +
+                "git_repo_path = VALUES(git_repo_path), " +
+                "git_default_branch = VALUES(git_default_branch), " +
+                "git_username = VALUES(git_username), " +
+                "git_access_token = VALUES(git_access_token), " +
+                "git_last_status_summary = VALUES(git_last_status_summary), " +
+                "git_last_sync_at = VALUES(git_last_sync_at), " +
+                "updated_at = NOW()";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, project.getId());
+            statement.setInt(2, userId);
+            setNullableString(statement, 3, project.getGitRepoPath());
+            setNullableString(statement, 4, project.getGitDefaultBranch());
+            setNullableString(statement, 5, project.getGitUsername());
+            setNullableString(statement, 6, project.getGitAccessToken());
+            setNullableString(statement, 7, project.getGitLastStatusSummary());
+            setNullableDateTime(statement, 8, project.getGitLastSyncAt());
+            statement.executeUpdate();
+        } catch (SQLException e) {
+            System.out.println("ProjectService.upsertUserGitSettings: " + e.getMessage());
+        }
+    }
+
+    private void ensureColumnExists(String table, String column, String alterSql) {
+        String checkSql = "SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?";
+        try (PreparedStatement statement = connection.prepareStatement(checkSql)) {
+            statement.setString(1, table);
+            statement.setString(2, column);
+            ResultSet rs = statement.executeQuery();
+            if (rs.next() && rs.getInt(1) == 0) {
+                try (Statement alterStatement = connection.createStatement()) {
+                    alterStatement.executeUpdate(alterSql);
+                }
+            }
+        } catch (SQLException e) {
+            System.out.println("ProjectService.ensureColumnExists(" + table + "." + column + "): " + e.getMessage());
+        }
+    }
+
+    private void setNullableString(PreparedStatement statement, int index, String value) throws SQLException {
+        if (value == null || value.isBlank()) {
+            statement.setNull(index, java.sql.Types.VARCHAR);
+            return;
+        }
+        statement.setString(index, value.trim());
+    }
+
+    private void setNullableDateTime(PreparedStatement statement, int index, LocalDateTime value) throws SQLException {
+        if (value == null) {
+            statement.setNull(index, java.sql.Types.TIMESTAMP);
+            return;
+        }
+        statement.setTimestamp(index, Timestamp.valueOf(value));
+    }
+>>>>>>> Stashed changes
 }

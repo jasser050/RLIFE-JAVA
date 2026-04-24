@@ -105,7 +105,6 @@ public class ProjectsController implements Initializable {
     @FXML private VBox projectList;
     @FXML private Label selectedProjectTitleLabel;
     @FXML private Label selectedProjectMetaLabel;
-    @FXML private Label selectedProjectStatusLabel;
     @FXML private Label selectedProjectCountLabel;
     @FXML private VBox projectAssignmentsList;
     @FXML private Label deleteProjectTitleLabel;
@@ -583,8 +582,6 @@ public class ProjectsController implements Initializable {
         if (project == null) {
             selectedProjectTitleLabel.setText("No project selected");
             selectedProjectMetaLabel.setText("Select a project to review its details and assignments.");
-            selectedProjectStatusLabel.setText("--");
-            selectedProjectStatusLabel.getStyleClass().setAll("badge", "secondary");
             selectedProjectCountLabel.setText("0 assignments");
             projectAssignmentsList.getChildren().add(createEmptyState("Assignments linked to the selected project will appear here."));
             return;
@@ -593,8 +590,6 @@ public class ProjectsController implements Initializable {
         selectedProjectTitleLabel.setText(project.getTitle());
         selectedProjectMetaLabel.setText(formatDate(project.getStartDate()) + " -> " + formatDate(project.getEndDate())
                 + " | " + (project.isOwnedByCurrentUser() ? "Owned by you" : "Shared by " + safeText(project.getOwnerName())));
-        selectedProjectStatusLabel.setText(project.getStatus());
-        selectedProjectStatusLabel.getStyleClass().setAll("badge", project.getStatusStyleClass());
         selectedProjectCountLabel.setText(project.getAssignmentCount() + " assignments");
 
         List<Assignment> assignments = assignmentService.getByProjectId(project.getId(), getCurrentUser().getId());
@@ -630,7 +625,7 @@ public class ProjectsController implements Initializable {
         meta.getStyleClass().addAll("item-meta", "project-assignment-meta");
         textBox.getChildren().addAll(title, meta);
 
-        row.getChildren().addAll(icon, textBox, createBadge(assignment.getPriority(), assignment.getPriorityStyleClass()));
+        row.getChildren().addAll(icon, textBox);
         return row;
     }
 
@@ -766,6 +761,63 @@ public class ProjectsController implements Initializable {
         shareProjectButton.setDisable(!enabled);
     }
 
+<<<<<<< Updated upstream
+=======
+    private void populateGitProjectPanel(Project project) {
+        if (projectGitHintLabel == null
+                || projectGitStatusLabel == null
+                || projectGitRepoPathField == null
+                || projectGitRemoteUrlField == null
+                || projectGitBranchField == null
+                || projectGitUsernameField == null
+                || projectGitAccessTokenField == null
+                || saveProjectGitButton == null
+                || initProjectRepoButton == null
+                || cloneProjectRepoButton == null
+                || pullProjectRepoButton == null
+                || refreshProjectGitStatusButton == null) {
+            return;
+        }
+
+        boolean hasSelection = project != null;
+        boolean canUseGit = hasSelection && project.canCurrentUserUseGit();
+        boolean canEditRemote = hasSelection && project.isOwnedByCurrentUser();
+
+        if (!hasSelection) {
+            projectGitHintLabel.setText("Select a project to configure Git access.");
+            projectGitStatusLabel.setText("No repository linked");
+            projectGitRepoPathField.clear();
+            projectGitRemoteUrlField.clear();
+            projectGitBranchField.setText("main");
+            projectGitUsernameField.clear();
+            projectGitAccessTokenField.clear();
+        } else {
+            projectGitHintLabel.setText(canUseGit
+                    ? (canEditRemote
+                    ? "Link a repository, clone a remote repo, or pull updates for \"" + project.getTitle() + "\"."
+                    : "This repo URL is shared from the project owner. Add your local repo path, username, token, and branch for your own workspace.")
+                    : "You need editor access on this shared project to use Git.");
+            projectGitStatusLabel.setText(isBlank(project.getGitLastStatusSummary()) ? "Repository status not checked yet" : project.getGitLastStatusSummary());
+            projectGitRepoPathField.setText(defaultText(project.getGitRepoPath()));
+            projectGitRemoteUrlField.setText(defaultText(project.getGitRemoteUrl()));
+            projectGitBranchField.setText(isBlank(project.getGitDefaultBranch()) ? "main" : project.getGitDefaultBranch());
+            projectGitUsernameField.setText(defaultText(project.getGitUsername()));
+            projectGitAccessTokenField.setText(defaultText(project.getGitAccessToken()));
+        }
+
+        projectGitRepoPathField.setDisable(!canUseGit);
+        projectGitRemoteUrlField.setDisable(!canEditRemote);
+        projectGitBranchField.setDisable(!canUseGit);
+        projectGitUsernameField.setDisable(!canUseGit);
+        projectGitAccessTokenField.setDisable(!canUseGit);
+        saveProjectGitButton.setDisable(!canUseGit);
+        initProjectRepoButton.setDisable(!canUseGit);
+        cloneProjectRepoButton.setDisable(!canUseGit);
+        pullProjectRepoButton.setDisable(!canUseGit);
+        refreshProjectGitStatusButton.setDisable(!canUseGit);
+    }
+
+>>>>>>> Stashed changes
     private void setActivePanel(String panel) {
         activePanel = panel;
         togglePanel(createProjectPanel, "CREATE".equals(panel));
@@ -851,6 +903,130 @@ public class ProjectsController implements Initializable {
         thread.start();
     }
 
+<<<<<<< Updated upstream
+=======
+    private void setAiLoadingState(boolean loading, String title, String subtitle) {
+        if (aiLoadingOverlay != null) {
+            aiLoadingOverlay.setVisible(loading);
+            aiLoadingOverlay.setManaged(loading);
+        }
+        if (aiLoadingTitleLabel != null && title != null && !title.isBlank()) {
+            aiLoadingTitleLabel.setText(title);
+        }
+        if (aiLoadingSubtitleLabel != null && subtitle != null && !subtitle.isBlank()) {
+            aiLoadingSubtitleLabel.setText(subtitle);
+        }
+    }
+
+    @FXML
+    private void handleSaveProjectGitSettings() {
+        if (!isReady() || selectedProject == null) {
+            showFeedback("Select a project before saving Git settings.", true);
+            return;
+        }
+        if (!selectedProject.canCurrentUserUseGit()) {
+            showFeedback("You need editor access on this shared project to save Git settings.", true);
+            return;
+        }
+        applyProjectGitFields();
+        selectedProject.setCurrentUserId(getCurrentUser().getId());
+        projectService.updateGitSettings(selectedProject);
+        if (gitIntegrationService.isRepositoryConfigured(selectedProject) && !isBlank(selectedProject.getGitRemoteUrl())) {
+            GitIntegrationService.GitOperationResult syncResult = gitIntegrationService.syncRemote(selectedProject);
+            selectedProject.setGitLastStatusSummary(syncResult.details());
+            selectedProject.setGitLastSyncAt(syncResult.completedAt());
+            selectedProject.setCurrentUserId(getCurrentUser().getId());
+            projectService.updateGitSettings(selectedProject);
+            if (!syncResult.success()) {
+                refreshProjects();
+                selectProject(findProjectById(selectedProject.getId()));
+                showFeedback(syncResult.summary(), true);
+                return;
+            }
+        }
+        refreshProjects();
+        selectProject(findProjectById(selectedProject.getId()));
+        showFeedback("Project Git settings saved.", false);
+    }
+
+    @FXML
+    private void handleInitProjectRepository() {
+        runProjectGitTask("Initializing repository...", project -> gitIntegrationService.initializeRepository(project));
+    }
+
+    @FXML
+    private void handleCloneProjectRepository() {
+        runProjectGitTask("Cloning repository...", project -> gitIntegrationService.cloneRepository(project));
+    }
+
+    @FXML
+    private void handlePullProjectRepository() {
+        runProjectGitTask("Pulling repository updates...", project -> gitIntegrationService.pull(project));
+    }
+
+    @FXML
+    private void handleRefreshProjectGitStatus() {
+        runProjectGitTask("Refreshing repository status...", project -> gitIntegrationService.describeStatus(project));
+    }
+
+    private void applyProjectGitFields() {
+        if (selectedProject == null) {
+            return;
+        }
+        selectedProject.setGitRepoPath(defaultText(projectGitRepoPathField == null ? null : projectGitRepoPathField.getText()));
+        selectedProject.setGitRemoteUrl(defaultText(projectGitRemoteUrlField == null ? null : projectGitRemoteUrlField.getText()));
+        selectedProject.setGitDefaultBranch(defaultText(projectGitBranchField == null ? null : projectGitBranchField.getText()));
+        selectedProject.setGitUsername(defaultText(projectGitUsernameField == null ? null : projectGitUsernameField.getText()));
+        selectedProject.setGitAccessToken(defaultText(projectGitAccessTokenField == null ? null : projectGitAccessTokenField.getText()));
+    }
+
+    private void runProjectGitTask(String loadingMessage, java.util.function.Function<Project, GitIntegrationService.GitOperationResult> action) {
+        if (!isReady() || selectedProject == null) {
+            showFeedback("Select a project before using Git actions.", true);
+            return;
+        }
+        if (!selectedProject.canCurrentUserUseGit()) {
+            showFeedback("You need editor access on this shared project to use Git actions.", true);
+            return;
+        }
+
+        applyProjectGitFields();
+        selectedProject.setCurrentUserId(getCurrentUser().getId());
+        projectService.updateGitSettings(selectedProject);
+        setAiLoadingState(true, "Git workspace", loadingMessage);
+
+        Task<GitIntegrationService.GitOperationResult> task = new Task<>() {
+            @Override
+            protected GitIntegrationService.GitOperationResult call() {
+                return action.apply(selectedProject);
+            }
+        };
+
+        task.setOnSucceeded(event -> {
+            setAiLoadingState(false, null, null);
+            GitIntegrationService.GitOperationResult result = task.getValue();
+            selectedProject.setGitLastStatusSummary(result.details());
+            selectedProject.setGitLastSyncAt(result.completedAt());
+            selectedProject.setCurrentUserId(getCurrentUser().getId());
+            projectService.updateGitSettings(selectedProject);
+            int selectedId = selectedProject.getId();
+            refreshProjects();
+            selectProject(findProjectById(selectedId));
+            showFeedback(result.summary(), !result.success());
+        });
+
+        task.setOnFailed(event -> {
+            setAiLoadingState(false, null, null);
+            Throwable error = task.getException();
+            showFeedback("Git action failed: " + (error == null ? "unknown error" : error.getMessage()), true);
+        });
+
+        Thread thread = new Thread(task, "project-git-task");
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+>>>>>>> Stashed changes
     private boolean validateProjectForm(
             TextField titleField, Label titleError,
             DatePicker startPicker, Label startError,

@@ -98,12 +98,11 @@
                                 <Label text="Project Snapshot" styleClass="card-title"/>
                                 <Label text="Linked assignments and quick context for the active project." styleClass="card-subtitle"/>
                             </VBox>
-                            <Button fx:id="generateProjectAiTasksButton" text="AI Tasks" onAction="#handleGenerateProjectAiTasks" styleClass="btn-secondary">
+                            <Button fx:id="generateProjectAiTasksButton" onAction="#handleGenerateProjectAiTasks" styleClass="btn-secondary" contentDisplay="GRAPHIC_ONLY">
                                 <graphic>
                                     <FontIcon iconLiteral="fth-zap" iconSize="15"/>
                                 </graphic>
                             </Button>
-                            <Label fx:id="selectedProjectStatusLabel" text="--" styleClass="badge, secondary, projects-snapshot-status"/>
                         </HBox>
                         <VBox fx:id="projectAssignmentsList" spacing="10" styleClass="projects-snapshot-body" style="-fx-padding: 0 16 16 16;" VBox.vgrow="ALWAYS"/>
                     </VBox>

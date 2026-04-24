@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 public class Project {
     private int id;
     private int userId;
+    private int currentUserId;
     private int ownerUserId;
     private String title;
     private String description;
@@ -33,6 +34,14 @@ public class Project {
 
     public void setUserId(int userId) {
         this.userId = userId;
+    }
+
+    public int getCurrentUserId() {
+        return currentUserId;
+    }
+
+    public void setCurrentUserId(int currentUserId) {
+        this.currentUserId = currentUserId;
     }
 
     public int getOwnerUserId() {
@@ -133,6 +142,14 @@ public class Project {
 
     public boolean isCompleted() {
         return "Completed".equalsIgnoreCase(status);
+    }
+
+    public boolean isEditorSharedWithCurrentUser() {
+        return !ownedByCurrentUser && "editor".equalsIgnoreCase(sharedRole);
+    }
+
+    public boolean canCurrentUserUseGit() {
+        return ownedByCurrentUser || isEditorSharedWithCurrentUser();
     }
 
     public boolean isInProgress() {

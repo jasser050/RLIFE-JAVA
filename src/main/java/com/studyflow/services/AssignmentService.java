@@ -90,6 +90,7 @@ public class AssignmentService implements IService<Assignment> {
         ensureDependencySupport();
         applyStatusDueTimestampIfNeeded(assignment);
         normalizeAssignmentDateTime(assignment);
+<<<<<<< Updated upstream
         String sql = "UPDATE assignment SET project_id = ?, titre = ?, description = ?, date_debut = ?, date_fin = ?, priorite = ?, statut = ?, estimated_min_days = ?, estimated_max_days = ?, complexity_level = ?, ai_suggested_due_date = ?, updated_at = NOW() WHERE id = ? AND user_id = ?";
         try {
             PreparedStatement statement = connection.prepareStatement(sql);
@@ -106,6 +107,38 @@ public class AssignmentService implements IService<Assignment> {
             setNullableDate(statement, 11, assignment.getAiSuggestedDueDate());
             statement.setInt(12, assignment.getId());
             statement.setInt(13, assignment.getUserId());
+=======
+        int actorUserId = resolveActorUserId(assignment);
+        String sql = "UPDATE assignment a " +
+                "LEFT JOIN assignment_collaborator ac ON ac.assignment_id = a.id AND ac.user_id = ? " +
+                "LEFT JOIN project_share ps ON ps.project_id = a.project_id AND ps.shared_with_user_id = ? " +
+                "SET a.project_id = ?, a.titre = ?, a.description = ?, a.date_debut = ?, a.date_fin = ?, a.priorite = ?, a.statut = ?, " +
+                "a.estimated_min_days = ?, a.estimated_max_days = ?, a.complexity_level = ?, a.ai_suggested_due_date = ?, " +
+                "a.git_commit_message = ?, a.git_commit_pathspec = ?, a.git_last_commit_hash = ?, a.git_last_commit_at = ?, a.updated_at = NOW() " +
+                "WHERE a.id = ? AND (a.user_id = ? OR (ac.user_id = ? AND ps.role = 'editor'))";
+        try {
+            PreparedStatement statement = connection.prepareStatement(sql);
+            statement.setInt(1, actorUserId);
+            statement.setInt(2, actorUserId);
+            statement.setInt(3, assignment.getProjectId());
+            statement.setString(4, assignment.getTitle());
+            statement.setString(5, assignment.getDescription());
+            statement.setTimestamp(6, Timestamp.valueOf(toDateTime(assignment.getStartDate(), assignment.getStartTime())));
+            statement.setTimestamp(7, Timestamp.valueOf(toDateTime(assignment.getEndDate(), assignment.getEndTime())));
+            statement.setString(8, assignment.getPriority());
+            statement.setString(9, assignment.getStatus());
+            setNullableInteger(statement, 10, assignment.getEstimatedMinDays());
+            setNullableInteger(statement, 11, assignment.getEstimatedMaxDays());
+            statement.setString(12, assignment.getComplexityLevel());
+            setNullableDate(statement, 13, assignment.getAiSuggestedDueDate());
+            setNullableString(statement, 14, assignment.getGitCommitMessage());
+            setNullableString(statement, 15, assignment.getGitCommitPathspec());
+            setNullableString(statement, 16, assignment.getGitLastCommitHash());
+            setNullableDateTime(statement, 17, assignment.getGitLastCommitAt());
+            statement.setInt(18, assignment.getId());
+            statement.setInt(19, actorUserId);
+            statement.setInt(20, actorUserId);
+>>>>>>> Stashed changes
             statement.executeUpdate();
         } catch (SQLException e) {
             System.out.println("AssignmentService.update: " + e.getMessage());
@@ -135,7 +168,7 @@ public class AssignmentService implements IService<Assignment> {
             return assignments;
         }
 
-        String sql = "SELECT a.*, p.titre AS project_title, u.first_name, u.last_name, 1 AS owned_by_current_user " +
+        String sql = "SELECT a.*, p.titre AS project_title, u.first_name, u.last_name, 1 AS owned_by_current_user, 1 AS editable_by_current_user " +
                 "FROM assignment a " +
                 "JOIN project p ON p.id = a.project_id " +
                 "JOIN user u ON u.id = a.user_id " +
@@ -160,10 +193,12 @@ public class AssignmentService implements IService<Assignment> {
         ensureDependencySupport();
 
         String sql = "SELECT a.*, p.titre AS project_title, u.first_name, u.last_name, " +
-                "CASE WHEN a.user_id = ? THEN 1 ELSE 0 END AS owned_by_current_user " +
+                "CASE WHEN a.user_id = ? THEN 1 ELSE 0 END AS owned_by_current_user, " +
+                "CASE WHEN a.user_id = ? THEN 1 WHEN ac.user_id = ? AND COALESCE(ps.role, 'viewer') = 'editor' THEN 1 ELSE 0 END AS editable_by_current_user " +
                 "FROM assignment a " +
                 "JOIN project p ON p.id = a.project_id " +
                 "JOIN user u ON u.id = a.user_id " +
+                "LEFT JOIN project_share ps ON ps.project_id = a.project_id AND ps.shared_with_user_id = ? " +
                 "LEFT JOIN assignment_collaborator ac ON ac.assignment_id = a.id AND ac.user_id = ? " +
                 "WHERE a.user_id = ? OR ac.user_id = ? " +
                 "ORDER BY COALESCE(a.updated_at, a.created_at) DESC";
@@ -174,6 +209,9 @@ public class AssignmentService implements IService<Assignment> {
             statement.setInt(2, userId);
             statement.setInt(3, userId);
             statement.setInt(4, userId);
+            statement.setInt(5, userId);
+            statement.setInt(6, userId);
+            statement.setInt(7, userId);
             ResultSet rs = statement.executeQuery();
             while (rs.next()) {
                 assignments.add(mapAssignment(rs, userId));
@@ -193,10 +231,12 @@ public class AssignmentService implements IService<Assignment> {
         ensureDependencySupport();
 
         String sql = "SELECT a.*, p.titre AS project_title, u.first_name, u.last_name, " +
-                "CASE WHEN a.user_id = ? THEN 1 ELSE 0 END AS owned_by_current_user " +
+                "CASE WHEN a.user_id = ? THEN 1 ELSE 0 END AS owned_by_current_user, " +
+                "CASE WHEN a.user_id = ? THEN 1 WHEN ac.user_id = ? AND COALESCE(ps.role, 'viewer') = 'editor' THEN 1 ELSE 0 END AS editable_by_current_user " +
                 "FROM assignment a " +
                 "JOIN project p ON p.id = a.project_id " +
                 "JOIN user u ON u.id = a.user_id " +
+                "LEFT JOIN project_share ps ON ps.project_id = a.project_id AND ps.shared_with_user_id = ? " +
                 "LEFT JOIN assignment_collaborator ac ON ac.assignment_id = a.id AND ac.user_id = ? " +
                 "WHERE a.project_id = ? AND (a.user_id = ? OR ac.user_id = ?) " +
                 "ORDER BY COALESCE(a.updated_at, a.created_at) DESC";
@@ -205,9 +245,12 @@ public class AssignmentService implements IService<Assignment> {
             PreparedStatement statement = connection.prepareStatement(sql);
             statement.setInt(1, userId);
             statement.setInt(2, userId);
-            statement.setInt(3, projectId);
+            statement.setInt(3, userId);
             statement.setInt(4, userId);
             statement.setInt(5, userId);
+            statement.setInt(6, projectId);
+            statement.setInt(7, userId);
+            statement.setInt(8, userId);
             ResultSet rs = statement.executeQuery();
             while (rs.next()) {
                 assignments.add(mapAssignment(rs, userId));
@@ -465,6 +508,7 @@ public class AssignmentService implements IService<Assignment> {
         Assignment assignment = new Assignment();
         assignment.setId(rs.getInt("id"));
         assignment.setUserId(rs.getInt("user_id"));
+        assignment.setCurrentUserId(currentUserId);
         assignment.setOwnerUserId(rs.getInt("user_id"));
         assignment.setProjectId(rs.getInt("project_id"));
         assignment.setProjectTitle(rs.getString("project_title"));
@@ -483,6 +527,7 @@ public class AssignmentService implements IService<Assignment> {
         assignment.setComplexityLevel(rs.getString("complexity_level"));
         assignment.setAiSuggestedDueDate(readDate(rs, "ai_suggested_due_date"));
         assignment.setOwnedByCurrentUser(readInt(rs, "owned_by_current_user") == 1 || rs.getInt("user_id") == currentUserId);
+        assignment.setEditableByCurrentUser(readInt(rs, "editable_by_current_user") == 1 || assignment.isOwnedByCurrentUser());
         assignment.setOwnerName(buildName(rs.getString("first_name"), rs.getString("last_name")));
         assignment.setCreatedAt(readDateTime(rs, "created_at"));
         assignment.setUpdatedAt(readDateTime(rs, "updated_at"));
@@ -700,4 +745,57 @@ public class AssignmentService implements IService<Assignment> {
         }
         statement.setDate(index, Date.valueOf(value));
     }
+<<<<<<< Updated upstream
+=======
+
+    private void setNullableString(PreparedStatement statement, int index, String value) throws SQLException {
+        if (value == null || value.isBlank()) {
+            statement.setNull(index, java.sql.Types.VARCHAR);
+            return;
+        }
+        statement.setString(index, value.trim());
+    }
+
+    private void setNullableDateTime(PreparedStatement statement, int index, LocalDateTime value) throws SQLException {
+        if (value == null) {
+            statement.setNull(index, java.sql.Types.TIMESTAMP);
+            return;
+        }
+        statement.setTimestamp(index, Timestamp.valueOf(value));
+    }
+
+    public void updateGitMetadata(Assignment assignment) {
+        if (!ensureConnection("AssignmentService.updateGitMetadata") || assignment == null || assignment.getId() <= 0) {
+            return;
+        }
+        ensureAssignmentGitSupport();
+        int actorUserId = resolveActorUserId(assignment);
+        String sql = "UPDATE assignment a " +
+                "LEFT JOIN assignment_collaborator ac ON ac.assignment_id = a.id AND ac.user_id = ? " +
+                "LEFT JOIN project_share ps ON ps.project_id = a.project_id AND ps.shared_with_user_id = ? " +
+                "SET a.git_commit_message = ?, a.git_commit_pathspec = ?, a.git_last_commit_hash = ?, a.git_last_commit_at = ?, a.updated_at = NOW() " +
+                "WHERE a.id = ? AND (a.user_id = ? OR (ac.user_id = ? AND ps.role = 'editor'))";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, actorUserId);
+            statement.setInt(2, actorUserId);
+            setNullableString(statement, 3, assignment.getGitCommitMessage());
+            setNullableString(statement, 4, assignment.getGitCommitPathspec());
+            setNullableString(statement, 5, assignment.getGitLastCommitHash());
+            setNullableDateTime(statement, 6, assignment.getGitLastCommitAt());
+            statement.setInt(7, assignment.getId());
+            statement.setInt(8, actorUserId);
+            statement.setInt(9, actorUserId);
+            statement.executeUpdate();
+        } catch (SQLException e) {
+            System.out.println("AssignmentService.updateGitMetadata: " + e.getMessage());
+        }
+    }
+
+    private int resolveActorUserId(Assignment assignment) {
+        if (assignment == null) {
+            return 0;
+        }
+        return assignment.getCurrentUserId() > 0 ? assignment.getCurrentUserId() : assignment.getUserId();
+    }
+>>>>>>> Stashed changes
 }

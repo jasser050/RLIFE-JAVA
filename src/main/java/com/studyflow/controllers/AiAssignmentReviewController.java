@@ -4,6 +4,7 @@ import com.studyflow.models.Assignment;
 import com.studyflow.models.Project;
 import com.studyflow.services.AiAssignmentGeneratorService;
 import com.studyflow.utils.CrudViewContext;
+import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.geometry.Insets;
@@ -25,7 +26,11 @@ import java.util.ResourceBundle;
 
 public class AiAssignmentReviewController implements Initializable {
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd MMM yyyy");
+    private static final String SAVE_BUTTON_TEXT = "Save Selected";
 
+    @FXML private VBox loadingOverlay;
+    @FXML private Label loadingLabel;
+    @FXML private Label loadingSubtitleLabel;
     @FXML private Label subtitleLabel;
     @FXML private Label projectTitleLabel;
     @FXML private Label suggestionCountLabel;
@@ -51,6 +56,7 @@ public class AiAssignmentReviewController implements Initializable {
         projectTitleLabel.setText(safeProjectTitle);
         subtitleLabel.setText("Review AI suggestions for " + safeProjectTitle + ".");
         suggestionCountLabel.setText(suggestions.size() + " suggestions");
+        setSaving(false);
 
         if (suggestions.isEmpty()) {
             saveButton.setDisable(true);
@@ -85,12 +91,38 @@ public class AiAssignmentReviewController implements Initializable {
             return;
         }
 
-        List<Assignment> saved = aiAssignmentGeneratorService.saveSuggestions(accepted);
-        if (project != null) {
-            CrudViewContext.rememberProjectSelection(project.getId());
-        }
-        CrudViewContext.setFlashMessage(saved.size() + " AI assignments saved successfully.", false);
-        MainController.loadContentInMainArea(resolveReturnView());
+        setSaving(true);
+        showFeedback("Saving selected AI assignments...", false);
+
+        Task<List<Assignment>> saveTask = new Task<>() {
+            @Override
+            protected List<Assignment> call() {
+                return aiAssignmentGeneratorService.saveSuggestions(accepted);
+            }
+        };
+
+        saveTask.setOnSucceeded(event -> {
+            List<Assignment> saved = saveTask.getValue();
+            if (project != null) {
+                CrudViewContext.rememberProjectSelection(project.getId());
+            }
+            CrudViewContext.setFlashMessage(saved.size() + " AI assignments saved successfully.", false);
+            setSaving(false);
+            MainController.loadContentInMainArea(resolveReturnView());
+        });
+
+        saveTask.setOnFailed(event -> {
+            setSaving(false);
+            Throwable exception = saveTask.getException();
+            String message = exception == null || exception.getMessage() == null || exception.getMessage().isBlank()
+                    ? "Failed to save AI assignments."
+                    : exception.getMessage();
+            showFeedback(message, true);
+        });
+
+        Thread saveThread = new Thread(saveTask, "AI-Assignment-Save");
+        saveThread.setDaemon(true);
+        saveThread.start();
     }
 
     @FXML
@@ -174,6 +206,22 @@ public class AiAssignmentReviewController implements Initializable {
         feedbackLabel.getStyleClass().add(error ? "inline-alert-error" : "inline-alert-success");
         feedbackLabel.setVisible(true);
         feedbackLabel.setManaged(true);
+    }
+
+    private void setSaving(boolean saving) {
+        saveButton.setDisable(saving || suggestions.isEmpty());
+        saveButton.setText(saving ? "Saving..." : SAVE_BUTTON_TEXT);
+        suggestionsList.setDisable(saving);
+        if (loadingOverlay != null) {
+            loadingOverlay.setVisible(saving);
+            loadingOverlay.setManaged(saving);
+        }
+        if (loadingLabel != null) {
+            loadingLabel.setText("Saving assignments");
+        }
+        if (loadingSubtitleLabel != null) {
+            loadingSubtitleLabel.setText("Saving the selected AI assignments to your workspace.");
+        }
     }
 
     private String resolveReturnView() {

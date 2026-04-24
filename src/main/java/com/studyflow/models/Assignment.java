@@ -7,6 +7,7 @@ import java.time.LocalTime;
 public class Assignment {
     private int id;
     private int userId;
+    private int currentUserId;
     private int ownerUserId;
     private int projectId;
     private String projectTitle;
@@ -23,6 +24,7 @@ public class Assignment {
     private String complexityLevel;
     private LocalDate aiSuggestedDueDate;
     private boolean ownedByCurrentUser;
+    private boolean editableByCurrentUser;
     private String ownerName;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -41,6 +43,14 @@ public class Assignment {
 
     public void setUserId(int userId) {
         this.userId = userId;
+    }
+
+    public int getCurrentUserId() {
+        return currentUserId;
+    }
+
+    public void setCurrentUserId(int currentUserId) {
+        this.currentUserId = currentUserId;
     }
 
     public int getOwnerUserId() {
@@ -169,6 +179,18 @@ public class Assignment {
 
     public void setOwnedByCurrentUser(boolean ownedByCurrentUser) {
         this.ownedByCurrentUser = ownedByCurrentUser;
+    }
+
+    public boolean isEditableByCurrentUser() {
+        return editableByCurrentUser;
+    }
+
+    public void setEditableByCurrentUser(boolean editableByCurrentUser) {
+        this.editableByCurrentUser = editableByCurrentUser;
+    }
+
+    public boolean canCurrentUserEdit() {
+        return ownedByCurrentUser || editableByCurrentUser;
     }
 
     public String getOwnerName() {

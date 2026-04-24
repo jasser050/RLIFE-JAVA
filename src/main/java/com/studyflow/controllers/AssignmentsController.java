@@ -274,8 +274,8 @@ public class AssignmentsController implements Initializable {
             showFeedback("Select an assignment before updating it.", true);
             return;
         }
-        if (!selectedAssignment.isOwnedByCurrentUser()) {
-            showFeedback("Shared assignments are read-only here.", true);
+        if (!selectedAssignment.canCurrentUserEdit()) {
+            showFeedback("You need editor access on this shared project to update the assignment.", true);
             return;
         }
 
@@ -293,7 +293,7 @@ public class AssignmentsController implements Initializable {
         }
 
         Project project = updateAssignmentProjectCombo.getValue();
-        selectedAssignment.setUserId(getCurrentUser().getId());
+        selectedAssignment.setCurrentUserId(getCurrentUser().getId());
         selectedAssignment.setProjectId(project.getId());
         selectedAssignment.setProjectTitle(project.getTitle());
         selectedAssignment.setTitle(updateAssignmentTitleField.getText().trim());
@@ -365,8 +365,8 @@ public class AssignmentsController implements Initializable {
             showFeedback("Select an assignment before editing it.", true);
             return;
         }
-        if (!selectedAssignment.isOwnedByCurrentUser()) {
-            showFeedback("Shared assignments are read-only here.", true);
+        if (!selectedAssignment.canCurrentUserEdit()) {
+            showFeedback("You need editor access on this shared project to edit the assignment.", true);
             return;
         }
         openAssignmentEditWindow();
@@ -814,7 +814,7 @@ public class AssignmentsController implements Initializable {
 
         card.setOnMouseClicked(event -> selectAssignment(assignment));
         card.setOnDragDetected(event -> {
-            if (!assignment.isOwnedByCurrentUser()) {
+            if (!assignment.canCurrentUserEdit()) {
                 return;
             }
             draggedAssignmentId = assignment.getId();
@@ -1001,6 +1001,67 @@ public class AssignmentsController implements Initializable {
         shareAssignmentButton.setDisable(!enabled);
     }
 
+<<<<<<< Updated upstream
+=======
+    private void populateGitPanel(Assignment assignment) {
+        if (assignmentGitHintLabel == null
+                || assignmentGitRepoLabel == null
+                || assignmentGitStatusLabel == null
+                || assignmentGitLastCommitLabel == null
+                || assignmentGitCommitMessageField == null
+                || assignmentGitPathspecField == null
+                || saveAssignmentGitButton == null
+                || refreshAssignmentGitButton == null
+                || commitAssignmentGitButton == null
+                || commitAndPushAssignmentGitButton == null) {
+            return;
+        }
+
+        if (assignment == null) {
+            assignmentGitHintLabel.setText("Select a completed assignment to save commit settings or commit it to Git.");
+            assignmentGitRepoLabel.setText("No project repository selected");
+            assignmentGitStatusLabel.setText("Repository status unavailable");
+            assignmentGitLastCommitLabel.setText("No commit recorded");
+            assignmentGitCommitMessageField.clear();
+            assignmentGitPathspecField.clear();
+            saveAssignmentGitButton.setDisable(true);
+            refreshAssignmentGitButton.setDisable(true);
+            commitAssignmentGitButton.setDisable(true);
+            commitAndPushAssignmentGitButton.setDisable(true);
+            return;
+        }
+
+        Project linkedProject = findProjectForAssignment(assignment);
+        boolean editable = assignment.canCurrentUserEdit();
+        boolean completed = assignment.isCompleted();
+        boolean repoConfigured = linkedProject != null && !isBlank(linkedProject.getGitRepoPath());
+
+        assignmentGitHintLabel.setText(editable
+                ? (completed
+                ? "Commit this completed assignment directly to the linked project repository."
+                : "Mark the assignment as Completed before committing it.")
+                : "You need editor access on this shared project for Git actions.");
+        assignmentGitRepoLabel.setText(linkedProject == null
+                ? "No linked project"
+                : safeText(linkedProject.getGitRepoPath()) + (isBlank(linkedProject.getGitDefaultBranch()) ? "" : " | " + linkedProject.getGitDefaultBranch()));
+        assignmentGitStatusLabel.setText(linkedProject == null || isBlank(linkedProject.getGitLastStatusSummary())
+                ? "Repository status not checked yet"
+                : linkedProject.getGitLastStatusSummary());
+        assignmentGitLastCommitLabel.setText(isBlank(assignment.getGitLastCommitHash())
+                ? "No commit recorded"
+                : assignment.getGitLastCommitHash() + " | " + formatDateTime(assignment.getGitLastCommitAt()));
+        assignmentGitCommitMessageField.setText(isBlank(assignment.getGitCommitMessage())
+                ? "complete(assignment): " + assignment.getTitle()
+                : assignment.getGitCommitMessage());
+        assignmentGitPathspecField.setText(defaultText(assignment.getGitCommitPathspec()));
+
+        saveAssignmentGitButton.setDisable(!editable);
+        refreshAssignmentGitButton.setDisable(!repoConfigured);
+        commitAssignmentGitButton.setDisable(!editable || !completed || !repoConfigured);
+        commitAndPushAssignmentGitButton.setDisable(!editable || !completed || !repoConfigured);
+    }
+
+>>>>>>> Stashed changes
     private void populateUpdateForm(Assignment assignment) {
         if (updateAssignmentHintLabel == null
                 || updateAssignmentTitleField == null
@@ -1035,17 +1096,17 @@ public class AssignmentsController implements Initializable {
             return;
         }
 
-        boolean editable = assignment.isOwnedByCurrentUser();
+        boolean editable = assignment.canCurrentUserEdit();
         updateAssignmentHintLabel.setText(editable
                 ? "Updating assignment #" + assignment.getId() + "."
-                : "This assignment was shared with you and is read-only.");
+                : "This assignment is shared with you as view-only.");
         updateAssignmentTitleField.setText(assignment.getTitle());
         updateAssignmentDescriptionArea.setText(defaultText(assignment.getDescription()));
         updateAssignmentStartDatePicker.setValue(assignment.getStartDate());
         updateAssignmentEndDatePicker.setValue(assignment.getEndDate());
         updateAssignmentPriorityCombo.setValue(assignment.getPriority());
         updateAssignmentStatusCombo.setValue(normalizedStatus(assignment.getStatus()));
-        updateAssignmentProjectCombo.setValue(ownedProjects.stream()
+        updateAssignmentProjectCombo.setValue(projects.stream()
                 .filter(project -> project.getId() == assignment.getProjectId())
                 .findFirst()
                 .orElse(null));
@@ -1055,7 +1116,7 @@ public class AssignmentsController implements Initializable {
         updateAssignmentEndDatePicker.setDisable(!editable);
         updateAssignmentPriorityCombo.setDisable(!editable);
         updateAssignmentStatusCombo.setDisable(!editable);
-        updateAssignmentProjectCombo.setDisable(!editable || ownedProjects.isEmpty());
+        updateAssignmentProjectCombo.setDisable(!editable || projects.isEmpty());
         updateAssignmentButton.setDisable(!editable);
         shareAssignmentEmailField.clear();
         shareAssignmentEmailField.setDisable(!editable);
@@ -1162,6 +1223,140 @@ public class AssignmentsController implements Initializable {
         thread.start();
     }
 
+<<<<<<< Updated upstream
+=======
+    private void setAiLoadingState(boolean loading, String title, String subtitle) {
+        if (aiLoadingOverlay != null) {
+            aiLoadingOverlay.setVisible(loading);
+            aiLoadingOverlay.setManaged(loading);
+        }
+        if (aiLoadingTitleLabel != null && title != null && !title.isBlank()) {
+            aiLoadingTitleLabel.setText(title);
+        }
+        if (aiLoadingSubtitleLabel != null && subtitle != null && !subtitle.isBlank()) {
+            aiLoadingSubtitleLabel.setText(subtitle);
+        }
+    }
+
+    @FXML
+    private void handleSaveAssignmentGitSettings() {
+        if (!isReady() || selectedAssignment == null) {
+            showFeedback("Select an assignment before saving Git settings.", true);
+            return;
+        }
+        if (!selectedAssignment.canCurrentUserEdit()) {
+            showFeedback("You need editor access on this shared project to save assignment Git settings.", true);
+            return;
+        }
+        applyAssignmentGitFields();
+        selectedAssignment.setCurrentUserId(getCurrentUser().getId());
+        assignmentService.updateGitMetadata(selectedAssignment);
+        refreshData(selectedAssignment.getId(), () -> showFeedback("Assignment Git settings saved.", false));
+    }
+
+    @FXML
+    private void handleRefreshAssignmentGitStatus() {
+        runAssignmentGitTask(false, true);
+    }
+
+    @FXML
+    private void handleCommitAssignmentToGit() {
+        runAssignmentGitTask(false, false);
+    }
+
+    @FXML
+    private void handleCommitAndPushAssignmentToGit() {
+        runAssignmentGitTask(true, false);
+    }
+
+    private void applyAssignmentGitFields() {
+        if (selectedAssignment == null) {
+            return;
+        }
+        selectedAssignment.setGitCommitMessage(defaultText(assignmentGitCommitMessageField == null ? null : assignmentGitCommitMessageField.getText()));
+        selectedAssignment.setGitCommitPathspec(defaultText(assignmentGitPathspecField == null ? null : assignmentGitPathspecField.getText()));
+    }
+
+    private void runAssignmentGitTask(boolean push, boolean refreshOnly) {
+        if (!isReady() || selectedAssignment == null) {
+            showFeedback("Select an assignment before using Git actions.", true);
+            return;
+        }
+        if (!refreshOnly && !selectedAssignment.canCurrentUserEdit()) {
+            showFeedback("You need editor access on this shared project to commit this assignment.", true);
+            return;
+        }
+
+        Project linkedProject = findProjectForAssignment(selectedAssignment);
+        if (linkedProject == null || isBlank(linkedProject.getGitRepoPath())) {
+            showFeedback("Configure the project repository in Projects -> Git first.", true);
+            return;
+        }
+        if (!refreshOnly && !selectedAssignment.isCompleted()) {
+            showFeedback("Only completed assignments can be committed.", true);
+            return;
+        }
+
+        applyAssignmentGitFields();
+        selectedAssignment.setCurrentUserId(getCurrentUser().getId());
+        assignmentService.updateGitMetadata(selectedAssignment);
+        setAiLoadingState(true, refreshOnly ? "Git status" : (push ? "Commit and push" : "Committing assignment"),
+                refreshOnly ? "Checking repository status..." : "Running Git actions for \"" + selectedAssignment.getTitle() + "\".");
+
+        Task<GitIntegrationService.GitOperationResult> task = new Task<>() {
+            @Override
+            protected GitIntegrationService.GitOperationResult call() {
+                return refreshOnly
+                        ? gitIntegrationService.describeStatus(linkedProject)
+                        : gitIntegrationService.commitAssignment(linkedProject, selectedAssignment, push);
+            }
+        };
+
+        task.setOnSucceeded(event -> {
+            setAiLoadingState(false, null, null);
+            GitIntegrationService.GitOperationResult result = task.getValue();
+            linkedProject.setGitLastStatusSummary(result.details());
+            linkedProject.setGitLastSyncAt(result.completedAt());
+            linkedProject.setCurrentUserId(getCurrentUser().getId());
+            projectService.updateGitSettings(linkedProject);
+            if (!refreshOnly && result.success()) {
+                selectedAssignment.setGitLastCommitHash(result.commitHash());
+                selectedAssignment.setGitLastCommitAt(result.completedAt());
+                selectedAssignment.setCurrentUserId(getCurrentUser().getId());
+                assignmentService.updateGitMetadata(selectedAssignment);
+            }
+            refreshData(selectedAssignment.getId(), () -> showFeedback(result.summary(), !result.success()));
+        });
+
+        task.setOnFailed(event -> {
+            setAiLoadingState(false, null, null);
+            Throwable error = task.getException();
+            showFeedback("Git action failed: " + (error == null ? "unknown error" : error.getMessage()), true);
+        });
+
+        Thread thread = new Thread(task, "assignment-git-task");
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    private Project findProjectForAssignment(Assignment assignment) {
+        if (assignment == null) {
+            return null;
+        }
+        for (Project project : projects) {
+            if (project.getId() == assignment.getProjectId()) {
+                return project;
+            }
+        }
+        for (Project project : ownedProjects) {
+            if (project.getId() == assignment.getProjectId()) {
+                return project;
+            }
+        }
+        return projectService.getProjectById(assignment.getProjectId());
+    }
+
+>>>>>>> Stashed changes
     private void configureBoardDropTargets() {
         configureDropTarget(todoColumn, "To Do");
         configureDropTarget(progressColumn, "In Progress");
@@ -1233,8 +1428,9 @@ public class AssignmentsController implements Initializable {
         column.setOnDragDropped(event -> {
             boolean success = false;
             Assignment assignment = draggedAssignmentId == null ? null : findAssignmentById(draggedAssignmentId);
-            if (assignment != null && assignment.isOwnedByCurrentUser()) {
+            if (assignment != null && assignment.canCurrentUserEdit()) {
                 String previousStatus = normalizedStatus(assignment.getStatus());
+                assignment.setCurrentUserId(getCurrentUser() == null ? 0 : getCurrentUser().getId());
                 assignment.setStatus(targetStatus);
                 if (!"Completed".equals(previousStatus) && "Completed".equals(targetStatus)) {
                     LocalDateTime now = LocalDateTime.now().withSecond(0).withNano(0);
@@ -1461,11 +1657,23 @@ public class AssignmentsController implements Initializable {
     }
 
     private void openAssignmentEditWindow() {
-        CrudViewContext.setAssignmentContext(selectedAssignment, ownedProjects);
+        CrudViewContext.setAssignmentContext(selectedAssignment, projects);
         CrudViewContext.rememberAssignmentSelection(selectedAssignment == null ? null : selectedAssignment.getId());
         MainController.loadContentInMainArea("views/AssignmentEditDialog.fxml");
     }
 
+<<<<<<< Updated upstream
+=======
+    private void openAssignmentDetailsWindow(Assignment assignment) {
+        if (assignment == null) {
+            return;
+        }
+        CrudViewContext.setAssignmentContext(assignment, projects);
+        CrudViewContext.rememberAssignmentSelection(assignment.getId());
+        MainController.loadContentInMainArea("views/AssignmentDetails.fxml");
+    }
+
+>>>>>>> Stashed changes
     private void openAssignmentDeleteWindow() {
         CrudViewContext.setAssignmentContext(selectedAssignment, ownedProjects);
         MainController.loadContentInMainArea("views/AssignmentDeleteDialog.fxml");

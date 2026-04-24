@@ -87,6 +87,10 @@ public class AssignmentEditController implements Initializable {
             showFeedback("No assignment selected.", true);
             return;
         }
+        if (!assignment.canCurrentUserEdit()) {
+            showFeedback("You need editor access on this shared project to edit this assignment.", true);
+            return;
+        }
         clearErrors();
         if (!validateForm()) {
             showFeedback("Please fix the highlighted assignment fields.", true);
@@ -105,6 +109,7 @@ public class AssignmentEditController implements Initializable {
         assignment.setEndTime(LocalTime.parse(endTimeCombo.getValue(), TIME_FORMATTER));
         assignment.setPriority(priorityCombo.getValue());
         assignment.setStatus(nextStatus);
+        assignment.setCurrentUserId(assignment.getCurrentUserId() > 0 ? assignment.getCurrentUserId() : assignment.getUserId());
         if (movedToCompleted) {
             LocalDateTime now = LocalDateTime.now().withSecond(0).withNano(0);
             assignment.setEndDate(now.toLocalDate());
