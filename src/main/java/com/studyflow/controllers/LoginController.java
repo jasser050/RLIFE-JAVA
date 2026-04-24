@@ -23,13 +23,20 @@ import javafx.scene.image.WritableImage;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.web.WebEngine;
 import javafx.scene.web.WebView;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.io.IOException;
+import java.net.URI;
 import java.net.URL;
+import java.net.URLEncoder;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.ResourceBundle;
 
@@ -90,7 +97,7 @@ public class LoginController implements Initializable {
             return;
         }
 
-        // Admin shortcut — hardcoded credentials, no DB record needed
+        // Admin shortcut — hardcoded credentials, no DB record needed (skip CAPTCHA)
         if ("admin@rlife.com".equalsIgnoreCase(email) && "admin123".equals(password)) {
             User admin = new User();
             admin.setId(-1);
@@ -123,14 +130,83 @@ public class LoginController implements Initializable {
             // Comment this block out to enforce strict password check
         }
 
-        UserSession.getInstance().setCurrentUser(user);
+        // Show CAPTCHA before completing login
+        showCaptchaDialog(user);
+    }
 
-        try {
-            App.setRoot("views/MainLayout");
-        } catch (IOException e) {
-            showError("Failed to load the application.");
-            resetButton();
-        }
+    private void showCaptchaDialog(User user) {
+        Dialog<Void> dialog = new Dialog<>();
+        dialog.setTitle("CAPTCHA Verification");
+        dialog.setHeaderText(null);
+
+        WebView captchaWebView = new WebView();
+        captchaWebView.setPrefSize(460, 560);
+        WebEngine engine = captchaWebView.getEngine();
+
+        // Listen for captcha completion via title change
+        engine.titleProperty().addListener((obs, oldTitle, newTitle) -> {
+            if (newTitle != null && newTitle.startsWith("CAPTCHA_OK:")) {
+                String token = newTitle.substring("CAPTCHA_OK:".length());
+                dialog.close();
+                verifyCaptchaAndLogin(token, user);
+            }
+        });
+
+        // Load via LocalServer (http://localhost) so reCAPTCHA accepts the domain
+        engine.load("http://localhost:" + LocalServer.getPort() + "/views/captcha.html");
+
+        DialogPane pane = dialog.getDialogPane();
+        pane.setContent(captchaWebView);
+        pane.setStyle("-fx-background-color: #0F172A;");
+        pane.getButtonTypes().add(ButtonType.CANCEL);
+        pane.setPrefSize(480, 580);
+
+        dialog.setOnCloseRequest(e -> resetButton());
+        dialog.showAndWait();
+    }
+
+    private void verifyCaptchaAndLogin(String token, User user) {
+        Thread thread = new Thread(() -> {
+            try {
+                String secretKey = "6Ld66scsAAAAAOUGu2Y6jJH27DA_nNLZB0kFsFWL";
+                String verifyBody = "secret=" + URLEncoder.encode(secretKey, StandardCharsets.UTF_8)
+                        + "&response=" + URLEncoder.encode(token, StandardCharsets.UTF_8);
+
+                HttpClient httpClient = HttpClient.newHttpClient();
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(URI.create("https://www.google.com/recaptcha/api/siteverify"))
+                        .header("Content-Type", "application/x-www-form-urlencoded")
+                        .POST(HttpRequest.BodyPublishers.ofString(verifyBody))
+                        .build();
+
+                HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+                String json = response.body();
+
+                boolean success = json.contains("\"success\": true") || json.contains("\"success\":true");
+
+                Platform.runLater(() -> {
+                    if (success) {
+                        UserSession.getInstance().setCurrentUser(user);
+                        try {
+                            App.setRoot("views/MainLayout");
+                        } catch (IOException e) {
+                            showError("Failed to load the application.");
+                            resetButton();
+                        }
+                    } else {
+                        showError("CAPTCHA verification failed. Please try again.");
+                        resetButton();
+                    }
+                });
+            } catch (Exception e) {
+                Platform.runLater(() -> {
+                    showError("CAPTCHA verification error: " + e.getMessage());
+                    resetButton();
+                });
+            }
+        });
+        thread.setDaemon(true);
+        thread.start();
     }
 
     @FXML
@@ -262,6 +338,185 @@ public class LoginController implements Initializable {
         poller.start();
 
         dialog.showAndWait();
+    }
+
+    @FXML
+    private void handleGoogleLogin() {
+        hideError();
+
+        String clientId = "";
+        String redirectUri = "http://localhost";
+        String scope = "openid email profile";
+
+        String authUrl = "https://accounts.google.com/o/oauth2/v2/auth"
+                + "?client_id=" + URLEncoder.encode(clientId, StandardCharsets.UTF_8)
+                + "&redirect_uri=" + URLEncoder.encode(redirectUri, StandardCharsets.UTF_8)
+                + "&response_type=code"
+                + "&scope=" + URLEncoder.encode(scope, StandardCharsets.UTF_8)
+                + "&access_type=offline"
+                + "&prompt=consent";
+
+        // Create a dialog with a WebView for Google sign-in
+        Dialog<Void> dialog = new Dialog<>();
+        dialog.setTitle("Sign in with Google");
+        dialog.setHeaderText(null);
+
+        WebView googleWebView = new WebView();
+        googleWebView.setPrefSize(500, 620);
+        WebEngine engine = googleWebView.getEngine();
+
+        // Listen for the redirect with the auth code
+        engine.locationProperty().addListener((obs, oldUrl, newUrl) -> {
+            if (newUrl != null && newUrl.startsWith(redirectUri)) {
+                String code = extractParam(newUrl, "code");
+                if (code != null) {
+                    dialog.close();
+                    completeGoogleLogin(code, clientId, redirectUri);
+                }
+                // Silently ignore redirects without a code (intermediate redirects)
+            }
+        });
+
+        engine.load(authUrl);
+
+        DialogPane pane = dialog.getDialogPane();
+        pane.setContent(googleWebView);
+        pane.setStyle("-fx-background-color: #0F172A;");
+        pane.getButtonTypes().add(ButtonType.CANCEL);
+        pane.setPrefSize(520, 650);
+
+        dialog.showAndWait();
+    }
+
+    private void completeGoogleLogin(String code, String clientId, String redirectUri) {
+        loginBtn.setDisable(true);
+        loginBtn.setText("Signing in...");
+
+        Thread thread = new Thread(() -> {
+            try {
+                String clientSecret = "";
+
+                // Exchange auth code for access token
+                String tokenBody = "code=" + URLEncoder.encode(code, StandardCharsets.UTF_8)
+                        + "&client_id=" + URLEncoder.encode(clientId, StandardCharsets.UTF_8)
+                        + "&client_secret=" + URLEncoder.encode(clientSecret, StandardCharsets.UTF_8)
+                        + "&redirect_uri=" + URLEncoder.encode(redirectUri, StandardCharsets.UTF_8)
+                        + "&grant_type=authorization_code";
+
+                HttpClient httpClient = HttpClient.newHttpClient();
+                HttpRequest tokenRequest = HttpRequest.newBuilder()
+                        .uri(URI.create("https://oauth2.googleapis.com/token"))
+                        .header("Content-Type", "application/x-www-form-urlencoded")
+                        .POST(HttpRequest.BodyPublishers.ofString(tokenBody))
+                        .build();
+
+                HttpResponse<String> tokenResponse = httpClient.send(tokenRequest, HttpResponse.BodyHandlers.ofString());
+                String accessToken = extractJsonValue(tokenResponse.body(), "access_token");
+
+                if (accessToken == null) {
+                    Platform.runLater(() -> {
+                        showError("Failed to get access token from Google.");
+                        resetButton();
+                    });
+                    return;
+                }
+
+                // Fetch user info
+                HttpRequest userInfoRequest = HttpRequest.newBuilder()
+                        .uri(URI.create("https://www.googleapis.com/oauth2/v2/userinfo"))
+                        .header("Authorization", "Bearer " + accessToken)
+                        .GET()
+                        .build();
+
+                HttpResponse<String> userInfoResponse = httpClient.send(userInfoRequest, HttpResponse.BodyHandlers.ofString());
+                String json = userInfoResponse.body();
+
+                String email = extractJsonValue(json, "email");
+                String givenName = extractJsonValue(json, "given_name");
+                String familyName = extractJsonValue(json, "family_name");
+
+                if (email == null) {
+                    Platform.runLater(() -> {
+                        showError("Could not retrieve email from Google account.");
+                        resetButton();
+                    });
+                    return;
+                }
+
+                Platform.runLater(() -> {
+                    // Find or create user
+                    User user = serviceUser.findByEmail(email);
+                    if (user == null) {
+                        user = new User();
+                        user.setEmail(email);
+                        user.setFirstName(givenName != null ? givenName : "");
+                        user.setLastName(familyName != null ? familyName : "");
+                        user.setUsername(email.split("@")[0]);
+                        user.setPassword("GOOGLE_OAUTH_" + System.currentTimeMillis());
+                        user.setGender("male");
+                        serviceUser.add(user);
+                        user = serviceUser.findByEmail(email);
+                    }
+
+                    UserSession.getInstance().setCurrentUser(user);
+                    try {
+                        App.setRoot("views/MainLayout");
+                    } catch (IOException e) {
+                        showError("Failed to load the application.");
+                        resetButton();
+                    }
+                });
+
+            } catch (Exception e) {
+                Platform.runLater(() -> {
+                    showError("Google sign-in error: " + e.getMessage());
+                    resetButton();
+                });
+            }
+        });
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    private String extractParam(String url, String param) {
+        String search = param + "=";
+        int idx = url.indexOf(search);
+        if (idx == -1) return null;
+        int start = idx + search.length();
+        int end = url.indexOf('&', start);
+        if (end == -1) end = url.length();
+        return java.net.URLDecoder.decode(url.substring(start, end), StandardCharsets.UTF_8);
+    }
+
+    private String extractJsonValue(String json, String key) {
+        String search = "\"" + key + "\"";
+        int idx = json.indexOf(search);
+        if (idx == -1) return null;
+        int colon = json.indexOf(':', idx + search.length());
+        if (colon == -1) return null;
+
+        // Skip whitespace
+        int i = colon + 1;
+        while (i < json.length() && Character.isWhitespace(json.charAt(i))) i++;
+        if (i >= json.length()) return null;
+
+        if (json.charAt(i) == '"') {
+            // String value
+            i++;
+            StringBuilder sb = new StringBuilder();
+            for (; i < json.length(); i++) {
+                char c = json.charAt(i);
+                if (c == '\\' && i + 1 < json.length()) {
+                    sb.append(json.charAt(++i));
+                } else if (c == '"') {
+                    break;
+                } else {
+                    sb.append(c);
+                }
+            }
+            return sb.toString();
+        }
+        return null;
     }
 
     @FXML

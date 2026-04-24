@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ClaudeApiService {
-    private static final String DEFAULT_MODEL = "anthropic/claude-3-haiku";
+    private static final String DEFAULT_MODEL = "openrouter/free";
 
     private final OpenRouterService openRouterService;
     private final String model;

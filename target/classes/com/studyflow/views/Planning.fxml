@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.geometry.Insets?>
+<?import org.kordamp.ikonli.javafx.FontIcon?>
+
+<VBox xmlns="http://javafx.com/javafx/21"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.studyflow.controllers.PlanningController"
+      spacing="24" style="-fx-background-color: #020617;">
+
+    <padding>
+        <Insets top="0" right="0" bottom="24" left="0"/>
+    </padding>
+
+    <!-- Page Header -->
+    <HBox alignment="CENTER_LEFT" spacing="16">
+        <VBox spacing="4" HBox.hgrow="ALWAYS">
+            <Label text="Planning &amp; Calendar" styleClass="text-heading"/>
+            <Label text="Organize your schedule and events" styleClass="text-muted"/>
+        </VBox>
+        <Button styleClass="btn-secondary">
+            <graphic>
+                <FontIcon iconLiteral="fth-chevron-left" iconSize="16"/>
+            </graphic>
+        </Button>
+        <Label fx:id="currentMonthLabel" text="January 2025" style="-fx-font-size: 16px; -fx-font-weight: 600; -fx-text-fill: #F8FAFC;"/>
+        <Button styleClass="btn-secondary">
+            <graphic>
+                <FontIcon iconLiteral="fth-chevron-right" iconSize="16"/>
+            </graphic>
+        </Button>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Button text="Add Event" styleClass="btn-primary">
+            <graphic>
+                <FontIcon iconLiteral="fth-plus" iconSize="16" iconColor="white"/>
+            </graphic>
+        </Button>
+    </HBox>
+
+    <!-- Main Content -->
+    <HBox spacing="24" VBox.vgrow="ALWAYS">
+        <!-- Calendar Grid -->
+        <VBox styleClass="card" HBox.hgrow="ALWAYS">
+            <!-- Day Headers -->
+            <HBox style="-fx-background-color: #1E293B; -fx-background-radius: 16 16 0 0;">
+                <Label text="Sun" style="-fx-pref-width: 100; -fx-alignment: center; -fx-padding: 12; -fx-text-fill: #64748B; -fx-font-weight: 600; -fx-font-size: 12px;" HBox.hgrow="ALWAYS"/>
+                <Label text="Mon" style="-fx-pref-width: 100; -fx-alignment: center; -fx-padding: 12; -fx-text-fill: #64748B; -fx-font-weight: 600; -fx-font-size: 12px;" HBox.hgrow="ALWAYS"/>
+                <Label text="Tue" style="-fx-pref-width: 100; -fx-alignment: center; -fx-padding: 12; -fx-text-fill: #64748B; -fx-font-weight: 600; -fx-font-size: 12px;" HBox.hgrow="ALWAYS"/>
+                <Label text="Wed" style="-fx-pref-width: 100; -fx-alignment: center; -fx-padding: 12; -fx-text-fill: #64748B; -fx-font-weight: 600; -fx-font-size: 12px;" HBox.hgrow="ALWAYS"/>
+                <Label text="Thu" style="-fx-pref-width: 100; -fx-alignment: center; -fx-padding: 12; -fx-text-fill: #64748B; -fx-font-weight: 600; -fx-font-size: 12px;" HBox.hgrow="ALWAYS"/>
+                <Label text="Fri" style="-fx-pref-width: 100; -fx-alignment: center; -fx-padding: 12; -fx-text-fill: #64748B; -fx-font-weight: 600; -fx-font-size: 12px;" HBox.hgrow="ALWAYS"/>
+                <Label text="Sat" style="-fx-pref-width: 100; -fx-alignment: center; -fx-padding: 12; -fx-text-fill: #64748B; -fx-font-weight: 600; -fx-font-size: 12px;" HBox.hgrow="ALWAYS"/>
+            </HBox>
+
+            <!-- Calendar Days Grid -->
+            <GridPane fx:id="calendarGrid" hgap="1" vgap="1" style="-fx-background-color: #1E293B; -fx-padding: 1;" VBox.vgrow="ALWAYS">
+                <!-- Calendar cells will be added dynamically -->
+            </GridPane>
+        </VBox>
+
+        <!-- Sidebar - Today's Events -->
+        <VBox spacing="16" prefWidth="320">
+            <!-- Today's Events Card -->
+            <VBox styleClass="card" VBox.vgrow="ALWAYS">
+                <HBox styleClass="card-header" alignment="CENTER_LEFT" spacing="12">
+                    <StackPane styleClass="stat-icon-box, primary" prefWidth="36" prefHeight="36">
+                        <FontIcon iconLiteral="fth-calendar" iconSize="16"/>
+                    </StackPane>
+                    <VBox spacing="2" HBox.hgrow="ALWAYS">
+                        <Label text="Today's Events" styleClass="card-title"/>
+                        <Label fx:id="todayDateLabel" text="Friday, Jan 24" styleClass="text-small"/>
+                    </VBox>
+                </HBox>
+                <VBox fx:id="todayEventsList" styleClass="card-body" spacing="8">
+                    <!-- Events will be added dynamically -->
+                </VBox>
+            </VBox>
+
+            <!-- Upcoming Events Card -->
+            <VBox styleClass="card" VBox.vgrow="ALWAYS">
+                <HBox styleClass="card-header" alignment="CENTER_LEFT" spacing="12">
+                    <StackPane styleClass="stat-icon-box, accent" prefWidth="36" prefHeight="36">
+                        <FontIcon iconLiteral="fth-clock" iconSize="16"/>
+                    </StackPane>
+                    <Label text="Upcoming" styleClass="card-title" HBox.hgrow="ALWAYS"/>
+                </HBox>
+                <VBox fx:id="upcomingEventsList" styleClass="card-body" spacing="8">
+                    <!-- Events will be added dynamically -->
+                </VBox>
+            </VBox>
+        </VBox>
+    </HBox>
+</VBox>
