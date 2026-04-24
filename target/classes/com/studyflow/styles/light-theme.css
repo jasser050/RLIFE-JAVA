@@ -973,6 +973,123 @@
     -fx-border-radius: 16;
 }
 
+.ai-workspace-hero-card {
+    -fx-padding: 22;
+    -fx-background-color: linear-gradient(to bottom right, #F8FBFF, #EEF5FF);
+    -fx-border-color: rgba(148, 163, 184, 0.38);
+    -fx-border-width: 1;
+    -fx-border-radius: 24;
+    -fx-background-radius: 24;
+}
+
+.ai-workspace-kicker {
+    -fx-font-size: 10px;
+    -fx-font-weight: 800;
+    -fx-letter-spacing: 0.8px;
+}
+
+.ai-workspace-hero-title {
+    -fx-font-size: 30px;
+    -fx-font-weight: 900;
+    -fx-text-fill: #10223A;
+}
+
+.ai-workspace-hero-meta {
+    -fx-text-fill: #587089;
+    -fx-font-size: 13px;
+}
+
+.ai-workspace-stat-row {
+    -fx-alignment: top-right;
+}
+
+.ai-workspace-stat-card {
+    -fx-min-width: 112;
+    -fx-pref-width: 112;
+}
+
+.ai-workspace-score-card {
+    -fx-effect: dropshadow(gaussian, rgba(14, 165, 233, 0.14), 16, 0.16, 0, 6);
+}
+
+.ai-workspace-toolbar {
+    -fx-padding: 4 0 0 0;
+}
+
+.ai-workspace-shell {
+    -fx-background-color: linear-gradient(to bottom, #FFFFFF, #F7FAFE);
+    -fx-border-color: rgba(203, 213, 225, 0.95);
+    -fx-border-width: 1;
+    -fx-border-radius: 22;
+    -fx-background-radius: 22;
+    -fx-padding: 20;
+}
+
+.ai-workspace-health-shell {
+    -fx-padding: 20;
+}
+
+.ai-workspace-health-badge {
+    -fx-font-weight: 800;
+}
+
+.ai-workspace-health-card,
+.ai-workspace-summary-card,
+.ai-workspace-report-card {
+    -fx-background-color: #F8FBFF;
+    -fx-border-color: rgba(203, 213, 225, 0.95);
+    -fx-border-width: 1;
+    -fx-border-radius: 18;
+    -fx-background-radius: 18;
+    -fx-padding: 16;
+}
+
+.ai-workspace-score-row {
+    -fx-padding: 4 0;
+}
+
+.ai-workspace-score-bar {
+    -fx-pref-height: 9;
+    -fx-background-insets: 0;
+}
+
+.ai-workspace-score-bar > .track {
+    -fx-background-color: #DCE7F4;
+    -fx-background-radius: 999;
+    -fx-background-insets: 0;
+}
+
+.ai-workspace-score-bar > .bar {
+    -fx-background-radius: 999;
+    -fx-background-insets: 0;
+}
+
+.ai-workspace-score-bar.success > .bar {
+    -fx-background-color: linear-gradient(to right, #10B981, #34D399);
+}
+
+.ai-workspace-score-bar.warning > .bar {
+    -fx-background-color: linear-gradient(to right, #F59E0B, #FBBF24);
+}
+
+.ai-workspace-score-bar.danger > .bar {
+    -fx-background-color: linear-gradient(to right, #F97316, #FB7185);
+}
+
+.ai-workspace-summary-text {
+    -fx-line-spacing: 2px;
+    -fx-text-fill: #355069;
+}
+
+.ai-workspace-map-shell,
+.ai-workspace-report-shell {
+    -fx-padding: 20;
+}
+
+.ai-workspace-recommendations {
+    -fx-padding: 2 0 0 0;
+}
+
 .project-assignment-meta {
     -fx-text-fill: #5F728A;
 }

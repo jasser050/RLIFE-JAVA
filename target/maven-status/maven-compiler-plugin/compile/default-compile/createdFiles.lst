@@ -2,6 +2,7 @@ com\studyflow\controllers\AssignmentsController$2.class
 com\studyflow\utils\RobotScene3D.class
 com\studyflow\controllers\NotesController.class
 com\studyflow\controllers\DashboardController.class
+com\studyflow\services\ActivityLogService.class
 com\studyflow\services\ServiceUser.class
 com\studyflow\services\AiProjectInsightsService$AssignmentPlanningEstimate.class
 com\studyflow\controllers\CoursesController.class
@@ -38,6 +39,7 @@ com\studyflow\controllers\WellbeingController$1.class
 com\studyflow\models\AssignmentDependency.class
 com\studyflow\utils\GlbLoader.class
 com\studyflow\services\SpeechToTextService.class
+com\studyflow\models\ActivityLogEntry.class
 com\studyflow\controllers\FlashcardsFeaturesController.class
 com\studyflow\models\Notification.class
 com\studyflow\controllers\ProjectAiWorkspaceController$2.class
@@ -88,6 +90,7 @@ com\studyflow\api\WellbeingRecommendationsApiServer.class
 com\studyflow\utils\AvatarCard$1.class
 com\studyflow\utils\EmailService$1.class
 com\studyflow\controllers\ProfileController.class
+com\studyflow\models\AttachmentItem.class
 com\studyflow\controllers\AssignmentEditController$1.class
 com\studyflow\models\User.class
 com\studyflow\utils\PdfExportUtil.class
@@ -113,6 +116,7 @@ com\studyflow\utils\MyDataBase.class
 com\studyflow\controllers\AdminStatisticsController$1.class
 com\studyflow\controllers\AdminMatieresController.class
 com\studyflow\controllers\CourseCardController.class
+com\studyflow\services\AttachmentService.class
 com\studyflow\utils\PdfExporter.class
 com\studyflow\controllers\CoursesController$1.class
 com\studyflow\utils\GlbTest.class

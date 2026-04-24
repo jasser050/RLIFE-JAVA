@@ -3,6 +3,7 @@ package com.studyflow.controllers;
 import com.studyflow.LocalServer;
 import com.studyflow.models.Project;
 import com.studyflow.models.User;
+import com.studyflow.services.ActivityLogService;
 import com.studyflow.services.NotificationService;
 import com.studyflow.services.ProjectService;
 import com.studyflow.utils.CrudViewContext;
@@ -33,6 +34,7 @@ public class ProjectMeetingController implements Initializable {
 
     private final ProjectService projectService = new ProjectService();
     private final NotificationService notificationService = new NotificationService();
+    private final ActivityLogService activityLogService = new ActivityLogService();
     private Project project;
     private String meetingUrl;
     private User currentUser;
@@ -66,6 +68,7 @@ public class ProjectMeetingController implements Initializable {
         if (meetingHintLabel != null) {
             meetingHintLabel.setText("Anyone with access to this project joins the same Jitsi room.");
         }
+        activityLogService.addActivity("project", project.getId(), currentUser.getId(), "meeting_joined", "Joined the project meeting room.");
         updateShareButtonState();
 
         loadMeeting();
@@ -112,7 +115,7 @@ public class ProjectMeetingController implements Initializable {
             }
             notificationService.addNotificationForUser(
                     user.getId(),
-                    "Project meeting invitation",
+                    "Project meeting started",
                     message,
                     "project_meeting",
                     link
@@ -124,6 +127,7 @@ public class ProjectMeetingController implements Initializable {
             setShareStatus("There are no other shared users to notify.", true);
             return;
         }
+        activityLogService.addActivity("project", project.getId(), currentUser.getId(), "meeting_started", "Started the project meeting room and notified the team.");
         setShareStatus("Meeting shared with " + sentCount + " project member" + (sentCount == 1 ? "" : "s") + ".", false);
     }
 

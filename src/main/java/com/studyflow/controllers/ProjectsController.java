@@ -1,17 +1,22 @@
 package com.studyflow.controllers;
 
 import com.studyflow.App;
+import com.studyflow.models.ActivityLogEntry;
 import com.studyflow.models.Assignment;
+import com.studyflow.models.AttachmentItem;
 import com.studyflow.models.Project;
 import com.studyflow.models.User;
+import com.studyflow.services.ActivityLogService;
 import com.studyflow.services.AiAssignmentGeneratorService;
 import com.studyflow.services.AssignmentService;
+import com.studyflow.services.AttachmentService;
 import com.studyflow.services.GitIntegrationService;
 import com.studyflow.services.NotificationService;
 import com.studyflow.services.ProjectService;
 import com.studyflow.utils.CrudViewContext;
 import com.studyflow.utils.PdfExportUtil;
 import com.studyflow.utils.UserSession;
+import javafx.stage.FileChooser;
 import javafx.animation.PauseTransition;
 import javafx.collections.FXCollections;
 import javafx.concurrent.Task;
@@ -44,6 +49,7 @@ import javafx.scene.layout.VBox;
 import javafx.util.Duration;
 import org.kordamp.ikonli.javafx.FontIcon;
 
+import java.awt.Desktop;
 import java.io.File;
 import java.net.URL;
 import java.time.LocalDate;
@@ -103,6 +109,8 @@ public class ProjectsController implements Initializable {
     @FXML private Button showEditProjectPanelButton;
     @FXML private Button showDeleteProjectPanelButton;
     @FXML private Button showShareProjectPanelButton;
+    @FXML private Button showProjectActivityPanelButton;
+    @FXML private Button showProjectFilesPanelButton;
     @FXML private Button showGitProjectPanelButton;
     @FXML private Button showProjectStatsPanelButton;
     @FXML private Button openProjectAiWorkspaceButton;
@@ -122,9 +130,14 @@ public class ProjectsController implements Initializable {
     @FXML private VBox deleteProjectPanel;
     @FXML private VBox shareProjectPanel;
     @FXML private VBox sharedProjectUsersList;
+    @FXML private VBox activityProjectPanel;
+    @FXML private VBox filesProjectPanel;
+    @FXML private VBox projectActivityList;
+    @FXML private VBox projectAttachmentList;
     @FXML private VBox gitProjectPanel;
     @FXML private VBox statsProjectPanel;
     @FXML private VBox gitGuidePanel;
+    @FXML private Label projectFilesHintLabel;
     @FXML private Label projectGitHintLabel;
     @FXML private Label projectGitStatusLabel;
     @FXML private TextField projectGitRepoPathField;
@@ -137,6 +150,7 @@ public class ProjectsController implements Initializable {
     @FXML private Button cloneProjectRepoButton;
     @FXML private Button pullProjectRepoButton;
     @FXML private Button refreshProjectGitStatusButton;
+    @FXML private Button uploadProjectAttachmentButton;
     @FXML private VBox aiLoadingOverlay;
     @FXML private Label aiLoadingTitleLabel;
     @FXML private Label aiLoadingSubtitleLabel;
@@ -146,6 +160,8 @@ public class ProjectsController implements Initializable {
     private final AiAssignmentGeneratorService aiAssignmentGeneratorService = new AiAssignmentGeneratorService();
     private final GitIntegrationService gitIntegrationService = new GitIntegrationService();
     private final NotificationService notificationService = new NotificationService();
+    private final ActivityLogService activityLogService = new ActivityLogService();
+    private final AttachmentService attachmentService = new AttachmentService();
     private final com.studyflow.services.ServiceUser userService = new com.studyflow.services.ServiceUser();
 
     private final List<Project> projects = new ArrayList<>();
@@ -214,6 +230,7 @@ public class ProjectsController implements Initializable {
         project.setStatus(defaultProjectStatus(createProjectStatusCombo.getValue()));
 
         projectService.add(project);
+        activityLogService.addActivity("project", project.getId(), getCurrentUser().getId(), "created", "Created the project.");
         refreshProjects();
         resetCreateForm();
         Project savedProject = findProjectById(project.getId());
@@ -244,6 +261,8 @@ public class ProjectsController implements Initializable {
             return;
         }
 
+        String previousStatus = selectedProject.getStatus();
+        LocalDate previousEndDate = selectedProject.getEndDate();
         selectedProject.setUserId(getCurrentUser().getId());
         selectedProject.setTitle(updateProjectTitleField.getText().trim());
         selectedProject.setDescription(defaultText(updateProjectDescriptionArea.getText()));
@@ -252,6 +271,8 @@ public class ProjectsController implements Initializable {
         selectedProject.setStatus(defaultProjectStatus(updateProjectStatusCombo.getValue()));
 
         projectService.update(selectedProject);
+        activityLogService.addActivity("project", selectedProject.getId(), getCurrentUser().getId(), "updated", "Updated project details.");
+        notifyProjectUpdateChanges(selectedProject, previousStatus, previousEndDate);
         int selectedId = selectedProject.getId();
         refreshProjects();
         selectProject(findProjectById(selectedId));
@@ -287,6 +308,7 @@ public class ProjectsController implements Initializable {
         }
 
         shareProjectEmailField.clear();
+        activityLogService.addActivity("project", selectedProject.getId(), getCurrentUser().getId(), "shared", "Shared the project with " + recipientIdentifier + " as " + shareProjectRoleCombo.getValue() + ".");
         refreshProjects();
         selectProject(findProjectById(selectedProject.getId()));
         showFeedback("Project shared successfully.", false);
@@ -341,6 +363,16 @@ public class ProjectsController implements Initializable {
     }
 
     @FXML
+    private void handleShowProjectActivityPanel() {
+        setActivePanel("ACTIVITY");
+    }
+
+    @FXML
+    private void handleShowProjectFilesPanel() {
+        setActivePanel("FILES");
+    }
+
+    @FXML
     private void handleShowGitProjectPanel() {
         setActivePanel("GIT");
     }
@@ -353,6 +385,37 @@ public class ProjectsController implements Initializable {
     @FXML
     private void handleShowStatsPanel() {
         setActivePanel("STATS");
+    }
+
+    @FXML
+    private void handleUploadProjectAttachment() {
+        if (!isReady() || selectedProject == null) {
+            showFeedback("Select a project before uploading files.", true);
+            return;
+        }
+        if (!selectedProject.canCurrentUserUseGit() && !selectedProject.isOwnedByCurrentUser()) {
+            showFeedback("You need project access before uploading files.", true);
+            return;
+        }
+
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle("Attach File To Project");
+        File selectedFile = chooser.showOpenDialog(App.getPrimaryStage());
+        if (selectedFile == null) {
+            return;
+        }
+
+        AttachmentItem item = attachmentService.saveAttachment("project", selectedProject.getId(), getCurrentUser().getId(), selectedFile.toPath());
+        if (item == null) {
+            showFeedback("Unable to attach the selected file.", true);
+            return;
+        }
+
+        activityLogService.addActivity("project", selectedProject.getId(), getCurrentUser().getId(), "file_upload", "Uploaded file \"" + item.getOriginalName() + "\".");
+        notifyProjectMembers(selectedProject, "Project file added", "A new file was added to project \"" + safeText(selectedProject.getTitle()) + "\": " + item.getOriginalName(), "project:" + selectedProject.getId());
+        populateProjectFilesPanel(selectedProject);
+        populateProjectActivityPanel(selectedProject);
+        showFeedback("Project file attached successfully.", false);
     }
 
     @FXML
@@ -642,6 +705,8 @@ public class ProjectsController implements Initializable {
         populateUpdateForm(project);
         populateDeletePanel(project);
         populateSharePanel(project);
+        populateProjectActivityPanel(project);
+        populateProjectFilesPanel(project);
         populateGitProjectPanel(project);
     }
 
@@ -801,6 +866,8 @@ public class ProjectsController implements Initializable {
         showSelectedProjectDetails(null);
         populateDeletePanel(null);
         populateSharePanel(null);
+        populateProjectActivityPanel(null);
+        populateProjectFilesPanel(null);
         populateGitProjectPanel(null);
     }
 
@@ -971,6 +1038,8 @@ public class ProjectsController implements Initializable {
         togglePanel(editProjectPanel, false);
         togglePanel(deleteProjectPanel, false);
         togglePanel(shareProjectPanel, "SHARE".equals(panel));
+        togglePanel(activityProjectPanel, "ACTIVITY".equals(panel));
+        togglePanel(filesProjectPanel, "FILES".equals(panel));
         togglePanel(gitProjectPanel, "GIT".equals(panel));
         togglePanel(statsProjectPanel, "STATS".equals(panel));
         togglePanel(gitGuidePanel, "GIT_GUIDE".equals(panel));
@@ -978,10 +1047,140 @@ public class ProjectsController implements Initializable {
         updatePanelButton(showEditProjectPanelButton, false);
         updatePanelButton(showDeleteProjectPanelButton, false);
         updatePanelButton(showShareProjectPanelButton, "SHARE".equals(panel));
+        updatePanelButton(showProjectActivityPanelButton, "ACTIVITY".equals(panel));
+        updatePanelButton(showProjectFilesPanelButton, "FILES".equals(panel));
         updatePanelButton(showGitProjectPanelButton, "GIT".equals(panel));
         updatePanelButton(showProjectStatsPanelButton, "STATS".equals(panel));
         updatePanelButton(showGitGuidePanelButton, "GIT_GUIDE".equals(panel));
         updatePanelButton(openProjectMeetingButton, false);
+    }
+
+    private void populateProjectActivityPanel(Project project) {
+        if (projectActivityList == null) {
+            return;
+        }
+        projectActivityList.getChildren().clear();
+        if (project == null) {
+            projectActivityList.getChildren().add(createSharedUserEmptyState("Select a project to view its activity timeline."));
+            return;
+        }
+
+        List<ActivityLogEntry> entries = activityLogService.getRecentActivity("project", project.getId(), 12);
+        if (entries.isEmpty()) {
+            projectActivityList.getChildren().add(createSharedUserEmptyState("No activity recorded for this project yet."));
+            return;
+        }
+        for (ActivityLogEntry entry : entries) {
+            projectActivityList.getChildren().add(createActivityRow(entry));
+        }
+    }
+
+    private void populateProjectFilesPanel(Project project) {
+        if (projectAttachmentList == null) {
+            return;
+        }
+        projectAttachmentList.getChildren().clear();
+        if (projectFilesHintLabel != null) {
+            projectFilesHintLabel.setText(project == null
+                    ? "Select a project to manage its files."
+                    : "Upload deliverables, PDFs, screenshots, and other project files.");
+        }
+        if (uploadProjectAttachmentButton != null) {
+            uploadProjectAttachmentButton.setDisable(project == null);
+        }
+        if (project == null) {
+            projectAttachmentList.getChildren().add(createSharedUserEmptyState("Select a project to view attached files."));
+            return;
+        }
+
+        List<AttachmentItem> attachments = attachmentService.getAttachments("project", project.getId());
+        if (attachments.isEmpty()) {
+            projectAttachmentList.getChildren().add(createSharedUserEmptyState("No files attached to this project yet."));
+            return;
+        }
+        for (AttachmentItem attachment : attachments) {
+            projectAttachmentList.getChildren().add(createAttachmentRow(attachment));
+        }
+    }
+
+    private VBox createActivityRow(ActivityLogEntry entry) {
+        VBox row = new VBox(4);
+        row.setPadding(new Insets(10, 12, 10, 12));
+        row.getStyleClass().add("detail-row");
+
+        Label title = new Label(entry.getActorName() + " | " + entry.getActionType());
+        title.getStyleClass().add("form-label");
+        title.setWrapText(true);
+
+        Label desc = new Label(entry.getDescription() + " | " + defaultText(entry.getCreatedAt()));
+        desc.getStyleClass().addAll("item-desc", "text-muted");
+        desc.setWrapText(true);
+
+        row.getChildren().addAll(title, desc);
+        return row;
+    }
+
+    private HBox createAttachmentRow(AttachmentItem attachment) {
+        HBox row = new HBox(10);
+        row.setAlignment(Pos.CENTER_LEFT);
+        row.setPadding(new Insets(10, 12, 10, 12));
+        row.getStyleClass().add("detail-row");
+
+        VBox textBox = new VBox(4);
+        HBox.setHgrow(textBox, Priority.ALWAYS);
+        Label name = new Label(attachment.getOriginalName());
+        name.getStyleClass().add("form-label");
+        name.setWrapText(true);
+        Label meta = new Label("Uploaded by " + attachment.getUploadedByName() + " | " + defaultText(attachment.getCreatedAt()));
+        meta.getStyleClass().addAll("item-desc", "text-muted");
+        meta.setWrapText(true);
+        textBox.getChildren().addAll(name, meta);
+
+        Button openButton = new Button("Open");
+        openButton.getStyleClass().add("btn-secondary");
+        openButton.setOnAction(event -> openAttachmentFile(attachment));
+
+        row.getChildren().addAll(textBox, openButton);
+        return row;
+    }
+
+    private void openAttachmentFile(AttachmentItem attachment) {
+        try {
+            if (!Desktop.isDesktopSupported()) {
+                showFeedback("Desktop file opening is not available on this machine.", true);
+                return;
+            }
+            Desktop.getDesktop().open(new File(defaultText(attachment.getFilePath())));
+        } catch (Exception e) {
+            showFeedback("Unable to open the selected file.", true);
+        }
+    }
+
+    private void notifyProjectUpdateChanges(Project project, String previousStatus, LocalDate previousEndDate) {
+        if (project == null) {
+            return;
+        }
+        if (!safeText(previousStatus).equalsIgnoreCase(safeText(project.getStatus()))) {
+            activityLogService.addActivity("project", project.getId(), getCurrentUser().getId(), "status_changed", "Changed project status to " + safeText(project.getStatus()) + ".");
+            notifyProjectMembers(project, "Project status updated", "Project \"" + safeText(project.getTitle()) + "\" moved to " + safeText(project.getStatus()) + ".", "project:" + project.getId());
+        }
+        if ((previousEndDate == null && project.getEndDate() != null)
+                || (previousEndDate != null && !previousEndDate.equals(project.getEndDate()))) {
+            activityLogService.addActivity("project", project.getId(), getCurrentUser().getId(), "deadline_changed", "Changed project deadline to " + formatDate(project.getEndDate()) + ".");
+            notifyProjectMembers(project, "Project deadline changed", "Project \"" + safeText(project.getTitle()) + "\" deadline is now " + formatDate(project.getEndDate()) + ".", "project:" + project.getId());
+        }
+    }
+
+    private void notifyProjectMembers(Project project, String title, String message, String link) {
+        if (project == null) {
+            return;
+        }
+        for (User user : projectService.getSharedUsers(project.getId())) {
+            if (user == null || user.getId() <= 0 || user.getId() == getCurrentUser().getId()) {
+                continue;
+            }
+            notificationService.addNotificationForUser(user.getId(), title, message, "project_update", link);
+        }
     }
 
     private void togglePanel(VBox panel, boolean visible) {

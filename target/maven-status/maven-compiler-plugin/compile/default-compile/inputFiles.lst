@@ -47,9 +47,11 @@ C:\Users\User\Desktop\RLIFE-JAVA-main-git-new\RLIFE-JAVA-main\src\main\java\com\
 C:\Users\User\Desktop\RLIFE-JAVA-main-git-new\RLIFE-JAVA-main\src\main\java\com\studyflow\controllers\WellbeingController.java
 C:\Users\User\Desktop\RLIFE-JAVA-main-git-new\RLIFE-JAVA-main\src\main\java\com\studyflow\interfaces\IService.java
 C:\Users\User\Desktop\RLIFE-JAVA-main-git-new\RLIFE-JAVA-main\src\main\java\com\studyflow\LocalServer.java
+C:\Users\User\Desktop\RLIFE-JAVA-main-git-new\RLIFE-JAVA-main\src\main\java\com\studyflow\models\ActivityLogEntry.java
 C:\Users\User\Desktop\RLIFE-JAVA-main-git-new\RLIFE-JAVA-main\src\main\java\com\studyflow\models\Assignment.java
 C:\Users\User\Desktop\RLIFE-JAVA-main-git-new\RLIFE-JAVA-main\src\main\java\com\studyflow\models\AssignmentComment.java
 C:\Users\User\Desktop\RLIFE-JAVA-main-git-new\RLIFE-JAVA-main\src\main\java\com\studyflow\models\AssignmentDependency.java
+C:\Users\User\Desktop\RLIFE-JAVA-main-git-new\RLIFE-JAVA-main\src\main\java\com\studyflow\models\AttachmentItem.java
 C:\Users\User\Desktop\RLIFE-JAVA-main-git-new\RLIFE-JAVA-main\src\main\java\com\studyflow\models\CopingSession.java
 C:\Users\User\Desktop\RLIFE-JAVA-main-git-new\RLIFE-JAVA-main\src\main\java\com\studyflow\models\Course.java
 C:\Users\User\Desktop\RLIFE-JAVA-main-git-new\RLIFE-JAVA-main\src\main\java\com\studyflow\models\Deck.java
@@ -65,12 +67,14 @@ C:\Users\User\Desktop\RLIFE-JAVA-main-git-new\RLIFE-JAVA-main\src\main\java\com\
 C:\Users\User\Desktop\RLIFE-JAVA-main-git-new\RLIFE-JAVA-main\src\main\java\com\studyflow\models\User.java
 C:\Users\User\Desktop\RLIFE-JAVA-main-git-new\RLIFE-JAVA-main\src\main\java\com\studyflow\models\WellBeing.java
 C:\Users\User\Desktop\RLIFE-JAVA-main-git-new\RLIFE-JAVA-main\src\main\java\com\studyflow\models\WellbeingJournalEntry.java
+C:\Users\User\Desktop\RLIFE-JAVA-main-git-new\RLIFE-JAVA-main\src\main\java\com\studyflow\services\ActivityLogService.java
 C:\Users\User\Desktop\RLIFE-JAVA-main-git-new\RLIFE-JAVA-main\src\main\java\com\studyflow\services\AiAssignmentGeneratorService.java
 C:\Users\User\Desktop\RLIFE-JAVA-main-git-new\RLIFE-JAVA-main\src\main\java\com\studyflow\services\AIFlashcardService.java
 C:\Users\User\Desktop\RLIFE-JAVA-main-git-new\RLIFE-JAVA-main\src\main\java\com\studyflow\services\AiProjectInsightsService.java
 C:\Users\User\Desktop\RLIFE-JAVA-main-git-new\RLIFE-JAVA-main\src\main\java\com\studyflow\services\AIQuizService.java
 C:\Users\User\Desktop\RLIFE-JAVA-main-git-new\RLIFE-JAVA-main\src\main\java\com\studyflow\services\AITranslationService.java
 C:\Users\User\Desktop\RLIFE-JAVA-main-git-new\RLIFE-JAVA-main\src\main\java\com\studyflow\services\AssignmentService.java
+C:\Users\User\Desktop\RLIFE-JAVA-main-git-new\RLIFE-JAVA-main\src\main\java\com\studyflow\services\AttachmentService.java
 C:\Users\User\Desktop\RLIFE-JAVA-main-git-new\RLIFE-JAVA-main\src\main\java\com\studyflow\services\ClaudeApiService.java
 C:\Users\User\Desktop\RLIFE-JAVA-main-git-new\RLIFE-JAVA-main\src\main\java\com\studyflow\services\DeckService.java
 C:\Users\User\Desktop\RLIFE-JAVA-main-git-new\RLIFE-JAVA-main\src\main\java\com\studyflow\services\EvalMatService.java

@@ -1,13 +1,17 @@
 package com.studyflow.controllers;
 
 import com.studyflow.App;
+import com.studyflow.models.ActivityLogEntry;
 import com.studyflow.models.Assignment;
 import com.studyflow.models.AssignmentComment;
+import com.studyflow.models.AttachmentItem;
 import com.studyflow.models.Project;
 import com.studyflow.models.User;
+import com.studyflow.services.ActivityLogService;
 import com.studyflow.services.AiAssignmentGeneratorService;
 import com.studyflow.services.AiProjectInsightsService;
 import com.studyflow.services.AssignmentService;
+import com.studyflow.services.AttachmentService;
 import com.studyflow.services.GitIntegrationService;
 import com.studyflow.services.NotificationService;
 import com.studyflow.services.ProjectService;
@@ -49,8 +53,10 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.stage.FileChooser;
 import org.kordamp.ikonli.javafx.FontIcon;
 
+import java.awt.Desktop;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -132,6 +138,8 @@ public class AssignmentsController implements Initializable {
     @FXML private Button showDeletePanelButton;
     @FXML private Button showCommentsPanelButton;
     @FXML private Button showSharePanelButton;
+    @FXML private Button showAssignmentActivityPanelButton;
+    @FXML private Button showAssignmentFilesPanelButton;
     @FXML private Button showGitPanelButton;
     @FXML private Button showStatsPanelButton;
     @FXML private Button addCommentButton;
@@ -148,6 +156,10 @@ public class AssignmentsController implements Initializable {
     @FXML private VBox commentsPanel;
     @FXML private VBox sharePanel;
     @FXML private VBox sharedAssignmentUsersList;
+    @FXML private VBox activityPanel;
+    @FXML private VBox filesPanel;
+    @FXML private VBox assignmentActivityList;
+    @FXML private VBox assignmentAttachmentList;
     @FXML private VBox gitPanel;
     @FXML private VBox statsPanel;
     @FXML private StackPane actionPanelStack;
@@ -163,6 +175,8 @@ public class AssignmentsController implements Initializable {
     @FXML private Button refreshAssignmentGitButton;
     @FXML private Button commitAssignmentGitButton;
     @FXML private Button commitAndPushAssignmentGitButton;
+    @FXML private Button uploadAssignmentAttachmentButton;
+    @FXML private Label assignmentFilesHintLabel;
     @FXML private VBox aiLoadingOverlay;
     @FXML private Label aiLoadingTitleLabel;
     @FXML private Label aiLoadingSubtitleLabel;
@@ -173,6 +187,8 @@ public class AssignmentsController implements Initializable {
     private final AiProjectInsightsService aiProjectInsightsService = new AiProjectInsightsService();
     private final GitIntegrationService gitIntegrationService = new GitIntegrationService();
     private final NotificationService notificationService = new NotificationService();
+    private final ActivityLogService activityLogService = new ActivityLogService();
+    private final AttachmentService attachmentService = new AttachmentService();
     private final com.studyflow.services.ServiceUser userService = new com.studyflow.services.ServiceUser();
 
     private final List<Assignment> assignments = new ArrayList<>();
@@ -265,6 +281,7 @@ public class AssignmentsController implements Initializable {
         applyPlanningEstimate(assignment);
 
         assignmentService.add(assignment);
+        activityLogService.addActivity("assignment", assignment.getId(), getCurrentUser().getId(), "created", "Created the assignment.");
         resetCreateForm();
         refreshData(assignment.getId(), () -> showFeedback(buildPlanningMessage("Assignment created successfully.", assignment), false));
     }
@@ -311,6 +328,8 @@ public class AssignmentsController implements Initializable {
         }
 
         Project project = updateAssignmentProjectCombo.getValue();
+        String previousStatus = normalizedStatus(selectedAssignment.getStatus());
+        LocalDate previousEndDate = selectedAssignment.getEndDate();
         selectedAssignment.setCurrentUserId(getCurrentUser().getId());
         selectedAssignment.setProjectId(project.getId());
         selectedAssignment.setProjectTitle(project.getTitle());
@@ -329,6 +348,8 @@ public class AssignmentsController implements Initializable {
         applyPlanningEstimate(selectedAssignment);
 
         assignmentService.update(selectedAssignment);
+        activityLogService.addActivity("assignment", selectedAssignment.getId(), getCurrentUser().getId(), "updated", "Updated assignment details.");
+        notifyAssignmentUpdateChanges(selectedAssignment, previousStatus, previousEndDate);
         int selectedId = selectedAssignment.getId();
         refreshData(selectedId, () -> showFeedback(buildPlanningMessage("Assignment updated successfully.", selectedAssignment), false));
     }
@@ -357,7 +378,49 @@ public class AssignmentsController implements Initializable {
         }
 
         shareAssignmentEmailField.clear();
+        activityLogService.addActivity("assignment", selectedAssignment.getId(), getCurrentUser().getId(), "shared", "Shared the assignment with " + recipientIdentifier + ".");
         refreshData(selectedAssignment.getId(), () -> showFeedback("Assignment shared successfully.", false));
+    }
+
+    @FXML
+    private void handleShowAssignmentActivityPanel() {
+        setActivePanel("ACTIVITY");
+    }
+
+    @FXML
+    private void handleShowAssignmentFilesPanel() {
+        setActivePanel("FILES");
+    }
+
+    @FXML
+    private void handleUploadAssignmentAttachment() {
+        if (!isReady() || selectedAssignment == null) {
+            showFeedback("Select an assignment before uploading files.", true);
+            return;
+        }
+        if (!selectedAssignment.canCurrentUserEdit()) {
+            showFeedback("You do not have permission to attach files to this assignment.", true);
+            return;
+        }
+
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle("Attach File To Assignment");
+        File selectedFile = chooser.showOpenDialog(App.getPrimaryStage());
+        if (selectedFile == null) {
+            return;
+        }
+
+        AttachmentItem item = attachmentService.saveAttachment("assignment", selectedAssignment.getId(), getCurrentUser().getId(), selectedFile.toPath());
+        if (item == null) {
+            showFeedback("Unable to attach the selected file.", true);
+            return;
+        }
+
+        activityLogService.addActivity("assignment", selectedAssignment.getId(), getCurrentUser().getId(), "file_upload", "Uploaded file \"" + item.getOriginalName() + "\".");
+        notifyAssignmentMembers(selectedAssignment, "Assignment file added", "A new file was added to assignment \"" + safeText(selectedAssignment.getTitle()) + "\": " + item.getOriginalName(), "assignment:" + selectedAssignment.getId());
+        populateAssignmentFilesPanel(selectedAssignment);
+        populateAssignmentActivityPanel(selectedAssignment);
+        showFeedback("Assignment file attached successfully.", false);
     }
 
     @FXML
@@ -949,6 +1012,8 @@ public class AssignmentsController implements Initializable {
         populateDeletePanel(assignment);
         populateCommentsPanel(assignment);
         populateSharePanel(assignment);
+        populateAssignmentActivityPanel(assignment);
+        populateAssignmentFilesPanel(assignment);
         populateGitPanel(assignment);
     }
 
@@ -1017,6 +1082,58 @@ public class AssignmentsController implements Initializable {
         renderSharedAssignmentUsers(assignment);
     }
 
+    private void populateAssignmentActivityPanel(Assignment assignment) {
+        if (assignmentActivityList == null) {
+            return;
+        }
+        assignmentActivityList.getChildren().clear();
+
+        if (assignment == null) {
+            assignmentActivityList.getChildren().add(createSharedUserEmptyState("Select an assignment to view its activity timeline."));
+            return;
+        }
+
+        List<ActivityLogEntry> entries = activityLogService.getRecentActivity("assignment", assignment.getId(), 12);
+        if (entries.isEmpty()) {
+            assignmentActivityList.getChildren().add(createSharedUserEmptyState("No activity recorded for this assignment yet."));
+            return;
+        }
+
+        for (ActivityLogEntry entry : entries) {
+            assignmentActivityList.getChildren().add(createActivityRow(entry));
+        }
+    }
+
+    private void populateAssignmentFilesPanel(Assignment assignment) {
+        if (assignmentAttachmentList == null) {
+            return;
+        }
+        assignmentAttachmentList.getChildren().clear();
+        if (assignmentFilesHintLabel != null) {
+            assignmentFilesHintLabel.setText(assignment == null
+                    ? "Select an assignment to manage its files."
+                    : "Upload docs, screenshots, deliverables, and review assets.");
+        }
+        if (uploadAssignmentAttachmentButton != null) {
+            uploadAssignmentAttachmentButton.setDisable(assignment == null || !assignment.canCurrentUserEdit());
+        }
+
+        if (assignment == null) {
+            assignmentAttachmentList.getChildren().add(createSharedUserEmptyState("Select an assignment to view attached files."));
+            return;
+        }
+
+        List<AttachmentItem> attachments = attachmentService.getAttachments("assignment", assignment.getId());
+        if (attachments.isEmpty()) {
+            assignmentAttachmentList.getChildren().add(createSharedUserEmptyState("No files attached to this assignment yet."));
+            return;
+        }
+
+        for (AttachmentItem attachment : attachments) {
+            assignmentAttachmentList.getChildren().add(createAttachmentRow(attachment));
+        }
+    }
+
     private void renderSharedAssignmentUsers(Assignment assignment) {
         if (sharedAssignmentUsersList == null) {
             return;
@@ -1054,6 +1171,60 @@ public class AssignmentsController implements Initializable {
 
         row.getChildren().addAll(nameLabel, metaLabel);
         return row;
+    }
+
+    private VBox createActivityRow(ActivityLogEntry entry) {
+        VBox row = new VBox(4);
+        row.setPadding(new Insets(10, 12, 10, 12));
+        row.getStyleClass().add("detail-row");
+
+        Label nameLabel = new Label(entry.getActorName() + " | " + entry.getActionType());
+        nameLabel.getStyleClass().add("form-label");
+        nameLabel.setWrapText(true);
+
+        Label metaLabel = new Label(entry.getDescription() + " | " + defaultText(entry.getCreatedAt()));
+        metaLabel.getStyleClass().addAll("item-desc", "text-muted");
+        metaLabel.setWrapText(true);
+
+        row.getChildren().addAll(nameLabel, metaLabel);
+        return row;
+    }
+
+    private HBox createAttachmentRow(AttachmentItem attachment) {
+        HBox row = new HBox(10);
+        row.setAlignment(Pos.CENTER_LEFT);
+        row.setPadding(new Insets(10, 12, 10, 12));
+        row.getStyleClass().add("detail-row");
+
+        VBox textBox = new VBox(4);
+        HBox.setHgrow(textBox, Priority.ALWAYS);
+        Label title = new Label(attachment.getOriginalName());
+        title.getStyleClass().add("form-label");
+        title.setWrapText(true);
+
+        Label meta = new Label("Uploaded by " + attachment.getUploadedByName() + " | " + defaultText(attachment.getCreatedAt()));
+        meta.getStyleClass().addAll("item-desc", "text-muted");
+        meta.setWrapText(true);
+        textBox.getChildren().addAll(title, meta);
+
+        Button openButton = new Button("Open");
+        openButton.getStyleClass().add("btn-secondary");
+        openButton.setOnAction(event -> openAttachmentFile(attachment));
+
+        row.getChildren().addAll(textBox, openButton);
+        return row;
+    }
+
+    private void openAttachmentFile(AttachmentItem attachment) {
+        try {
+            if (!Desktop.isDesktopSupported()) {
+                showFeedback("Desktop file opening is not available on this machine.", true);
+                return;
+            }
+            Desktop.getDesktop().open(new File(defaultText(attachment.getFilePath())));
+        } catch (Exception e) {
+            showFeedback("Unable to open the selected file.", true);
+        }
     }
 
     private Label createSharedUserEmptyState(String message) {
@@ -1235,6 +1406,8 @@ public class AssignmentsController implements Initializable {
         populateDeletePanel(null);
         populateCommentsPanel(null);
         populateSharePanel(null);
+        populateAssignmentActivityPanel(null);
+        populateAssignmentFilesPanel(null);
         populateGitPanel(null);
     }
 
@@ -1245,6 +1418,8 @@ public class AssignmentsController implements Initializable {
         togglePanel(deletePanel, false);
         togglePanel(commentsPanel, "COMMENTS".equals(panel));
         togglePanel(sharePanel, "SHARE".equals(panel));
+        togglePanel(activityPanel, "ACTIVITY".equals(panel));
+        togglePanel(filesPanel, "FILES".equals(panel));
         togglePanel(gitPanel, "GIT".equals(panel));
         togglePanel(statsPanel, "STATS".equals(panel));
         updatePanelButton(showCreatePanelButton, "CREATE".equals(panel));
@@ -1252,6 +1427,8 @@ public class AssignmentsController implements Initializable {
         updatePanelButton(showDeletePanelButton, false);
         updatePanelButton(showCommentsPanelButton, "COMMENTS".equals(panel));
         updatePanelButton(showSharePanelButton, "SHARE".equals(panel));
+        updatePanelButton(showAssignmentActivityPanelButton, "ACTIVITY".equals(panel));
+        updatePanelButton(showAssignmentFilesPanelButton, "FILES".equals(panel));
         updatePanelButton(showGitPanelButton, "GIT".equals(panel));
         updatePanelButton(showStatsPanelButton, "STATS".equals(panel));
     }
@@ -1535,6 +1712,8 @@ public class AssignmentsController implements Initializable {
                     assignment.setEndTime(now.toLocalTime());
                 }
                 assignmentService.update(assignment);
+                activityLogService.addActivity("assignment", assignment.getId(), getCurrentUser().getId(), "status_changed", "Moved assignment to " + displayStatus(assignment) + ".");
+                notifyAssignmentMembers(assignment, "Assignment status updated", "Assignment \"" + safeText(assignment.getTitle()) + "\" moved to " + displayStatus(assignment) + ".", "assignment:" + assignment.getId());
                 refreshData(assignment.getId(), () -> showFeedback("Assignment moved to " + displayStatus(assignment) + ".", false));
                 success = true;
             }
@@ -1542,6 +1721,41 @@ public class AssignmentsController implements Initializable {
             event.setDropCompleted(success);
             event.consume();
         });
+    }
+
+    private void notifyAssignmentUpdateChanges(Assignment assignment, String previousStatus, LocalDate previousEndDate) {
+        if (assignment == null) {
+            return;
+        }
+        if (!safeText(previousStatus).equalsIgnoreCase(safeText(normalizedStatus(assignment.getStatus())))) {
+            activityLogService.addActivity("assignment", assignment.getId(), getCurrentUser().getId(), "status_changed", "Changed assignment status to " + displayStatus(assignment) + ".");
+            notifyAssignmentMembers(assignment, "Assignment status updated", "Assignment \"" + safeText(assignment.getTitle()) + "\" moved to " + displayStatus(assignment) + ".", "assignment:" + assignment.getId());
+        }
+        if ((previousEndDate == null && assignment.getEndDate() != null)
+                || (previousEndDate != null && !previousEndDate.equals(assignment.getEndDate()))) {
+            activityLogService.addActivity("assignment", assignment.getId(), getCurrentUser().getId(), "deadline_changed", "Changed assignment deadline to " + formatDate(assignment.getEndDate()) + ".");
+            notifyAssignmentMembers(assignment, "Assignment deadline changed", "Assignment \"" + safeText(assignment.getTitle()) + "\" deadline is now " + formatDate(assignment.getEndDate()) + ".", "assignment:" + assignment.getId());
+        }
+    }
+
+    private void notifyAssignmentMembers(Assignment assignment, String title, String message, String link) {
+        if (assignment == null) {
+            return;
+        }
+        for (User user : assignmentService.getSharedUsers(assignment.getId())) {
+            if (user == null || user.getId() <= 0 || user.getId() == getCurrentUser().getId()) {
+                continue;
+            }
+            notificationService.addNotificationForUser(user.getId(), title, message, "assignment_update", link);
+        }
+
+        Project linkedProject = projects.stream()
+                .filter(project -> project.getId() == assignment.getProjectId())
+                .findFirst()
+                .orElse(null);
+        if (linkedProject != null && linkedProject.getOwnerUserId() > 0 && linkedProject.getOwnerUserId() != getCurrentUser().getId()) {
+            notificationService.addNotificationForUser(linkedProject.getOwnerUserId(), title, message, "assignment_update", link);
+        }
     }
 
     private void applyFilterState() {

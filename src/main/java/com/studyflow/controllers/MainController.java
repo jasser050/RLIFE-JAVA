@@ -8,6 +8,7 @@ import com.studyflow.models.User;
 import com.studyflow.services.AssignmentService;
 import com.studyflow.services.NotificationService;
 import com.studyflow.services.ProjectService;
+import com.studyflow.utils.CrudViewContext;
 import com.studyflow.utils.UserSession;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
@@ -202,7 +203,14 @@ public class MainController implements Initializable {
                 meta.getStyleClass().add("notification-meta");
 
                 box.getChildren().addAll(title, message, meta);
-                menu.getItems().add(new CustomMenuItem(box, false));
+                CustomMenuItem item = new CustomMenuItem(box, true);
+                item.setOnAction(event -> {
+                    notificationService.markAsRead(notification.getId(), user.getId());
+                    updateNotificationsButton();
+                    menu.hide();
+                    openNotification(notification);
+                });
+                menu.getItems().add(item);
             }
 
             menu.getItems().add(new SeparatorMenuItem());
@@ -222,6 +230,52 @@ public class MainController implements Initializable {
         }
 
         menu.show(notificationsButton, javafx.geometry.Side.BOTTOM, 0, 8);
+    }
+
+    private void openNotification(Notification notification) {
+        if (notification == null) {
+            return;
+        }
+        String link = notification.getLink() == null ? "" : notification.getLink().trim();
+        if (link.startsWith("project_meeting:")) {
+            Integer projectId = parseLinkedId(link, "project_meeting:");
+            if (projectId == null) {
+                return;
+            }
+            Project project = projectService.getProjectById(projectId);
+            if (project == null) {
+                return;
+            }
+            CrudViewContext.setProjectContext(project);
+            CrudViewContext.rememberProjectSelection(projectId);
+            loadContent("views/ProjectMeeting.fxml");
+            return;
+        }
+        if (link.startsWith("project:")) {
+            Integer projectId = parseLinkedId(link, "project:");
+            if (projectId == null) {
+                return;
+            }
+            CrudViewContext.rememberProjectSelection(projectId);
+            loadContent("views/Projects.fxml");
+            return;
+        }
+        if (link.startsWith("assignment:")) {
+            Integer assignmentId = parseLinkedId(link, "assignment:");
+            if (assignmentId == null) {
+                return;
+            }
+            CrudViewContext.rememberAssignmentSelection(assignmentId);
+            loadContent("views/Assignments.fxml");
+        }
+    }
+
+    private Integer parseLinkedId(String value, String prefix) {
+        try {
+            return Integer.parseInt(value.substring(prefix.length()).trim());
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     @FXML

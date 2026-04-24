@@ -6,9 +6,20 @@
   <component name="ChangeListManager">
     <list default="true" id="aef49e16-18eb-4aef-9a6b-0edc463b5109" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/studyflow/controllers/AssignmentsController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/studyflow/controllers/AssignmentsController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/studyflow/controllers/MainController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/studyflow/controllers/MainController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/studyflow/controllers/ProjectMeetingController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/studyflow/controllers/ProjectMeetingController.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/com/studyflow/controllers/ProjectsController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/studyflow/controllers/ProjectsController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/studyflow/services/NotificationService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/studyflow/services/NotificationService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/com/studyflow/styles/dark-theme.css" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/com/studyflow/styles/dark-theme.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/com/studyflow/styles/light-theme.css" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/com/studyflow/styles/light-theme.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/com/studyflow/views/Assignments.fxml" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/com/studyflow/views/Assignments.fxml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/com/studyflow/views/ProjectAiWorkspace.fxml" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/com/studyflow/views/ProjectAiWorkspace.fxml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/resources/com/studyflow/views/Projects.fxml" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/com/studyflow/views/Projects.fxml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/AssignmentsController.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/AssignmentsController.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/MainController.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/MainController.class" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/ProjectsController.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/ProjectsController.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/views/Assignments.fxml" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/views/Assignments.fxml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/views/Projects.fxml" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/views/Projects.fxml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/target/maven-status/maven-compiler-plugin/compile/default-compile/createdFiles.lst" beforeDir="false" afterPath="$PROJECT_DIR$/target/maven-status/maven-compiler-plugin/compile/default-compile/createdFiles.lst" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/target/maven-status/maven-compiler-plugin/compile/default-compile/inputFiles.lst" beforeDir="false" afterPath="$PROJECT_DIR$/target/maven-status/maven-compiler-plugin/compile/default-compile/inputFiles.lst" afterDir="false" />
@@ -33,6 +44,11 @@
       </map>
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="JavaAutoRunManager">
+    <enabled-run-configurations>
+      <run-configuration type="MavenRunConfiguration" name="studyflow-javafx [org.openjfx:javafx-maven-plugin:0.0.8:run]" />
+    </enabled-run-configurations>
   </component>
   <component name="McpProjectServerCommands">
     <commands />
