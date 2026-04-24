@@ -11,8 +11,11 @@ import java.time.Duration;
  * Kept as GeminiService to avoid renaming across the project.
  */
 public class GroqService {
+    private static final String API_KEY = "";
+    private static final String API_URL = "https://api.groq.com/openai/v1/chat/completions";
 
-    
+
+
 
     private final HttpClient client;
 

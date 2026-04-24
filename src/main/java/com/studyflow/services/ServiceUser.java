@@ -165,11 +165,7 @@ public class ServiceUser implements IService<User> {
         }
     }
 
-    /**
-     * Search users dynamically using Java Stream API.
-     * Filters by name, email, or username (case-insensitive).
-     * Excludes admin accounts from results.
-     */
+
     public List<User> searchUsers(String query) {
         return getAll().stream()
                 .filter(u -> !"admin@rlife.com".equalsIgnoreCase(u.getEmail()))
