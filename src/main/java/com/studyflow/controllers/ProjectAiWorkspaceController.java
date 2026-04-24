@@ -35,6 +35,9 @@ import java.util.ResourceBundle;
 public class ProjectAiWorkspaceController implements Initializable {
     private static final DateTimeFormatter FILE_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss");
 
+    @FXML private VBox loadingOverlay;
+    @FXML private Label loadingLabel;
+    @FXML private Label loadingSubtitleLabel;
     @FXML private Label subtitleLabel;
     @FXML private Label feedbackLabel;
     @FXML private Label projectTitleLabel;
@@ -67,6 +70,8 @@ public class ProjectAiWorkspaceController implements Initializable {
     private Project project;
     private final List<Assignment> assignments = new ArrayList<>();
     private final List<AssignmentDependency> dependencies = new ArrayList<>();
+    private AiProjectInsightsService.ProjectHealthInsights currentHealthInsights;
+    private AiProjectInsightsService.ProjectReportInsights currentReportInsights;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -82,7 +87,8 @@ public class ProjectAiWorkspaceController implements Initializable {
         subtitleLabel.setText("Project intelligence for " + project.getTitle() + ".");
         projectMetaLabel.setText(project.getStatus() + " | " + (project.isOwnedByCurrentUser() ? "Owned by you" : "Shared by " + project.getOwnerName()));
         exportPathLabel.setText(PdfExportUtil.defaultExportFile(defaultFilename()).getAbsolutePath());
-        refreshWorkspace();
+        setLoading(true, "Opening AI workspace", "Preparing the AI workspace for \"" + project.getTitle() + "\".");
+        refreshWorkspaceAsync();
     }
 
     @FXML
@@ -92,6 +98,7 @@ public class ProjectAiWorkspaceController implements Initializable {
             return;
         }
         analyzeDependenciesButton.setDisable(true);
+        setLoading(true, "Analyzing dependencies", "Scanning assignments to build the AI dependency map.");
         showFeedback("Analyzing project dependencies...", false);
 
         Task<List<AssignmentDependency>> task = new Task<>() {
@@ -102,13 +109,16 @@ public class ProjectAiWorkspaceController implements Initializable {
         };
 
         task.setOnSucceeded(event -> {
+            setLoading(false, null, null);
             int saved = assignmentService.replaceProjectDependencies(project.getId(), getCurrentUser().getId(), task.getValue());
             analyzeDependenciesButton.setDisable(false);
-            refreshWorkspace();
             showFeedback(saved + " dependency link(s) saved.", false);
+            setLoading(true, "Refreshing AI workspace", "Updating dependencies, health insights, and report preview.");
+            refreshWorkspaceAsync();
         });
 
         task.setOnFailed(event -> {
+            setLoading(false, null, null);
             analyzeDependenciesButton.setDisable(false);
             Throwable error = task.getException();
             showFeedback("Dependency analysis failed: " + (error == null ? "unknown error" : error.getMessage()), true);
@@ -126,6 +136,7 @@ public class ProjectAiWorkspaceController implements Initializable {
             return;
         }
         generateReportButton.setDisable(true);
+        setLoading(true, "Generating AI report", "Preparing project intelligence and exporting the PDF report.");
         showFeedback("Generating AI PDF report...", false);
 
         Task<File> task = new Task<>() {
@@ -147,14 +158,15 @@ public class ProjectAiWorkspaceController implements Initializable {
         };
 
         task.setOnSucceeded(event -> {
+            setLoading(false, null, null);
             generateReportButton.setDisable(false);
-            refreshWorkspace();
             File file = task.getValue();
             exportPathLabel.setText(file.getAbsolutePath());
             showFeedback("AI PDF report exported to " + file.getAbsolutePath(), false);
         });
 
         task.setOnFailed(event -> {
+            setLoading(false, null, null);
             generateReportButton.setDisable(false);
             Throwable error = task.getException();
             showFeedback("Report generation failed: " + (error == null ? "unknown error" : error.getMessage()), true);
@@ -172,22 +184,55 @@ public class ProjectAiWorkspaceController implements Initializable {
         MainController.loadContentInMainArea("views/Projects.fxml");
     }
 
-    private void refreshWorkspace() {
-        assignments.clear();
-        assignments.addAll(assignmentService.getByProjectId(project.getId(), getCurrentUser().getId()));
-        dependencies.clear();
-        dependencies.addAll(assignmentService.getDependenciesForProject(project.getId(), getCurrentUser().getId()));
+    private void refreshWorkspaceAsync() {
+        Task<WorkspaceSnapshot> task = new Task<>() {
+            @Override
+            protected WorkspaceSnapshot call() {
+                List<Assignment> loadedAssignments = assignmentService.getByProjectId(project.getId(), getCurrentUser().getId());
+                List<AssignmentDependency> loadedDependencies = assignmentService.getDependenciesForProject(project.getId(), getCurrentUser().getId());
+                AiProjectInsightsService.ProjectHealthInsights healthInsights =
+                        aiProjectInsightsService.buildProjectHealthInsights(project, loadedAssignments);
+                AiProjectInsightsService.ProjectReportInsights reportInsights =
+                        aiProjectInsightsService.buildProjectReportInsights(project, loadedAssignments, loadedDependencies);
+                return new WorkspaceSnapshot(loadedAssignments, loadedDependencies, healthInsights, reportInsights);
+            }
+        };
 
-        totalAssignmentsLabel.setText(String.valueOf(assignments.size()));
-        dependencyCountLabel.setText(String.valueOf(dependencies.size()));
-        renderHealthDashboard();
-        renderDependencies();
-        renderReportPreview();
+        task.setOnSucceeded(event -> {
+            WorkspaceSnapshot snapshot = task.getValue();
+            assignments.clear();
+            assignments.addAll(snapshot.assignments());
+            dependencies.clear();
+            dependencies.addAll(snapshot.dependencies());
+            currentHealthInsights = snapshot.healthInsights();
+            currentReportInsights = snapshot.reportInsights();
+
+            totalAssignmentsLabel.setText(String.valueOf(assignments.size()));
+            dependencyCountLabel.setText(String.valueOf(dependencies.size()));
+            renderHealthDashboard();
+            renderDependencies();
+            renderReportPreview();
+            setLoading(false, null, null);
+        });
+
+        task.setOnFailed(event -> {
+            setLoading(false, null, null);
+            analyzeDependenciesButton.setDisable(false);
+            generateReportButton.setDisable(false);
+            Throwable error = task.getException();
+            showFeedback("AI workspace loading failed: " + (error == null ? "unknown error" : error.getMessage()), true);
+        });
+
+        Thread thread = new Thread(task, "project-ai-workspace-loader");
+        thread.setDaemon(true);
+        thread.start();
     }
 
     private void renderHealthDashboard() {
-        AiProjectInsightsService.ProjectHealthInsights health =
-                aiProjectInsightsService.buildProjectHealthInsights(project, assignments);
+        AiProjectInsightsService.ProjectHealthInsights health = currentHealthInsights;
+        if (health == null) {
+            return;
+        }
 
         healthScoreLabel.setText(String.format("%.1f", health.overallScore()));
         healthSummaryLabel.setText(health.issuesSummary());
@@ -224,8 +269,10 @@ public class ProjectAiWorkspaceController implements Initializable {
     }
 
     private void renderReportPreview() {
-        AiProjectInsightsService.ProjectReportInsights insights =
-                aiProjectInsightsService.buildProjectReportInsights(project, assignments, dependencies);
+        AiProjectInsightsService.ProjectReportInsights insights = currentReportInsights;
+        if (insights == null) {
+            return;
+        }
         executiveSummaryLabel.setText(insights.executiveSummary());
         recommendationsList.getChildren().clear();
         for (String recommendation : insights.recommendations()) {
@@ -300,6 +347,22 @@ public class ProjectAiWorkspaceController implements Initializable {
         feedbackLabel.setManaged(true);
     }
 
+    private void setLoading(boolean loading, String title, String subtitle) {
+        if (loadingOverlay != null) {
+            if (loading) {
+                loadingOverlay.toFront();
+            }
+            loadingOverlay.setVisible(loading);
+            loadingOverlay.setManaged(loading);
+        }
+        if (loadingLabel != null && title != null && !title.isBlank()) {
+            loadingLabel.setText(title);
+        }
+        if (loadingSubtitleLabel != null && subtitle != null && !subtitle.isBlank()) {
+            loadingSubtitleLabel.setText(subtitle);
+        }
+    }
+
     private void updateScoreBar(ProgressBar bar, Label label, double score, String statusStyleClass) {
         if (bar != null) {
             bar.setProgress(Math.max(0, Math.min(1, score / 10.0)));
@@ -321,5 +384,13 @@ public class ProjectAiWorkspaceController implements Initializable {
 
     private String defaultFilename() {
         return "project-ai-report-" + FILE_DATE_FORMATTER.format(LocalDateTime.now()) + ".pdf";
+    }
+
+    private record WorkspaceSnapshot(
+            List<Assignment> assignments,
+            List<AssignmentDependency> dependencies,
+            AiProjectInsightsService.ProjectHealthInsights healthInsights,
+            AiProjectInsightsService.ProjectReportInsights reportInsights
+    ) {
     }
 }

@@ -317,8 +317,6 @@ public class ProjectService implements IService<Project> {
         return project;
     }
 
-<<<<<<< Updated upstream
-=======
     public void updateGitSettings(Project project) {
         if (!ensureConnection("ProjectService.updateGitSettings") || project == null || project.getId() <= 0) {
             return;
@@ -366,8 +364,6 @@ public class ProjectService implements IService<Project> {
         }
         return project.getCurrentUserId() > 0 ? project.getCurrentUserId() : project.getUserId();
     }
-
->>>>>>> Stashed changes
     private LocalDate readDate(ResultSet rs, String column) throws SQLException {
         Date value = rs.getDate(column);
         return value == null ? null : value.toLocalDate();
@@ -376,6 +372,15 @@ public class ProjectService implements IService<Project> {
     private LocalDateTime readDateTime(ResultSet rs, String column) throws SQLException {
         Timestamp value = rs.getTimestamp(column);
         return value == null ? null : value.toLocalDateTime();
+    }
+
+    private String readString(ResultSet rs, String column) {
+        try {
+            String value = rs.getString(column);
+            return value == null ? null : value.trim();
+        } catch (SQLException e) {
+            return null;
+        }
     }
 
     private int readInt(ResultSet rs, String column) {
@@ -418,8 +423,6 @@ public class ProjectService implements IService<Project> {
     private String safe(String value) {
         return value == null ? "" : value.trim();
     }
-<<<<<<< Updated upstream
-=======
 
     private void ensureGitSupport() {
         if (!ensureConnection("ProjectService.ensureGitSupport")) {
@@ -560,5 +563,4 @@ public class ProjectService implements IService<Project> {
         }
         statement.setTimestamp(index, Timestamp.valueOf(value));
     }
->>>>>>> Stashed changes
 }

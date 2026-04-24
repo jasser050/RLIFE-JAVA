@@ -18,7 +18,9 @@ public class ServiceCopingSession {
 
     public ServiceCopingSession() {
         this.cnx = MyDataBase.getInstance().getConnection();
-        ensureTable();
+        if (this.cnx != null) {
+            ensureTable();
+        }
     }
 
     public CopingSession startSession(Integer userId, String toolKey, String toolName, int durationSeconds) {

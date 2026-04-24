@@ -181,8 +181,8 @@ public class AdminController implements Initializable {
     @FXML private void showUsers() { showView(btnAdminUsers, "views/admin/AdminUsers.fxml"); }
     @FXML private void showAuditLog() { showView(btnAdminAudit, "views/admin/AdminAuditLog.fxml"); }
     @FXML private void showStressQuestions() { showView(btnStressQuestions, "views/admin/AdminStressQuestions.fxml"); }
-    @FXML private void showRecommendations() { showView(btnRecommendations, "views/admin/AdminRecommendations.fxml"); }
-    @FXML private void showAI() { showView(btnAdminAI, "views/admin/AdminAI.fxml"); }
+    @FXML private void showRecommendations() { showView(btnRecommendations, "views/admin/AdminRecommendations.fxml");
+    }@FXML private void showAI() { showView(btnAdminAI, "views/admin/AdminAI.fxml"); }
     @FXML private void showProfile() {
         if (activeButton != null) {
             activeButton.getStyleClass().remove("active");

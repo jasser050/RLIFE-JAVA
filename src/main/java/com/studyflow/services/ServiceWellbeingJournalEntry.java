@@ -18,11 +18,16 @@ public class ServiceWellbeingJournalEntry {
 
     public ServiceWellbeingJournalEntry() {
         this.cnx = MyDataBase.getInstance().getConnection();
-        ensureTable();
+        if (this.cnx != null) {
+            ensureTable();
+        }
     }
 
     public List<WellbeingJournalEntry> findByUser(Integer userId, int limit) {
         if (userId == null || userId <= 0) {
+            return List.of();
+        }
+        if (this.cnx != null) {
             return List.of();
         }
         String sql = """

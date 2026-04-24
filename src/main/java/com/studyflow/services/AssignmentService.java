@@ -90,24 +90,6 @@ public class AssignmentService implements IService<Assignment> {
         ensureDependencySupport();
         applyStatusDueTimestampIfNeeded(assignment);
         normalizeAssignmentDateTime(assignment);
-<<<<<<< Updated upstream
-        String sql = "UPDATE assignment SET project_id = ?, titre = ?, description = ?, date_debut = ?, date_fin = ?, priorite = ?, statut = ?, estimated_min_days = ?, estimated_max_days = ?, complexity_level = ?, ai_suggested_due_date = ?, updated_at = NOW() WHERE id = ? AND user_id = ?";
-        try {
-            PreparedStatement statement = connection.prepareStatement(sql);
-            statement.setInt(1, assignment.getProjectId());
-            statement.setString(2, assignment.getTitle());
-            statement.setString(3, assignment.getDescription());
-            statement.setTimestamp(4, Timestamp.valueOf(toDateTime(assignment.getStartDate(), assignment.getStartTime())));
-            statement.setTimestamp(5, Timestamp.valueOf(toDateTime(assignment.getEndDate(), assignment.getEndTime())));
-            statement.setString(6, assignment.getPriority());
-            statement.setString(7, assignment.getStatus());
-            setNullableInteger(statement, 8, assignment.getEstimatedMinDays());
-            setNullableInteger(statement, 9, assignment.getEstimatedMaxDays());
-            statement.setString(10, assignment.getComplexityLevel());
-            setNullableDate(statement, 11, assignment.getAiSuggestedDueDate());
-            statement.setInt(12, assignment.getId());
-            statement.setInt(13, assignment.getUserId());
-=======
         int actorUserId = resolveActorUserId(assignment);
         String sql = "UPDATE assignment a " +
                 "LEFT JOIN assignment_collaborator ac ON ac.assignment_id = a.id AND ac.user_id = ? " +
@@ -138,7 +120,6 @@ public class AssignmentService implements IService<Assignment> {
             statement.setInt(18, assignment.getId());
             statement.setInt(19, actorUserId);
             statement.setInt(20, actorUserId);
->>>>>>> Stashed changes
             statement.executeUpdate();
         } catch (SQLException e) {
             System.out.println("AssignmentService.update: " + e.getMessage());
@@ -689,6 +670,16 @@ public class AssignmentService implements IService<Assignment> {
         ensureColumnExists("assignment", "ai_suggested_due_date", "ALTER TABLE assignment ADD COLUMN ai_suggested_due_date DATE NULL");
     }
 
+    private void ensureAssignmentGitSupport() {
+        if (!ensureConnection("AssignmentService.ensureAssignmentGitSupport")) {
+            return;
+        }
+        ensureColumnExists("assignment", "git_commit_message", "ALTER TABLE assignment ADD COLUMN git_commit_message VARCHAR(500) NULL");
+        ensureColumnExists("assignment", "git_commit_pathspec", "ALTER TABLE assignment ADD COLUMN git_commit_pathspec VARCHAR(500) NULL");
+        ensureColumnExists("assignment", "git_last_commit_hash", "ALTER TABLE assignment ADD COLUMN git_last_commit_hash VARCHAR(80) NULL");
+        ensureColumnExists("assignment", "git_last_commit_at", "ALTER TABLE assignment ADD COLUMN git_last_commit_at DATETIME NULL");
+    }
+
     private void ensureDependencySupport() {
         if (!ensureConnection("AssignmentService.ensureDependencySupport")) {
             return;
@@ -745,8 +736,6 @@ public class AssignmentService implements IService<Assignment> {
         }
         statement.setDate(index, Date.valueOf(value));
     }
-<<<<<<< Updated upstream
-=======
 
     private void setNullableString(PreparedStatement statement, int index, String value) throws SQLException {
         if (value == null || value.isBlank()) {
@@ -797,5 +786,4 @@ public class AssignmentService implements IService<Assignment> {
         }
         return assignment.getCurrentUserId() > 0 ? assignment.getCurrentUserId() : assignment.getUserId();
     }
->>>>>>> Stashed changes
 }

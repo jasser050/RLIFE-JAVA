@@ -6,11 +6,13 @@ import com.studyflow.models.Project;
 import com.studyflow.models.User;
 import com.studyflow.services.AiAssignmentGeneratorService;
 import com.studyflow.services.AssignmentService;
+import com.studyflow.services.GitIntegrationService;
 import com.studyflow.services.NotificationService;
 import com.studyflow.services.ProjectService;
 import com.studyflow.utils.CrudViewContext;
 import com.studyflow.utils.PdfExportUtil;
 import com.studyflow.utils.UserSession;
+import javafx.animation.PauseTransition;
 import javafx.collections.FXCollections;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
@@ -29,6 +31,7 @@ import javafx.scene.control.ContextMenu;
 import javafx.scene.control.CustomMenuItem;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
+import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.control.Tooltip;
@@ -38,6 +41,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.util.Duration;
 import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.io.File;
@@ -99,8 +103,10 @@ public class ProjectsController implements Initializable {
     @FXML private Button showEditProjectPanelButton;
     @FXML private Button showDeleteProjectPanelButton;
     @FXML private Button showShareProjectPanelButton;
+    @FXML private Button showGitProjectPanelButton;
     @FXML private Button showProjectStatsPanelButton;
     @FXML private Button openProjectAiWorkspaceButton;
+    @FXML private Button showGitGuidePanelButton;
     @FXML private Button deleteProjectConfirmButton;
     @FXML private VBox projectList;
     @FXML private Label selectedProjectTitleLabel;
@@ -114,11 +120,29 @@ public class ProjectsController implements Initializable {
     @FXML private VBox editProjectPanel;
     @FXML private VBox deleteProjectPanel;
     @FXML private VBox shareProjectPanel;
+    @FXML private VBox gitProjectPanel;
     @FXML private VBox statsProjectPanel;
+    @FXML private VBox gitGuidePanel;
+    @FXML private Label projectGitHintLabel;
+    @FXML private Label projectGitStatusLabel;
+    @FXML private TextField projectGitRepoPathField;
+    @FXML private TextField projectGitRemoteUrlField;
+    @FXML private TextField projectGitBranchField;
+    @FXML private TextField projectGitUsernameField;
+    @FXML private PasswordField projectGitAccessTokenField;
+    @FXML private Button saveProjectGitButton;
+    @FXML private Button initProjectRepoButton;
+    @FXML private Button cloneProjectRepoButton;
+    @FXML private Button pullProjectRepoButton;
+    @FXML private Button refreshProjectGitStatusButton;
+    @FXML private VBox aiLoadingOverlay;
+    @FXML private Label aiLoadingTitleLabel;
+    @FXML private Label aiLoadingSubtitleLabel;
 
     private final ProjectService projectService = new ProjectService();
     private final AssignmentService assignmentService = new AssignmentService();
     private final AiAssignmentGeneratorService aiAssignmentGeneratorService = new AiAssignmentGeneratorService();
+    private final GitIntegrationService gitIntegrationService = new GitIntegrationService();
     private final NotificationService notificationService = new NotificationService();
     private final com.studyflow.services.ServiceUser userService = new com.studyflow.services.ServiceUser();
 
@@ -315,6 +339,16 @@ public class ProjectsController implements Initializable {
     }
 
     @FXML
+    private void handleShowGitProjectPanel() {
+        setActivePanel("GIT");
+    }
+
+    @FXML
+    private void handleShowGitGuidePanel() {
+        setActivePanel("GIT_GUIDE");
+    }
+
+    @FXML
     private void handleShowStatsPanel() {
         setActivePanel("STATS");
     }
@@ -338,9 +372,25 @@ public class ProjectsController implements Initializable {
             showFeedback("Select a project before opening the AI workspace.", true);
             return;
         }
+        if (openProjectAiWorkspaceButton != null) {
+            openProjectAiWorkspaceButton.setDisable(true);
+        }
+        setAiLoadingState(true, "Opening AI workspace", "Preparing the AI workspace for \"" + selectedProject.getTitle() + "\".");
         CrudViewContext.setProjectContext(selectedProject);
         CrudViewContext.rememberProjectSelection(selectedProject.getId());
-        MainController.loadContentInMainArea("views/ProjectAiWorkspace.fxml");
+
+        PauseTransition pause = new PauseTransition(Duration.millis(90));
+        pause.setOnFinished(event -> {
+            try {
+                MainController.loadContentInMainArea("views/ProjectAiWorkspace.fxml");
+            } finally {
+                setAiLoadingState(false, null, null);
+                if (openProjectAiWorkspaceButton != null) {
+                    openProjectAiWorkspaceButton.setDisable(false);
+                }
+            }
+        });
+        pause.play();
     }
 
     @FXML
@@ -574,6 +624,7 @@ public class ProjectsController implements Initializable {
         populateUpdateForm(project);
         populateDeletePanel(project);
         populateSharePanel(project);
+        populateGitProjectPanel(project);
     }
 
     private void showSelectedProjectDetails(Project project) {
@@ -732,6 +783,7 @@ public class ProjectsController implements Initializable {
         showSelectedProjectDetails(null);
         populateDeletePanel(null);
         populateSharePanel(null);
+        populateGitProjectPanel(null);
     }
 
     private void populateDeletePanel(Project project) {
@@ -761,8 +813,6 @@ public class ProjectsController implements Initializable {
         shareProjectButton.setDisable(!enabled);
     }
 
-<<<<<<< Updated upstream
-=======
     private void populateGitProjectPanel(Project project) {
         if (projectGitHintLabel == null
                 || projectGitStatusLabel == null
@@ -816,20 +866,22 @@ public class ProjectsController implements Initializable {
         pullProjectRepoButton.setDisable(!canUseGit);
         refreshProjectGitStatusButton.setDisable(!canUseGit);
     }
-
->>>>>>> Stashed changes
     private void setActivePanel(String panel) {
         activePanel = panel;
         togglePanel(createProjectPanel, "CREATE".equals(panel));
         togglePanel(editProjectPanel, false);
         togglePanel(deleteProjectPanel, false);
         togglePanel(shareProjectPanel, "SHARE".equals(panel));
+        togglePanel(gitProjectPanel, "GIT".equals(panel));
         togglePanel(statsProjectPanel, "STATS".equals(panel));
+        togglePanel(gitGuidePanel, "GIT_GUIDE".equals(panel));
         updatePanelButton(showCreateProjectPanelButton, "CREATE".equals(panel));
         updatePanelButton(showEditProjectPanelButton, false);
         updatePanelButton(showDeleteProjectPanelButton, false);
         updatePanelButton(showShareProjectPanelButton, "SHARE".equals(panel));
+        updatePanelButton(showGitProjectPanelButton, "GIT".equals(panel));
         updatePanelButton(showProjectStatsPanelButton, "STATS".equals(panel));
+        updatePanelButton(showGitGuidePanelButton, "GIT_GUIDE".equals(panel));
     }
 
     private void togglePanel(VBox panel, boolean visible) {
@@ -865,6 +917,7 @@ public class ProjectsController implements Initializable {
         if (createProjectButton != null && autoTriggered) {
             createProjectButton.setDisable(true);
         }
+        setAiLoadingState(true, "Generating assignments", "Building AI task suggestions for \"" + project.getTitle() + "\".");
         showFeedback("Generating AI assignment suggestions for \"" + project.getTitle() + "\"...", false);
 
         Task<List<Assignment>> task = new Task<>() {
@@ -875,6 +928,7 @@ public class ProjectsController implements Initializable {
         };
 
         task.setOnSucceeded(event -> {
+            setAiLoadingState(false, null, null);
             if (generateProjectAiTasksButton != null) {
                 generateProjectAiTasksButton.setDisable(false);
             }
@@ -888,6 +942,7 @@ public class ProjectsController implements Initializable {
         });
 
         task.setOnFailed(event -> {
+            setAiLoadingState(false, null, null);
             if (generateProjectAiTasksButton != null) {
                 generateProjectAiTasksButton.setDisable(false);
             }
@@ -903,10 +958,11 @@ public class ProjectsController implements Initializable {
         thread.start();
     }
 
-<<<<<<< Updated upstream
-=======
     private void setAiLoadingState(boolean loading, String title, String subtitle) {
         if (aiLoadingOverlay != null) {
+            if (loading) {
+                aiLoadingOverlay.toFront();
+            }
             aiLoadingOverlay.setVisible(loading);
             aiLoadingOverlay.setManaged(loading);
         }
@@ -1025,8 +1081,6 @@ public class ProjectsController implements Initializable {
         thread.setDaemon(true);
         thread.start();
     }
-
->>>>>>> Stashed changes
     private boolean validateProjectForm(
             TextField titleField, Label titleError,
             DatePicker startPicker, Label startError,

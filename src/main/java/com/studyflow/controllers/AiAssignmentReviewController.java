@@ -213,6 +213,9 @@ public class AiAssignmentReviewController implements Initializable {
         saveButton.setText(saving ? "Saving..." : SAVE_BUTTON_TEXT);
         suggestionsList.setDisable(saving);
         if (loadingOverlay != null) {
+            if (saving) {
+                loadingOverlay.toFront();
+            }
             loadingOverlay.setVisible(saving);
             loadingOverlay.setManaged(saving);
         }

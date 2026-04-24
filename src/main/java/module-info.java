@@ -14,6 +14,7 @@ module com.studyflow {
 
     requires mysql.connector.j;
     requires jgltf.model;
+    requires org.eclipse.jgit;
     requires org.apache.pdfbox;
     requires jakarta.mail;
     requires com.google.zxing;
@@ -25,6 +26,7 @@ module com.studyflow {
     requires kernel;
     requires layout;
     requires io;
+    requires java.prefs;
 
     opens com.studyflow to javafx.fxml;
     opens com.studyflow.controllers to javafx.fxml;

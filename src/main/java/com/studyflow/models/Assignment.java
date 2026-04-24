@@ -26,6 +26,10 @@ public class Assignment {
     private boolean ownedByCurrentUser;
     private boolean editableByCurrentUser;
     private String ownerName;
+    private String gitCommitMessage;
+    private String gitCommitPathspec;
+    private String gitLastCommitHash;
+    private LocalDateTime gitLastCommitAt;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -199,6 +203,38 @@ public class Assignment {
 
     public void setOwnerName(String ownerName) {
         this.ownerName = ownerName;
+    }
+
+    public String getGitCommitMessage() {
+        return gitCommitMessage;
+    }
+
+    public void setGitCommitMessage(String gitCommitMessage) {
+        this.gitCommitMessage = gitCommitMessage;
+    }
+
+    public String getGitCommitPathspec() {
+        return gitCommitPathspec;
+    }
+
+    public void setGitCommitPathspec(String gitCommitPathspec) {
+        this.gitCommitPathspec = gitCommitPathspec;
+    }
+
+    public String getGitLastCommitHash() {
+        return gitLastCommitHash;
+    }
+
+    public void setGitLastCommitHash(String gitLastCommitHash) {
+        this.gitLastCommitHash = gitLastCommitHash;
+    }
+
+    public LocalDateTime getGitLastCommitAt() {
+        return gitLastCommitAt;
+    }
+
+    public void setGitLastCommitAt(LocalDateTime gitLastCommitAt) {
+        this.gitLastCommitAt = gitLastCommitAt;
     }
 
     public LocalDateTime getCreatedAt() {

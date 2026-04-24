@@ -17,6 +17,13 @@ public class Project {
     private boolean ownedByCurrentUser;
     private String sharedRole;
     private String ownerName;
+    private String gitRepoPath;
+    private String gitRemoteUrl;
+    private String gitDefaultBranch;
+    private String gitUsername;
+    private String gitAccessToken;
+    private String gitLastStatusSummary;
+    private LocalDateTime gitLastSyncAt;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -122,6 +129,62 @@ public class Project {
 
     public void setOwnerName(String ownerName) {
         this.ownerName = ownerName;
+    }
+
+    public String getGitRepoPath() {
+        return gitRepoPath;
+    }
+
+    public void setGitRepoPath(String gitRepoPath) {
+        this.gitRepoPath = gitRepoPath;
+    }
+
+    public String getGitRemoteUrl() {
+        return gitRemoteUrl;
+    }
+
+    public void setGitRemoteUrl(String gitRemoteUrl) {
+        this.gitRemoteUrl = gitRemoteUrl;
+    }
+
+    public String getGitDefaultBranch() {
+        return gitDefaultBranch;
+    }
+
+    public void setGitDefaultBranch(String gitDefaultBranch) {
+        this.gitDefaultBranch = gitDefaultBranch;
+    }
+
+    public String getGitUsername() {
+        return gitUsername;
+    }
+
+    public void setGitUsername(String gitUsername) {
+        this.gitUsername = gitUsername;
+    }
+
+    public String getGitAccessToken() {
+        return gitAccessToken;
+    }
+
+    public void setGitAccessToken(String gitAccessToken) {
+        this.gitAccessToken = gitAccessToken;
+    }
+
+    public String getGitLastStatusSummary() {
+        return gitLastStatusSummary;
+    }
+
+    public void setGitLastStatusSummary(String gitLastStatusSummary) {
+        this.gitLastStatusSummary = gitLastStatusSummary;
+    }
+
+    public LocalDateTime getGitLastSyncAt() {
+        return gitLastSyncAt;
+    }
+
+    public void setGitLastSyncAt(LocalDateTime gitLastSyncAt) {
+        this.gitLastSyncAt = gitLastSyncAt;
     }
 
     public LocalDateTime getCreatedAt() {

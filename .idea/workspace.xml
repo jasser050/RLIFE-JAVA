@@ -1,0 +1,292 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="aef49e16-18eb-4aef-9a6b-0edc463b5109" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/studyflow/api/WellbeingRecommendationsApiServer.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/studyflow/controllers/admin/AdminDashboardController.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/studyflow/controllers/admin/AdminMainController.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/studyflow/controllers/admin/AdminMatieresController.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/studyflow/controllers/admin/AdminSettingsController.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/studyflow/controllers/admin/AdminStatsController.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/studyflow/controllers/admin/AdminUsersController.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/studyflow/controllers/admin/AdminViewFactory.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/resources/com/studyflow/assets/mood/good.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/resources/com/studyflow/assets/mood/great.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/resources/com/studyflow/assets/mood/okay.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/resources/com/studyflow/assets/mood/stressed.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/resources/com/studyflow/assets/mood/tired.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/resources/com/studyflow/views/admin/AdminMainLayout.fxml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/resources/com/studyflow/views/admin/AdminSettings.fxml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/resources/com/studyflow/views/admin/AdminStats.fxml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/resources/com/studyflow/views/captcha.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/LocalServer.class" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/avatars/female-avatar.glb" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/avatars/female-avatar2.glb" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/avatars/female-avatar3.glb" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/avatars/male-avatar.glb" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/avatars/male-avatar1.glb" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/avatars/male-avatar2.glb" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/avatars/male-avatar3.glb" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/avatars/male-avatar4.glb" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/avatars/male-avatar5.glb" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/avatars/male-avatar6.glb" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/avatars/male-avatar7.glb" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/avatars/spline-robot.glb" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/AIGeneratorController.class" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/AdminAIController.class" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/AdminAuditLogController$1.class" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/AdminAuditLogController.class" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/AdminController$1.class" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/AdminController.class" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/AdminDashboardController$1.class" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/AdminDashboardController.class" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/AdminPdfExportController.class" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/AdminStatisticsController$1.class" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/AdminStatisticsController.class" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/AdminUsersController$1.class" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/AdminUsersController$2.class" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/AdminUsersController.class" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/FlashcardsController.class" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/FlashcardsFeaturesController.class" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/ForgotPasswordController.class" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/ProfileController$1.class" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/admin/AdminDashboardController$1.class" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/admin/AdminDashboardController.class" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/admin/AdminMainController.class" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/admin/AdminMatieresController.class" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/admin/AdminRecommendationsController.class" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/admin/AdminSettingsController.class" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/admin/AdminStatsController.class" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/admin/AdminStressQuestionsController.class" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/admin/AdminUsersController.class" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/admin/AdminViewFactory.class" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/images/logo.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/images/spline-robot.jpg" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/models/Assignment$1.class" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/models/Deck.class" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/models/Flashcard.class" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/models/QuestionStress.class" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/models/QuizStress.class" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/models/RecommendationStress.class" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/models/WellBeing.class" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/services/AIFlashcardService.class" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/services/AITranslationService$TranslationResult.class" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/services/AITranslationService.class" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/services/DeckService.class" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/services/FlashcardService.class" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/services/GroqService.class" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/services/ServiceQuestionStress.class" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/services/ServiceQuizStress.class" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/services/ServiceRecommendationStress.class" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/services/ServiceWellBeing.class" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/services/SpeechService.class" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/styles/auth-light.css" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/styles/light-theme.css" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/utils/AvatarCard$1.class" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/utils/AvatarCard.class" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/utils/EmailService$1.class" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/utils/EmailService.class" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/utils/GlbLoader.class" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/utils/GlbTest.class" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/utils/RobotScene3D$1.class" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/utils/RobotScene3D.class" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/utils/SplineRobotPanel$1.class" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/utils/SplineRobotPanel.class" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/views/AIGenerator.fxml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/views/AddDeck.fxml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/views/AdminDashboard.fxml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/views/AdminLayout.fxml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/views/Flashcards.fxml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/views/FlashcardsAddEdit.fxml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/views/ForgotPassword.fxml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/views/admin/AdminAI.fxml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/views/admin/AdminAuditLog.fxml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/views/admin/AdminDashboard.fxml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/views/admin/AdminMainLayout.fxml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/views/admin/AdminMatieres.fxml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/views/admin/AdminPdfExport.fxml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/views/admin/AdminRecommendations.fxml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/views/admin/AdminSettings.fxml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/views/admin/AdminStatistics.fxml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/views/admin/AdminStats.fxml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/views/admin/AdminStressQuestions.fxml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/views/admin/AdminUsers.fxml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/views/avatar-gallery.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/views/face-id-mobile.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/views/face-id.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/views/robot3d.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/views/spline-robot.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/target/classes/com/studyflow/views/spline-robot.jpg" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/studyflow/controllers/AdminController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/studyflow/controllers/AdminController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/studyflow/controllers/AiAssignmentReviewController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/studyflow/controllers/AiAssignmentReviewController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/studyflow/controllers/AssignmentsController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/studyflow/controllers/AssignmentsController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/studyflow/controllers/CoursesController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/studyflow/controllers/CoursesController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/studyflow/controllers/DashboardController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/studyflow/controllers/DashboardController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/studyflow/controllers/LoginController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/studyflow/controllers/LoginController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/studyflow/controllers/MainController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/studyflow/controllers/MainController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/studyflow/controllers/ProjectAiWorkspaceController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/studyflow/controllers/ProjectAiWorkspaceController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/studyflow/controllers/ProjectsController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/studyflow/controllers/ProjectsController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/studyflow/controllers/WellbeingController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/studyflow/controllers/WellbeingController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/studyflow/controllers/admin/AdminRecommendationsController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/studyflow/controllers/admin/AdminRecommendationsController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/studyflow/controllers/admin/AdminStressQuestionsController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/studyflow/controllers/admin/AdminStressQuestionsController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/studyflow/models/Assignment.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/studyflow/models/Assignment.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/studyflow/models/Project.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/studyflow/models/Project.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/studyflow/models/User.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/studyflow/models/User.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/studyflow/services/AssignmentService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/studyflow/services/AssignmentService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/studyflow/services/GroqService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/studyflow/services/GroqService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/studyflow/services/ProjectService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/studyflow/services/ProjectService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/studyflow/services/ServiceCopingSession.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/studyflow/services/ServiceCopingSession.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/studyflow/services/ServiceUser.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/studyflow/services/ServiceUser.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/studyflow/services/ServiceWellbeingJournalEntry.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/studyflow/services/ServiceWellbeingJournalEntry.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/module-info.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/module-info.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/com/studyflow/styles/dark-theme.css" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/com/studyflow/styles/dark-theme.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/com/studyflow/views/Assignments.fxml" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/com/studyflow/views/Assignments.fxml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/com/studyflow/views/Courses.fxml" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/com/studyflow/views/Courses.fxml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/com/studyflow/views/Dashboard.fxml" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/com/studyflow/views/Dashboard.fxml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/com/studyflow/views/Login.fxml" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/com/studyflow/views/Login.fxml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/com/studyflow/views/ProjectAiWorkspace.fxml" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/com/studyflow/views/ProjectAiWorkspace.fxml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/com/studyflow/views/Projects.fxml" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/com/studyflow/views/Projects.fxml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/com/studyflow/views/Wellbeing.fxml" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/com/studyflow/views/Wellbeing.fxml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/com/studyflow/views/admin/AdminMatieres.fxml" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/com/studyflow/views/admin/AdminMatieres.fxml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/com/studyflow/views/admin/AdminRecommendations.fxml" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/com/studyflow/views/admin/AdminRecommendations.fxml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/com/studyflow/views/admin/AdminStressQuestions.fxml" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/com/studyflow/views/admin/AdminStressQuestions.fxml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/.editorconfig" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/App.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/App.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/AssignmentsController$AssignmentData.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/AssignmentsController.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/AssignmentsController.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/CourseCardController.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/CourseCardController.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/CoursesController.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/CoursesController.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/DashboardController.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/DashboardController.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/LoginController.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/LoginController.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/MainController.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/MainController.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/NotesController$FolderData.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/NotesController$FolderData.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/NotesController$NoteData.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/NotesController$NoteData.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/NotesController.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/NotesController.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/PlanningController$EventData.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/PlanningController$EventData.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/PlanningController.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/PlanningController.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/ProfileController.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/ProfileController.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/ProjectsController$ProjectData.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/ProjectsController$TaskData.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/ProjectsController.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/ProjectsController.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/RegisterController.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/RegisterController.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/RevisionsController.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/RevisionsController.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/WellbeingController$HabitData.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/WellbeingController$HabitData.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/WellbeingController$MindfulnessSession.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/WellbeingController$MindfulnessSession.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/WellbeingController$MoodEntry.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/WellbeingController$MoodEntry.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/WellbeingController$SleepEntry.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/WellbeingController$SleepEntry.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/WellbeingController.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/WellbeingController.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/models/Assignment$Priority.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/models/Assignment$Status.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/models/Assignment.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/models/Assignment.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/models/User.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/models/User.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/services/ServiceUser.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/services/ServiceUser.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/styles/dark-theme.css" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/styles/dark-theme.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/utils/MyDataBase.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/utils/MyDataBase.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/views/Assignments.fxml" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/views/Assignments.fxml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/views/Courses.fxml" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/views/Courses.fxml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/views/Dashboard.fxml" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/views/Dashboard.fxml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/views/Landing.fxml" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/views/Landing.fxml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/views/Login.fxml" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/views/Login.fxml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/views/MainLayout.fxml" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/views/MainLayout.fxml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/views/Profile.fxml" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/views/Profile.fxml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/views/Projects.fxml" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/views/Projects.fxml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/views/Register.fxml" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/views/Register.fxml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/views/Revisions.fxml" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/views/Revisions.fxml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/views/Wellbeing.fxml" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/views/Wellbeing.fxml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/views/spline.html" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/views/spline.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/module-info.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/module-info.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/maven-status/maven-compiler-plugin/compile/default-compile/createdFiles.lst" beforeDir="false" afterPath="$PROJECT_DIR$/target/maven-status/maven-compiler-plugin/compile/default-compile/createdFiles.lst" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/maven-status/maven-compiler-plugin/compile/default-compile/inputFiles.lst" beforeDir="false" afterPath="$PROJECT_DIR$/target/maven-status/maven-compiler-plugin/compile/default-compile/inputFiles.lst" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="CopilotPersistence">
+    <persistenceIdMap>
+      <entry key="_C:/Users/User/Desktop/RLIFE-JAVA-main-git-new/RLIFE-JAVA-main" value="3C5fnelQbuMwDVA4CpbZSaezjzi" />
+    </persistenceIdMap>
+  </component>
+  <component name="EmbeddingIndexingInfo">
+    <option name="cachedIndexableFilesCount" value="222" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="McpProjectServerCommands">
+    <commands />
+    <urls />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 4
+}</component>
+  <component name="ProjectId" id="3C5fnelQbuMwDVA4CpbZSaezjzi" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Maven.StudyFlow.executor": "Run",
+    "Maven.studyflow-javafx [org.openjfx:javafx-maven-plugin:0.0.8:run].executor": "Run",
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.MCP Project settings loaded": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "Merging projects",
+    "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "C:/Users/asus-/OneDrive/Bureau/studyflow-javafx",
+    "settings.editor.selected.configurable": "build.tools"
+  }
+}]]></component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-jdk-30f59d01ecdd-2fc7cc6b9a17-intellij.indexing.shared.core-IU-253.31033.145" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="aef49e16-18eb-4aef-9a6b-0edc463b5109" name="Changes" comment="" />
+      <created>1775680519561</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1775680519561</updated>
+    </task>
+    <servers />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="XSLT-Support.FileAssociations.UIState">
+    <expand />
+    <select />
+  </component>
+  <component name="github-copilot-workspace">
+    <instructionFileLocations>
+      <option value=".github/instructions" />
+      <option value=".github/instructions" />
+    </instructionFileLocations>
+    <promptFileLocations>
+      <option value=".github/prompts" />
+    </promptFileLocations>
+  </component>
+</project>

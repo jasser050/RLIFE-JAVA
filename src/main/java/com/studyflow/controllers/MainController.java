@@ -16,6 +16,7 @@ import javafx.fxml.Initializable;
 import javafx.scene.Parent;
 import javafx.scene.control.Button;
 import javafx.scene.control.ContextMenu;
+import javafx.scene.layout.Priority;
 import javafx.scene.control.CustomMenuItem;
 import javafx.scene.control.Label;
 import javafx.scene.control.SeparatorMenuItem;
@@ -243,6 +244,16 @@ public class MainController implements Initializable {
             contentArea.getChildren().clear();
             contentArea.getChildren().add(content);
         } catch (IOException e) {
+            VBox errorBox = new VBox(10);
+            errorBox.setFillWidth(true);
+            Label title = new Label("This section could not be opened.");
+            title.setStyle("-fx-text-fill: #F8FAFC; -fx-font-size: 22px; -fx-font-weight: 700;");
+            Label detail = new Label("Failed to load " + fxmlPath + ". Check the console for the full error.");
+            detail.setWrapText(true);
+            detail.setStyle("-fx-text-fill: #CBD5E1; -fx-font-size: 14px;");
+            errorBox.getChildren().addAll(title, detail);
+            VBox.setVgrow(errorBox, Priority.ALWAYS);
+            contentArea.getChildren().setAll(errorBox);
             e.printStackTrace();
         }
     }

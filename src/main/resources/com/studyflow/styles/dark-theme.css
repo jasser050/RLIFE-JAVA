@@ -3455,6 +3455,373 @@
     -fx-font-weight: 600;
 }
 
+/* Blue accent glow bottom-left */
+.profile-glow-orb-blue {
+    -fx-background-color: radial-gradient(center 50% 50%, radius 50%, rgba(79,70,229,0.35) 0%, transparent 100%);
+    -fx-pref-width: 220;
+    -fx-pref-height: 220;
+    -fx-min-width: 220;
+    -fx-min-height: 220;
+}
+
+/* Horizontal accent shimmer line at bottom of banner */
+.profile-hero-accent-line {
+    -fx-background-color: linear-gradient(to right, transparent, rgba(139,92,246,0.6), rgba(167,139,250,0.4), rgba(96,165,250,0.3), transparent);
+    -fx-pref-height: 1;
+    -fx-min-height: 1;
+    -fx-max-height: 1;
+    -fx-pref-width: 99999;
+}
+
+/* Vivid stat chips */
+.profile-chip-vivid-purple {
+    -fx-background-color: rgba(139,92,246,0.18);
+    -fx-border-color: rgba(139,92,246,0.4);
+    -fx-effect: dropshadow(gaussian, rgba(139,92,246,0.2), 10, 0, 0, 3);
+}
+.profile-chip-vivid-blue {
+    -fx-background-color: rgba(59,130,246,0.18);
+    -fx-border-color: rgba(59,130,246,0.4);
+    -fx-effect: dropshadow(gaussian, rgba(59,130,246,0.2), 10, 0, 0, 3);
+}
+.profile-chip-vivid-green {
+    -fx-background-color: rgba(16,185,129,0.18);
+    -fx-border-color: rgba(16,185,129,0.4);
+    -fx-effect: dropshadow(gaussian, rgba(16,185,129,0.2), 10, 0, 0, 3);
+}
+.profile-chip-vivid-yellow {
+    -fx-background-color: rgba(251,191,36,0.18);
+    -fx-border-color: rgba(251,191,36,0.4);
+    -fx-effect: dropshadow(gaussian, rgba(251,191,36,0.2), 10, 0, 0, 3);
+}
+
+/* Float badge (Online) on banner */
+.profile-float-badge {
+    -fx-background-color: rgba(0,0,0,0.32);
+    -fx-border-color: rgba(255,255,255,0.22);
+    -fx-border-width: 1;
+    -fx-border-radius: 100;
+    -fx-background-radius: 100;
+    -fx-padding: 6 14;
+}
+.profile-float-badge-text {
+    -fx-text-fill: white;
+    -fx-font-size: 12px;
+    -fx-font-weight: 600;
+}
+
+/* Green check badge */
+.profile-check-badge {
+    -fx-background-color: linear-gradient(to right, #22C55E, #16A34A);
+    -fx-background-radius: 100;
+    -fx-pref-width: 26; -fx-pref-height: 26;
+    -fx-min-width: 26;  -fx-min-height: 26;
+    -fx-border-color: #0F172A;
+    -fx-border-width: 2;
+    -fx-border-radius: 100;
+}
+
+/* Info pills on banner */
+.profile-info-pill {
+    -fx-border-radius: 100;
+    -fx-background-radius: 100;
+    -fx-padding: 6 14;
+}
+.profile-pill-dark {
+    -fx-background-color: rgba(0,0,0,0.3);
+    -fx-border-color: rgba(255,255,255,0.18);
+    -fx-border-width: 1;
+}
+.profile-pill-purple {
+    -fx-background-color: rgba(139,92,246,0.28);
+    -fx-border-color: rgba(139,92,246,0.5);
+    -fx-border-width: 1;
+}
+.profile-pill-text {
+    -fx-font-size: 13px;
+    -fx-text-fill: #94A3B8;
+}
+.profile-pill-text-purple {
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #DDD6FE;
+}
+
+.profile-bio-text {
+    -fx-font-size: 14px;
+    -fx-text-fill: #CBD5E1;
+    -fx-wrap-text: true;
+    -fx-max-width: 500;
+}
+
+/* Avatar edit overlay */
+.avatar-edit-overlay {
+    -fx-background-color: rgba(139, 92, 246, 0.7);
+    -fx-background-radius: 50;
+    -fx-opacity: 0;
+    -fx-pref-width: 100;
+    -fx-pref-height: 100;
+    -fx-max-width: 100;
+    -fx-max-height: 100;
+}
+.profile-avatar-ring:hover .avatar-edit-overlay {
+    -fx-opacity: 1;
+}
+
+/* Active account green badge */
+.profile-active-badge {
+    -fx-background-color: linear-gradient(to right, #10B981, #059669);
+    -fx-background-radius: 100;
+    -fx-padding: 8 18;
+    -fx-max-width: 170;
+    -fx-effect: dropshadow(gaussian, rgba(16,185,129,0.45), 12, 0, 0, 3);
+}
+.profile-active-dot {
+    -fx-background-color: white;
+    -fx-background-radius: 100;
+    -fx-pref-width: 7; -fx-pref-height: 7;
+    -fx-min-width: 7;  -fx-min-height: 7;
+    -fx-effect: dropshadow(gaussian, white, 4, 0.8, 0, 0);
+}
+.profile-active-label {
+    -fx-text-fill: white;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+}
+
+/* Gradient Stat Cards */
+.profile-grad-card {
+    -fx-border-radius: 16;
+    -fx-background-radius: 16;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.4), 14, 0, 0, 5);
+    -fx-cursor: hand;
+}
+.profile-grad-purple {
+    -fx-background-color: linear-gradient(to bottom right, #4F46E5, #7C3AED, #6D28D9);
+}
+.profile-grad-pink {
+    -fx-background-color: linear-gradient(to bottom right, #EC4899, #F43F5E, #DB2777);
+}
+.profile-grad-violet {
+    -fx-background-color: linear-gradient(to bottom right, #7C3AED, #9333EA, #A855F7);
+}
+.profile-grad-value {
+    -fx-font-size: 34px;
+    -fx-font-weight: bold;
+    -fx-text-fill: white;
+}
+.profile-grad-label {
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+    -fx-text-fill: rgba(255,255,255,0.82);
+}
+.profile-grad-icon {
+    -fx-background-color: rgba(255,255,255,0.18);
+    -fx-background-radius: 14;
+    -fx-pref-width: 54; -fx-pref-height: 54;
+    -fx-min-width: 54;  -fx-min-height: 54;
+}
+
+/* ============================================
+   ACCESSIBILITY / SETTINGS
+   ============================================ */
+
+/* Theme Buttons */
+.theme-btn {
+    -fx-padding: 18 12;
+    -fx-background-radius: 14;
+    -fx-border-radius: 14;
+    -fx-background-color: #0F172A;
+    -fx-border-color: #1E293B;
+    -fx-border-width: 2;
+    -fx-text-fill: transparent;
+    -fx-font-size: 0;
+    -fx-cursor: hand;
+    -fx-content-display: graphic-only;
+}
+.theme-btn:hover {
+    -fx-background-color: #1E293B;
+    -fx-border-color: #334155;
+}
+.theme-btn.active {
+    -fx-background-color: rgba(139,92,246,0.12);
+    -fx-border-color: #8B5CF6;
+}
+.theme-icon-circle {
+    -fx-background-color: #1E293B;
+    -fx-background-radius: 100;
+    -fx-pref-width: 44;
+    -fx-pref-height: 44;
+    -fx-min-width: 44;
+    -fx-min-height: 44;
+    -fx-alignment: center;
+}
+.theme-btn.active .theme-icon-circle {
+    -fx-background-color: #8B5CF6;
+}
+.theme-btn .ikonli-font-icon {
+    -fx-icon-color: #64748B;
+}
+.theme-btn.active .ikonli-font-icon {
+    -fx-icon-color: white;
+}
+.theme-btn-label {
+    -fx-text-fill: #94A3B8;
+    -fx-font-size: 12px;
+    -fx-font-weight: 600;
+}
+.theme-btn.active .theme-btn-label {
+    -fx-text-fill: #A78BFA;
+}
+
+/* Font Size Preview */
+.font-size-preview {
+    -fx-font-size: 12px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #8B5CF6;
+    -fx-padding: 4 12;
+    -fx-background-radius: 8;
+    -fx-background-color: rgba(139,92,246,0.15);
+}
+
+/* Font Size Slider */
+.font-size-slider .track {
+    -fx-background-color: rgba(139,92,246,0.2);
+    -fx-background-radius: 6;
+    -fx-pref-height: 6;
+}
+.font-size-slider .thumb {
+    -fx-background-color: #8B5CF6;
+    -fx-background-radius: 100;
+    -fx-pref-width: 20;
+    -fx-pref-height: 20;
+    -fx-effect: dropshadow(gaussian, rgba(139,92,246,0.5), 8, 0, 0, 2);
+    -fx-cursor: hand;
+}
+.font-size-slider .thumb:hover {
+    -fx-background-color: #A78BFA;
+    -fx-effect: dropshadow(gaussian, rgba(139,92,246,0.7), 12, 0, 0, 2);
+}
+
+/* Font Size Tick Labels */
+.font-size-tick-label {
+    -fx-font-weight: 600;
+    -fx-text-fill: #475569;
+}
+
+/* Accent Color Picker */
+.accent-color-btn {
+    -fx-background-radius: 10;
+    -fx-border-radius: 10;
+    -fx-border-width: 3;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 4, 0, 0, 2);
+}
+.accent-color-btn:hover {
+    -fx-opacity: 0.85;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.5), 8, 0, 0, 2);
+}
+.accent-color-btn.accent-active {
+    -fx-border-color: white;
+    -fx-effect: dropshadow(gaussian, rgba(255,255,255,0.3), 10, 0, 0, 0);
+    -fx-scale-x: 1.1;
+    -fx-scale-y: 1.1;
+}
+
+/* Toggle Cards */
+.toggle-card {
+    -fx-background-color: #0F172A;
+    -fx-border-color: #1E293B;
+    -fx-border-width: 1;
+    -fx-border-radius: 14;
+    -fx-background-radius: 14;
+    -fx-padding: 18;
+}
+.toggle-card:hover {
+    -fx-border-color: #334155;
+}
+.toggle-icon {
+    -fx-background-color: linear-gradient(to bottom right, #A855F7, #EC4899);
+    -fx-background-radius: 10;
+    -fx-pref-width: 38;
+    -fx-pref-height: 38;
+    -fx-min-width: 38;
+    -fx-min-height: 38;
+}
+.toggle-icon-contrast {
+    -fx-background-color: linear-gradient(to bottom right, #3B82F6, #06B6D4);
+    -fx-background-radius: 10;
+    -fx-pref-width: 38;
+    -fx-pref-height: 38;
+    -fx-min-width: 38;
+    -fx-min-height: 38;
+}
+.toggle-title {
+    -fx-font-size: 14px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #F8FAFC;
+}
+.toggle-subtitle {
+    -fx-font-size: 12px;
+    -fx-text-fill: #64748B;
+}
+
+/* Toggle Switch (CheckBox styled) */
+.toggle-switch {
+    -fx-font-size: 14px;
+}
+.toggle-switch .box {
+    -fx-background-color: #334155;
+    -fx-border-color: #475569;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-padding: 4;
+    -fx-pref-width: 20;
+    -fx-pref-height: 20;
+}
+.toggle-switch:selected .box {
+    -fx-background-color: #8B5CF6;
+    -fx-border-color: #A78BFA;
+}
+.toggle-switch .mark {
+    -fx-background-color: white;
+}
+
+/* Font Family Buttons */
+.font-family-btn {
+    -fx-background-color: #0F172A;
+    -fx-border-color: #1E293B;
+    -fx-border-width: 2;
+    -fx-border-radius: 14;
+    -fx-background-radius: 14;
+    -fx-padding: 14 8;
+    -fx-cursor: hand;
+    -fx-content-display: graphic-only;
+}
+.font-family-btn:hover {
+    -fx-background-color: #1E293B;
+    -fx-border-color: #334155;
+}
+.font-family-btn.font-active {
+    -fx-background-color: rgba(139,92,246,0.12);
+    -fx-border-color: #8B5CF6;
+}
+.font-family-name {
+    -fx-font-size: 11px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #64748B;
+}
+.font-family-btn.font-active .font-family-name {
+    -fx-text-fill: #A78BFA;
+}
+
+/* Accent Default Reset Button */
+.accent-default-btn {
+    -fx-background-color: #1E293B;
+    -fx-border-color: #334155;
+    -fx-border-style: dashed;
+}
+
 .btn-danger-outline {
     -fx-background-color: transparent;
     -fx-border-color: rgba(244,63,94,0.35);
@@ -3491,6 +3858,450 @@
     -fx-background-color: linear-gradient(to bottom right, #A78BFA, #8B5CF6);
 }
 
+/* Face ID & secondary button */
+.auth-btn-secondary {
+    -fx-background-color: linear-gradient(to right, rgba(139,92,246,0.12), rgba(124,58,237,0.08));
+    -fx-border-color: #8B5CF6;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+    -fx-effect: dropshadow(gaussian, rgba(139,92,246,0.15), 8, 0, 0, 2);
+    -fx-text-fill: #94A3B8;
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-padding: 14 0;
+    -fx-cursor: hand;
+}
+.auth-btn-secondary:hover {
+    -fx-background-color: linear-gradient(to right, rgba(139,92,246,0.25), rgba(124,58,237,0.16));
+    -fx-border-color: #A78BFA;
+    -fx-text-fill: white;
+    -fx-effect: dropshadow(gaussian, rgba(139,92,246,0.45), 16, 0, 0, 5);
+}
+.auth-btn-secondary .ikonli-font-icon {
+    -fx-icon-color: #8B5CF6;
+}
+
+/* Google Sign-In button */
+.auth-btn-google {
+    -fx-background-color: linear-gradient(to right, rgba(66,133,244,0.15), rgba(234,67,53,0.10));
+    -fx-border-color: #4285F4;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+    -fx-text-fill: #E2E8F0;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-padding: 13 24;
+    -fx-cursor: hand;
+    -fx-graphic-text-gap: 10;
+    -fx-effect: dropshadow(gaussian, rgba(66,133,244,0.15), 8, 0, 0, 2);
+}
+.auth-btn-google:hover {
+    -fx-background-color: linear-gradient(to right, rgba(66,133,244,0.28), rgba(234,67,53,0.18));
+    -fx-border-color: #5A9BF6;
+    -fx-text-fill: white;
+    -fx-effect: dropshadow(gaussian, rgba(66,133,244,0.45), 16, 0, 0, 5);
+}
+.auth-btn-google .ikonli-font-icon {
+    -fx-icon-color: #4285F4;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   REGISTRATION WIZARD STEPS
+   ══════════════════════════════════════════════════════════════════ */
+
+.wizard-step-row {
+    -fx-padding: 0 8;
+}
+
+.wizard-step {
+    -fx-min-width: 64;
+    -fx-pref-width: 64;
+    -fx-alignment: CENTER;
+}
+
+/* Step circle — default (inactive) */
+.wizard-step-circle {
+    -fx-pref-width: 36;  -fx-pref-height: 36;
+    -fx-min-width: 36;   -fx-min-height: 36;
+    -fx-background-color: #1E293B;
+    -fx-background-radius: 100;
+    -fx-border-color: #334155;
+    -fx-border-width: 2;
+    -fx-border-radius: 100;
+    -fx-alignment: CENTER;
+}
+
+.wizard-step-circle .label,
+.wizard-step-num {
+    -fx-text-fill: #64748B;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+}
+
+/* Active step */
+.wizard-step-circle.wizard-step-active {
+    -fx-background-color: linear-gradient(to bottom right, #8B5CF6, #6D28D9);
+    -fx-border-color: transparent;
+    -fx-effect: dropshadow(gaussian, rgba(139,92,246,0.65), 14, 0, 0, 2);
+}
+.wizard-step-circle.wizard-step-active .label,
+.wizard-step-circle.wizard-step-active .wizard-step-num {
+    -fx-text-fill: white;
+}
+
+/* Completed step — green with tick */
+.wizard-step-circle.wizard-step-done {
+    -fx-background-color: linear-gradient(to bottom right, #22C55E, #16A34A);
+    -fx-border-color: transparent;
+}
+.wizard-step-circle.wizard-step-done .label,
+.wizard-step-circle.wizard-step-done .wizard-step-num {
+    -fx-text-fill: white;
+    -fx-font-size: 13px;
+}
+
+/* Step labels */
+.wizard-step-label {
+    -fx-font-size: 11px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #475569;
+    -fx-text-alignment: CENTER;
+}
+.wizard-step-label-active {
+    -fx-text-fill: #A78BFA;
+}
+.wizard-step-label-done {
+    -fx-text-fill: #34D399;
+}
+
+/* Connector line between steps */
+.wizard-connector {
+    -fx-pref-height: 2;
+    -fx-min-height: 2;
+    -fx-max-height: 2;
+    -fx-background-color: #334155;
+    -fx-pref-width: 48;
+    -fx-min-width: 28;
+    -fx-alignment: CENTER;
+    -fx-translate-y: -14;
+}
+.wizard-connector-done {
+    -fx-background-color: #22C55E;
+}
+
+/* WebView card (avatar gallery + face-id) */
+.wizard-webview-card {
+    -fx-background-color: rgba(255,255,255,0.03);
+    -fx-border-color: rgba(255,255,255,0.08);
+    -fx-border-width: 1;
+    -fx-border-radius: 16;
+    -fx-background-radius: 16;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.4), 20, 0, 0, 6);
+    -fx-overflow: hidden;
+}
+
+/* Avatar selection preview row */
+.wizard-avatar-preview {
+    -fx-background-color: rgba(34,197,94,0.08);
+    -fx-border-color: rgba(34,197,94,0.3);
+    -fx-border-width: 1;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+    -fx-padding: 12 16;
+}
+
+.wizard-avatar-mini {
+    -fx-background-color: linear-gradient(to bottom right, #8B5CF6, #6D28D9);
+    -fx-background-radius: 100;
+    -fx-pref-width: 48;  -fx-pref-height: 48;
+    -fx-min-width: 48;   -fx-min-height: 48;
+}
+
+.wizard-avatar-name {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #E2E8F0;
+}
+
+/* ============================================
+   PROFILE HERO — CLEAN FINAL OVERRIDES
+   These rules are last in the file so they win.
+   ============================================ */
+
+/* Avatar ring — indigo→purple→pink, NO green at all */
+.profile-avatar-ring {
+    -fx-background-color: linear-gradient(to bottom right, #6366F1, #8B5CF6, #EC4899);
+    -fx-background-radius: 100;
+    -fx-padding: 3;
+    -fx-pref-width: 108; -fx-pref-height: 108;
+    -fx-min-width: 108;  -fx-min-height: 108;
+    -fx-effect: dropshadow(gaussian, rgba(139,92,246,0.75), 22, 0, 0, 0);
+}
+
+/* Dark fill inside ring */
+.profile-avatar-inner {
+    -fx-background-color: #0F172A;
+    -fx-background-radius: 100;
+    -fx-pref-width: 102; -fx-pref-height: 102;
+    -fx-min-width: 102;  -fx-min-height: 102;
+}
+
+/* Initials / emoji text */
+.profile-avatar-text {
+    -fx-font-size: 32px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #A78BFA;
+}
+
+/* Online dot in profile float badge */
+.profile-online-dot {
+    -fx-background-color: #10B981;
+    -fx-background-radius: 100;
+    -fx-pref-width: 7; -fx-pref-height: 7;
+    -fx-min-width: 7;  -fx-min-height: 7;
+}
+
+/* Purple bottom-left glow — replaces the blue/green orb */
+.profile-glow-orb-purple {
+    -fx-background-color: radial-gradient(center 50% 50%, radius 50%, rgba(109,40,217,0.3) 0%, transparent 100%);
+    -fx-pref-width: 180; -fx-pref-height: 180;
+    -fx-min-width: 180;  -fx-min-height: 180;
+}
+
+/* ── Final definitive avatar ring — bigger for 3D avatar ── */
+.profile-avatar-ring {
+    -fx-background-color: linear-gradient(to bottom right, #6366F1, #8B5CF6, #EC4899);
+    -fx-background-radius: 100;
+    -fx-padding: 4;
+    -fx-pref-width: 150; -fx-pref-height: 150;
+    -fx-min-width: 150;  -fx-min-height: 150;
+    -fx-effect: dropshadow(gaussian, rgba(139,92,246,0.85), 30, 0, 0, 0);
+}
+.profile-avatar-inner {
+    -fx-background-color: #0F172A;
+    -fx-background-radius: 100;
+    -fx-pref-width: 142; -fx-pref-height: 142;
+    -fx-min-width: 142;  -fx-min-height: 142;
+}
+.profile-avatar-text {
+    -fx-font-size: 42px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #A78BFA;
+}
+
+/* ── Avatar gallery scroll + flow ──────────────────────────────────── */
+.wizard-avatar-scroll {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+    -fx-border-color: #1E293B;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+}
+.wizard-avatar-scroll > .viewport {
+    -fx-background-color: transparent;
+}
+.wizard-avatar-flow {
+    -fx-background-color: transparent;
+    -fx-alignment: TOP_LEFT;
+}
+
+/* ── AvatarCard base ─────────────────────────────────────────────── */
+.av-card {
+    -fx-background-color: #1E293B;
+    -fx-background-radius: 14;
+    -fx-border-color: #334155;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 14;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.25), 8, 0, 0, 2);
+    -fx-padding: 8 8 10 8;
+}
+.av-card:hover {
+    -fx-background-color: #263245;
+    -fx-border-color: #6366F1;
+    -fx-effect: dropshadow(gaussian, rgba(99,102,241,0.35), 14, 0, 0, 0);
+}
+.av-card-selected {
+    -fx-background-color: #1a1f3a;
+    -fx-border-color: #8B5CF6;
+    -fx-border-width: 2;
+    -fx-effect: dropshadow(gaussian, rgba(139,92,246,0.5), 18, 0, 0, 0);
+}
+
+/* ── AvatarCard name label ───────────────────────────────────────── */
+.av-card-name {
+    -fx-text-fill: #CBD5E1;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-alignment: CENTER;
+}
+
+/* ── Gender pills ────────────────────────────────────────────────── */
+.av-card-pill {
+    -fx-font-size: 9px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 20;
+    -fx-padding: 2 8 2 8;
+    -fx-alignment: CENTER;
+}
+.av-pill-male {
+    -fx-background-color: rgba(99,102,241,0.2);
+    -fx-text-fill: #818CF8;
+    -fx-border-color: rgba(99,102,241,0.4);
+    -fx-border-radius: 20;
+    -fx-border-width: 1;
+}
+.av-pill-female {
+    -fx-background-color: rgba(236,72,153,0.2);
+    -fx-text-fill: #F472B6;
+    -fx-border-color: rgba(236,72,153,0.4);
+    -fx-border-radius: 20;
+    -fx-border-width: 1;
+}
+
+/* ── Selection check badge (top-right corner) ────────────────────── */
+.av-card-check {
+    -fx-background-color: #8B5CF6;
+    -fx-background-radius: 20;
+    -fx-text-fill: white;
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+    -fx-padding: 2 5 2 5;
+    -fx-effect: dropshadow(gaussian, rgba(139,92,246,0.6), 6, 0, 0, 0);
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   MARKETING RIGHT PANEL
+   ══════════════════════════════════════════════════════════════════ */
+
+/* Decorative background orbs */
+.mrkt-orb-tr {
+    -fx-background-color: radial-gradient(center 50% 50%, radius 50%,
+        rgba(139,92,246,0.28) 0%, rgba(99,102,241,0.10) 45%, transparent 70%);
+    -fx-pref-width: 320; -fx-pref-height: 320;
+    -fx-min-width:  320; -fx-min-height:  320;
+    -fx-translate-x: 100; -fx-translate-y: -100;
+}
+.mrkt-orb-bl {
+    -fx-background-color: radial-gradient(center 50% 50%, radius 50%,
+        rgba(236,72,153,0.20) 0%, rgba(139,92,246,0.08) 45%, transparent 70%);
+    -fx-pref-width: 260; -fx-pref-height: 260;
+    -fx-min-width:  260; -fx-min-height:  260;
+    -fx-translate-x: -80; -fx-translate-y: 80;
+}
+
+/* Top pill badge */
+.mrkt-pill {
+    -fx-background-color: rgba(139,92,246,0.16);
+    -fx-border-color: rgba(139,92,246,0.40);
+    -fx-border-width: 1;
+    -fx-border-radius: 100;
+    -fx-background-radius: 100;
+    -fx-text-fill: #C4B5FD;
+    -fx-font-size: 11.5px;
+    -fx-font-weight: bold;
+    -fx-padding: 6 18 6 18;
+    -fx-effect: dropshadow(gaussian, rgba(139,92,246,0.20), 10, 0, 0, 0);
+}
+.mrkt-pill-green {
+    -fx-background-color: rgba(16,185,129,0.14);
+    -fx-border-color: rgba(16,185,129,0.35);
+    -fx-text-fill: #6EE7B7;
+}
+
+/* Headline */
+.mrkt-h1 {
+    -fx-font-size: 40px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #F8FAFC;
+    -fx-alignment: CENTER;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.6), 8, 0, 0, 2);
+}
+.mrkt-h1-purple {
+    -fx-text-fill: #A78BFA;
+    -fx-effect: dropshadow(gaussian, rgba(139,92,246,0.50), 18, 0, 0, 0);
+}
+
+/* Subtitle */
+.mrkt-sub {
+    -fx-text-fill: #94A3B8;
+    -fx-font-size: 13.5px;
+    -fx-alignment: CENTER;
+}
+
+/* Feature cards */
+.mrkt-card {
+    -fx-background-color: rgba(15,23,42,0.55);
+    -fx-background-radius: 14;
+    -fx-border-color: rgba(139,92,246,0.14);
+    -fx-border-width: 1;
+    -fx-border-radius: 14;
+    -fx-padding: 11 14 11 14;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.30), 10, 0, 0, 3);
+}
+.mrkt-card:hover {
+    -fx-background-color: rgba(30,41,59,0.70);
+    -fx-border-color: rgba(139,92,246,0.30);
+    -fx-effect: dropshadow(gaussian, rgba(139,92,246,0.18), 14, 0, 0, 0);
+}
+
+/* Icon circles */
+.mrkt-ic {
+    -fx-background-radius: 100;
+    -fx-background-color: linear-gradient(to bottom right, #7C3AED, #6366F1);
+    -fx-effect: dropshadow(gaussian, rgba(124,58,237,0.45), 10, 0, 0, 0);
+}
+.mrkt-ic-purple { -fx-background-color: linear-gradient(to bottom right, #7C3AED, #6366F1); }
+.mrkt-ic-blue   { -fx-background-color: linear-gradient(to bottom right, #1D4ED8, #0891B2);
+                  -fx-effect: dropshadow(gaussian, rgba(14,165,233,0.40), 10, 0, 0, 0); }
+.mrkt-ic-pink   { -fx-background-color: linear-gradient(to bottom right, #BE185D, #7C3AED);
+                  -fx-effect: dropshadow(gaussian, rgba(236,72,153,0.40), 10, 0, 0, 0); }
+.mrkt-ic-teal   { -fx-background-color: linear-gradient(to bottom right, #0F766E, #059669);
+                  -fx-effect: dropshadow(gaussian, rgba(20,184,166,0.40), 10, 0, 0, 0); }
+
+/* Icon color */
+.mrkt-ico { -fx-icon-color: white; }
+
+/* Feature card text */
+.mrkt-card-title {
+    -fx-text-fill: #E2E8F0;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+}
+.mrkt-card-sub {
+    -fx-text-fill: #64748B;
+    -fx-font-size: 11px;
+}
+
+/* Gradient divider */
+.mrkt-rule {
+    -fx-background-color: linear-gradient(to right,
+        transparent 0%, rgba(139,92,246,0.50) 30%,
+        rgba(139,92,246,0.50) 70%, transparent 100%);
+}
+
+/* Stats */
+.mrkt-sn {
+    -fx-text-fill: #A78BFA;
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+    -fx-alignment: CENTER;
+    -fx-effect: dropshadow(gaussian, rgba(139,92,246,0.40), 8, 0, 0, 0);
+}
+.mrkt-sl {
+    -fx-text-fill: #475569;
+    -fx-font-size: 10.5px;
+    -fx-alignment: CENTER;
+}
+.mrkt-sep {
+    -fx-background-color: rgba(139,92,246,0.22);
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   ADMIN TABLE STYLING
+   ══════════════════════════════════════════════════════════════════ */
 .admin-table {
     -fx-background-color: transparent;
     -fx-table-cell-border-color: #1E293B;
@@ -3528,21 +4339,21 @@
 }
 
 .default-color0.chart-bar {
-    -fx-bar-fill: linear-gradient(to top, #6D28D9, #A78BFA);
+    -fx-bar-fill: #8B5CF6;
     -fx-background-radius: 6 6 0 0;
     -fx-border-color: transparent;
     -fx-effect: dropshadow(gaussian, rgba(139, 92, 246, 0.25), 6, 0, 0, 2);
 }
 
 .default-color1.chart-bar {
-    -fx-bar-fill: linear-gradient(to top, #059669, #34D399);
+    -fx-bar-fill: #10B981;
     -fx-background-radius: 6 6 0 0;
     -fx-border-color: transparent;
     -fx-effect: dropshadow(gaussian, rgba(16, 185, 129, 0.25), 6, 0, 0, 2);
 }
 
 .default-color2.chart-bar {
-    -fx-bar-fill: linear-gradient(to top, #D97706, #FCD34D);
+    -fx-bar-fill: #F59E0B;
     -fx-background-radius: 6 6 0 0;
     -fx-border-color: transparent;
 }
@@ -4250,4 +5061,56 @@
 .wellbeing-kpi-label {
     -fx-text-fill: #94A3B8;
     -fx-font-size: 14px;
+}
+
+/* ============================================
+   AI Loading Overlay
+   ============================================ */
+
+.ai-loading-overlay {
+    -fx-background-color: rgba(2, 6, 23, 0.72);
+    -fx-padding: 24;
+}
+
+.ai-loading-card {
+    -fx-background-color: rgba(30, 41, 59, 0.96);
+    -fx-background-radius: 28;
+    -fx-border-color: rgba(96, 165, 250, 0.32);
+    -fx-border-width: 1;
+    -fx-border-radius: 28;
+    -fx-padding: 28 36 26 36;
+    -fx-max-width: 430;
+    -fx-pref-width: 430;
+    -fx-effect: dropshadow(gaussian, rgba(2, 6, 23, 0.55), 30, 0.18, 0, 10);
+}
+
+.ai-loading-title {
+    -fx-text-fill: #F8FAFC;
+    -fx-font-size: 22px;
+    -fx-font-weight: 800;
+}
+
+.ai-loading-subtitle {
+    -fx-text-fill: #A5B4D4;
+    -fx-font-size: 13px;
+    -fx-alignment: center;
+    -fx-text-alignment: center;
+}
+
+.ai-loading-bar {
+    -fx-pref-height: 8;
+    -fx-background-insets: 0;
+    -fx-background-radius: 999;
+}
+
+.ai-loading-bar > .track {
+    -fx-background-color: rgba(71, 85, 105, 0.7);
+    -fx-background-insets: 0;
+    -fx-background-radius: 999;
+}
+
+.ai-loading-bar > .bar {
+    -fx-background-color: linear-gradient(to right, #F97316, #8B5CF6, #38BDF8);
+    -fx-background-insets: 0;
+    -fx-background-radius: 999;
 }

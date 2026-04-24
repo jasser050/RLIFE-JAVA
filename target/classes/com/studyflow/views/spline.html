@@ -1,24 +1,505 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8">
-<style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    background: linear-gradient(135deg, #0F0B2E 0%, #1E1040 50%, #0A1628 100%);
-    overflow: hidden;
-    width: 100vw;
-    height: 100vh;
-  }
-  spline-viewer {
-    width: 100vw !important;
-    height: 100vh !important;
-    background: transparent !important;
-  }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RLIFE - Study Smarter</title>
+  <style>
+    :root {
+      --bg-primary: #0F172A;
+      --bg-secondary: #1E1B4B;
+      --text-white: white;
+      --text-muted: rgba(255,255,255,0.6);
+      --text-highlight: #C084FC;
+      --text-live: white;
+      --text-better: #F472B6;
+      --badge-bg: rgba(234,179,8,0.25);
+      --badge-border: rgba(234,179,8,0.4);
+      --badge-text: #FDE047;
+      --card-rating-bg: linear-gradient(135deg, rgba(234,179,8,0.2) 0%, rgba(245,158,11,0.1) 100%);
+      --card-rating-border: rgba(234,179,8,0.35);
+      --card-exam-bg: linear-gradient(135deg, rgba(168,85,247,0.2) 0%, rgba(236,72,153,0.1) 100%);
+      --card-exam-border: rgba(168,85,247,0.35);
+      --card-free-bg: linear-gradient(135deg, rgba(52,211,153,0.2) 0%, rgba(20,184,166,0.1) 100%);
+      --card-free-border: rgba(52,211,153,0.35);
+      --feature-ai-bg: linear-gradient(180deg, rgba(99,102,241,0.2) 0%, rgba(79,70,229,0.1) 100%);
+      --feature-ai-border: rgba(99,102,241,0.3);
+      --feature-courses-bg: linear-gradient(180deg, rgba(168,85,247,0.2) 0%, rgba(126,34,146,0.1) 100%);
+      --feature-courses-border: rgba(168,85,247,0.3);
+      --feature-wellbeing-bg: linear-gradient(180deg, rgba(236,72,153,0.2) 0%, rgba(219,39,119,0.1) 100%);
+      --feature-wellbeing-border: rgba(236,72,153,0.3);
+      --logo-glow: rgba(139, 92, 246, 0.2);
+      --logo-text: #8B5CF6;
+      --top-band-bg: linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.3) 60%, transparent 100%);
+      --bottom-band-bg: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 60%, transparent 100%);
+      --blend-bg: linear-gradient(to right, #0F172A 0%, transparent 100%);
+      --overlay-bg: rgba(0,0,0,0.7);
+      --overlay-bg-light: rgba(248,250,252,0.85);
+    }
+
+    .light-mode {
+      --bg-primary: #F8FAFC;
+      --bg-secondary: #E2E8F0;
+      --text-white: #0F172A;
+      --text-muted: rgba(15, 23, 42, 0.7);
+      --text-highlight: #7C3AED;
+      --text-live: #0F172A;
+      --text-better: #DB2777;
+      --badge-bg: linear-gradient(135deg, rgba(234,179,8,0.3) 0%, rgba(245,158,11,0.2) 100%);
+      --badge-border: rgba(234,179,8,0.6);
+      --badge-text: #B45309;
+      --card-rating-bg: linear-gradient(135deg, rgba(234,179,8,0.25) 0%, rgba(245,158,11,0.15) 100%);
+      --card-rating-border: rgba(234,179,8,0.5);
+      --card-exam-bg: linear-gradient(135deg, rgba(168,85,247,0.25) 0%, rgba(236,72,153,0.15) 100%);
+      --card-exam-border: rgba(168,85,247,0.5);
+      --card-free-bg: linear-gradient(135deg, rgba(52,211,153,0.25) 0%, rgba(20,184,166,0.15) 100%);
+      --card-free-border: rgba(52,211,153,0.5);
+      --feature-ai-bg: linear-gradient(180deg, rgba(99,102,241,0.2) 0%, rgba(79,70,229,0.15) 100%);
+      --feature-ai-border: rgba(99,102,241,0.4);
+      --feature-courses-bg: linear-gradient(180deg, rgba(168,85,247,0.2) 0%, rgba(126,34,146,0.15) 100%);
+      --feature-courses-border: rgba(168,85,247,0.4);
+      --feature-wellbeing-bg: linear-gradient(180deg, rgba(236,72,153,0.2) 0%, rgba(219,39,119,0.15) 100%);
+      --feature-wellbeing-border: rgba(236,72,153,0.4);
+      --logo-glow: rgba(139, 92, 246, 0.15);
+      --logo-text: #7C3AED;
+      --top-band-bg: linear-gradient(to bottom, rgba(248,250,252,0.9) 0%, rgba(226,232,240,0.5) 60%, transparent 100%);
+      --bottom-band-bg: linear-gradient(to top, rgba(248,250,252,0.9) 0%, rgba(226,232,240,0.6) 60%, transparent 100%);
+      --blend-bg: linear-gradient(to right, #F8FAFC 0%, transparent 100%);
+      --overlay-bg: rgba(0,0,0,0.7);
+      --overlay-bg-light: rgba(248,250,252,0.9);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 100%; height: 100%;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 50%, var(--bg-primary) 100%);
+      overflow: hidden;
+    }
+
+    .container { width: 100%; height: 100%; position: relative; }
+
+    .blend {
+      position: absolute;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      width: 80px;
+      background: var(--blend-bg);
+      z-index: 10;
+    }
+
+    .logo-container {
+      position: absolute;
+      top: 45%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 300px;
+      height: 350px;
+      z-index: 15;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .logo-wrapper { width: 180px; height: 180px; }
+
+    .logo-img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      filter: drop-shadow(0 0 15px rgba(139, 92, 246, 0.7));
+      animation: logo-float 6s ease-in-out infinite;
+    }
+
+    @keyframes logo-float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+
+    .logo-glow {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 200px;
+      height: 200px;
+      background: radial-gradient(circle, var(--logo-glow) 0%, transparent 70%);
+      border-radius: 50%;
+      animation: glow-pulse 4s ease-in-out infinite;
+    }
+
+    @keyframes glow-pulse {
+      0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.6; }
+      50% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+    }
+
+    .logo-label {
+      margin-top: 20px;
+      font-size: 26px;
+      font-weight: 900;
+      letter-spacing: 0.12em;
+      color: var(--logo-text);
+      text-shadow: 0 0 20px var(--logo-glow);
+    }
+
+    .top-band {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      padding: 30px 35px 100px;
+      background: var(--top-band-bg);
+      z-index: 20;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 16px;
+      border-radius: 50px;
+      background: var(--badge-bg);
+      border: 1px solid var(--badge-border);
+      margin-bottom: 24px;
+    }
+
+    .badge-icon { width: 18px; height: 18px; color: var(--badge-text); }
+    .badge-text { font-size: 11px; font-weight: 700; color: var(--badge-text); letter-spacing: 0.05em; }
+    .badge-star { color: var(--badge-text); font-size: 14px; }
+
+    .headline {
+      font-size: 48px;
+      font-weight: 900;
+      line-height: 1.1;
+      color: var(--text-white);
+      text-shadow: 0 4px 24px rgba(0,0,0,0.3);
+    }
+
+    .light-mode .headline {
+      text-shadow: 0 4px 24px rgba(0,0,0,0.1);
+    }
+
+    .headline .highlight { color: var(--text-highlight); }
+    .headline .live { color: var(--text-live); }
+    .headline .better { color: var(--text-better); }
+
+    .subtitle {
+      margin-top: 20px;
+      font-size: 15px;
+      color: var(--text-muted);
+      max-width: 280px;
+      line-height: 1.6;
+    }
+
+    .subtitle .courses { color: #A78BFA; font-weight: 600; }
+    .subtitle .habits { color: #D8B4FE; font-weight: 600; }
+    .subtitle .wellbeing { color: #F472B6; font-weight: 600; }
+
+    .light-mode .subtitle .courses { color: #7C3AED; }
+    .light-mode .subtitle .habits { color: #9333EA; }
+    .light-mode .subtitle .wellbeing { color: #DB2777; }
+
+    .stats-container {
+      position: absolute;
+      right: 24px;
+      top: 45%;
+      transform: translateY(-50%);
+      z-index: 20;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .stat-card {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 18px;
+      border-radius: 16px;
+      min-width: 175px;
+      backdrop-filter: blur(12px);
+      border: 1px solid;
+    }
+
+    .stat-rating { background: var(--card-rating-bg); border-color: var(--card-rating-border); }
+
+    .stat-icon {
+      width: 44px; height: 44px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .stat-icon.rating {
+      background: linear-gradient(135deg, rgba(234,179,8,0.4) 0%, rgba(245,158,11,0.4) 100%);
+      border: 1px solid rgba(234,179,8,0.35);
+    }
+
+    .stat-icon.rating svg { width: 20px; height: 20px; color: #FACC15; }
+    .stat-value { font-size: 24px; font-weight: 900; color: var(--text-white); }
+    .stat-value .star { color: #FACC15; }
+    .stat-label { font-size: 10px; font-weight: 600; color: rgba(253,224,71,0.7); letter-spacing: 0.1em; text-transform: uppercase; margin-top: 2px; }
+
+    .light-mode .stat-label { color: rgba(180,83,9,0.7); }
+
+    .stat-exam { background: var(--card-exam-bg); border-color: var(--card-exam-border); }
+    .stat-icon.exam { background: linear-gradient(135deg, rgba(168,85,247,0.4) 0%, rgba(236,72,153,0.4) 100%); border: 1px solid rgba(168,85,247,0.35); }
+    .stat-icon.exam svg { width: 20px; height: 20px; color: #D8B4FE; }
+    .stat-value.exam-text { color: #D8B4FE; }
+    .stat-label.exam-label { color: rgba(216,180,254,0.7); }
+
+    .light-mode .stat-value.exam-text { color: #9333EA; }
+    .light-mode .stat-label.exam-label { color: rgba(147,51,234,0.7); }
+
+    .stat-free { background: var(--card-free-bg); border-color: var(--card-free-border); }
+    .stat-icon.free { background: linear-gradient(135deg, rgba(52,211,153,0.4) 0%, rgba(20,184,166,0.4) 100%); border: 1px solid rgba(52,211,153,0.35); }
+    .stat-icon.free svg { width: 20px; height: 20px; color: #34D399; }
+    .stat-value.free-text { color: #34D399; }
+    .stat-label.free-label { color: rgba(52,211,153,0.7); }
+
+    .light-mode .stat-value.free-text { color: #059669; }
+    .light-mode .stat-label.free-label { color: rgba(5,150,105,0.7); }
+
+    .bottom-band {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 160px 35px 40px;
+      background: var(--bottom-band-bg);
+      z-index: 20;
+    }
+
+    .features {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .feature-card {
+      padding: 16px;
+      border-radius: 16px;
+      text-align: center;
+      backdrop-filter: blur(8px);
+      border: 1px solid;
+    }
+
+    .feature-icon {
+      width: 48px; height: 48px;
+      border-radius: 12px;
+      margin: 0 auto 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .feature-title { font-size: 14px; font-weight: 800; color: var(--text-white); line-height: 1.2; }
+    .feature-sub { font-size: 11px; margin-top: 4px; }
+
+    .feature-card.ai { background: var(--feature-ai-bg); border-color: var(--feature-ai-border); }
+    .feature-icon.ai { background: linear-gradient(135deg, rgba(99,102,241,0.45) 0%, rgba(79,70,229,0.45) 100%); border: 1px solid rgba(99,102,241,0.35); }
+    .feature-icon.ai svg { width: 24px; height: 24px; color: #A5B4FC; }
+    .feature-sub.ai-sub { color: rgba(165,180,252,0.75); }
+
+    .light-mode .feature-icon.ai svg { color: #6366F1; }
+    .light-mode .feature-sub.ai-sub { color: rgba(99,102,241,0.75); }
+
+    .feature-card.courses { background: var(--feature-courses-bg); border-color: var(--feature-courses-border); }
+    .feature-icon.courses { background: linear-gradient(135deg, rgba(168,85,247,0.45) 0%, rgba(126,34,146,0.45) 100%); border: 1px solid rgba(168,85,247,0.35); }
+    .feature-icon.courses svg { width: 24px; height: 24px; color: #D8B4FE; }
+    .feature-sub.courses-sub { color: rgba(216,180,254,0.75); }
+
+    .light-mode .feature-icon.courses svg { color: #9333EA; }
+    .light-mode .feature-sub.courses-sub { color: rgba(147,51,234,0.75); }
+
+    .feature-card.wellbeing { background: var(--feature-wellbeing-bg); border-color: var(--feature-wellbeing-border); }
+    .feature-icon.wellbeing { background: linear-gradient(135deg, rgba(236,72,153,0.45) 0%, rgba(219,39,119,0.45) 100%); border: 1px solid rgba(236,72,153,0.35); }
+    .feature-icon.wellbeing svg { width: 24px; height: 24px; color: #F9A8D4; }
+    .feature-sub.wellbeing-sub { color: rgba(249,168,212,0.75); }
+
+    .light-mode .feature-icon.wellbeing svg { color: #DB2777; }
+    .light-mode .feature-sub.wellbeing-sub { color: rgba(219,39,119,0.75); }
+
+    .social-proof {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .avatars { display: flex; }
+
+    .avatar {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 12px;
+      font-weight: 900;
+      margin-left: -10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+
+    .light-mode .avatar { border-color: var(--text-white); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+
+    .avatar:first-child { margin-left: 0; }
+    .avatar.a { background: linear-gradient(135deg, #6366F1, #4F46E5); }
+    .avatar.b { background: linear-gradient(135deg, #A855F7, #9333EA); }
+    .avatar.c { background: linear-gradient(135deg, #EC4899, #DB2777); }
+
+    .social-text .number { font-size: 14px; font-weight: 900; color: var(--text-white); }
+    .social-text .label { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+    @media (max-width: 800px) {
+      .stats-container { display: none; }
+      .features { grid-template-columns: repeat(3, 1fr); }
+      .headline { font-size: 36px; }
+    }
+  </style>
 </head>
 <body>
-<script type="module" src="https://unpkg.com/@splinetool/viewer@1.12.81/build/spline-viewer.js"></script>
-<spline-viewer url="https://prod.spline.design/WgPMxQsSYOM7gzlt/scene.splinecode"></spline-viewer>
+
+<div class="container" id="mainContainer">
+  <div class="blend"></div>
+
+  <div class="logo-container">
+    <div class="logo-glow"></div>
+    <div class="logo-wrapper">
+      <img src="../images/logo.png" alt="RLIFE Logo" class="logo-img">
+    </div>
+    <div class="logo-label">RLIFE</div>
+  </div>
+
+  <div class="top-band">
+    <div class="badge">
+      <svg class="badge-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="8" r="6"></circle>
+        <path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"></path>
+      </svg>
+      <span class="badge-text">RATED #1 STUDENT APP</span>
+      <span class="badge-star">✦</span>
+    </div>
+
+    <h1 class="headline">
+      Study<br>
+      <span class="highlight">smarter.</span><br>
+      <span class="live">Live</span> <span class="better">better.</span>
+    </h1>
+
+    <p class="subtitle">
+      All your <span class="courses">courses</span>, <span class="habits">habits</span> & <span class="wellbeing">wellbeing</span> — one beautiful place.
+    </p>
+  </div>
+
+  <div class="stats-container">
+    <div class="stat-card stat-rating">
+      <div class="stat-icon rating">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+      </div>
+      <div>
+        <div class="stat-value">4.9<span class="star">★</span></div>
+        <div class="stat-label">App rating</div>
+      </div>
+    </div>
+
+    <div class="stat-card stat-exam">
+      <div class="stat-icon exam">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <circle cx="12" cy="12" r="6"></circle>
+          <circle cx="12" cy="12" r="2"></circle>
+        </svg>
+      </div>
+      <div>
+        <div class="stat-value exam-text">98%</div>
+        <div class="stat-label exam-label">Exam success</div>
+      </div>
+    </div>
+
+    <div class="stat-card stat-free">
+      <div class="stat-icon free">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 12v10H4V12"></path>
+          <path d="M2 7h20v5H2z"></path>
+          <path d="M12 22V7"></path>
+          <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"></path>
+          <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"></path>
+        </svg>
+      </div>
+      <div>
+        <div class="stat-value free-text">Free</div>
+        <div class="stat-label free-label">Forever plan</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom-band">
+    <div class="features">
+      <div class="feature-card ai">
+        <div class="feature-icon ai">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"></path>
+            <path d="M12 6v6l4 2"></path>
+          </svg>
+        </div>
+        <p class="feature-title">AI Insights</p>
+        <p class="feature-sub ai-sub">Personalised tips</p>
+      </div>
+
+      <div class="feature-card courses">
+        <div class="feature-icon courses">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <path d="M3 9h18"></path>
+            <path d="M9 21V9"></path>
+          </svg>
+        </div>
+        <p class="feature-title">All Courses</p>
+        <p class="feature-sub courses-sub">One dashboard</p>
+      </div>
+
+      <div class="feature-card wellbeing">
+        <div class="feature-icon wellbeing">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+          </svg>
+        </div>
+        <p class="feature-title">Wellbeing</p>
+        <p class="feature-sub wellbeing-sub">Mood & habits</p>
+      </div>
+    </div>
+
+    <div class="social-proof">
+      <div class="avatars">
+        <div class="avatar a">A</div>
+        <div class="avatar b">B</div>
+        <div class="avatar c">C</div>
+      </div>
+      <div class="social-text">
+        <p class="number">50,000+ students</p>
+        <p class="label">already organised their semester</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Listen for theme changes from JavaFX
+  window.javaThemeChange = function(isLightMode) {
+    const container = document.getElementById('mainContainer');
+    if (isLightMode) {
+      container.classList.add('light-mode');
+    } else {
+      container.classList.remove('light-mode');
+    }
+  };
+</script>
+
 </body>
 </html>

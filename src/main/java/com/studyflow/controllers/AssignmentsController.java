@@ -8,6 +8,7 @@ import com.studyflow.models.User;
 import com.studyflow.services.AiAssignmentGeneratorService;
 import com.studyflow.services.AiProjectInsightsService;
 import com.studyflow.services.AssignmentService;
+import com.studyflow.services.GitIntegrationService;
 import com.studyflow.services.NotificationService;
 import com.studyflow.services.ProjectService;
 import com.studyflow.utils.CrudViewContext;
@@ -131,6 +132,7 @@ public class AssignmentsController implements Initializable {
     @FXML private Button showDeletePanelButton;
     @FXML private Button showCommentsPanelButton;
     @FXML private Button showSharePanelButton;
+    @FXML private Button showGitPanelButton;
     @FXML private Button showStatsPanelButton;
     @FXML private Button addCommentButton;
     @FXML private Button deleteAssignmentConfirmButton;
@@ -145,15 +147,30 @@ public class AssignmentsController implements Initializable {
     @FXML private VBox deletePanel;
     @FXML private VBox commentsPanel;
     @FXML private VBox sharePanel;
+    @FXML private VBox gitPanel;
     @FXML private VBox statsPanel;
     @FXML private StackPane actionPanelStack;
     @FXML private VBox commentsList;
     @FXML private TextArea commentInputArea;
+    @FXML private Label assignmentGitHintLabel;
+    @FXML private Label assignmentGitRepoLabel;
+    @FXML private Label assignmentGitStatusLabel;
+    @FXML private Label assignmentGitLastCommitLabel;
+    @FXML private TextField assignmentGitCommitMessageField;
+    @FXML private TextField assignmentGitPathspecField;
+    @FXML private Button saveAssignmentGitButton;
+    @FXML private Button refreshAssignmentGitButton;
+    @FXML private Button commitAssignmentGitButton;
+    @FXML private Button commitAndPushAssignmentGitButton;
+    @FXML private VBox aiLoadingOverlay;
+    @FXML private Label aiLoadingTitleLabel;
+    @FXML private Label aiLoadingSubtitleLabel;
 
     private final AssignmentService assignmentService = new AssignmentService();
     private final ProjectService projectService = new ProjectService();
     private final AiAssignmentGeneratorService aiAssignmentGeneratorService = new AiAssignmentGeneratorService();
     private final AiProjectInsightsService aiProjectInsightsService = new AiProjectInsightsService();
+    private final GitIntegrationService gitIntegrationService = new GitIntegrationService();
     private final NotificationService notificationService = new NotificationService();
     private final com.studyflow.services.ServiceUser userService = new com.studyflow.services.ServiceUser();
 
@@ -393,6 +410,11 @@ public class AssignmentsController implements Initializable {
     @FXML
     private void handleShowSharePanel() {
         setActivePanel("SHARE");
+    }
+
+    @FXML
+    private void handleShowGitPanel() {
+        setActivePanel("GIT");
     }
 
     @FXML
@@ -812,7 +834,12 @@ public class AssignmentsController implements Initializable {
         HBox.setHgrow(dueLabel, Priority.ALWAYS);
         footer.getChildren().addAll(avatar, dueLabel);
 
-        card.setOnMouseClicked(event -> selectAssignment(assignment));
+        card.setOnMouseClicked(event -> {
+            selectAssignment(assignment);
+            if (event.getClickCount() >= 2) {
+                openAssignmentDetailsWindow(assignment);
+            }
+        });
         card.setOnDragDetected(event -> {
             if (!assignment.canCurrentUserEdit()) {
                 return;
@@ -935,6 +962,7 @@ public class AssignmentsController implements Initializable {
         populateDeletePanel(assignment);
         populateCommentsPanel(assignment);
         populateSharePanel(assignment);
+        populateGitPanel(assignment);
     }
 
     private void updateAssignmentSummary(Assignment assignment) {
@@ -1001,8 +1029,6 @@ public class AssignmentsController implements Initializable {
         shareAssignmentButton.setDisable(!enabled);
     }
 
-<<<<<<< Updated upstream
-=======
     private void populateGitPanel(Assignment assignment) {
         if (assignmentGitHintLabel == null
                 || assignmentGitRepoLabel == null
@@ -1060,8 +1086,6 @@ public class AssignmentsController implements Initializable {
         commitAssignmentGitButton.setDisable(!editable || !completed || !repoConfigured);
         commitAndPushAssignmentGitButton.setDisable(!editable || !completed || !repoConfigured);
     }
-
->>>>>>> Stashed changes
     private void populateUpdateForm(Assignment assignment) {
         if (updateAssignmentHintLabel == null
                 || updateAssignmentTitleField == null
@@ -1143,6 +1167,7 @@ public class AssignmentsController implements Initializable {
         populateDeletePanel(null);
         populateCommentsPanel(null);
         populateSharePanel(null);
+        populateGitPanel(null);
     }
 
     private void setActivePanel(String panel) {
@@ -1152,12 +1177,14 @@ public class AssignmentsController implements Initializable {
         togglePanel(deletePanel, false);
         togglePanel(commentsPanel, "COMMENTS".equals(panel));
         togglePanel(sharePanel, "SHARE".equals(panel));
+        togglePanel(gitPanel, "GIT".equals(panel));
         togglePanel(statsPanel, "STATS".equals(panel));
         updatePanelButton(showCreatePanelButton, "CREATE".equals(panel));
         updatePanelButton(showEditPanelButton, false);
         updatePanelButton(showDeletePanelButton, false);
         updatePanelButton(showCommentsPanelButton, "COMMENTS".equals(panel));
         updatePanelButton(showSharePanelButton, "SHARE".equals(panel));
+        updatePanelButton(showGitPanelButton, "GIT".equals(panel));
         updatePanelButton(showStatsPanelButton, "STATS".equals(panel));
     }
 
@@ -1191,6 +1218,7 @@ public class AssignmentsController implements Initializable {
         if (generateAiAssignmentsButton != null) {
             generateAiAssignmentsButton.setDisable(true);
         }
+        setAiLoadingState(true, "Generating assignments", "Building AI task suggestions for \"" + project.getTitle() + "\".");
         showFeedback("Generating AI assignment suggestions for \"" + project.getTitle() + "\"...", false);
 
         Task<List<Assignment>> task = new Task<>() {
@@ -1201,6 +1229,7 @@ public class AssignmentsController implements Initializable {
         };
 
         task.setOnSucceeded(event -> {
+            setAiLoadingState(false, null, null);
             if (generateAiAssignmentsButton != null) {
                 generateAiAssignmentsButton.setDisable(false);
             }
@@ -1211,6 +1240,7 @@ public class AssignmentsController implements Initializable {
         });
 
         task.setOnFailed(event -> {
+            setAiLoadingState(false, null, null);
             if (generateAiAssignmentsButton != null) {
                 generateAiAssignmentsButton.setDisable(false);
             }
@@ -1223,10 +1253,11 @@ public class AssignmentsController implements Initializable {
         thread.start();
     }
 
-<<<<<<< Updated upstream
-=======
     private void setAiLoadingState(boolean loading, String title, String subtitle) {
         if (aiLoadingOverlay != null) {
+            if (loading) {
+                aiLoadingOverlay.toFront();
+            }
             aiLoadingOverlay.setVisible(loading);
             aiLoadingOverlay.setManaged(loading);
         }
@@ -1355,8 +1386,6 @@ public class AssignmentsController implements Initializable {
         }
         return projectService.getProjectById(assignment.getProjectId());
     }
-
->>>>>>> Stashed changes
     private void configureBoardDropTargets() {
         configureDropTarget(todoColumn, "To Do");
         configureDropTarget(progressColumn, "In Progress");
@@ -1662,8 +1691,6 @@ public class AssignmentsController implements Initializable {
         MainController.loadContentInMainArea("views/AssignmentEditDialog.fxml");
     }
 
-<<<<<<< Updated upstream
-=======
     private void openAssignmentDetailsWindow(Assignment assignment) {
         if (assignment == null) {
             return;
@@ -1672,8 +1699,6 @@ public class AssignmentsController implements Initializable {
         CrudViewContext.rememberAssignmentSelection(assignment.getId());
         MainController.loadContentInMainArea("views/AssignmentDetails.fxml");
     }
-
->>>>>>> Stashed changes
     private void openAssignmentDeleteWindow() {
         CrudViewContext.setAssignmentContext(selectedAssignment, ownedProjects);
         MainController.loadContentInMainArea("views/AssignmentDeleteDialog.fxml");
