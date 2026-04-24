@@ -1,8 +1,10 @@
 package com.studyflow.controllers;
 
+import com.studyflow.models.AdminNotification;
 import com.studyflow.models.Deck;
 import com.studyflow.models.Flashcard;
 import com.studyflow.models.Rating;
+import com.studyflow.services.AdminNotificationService;
 import com.studyflow.services.DeckService;
 import com.studyflow.services.FlashcardService;
 import com.studyflow.services.RatingService;
@@ -59,6 +61,8 @@ public class RevisionsController implements Initializable {
     @FXML private StackPane barChartPane;
     @FXML private Label selectedRatingDeckLabel;
     @FXML private Label ratingsSummaryLabel;
+    @FXML private Label ratingAlertsSummaryLabel;
+    @FXML private VBox ratingAlertsContainer;
     @FXML private VBox ratingsListContainer;
 
     // ── Form fields ──
@@ -82,6 +86,7 @@ public class RevisionsController implements Initializable {
     private final DeckService deckService = new DeckService();
     private final FlashcardService flashcardService = new FlashcardService();
     private final RatingService ratingService = new RatingService();
+    private final AdminNotificationService adminNotificationService = new AdminNotificationService();
     private List<Deck> decks;
     private List<Deck> visibleDecks = List.of();
     private Deck selectedDeck = null;
@@ -1006,6 +1011,8 @@ public class RevisionsController implements Initializable {
             selectedRatingDeckLabel.setText(deck.getTitre() + "  |  " + deck.getMatiere());
         }
 
+        loadRatingAlerts(deck);
+
         List<Rating> ratings = ratingService.getRatingsForDeckAdmin(deck.getIdDeck());
         if (ratingsSummaryLabel != null) {
             if (ratings.isEmpty()) {
@@ -1038,6 +1045,15 @@ public class RevisionsController implements Initializable {
         if (selectedRatingDeckLabel != null) {
             selectedRatingDeckLabel.setText("No deck selected");
         }
+        if (ratingAlertsSummaryLabel != null) {
+            ratingAlertsSummaryLabel.setText("Support alerts will appear here when students rate a deck badly.");
+        }
+        if (ratingAlertsContainer != null) {
+            ratingAlertsContainer.getChildren().clear();
+            Label placeholder = new Label("No support alert loaded yet.");
+            placeholder.setStyle("-fx-text-fill:#64748B;-fx-font-size:11px;");
+            ratingAlertsContainer.getChildren().add(placeholder);
+        }
         if (ratingsSummaryLabel != null) {
             ratingsSummaryLabel.setText("Click Rating on a deck to see who rated it.");
         }
@@ -1047,6 +1063,128 @@ public class RevisionsController implements Initializable {
             placeholder.setStyle("-fx-text-fill:#64748B;-fx-font-size:11px;");
             ratingsListContainer.getChildren().add(placeholder);
         }
+    }
+
+    private void loadRatingAlerts(Deck deck) {
+        if (ratingAlertsSummaryLabel == null || ratingAlertsContainer == null) {
+            return;
+        }
+
+        List<AdminNotification> notifications = adminNotificationService.getPendingNotificationsForDeck(deck.getTitre());
+        ratingAlertsContainer.getChildren().clear();
+
+        if (notifications.isEmpty()) {
+            ratingAlertsSummaryLabel.setText("No pending support alert for this deck.");
+            Label empty = new Label("When a student gives a weak rating, the admin alert will appear here.");
+            empty.setWrapText(true);
+            empty.setStyle("-fx-text-fill:#64748B;-fx-font-size:11px;");
+            ratingAlertsContainer.getChildren().add(empty);
+            return;
+        }
+
+        ratingAlertsSummaryLabel.setText(notifications.size() + " pending alert(s) linked to this deck.");
+        for (AdminNotification notification : notifications) {
+            ratingAlertsContainer.getChildren().add(buildAlertCard(notification));
+        }
+    }
+
+    private VBox buildAlertCard(AdminNotification notification) {
+        VBox card = new VBox(12);
+        card.setPadding(new Insets(14));
+        card.setStyle("-fx-background-color:#111827;-fx-background-radius:14;-fx-border-color:#1E293B;-fx-border-radius:14;-fx-border-width:1;");
+
+        HBox header = new HBox(10);
+        header.setAlignment(Pos.CENTER_LEFT);
+
+        Label badge = new Label(notification.getUrgencyBadgeLabel());
+        badge.setStyle("-fx-background-color:" + withAlpha(notification.getUrgencyColor(), 0.18)
+                + ";-fx-text-fill:" + notification.getUrgencyColor()
+                + ";-fx-background-radius:999;-fx-padding:5 10;-fx-font-size:10px;-fx-font-weight:800;");
+
+        VBox identity = new VBox(3);
+        HBox.setHgrow(identity, Priority.ALWAYS);
+
+        Label student = new Label(safe(notification.getStudentName(), "Student") + "  |  user #" + notification.getStudentId());
+        student.setStyle("-fx-text-fill:#F8FAFC;-fx-font-size:12px;-fx-font-weight:800;");
+
+        Label weakDecks = new Label("Weak decks: " + notification.getWeakDecksLabel());
+        weakDecks.setWrapText(true);
+        weakDecks.setStyle("-fx-text-fill:#64748B;-fx-font-size:10px;");
+
+        identity.getChildren().addAll(student, weakDecks);
+        header.getChildren().addAll(badge, identity);
+
+        Label message = new Label(notification.getAdminMessage());
+        message.setWrapText(true);
+        message.setStyle("-fx-text-fill:#CBD5E1;-fx-font-size:11px;");
+
+        VBox suggestion = new VBox(5);
+        suggestion.setStyle("-fx-background-color:#0F172A;-fx-background-radius:12;-fx-padding:12;");
+
+        Label suggestionTitle = new Label("Suggested deck: " + safe(notification.getSuggestionTitle(), "AI Support Deck"));
+        suggestionTitle.setStyle("-fx-text-fill:#F8FAFC;-fx-font-size:11px;-fx-font-weight:700;");
+
+        Label suggestionMeta = new Label("Subject: "
+                + safe(notification.getSuggestionSubject(), "Personalized Support")
+                + "  |  Difficulty: "
+                + safe(notification.getSuggestionDifficulty(), "beginner")
+                + "  |  Focus: "
+                + notification.getFocusTopicsLabel());
+        suggestionMeta.setWrapText(true);
+        suggestionMeta.setStyle("-fx-text-fill:#94A3B8;-fx-font-size:10px;");
+
+        suggestion.getChildren().addAll(suggestionTitle, suggestionMeta);
+
+        if (notification.getSuggestionReason() != null && !notification.getSuggestionReason().isBlank()) {
+            Label reason = new Label(notification.getSuggestionReason());
+            reason.setWrapText(true);
+            reason.setStyle("-fx-text-fill:#64748B;-fx-font-size:10px;");
+            suggestion.getChildren().add(reason);
+        }
+
+        HBox footer = new HBox(10);
+        footer.setAlignment(Pos.CENTER_LEFT);
+
+        Label created = new Label("Alert date: " + formatDateTime(notification.getCreatedAt()));
+        created.setStyle("-fx-text-fill:#475569;-fx-font-size:10px;");
+
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+
+        Button generateBtn = chipBtn("Generate Support Deck", "rgba(139,92,246,0.18)", "#A78BFA", "rgba(139,92,246,0.30)");
+        generateBtn.setOnAction(e -> handleGenerateSupportDeck(notification, generateBtn));
+
+        footer.getChildren().addAll(created, spacer, generateBtn);
+        card.getChildren().addAll(header, message, suggestion, footer);
+        return card;
+    }
+
+    private void handleGenerateSupportDeck(AdminNotification notification, Button triggerButton) {
+        triggerButton.setDisable(true);
+        triggerButton.setText("Generating...");
+
+        new Thread(() -> {
+            try {
+                AdminNotificationService.GeneratedDeckResult result = adminNotificationService.generateSupportDeck(notification);
+                Platform.runLater(() -> {
+                    triggerButton.setDisable(false);
+                    triggerButton.setText("Generate Support Deck");
+                    showSuccessPopup("Support deck \"" + result.deck().getTitre() + "\" created for "
+                            + safe(notification.getStudentName(), "student")
+                            + " with " + result.flashcardCount() + " flashcard(s).");
+                    if (selectedRatingsDeck != null) {
+                        showDeckRatings(selectedRatingsDeck);
+                    }
+                    refreshAll();
+                });
+            } catch (Exception ex) {
+                Platform.runLater(() -> {
+                    triggerButton.setDisable(false);
+                    triggerButton.setText("Generate Support Deck");
+                    showErrorPopup(triggerButton, ex.getMessage() == null ? "Deck generation failed." : ex.getMessage());
+                });
+            }
+        }, "admin-support-deck-generator").start();
     }
 
     private VBox buildRatingCard(Rating rating) {
@@ -1342,6 +1480,16 @@ public class RevisionsController implements Initializable {
     }
 
     private String safe(String v) { return v == null ? "" : v; }
+    private String safe(String v, String fallback) { return v == null || v.isBlank() ? fallback : v.trim(); }
+    private String formatDateTime(LocalDateTime value) { return value == null ? "-" : value.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")); }
+    private String withAlpha(String hex, double alpha) {
+        Color color = Color.web(hex == null || hex.isBlank() ? "#64748B" : hex);
+        return "rgba("
+                + (int) Math.round(color.getRed() * 255) + ","
+                + (int) Math.round(color.getGreen() * 255) + ","
+                + (int) Math.round(color.getBlue() * 255) + ","
+                + alpha + ")";
+    }
     private String truncateStr(String s, int max) { if (s == null || s.isEmpty()) return ""; return s.length() <= max ? s : s.substring(0, max - 1) + "."; }
     private String hex(String c)  { return switch (c) { case "primary" -> "#A78BFA"; case "success" -> "#34D399"; case "warning" -> "#FBBF24"; case "danger" -> "#FB7185"; case "accent" -> "#FB923C"; default -> "#94A3B8"; }; }
     private String grad(String c) { return switch (c) { case "primary" -> "linear-gradient(to bottom right,#7C3AED,#8B5CF6)"; case "success" -> "linear-gradient(to bottom right,#059669,#10B981)"; case "warning" -> "linear-gradient(to bottom right,#D97706,#F59E0B)"; case "danger" -> "linear-gradient(to bottom right,#DC2626,#F43F5E)"; case "accent" -> "linear-gradient(to bottom right,#EA580C,#F97316)"; default -> "linear-gradient(to bottom right,#475569,#64748B)"; }; }

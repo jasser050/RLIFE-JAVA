@@ -5,6 +5,7 @@ import com.studyflow.models.Flashcard;
 import com.studyflow.models.Rating;
 import com.studyflow.services.AIRatingAnalysisService;
 import com.studyflow.services.AITranslationService;
+import com.studyflow.services.DeckQRCodeService;
 import com.studyflow.services.DeckService;
 import com.studyflow.services.FlashcardService;
 import com.studyflow.services.RatingService;
@@ -50,8 +51,11 @@ public abstract class FlashcardsFeaturesController implements Initializable {
     @FXML protected Label     reviewedTodayLabel;
     @FXML protected Label     remainingTodayLabel;
     @FXML protected Label     accuracyLabel;
+    @FXML protected HBox      deckStudyRow;
+    @FXML protected VBox      decksColumn;
     @FXML protected FlowPane  decksGrid;
     @FXML protected VBox      dueDecksBox;
+    @FXML protected VBox      quickStudyPanel;
 
     @FXML protected HBox             searchBoxDeck;
     @FXML protected TextField        searchDeckField;
@@ -151,6 +155,11 @@ public abstract class FlashcardsFeaturesController implements Initializable {
     private String  activeDeckTab  = "all";
     private boolean isDeckGridMode = true;
     private boolean formViewLoaded = false;
+    private static final double DECK_CARD_WIDTH = 260;
+    private static final double DECK_GRID_GAP = 16;
+    private static final int DESKTOP_DECK_COLUMNS = 3;
+    private static final double DECK_SCROLLBAR_WIDTH = 18;
+    private double currentDeckCardWidth = DECK_CARD_WIDTH;
 
     private static final String[] COLORS = {"primary","success","warning","accent","danger"};
     private static final String[] ICONS  = {
@@ -210,7 +219,6 @@ public abstract class FlashcardsFeaturesController implements Initializable {
         setupDeckTabs();
         setupViewModeToggles();
         setupRatingView();
-
         goToList();
         refreshDeckList();
     }
@@ -328,6 +336,34 @@ public abstract class FlashcardsFeaturesController implements Initializable {
     private void updateViewModeStyles() {
         styleViewBtn(gridViewBtn,  isDeckGridMode);
         styleViewBtn(listViewBtn, !isDeckGridMode);
+        updateDeckLayout();
+    }
+
+    private void updateDeckLayout() {
+        if (decksColumn == null || decksGrid == null) {
+            return;
+        }
+
+        currentDeckCardWidth = DECK_CARD_WIDTH;
+        double threeCardsWidth = (DECK_CARD_WIDTH * DESKTOP_DECK_COLUMNS)
+                + (DECK_GRID_GAP * (DESKTOP_DECK_COLUMNS - 1));
+        double decksViewportWidth = threeCardsWidth + DECK_SCROLLBAR_WIDTH;
+
+        if (isDeckGridMode) {
+            decksColumn.setPrefWidth(decksViewportWidth);
+            decksColumn.setMinWidth(decksViewportWidth);
+            decksColumn.setMaxWidth(decksViewportWidth);
+            HBox.setHgrow(decksColumn, Priority.NEVER);
+            decksGrid.setPrefWrapLength(threeCardsWidth);
+            decksGrid.setMaxWidth(threeCardsWidth);
+        } else {
+            decksColumn.setPrefWidth(Region.USE_COMPUTED_SIZE);
+            decksColumn.setMinWidth(Region.USE_COMPUTED_SIZE);
+            decksColumn.setMaxWidth(Double.MAX_VALUE);
+            HBox.setHgrow(decksColumn, Priority.ALWAYS);
+            decksGrid.setPrefWrapLength(0);
+            decksGrid.setMaxWidth(Double.MAX_VALUE);
+        }
     }
 
     private void styleViewBtn(ToggleButton btn, boolean active) {
@@ -630,6 +666,41 @@ public abstract class FlashcardsFeaturesController implements Initializable {
         refreshDeckList();
     }
 
+    @FXML
+    protected void openDeck() {
+        Deck deck = resolveActionDeck();
+        if (deck == null) {
+            showInfo("No deck is available yet.");
+            return;
+        }
+        openDeck(deck);
+    }
+
+    @FXML
+    protected void openQrCode() {
+        Deck deck = resolveActionDeck();
+        if (deck == null) {
+            showInfo("No deck is available yet.");
+            return;
+        }
+        Thread qrThread = new Thread(
+                () -> DeckQRCodeService.showQRCode(deck, flashcardService),
+                "qr-gen-" + deck.getIdDeck()
+        );
+        qrThread.setDaemon(true);
+        qrThread.start();
+    }
+
+    @FXML
+    protected void openRatingView() {
+        Deck deck = resolveActionDeck();
+        if (deck == null) {
+            showInfo("No deck is available yet.");
+            return;
+        }
+        openRatingPage(deck);
+    }
+
     private void refreshDeckList() {
         allDecks = deckService.getAll();
         int mastered = flashcardService.countByEtat(currentUserId, "mastered");
@@ -649,6 +720,16 @@ public abstract class FlashcardsFeaturesController implements Initializable {
         }
         applyDeckFilters();
         displayDueDecks();
+    }
+
+    private Deck resolveActionDeck() {
+        if (currentDeck != null) {
+            return currentDeck;
+        }
+        if (allDecks == null || allDecks.isEmpty()) {
+            refreshDeckList();
+        }
+        return (allDecks == null || allDecks.isEmpty()) ? null : allDecks.get(0);
     }
 
     private String deckSearchText(Deck deck) {
@@ -718,6 +799,7 @@ public abstract class FlashcardsFeaturesController implements Initializable {
         }
     }
 
+    // ─── List row ─────────────────────────────────────────────────────────
     private HBox buildDeckListRow(Deck deck, String color) {
         HBox row = new HBox(14);
         row.setAlignment(Pos.CENTER_LEFT);
@@ -742,16 +824,24 @@ public abstract class FlashcardsFeaturesController implements Initializable {
         Label badge = new Label(count + " cards");
         badge.setStyle("-fx-background-color:rgba(139,92,246,0.12);-fx-text-fill:#A78BFA;" +
                 "-fx-font-size:10px;-fx-font-weight:700;-fx-padding:3 8;-fx-background-radius:20;");
-        Button ratingBtn = chipBtn("Rating", "rgba(236,72,153,0.15)", "#F472B6", "rgba(236,72,153,0.28)");
+        Button ratingBtn = chipBtn("⭐ Rating", "rgba(236,72,153,0.15)", "#F472B6", "rgba(236,72,153,0.28)");
         ratingBtn.setOnAction(e -> openRatingPage(deck));
+
+        // ── QR Code button ────────────────────────────────────────────────
+        Button qrBtn = chipBtn("📱 QR", "rgba(56,189,248,0.15)", "#38BDF8", "rgba(56,189,248,0.28)");
+        qrBtn.setOnAction(e -> launchQRCode(deck));
+        // ─────────────────────────────────────────────────────────────────
+
         Button open = new Button("Open →");
         open.setStyle("-fx-background-color:rgba(124,58,237,0.15);-fx-text-fill:#A78BFA;" +
                 "-fx-font-size:11px;-fx-font-weight:700;-fx-background-radius:8;-fx-cursor:hand;-fx-padding:6 14;");
         open.setOnAction(e -> openDeck(deck));
-        row.getChildren().addAll(dot, info, badge, ratingBtn, open);
+        row.getChildren().addAll(dot, info, badge, ratingBtn, qrBtn, open);
         row.setOnMouseClicked(e -> {
             Node target = e.getTarget() instanceof Node node ? node : null;
-            if (!isInsideButton(target, open) && !isInsideButton(target, ratingBtn)) {
+            if (!isInsideButton(target, open)
+                    && !isInsideButton(target, ratingBtn)
+                    && !isInsideButton(target, qrBtn)) {
                 openDeck(deck);
             }
         });
@@ -764,7 +854,9 @@ public abstract class FlashcardsFeaturesController implements Initializable {
 
     private VBox buildDeckCard(Deck deck, String color, String iconLit) {
         VBox card = new VBox(0);
-        card.setPrefWidth(230);
+        card.setPrefWidth(currentDeckCardWidth);
+        card.setMinWidth(currentDeckCardWidth);
+        card.setMaxWidth(currentDeckCardWidth);
         String sN = "-fx-background-color:#0F172A;-fx-background-radius:16;-fx-cursor:hand;" +
                 "-fx-effect:dropshadow(gaussian,rgba(0,0,0,0.3),12,0,0,4);";
         String sH = "-fx-background-color:#1E293B;-fx-background-radius:16;-fx-cursor:hand;" +
@@ -800,12 +892,22 @@ public abstract class FlashcardsFeaturesController implements Initializable {
             body.getChildren().add(desc);
         }
 
-        Button ratingBtn = new Button("Rating");
+        Button ratingBtn = new Button("⭐ Rating");
         ratingBtn.setStyle("-fx-background-color:rgba(236,72,153,0.15);-fx-text-fill:#F472B6;" +
                 "-fx-font-size:11px;-fx-font-weight:700;-fx-background-radius:8;" +
                 "-fx-cursor:hand;-fx-padding:7 14;-fx-max-width:Infinity;");
         ratingBtn.setMaxWidth(Double.MAX_VALUE);
         ratingBtn.setOnAction(e -> openRatingPage(deck));
+
+        // ── QR Code button ────────────────────────────────────────────────
+        Button qrBtn = new Button("📱 QR Code");
+        qrBtn.setStyle("-fx-background-color:rgba(56,189,248,0.15);-fx-text-fill:#38BDF8;" +
+                "-fx-font-size:11px;-fx-font-weight:700;-fx-background-radius:8;" +
+                "-fx-cursor:hand;-fx-padding:7 14;-fx-max-width:Infinity;");
+        qrBtn.setMaxWidth(Double.MAX_VALUE);
+        qrBtn.setOnAction(e -> launchQRCode(deck));
+        // ─────────────────────────────────────────────────────────────────
+
         Button open = new Button("Open Deck →");
         open.setStyle("-fx-background-color:" + grad(color) + ";-fx-text-fill:white;" +
                 "-fx-font-size:11px;-fx-font-weight:700;-fx-background-radius:8;" +
@@ -813,38 +915,51 @@ public abstract class FlashcardsFeaturesController implements Initializable {
         open.setMaxWidth(Double.MAX_VALUE);
         open.setOnAction(e -> openDeck(deck));
 
-        VBox btnBox = new VBox(8, ratingBtn, open);
+        VBox btnBox = new VBox(8, ratingBtn, qrBtn, open);
         btnBox.setPadding(new Insets(0, 14, 14, 14));
 
         card.getChildren().addAll(header, body, btnBox);
         card.setOnMouseClicked(e -> {
             Node target = e.getTarget() instanceof Node node ? node : null;
-            if (!isInsideButton(target, open) && !isInsideButton(target, ratingBtn)) {
+            if (!isInsideButton(target, open)
+                    && !isInsideButton(target, ratingBtn)
+                    && !isInsideButton(target, qrBtn)) {
                 openDeck(deck);
             }
         });
         return card;
     }
 
+    // ── QR launcher (daemon thread so UI stays responsive) ───────────────
+    private void launchQRCode(Deck deck) {
+        Thread t = new Thread(
+                () -> DeckQRCodeService.showQRCode(deck, flashcardService),
+                "qr-gen-" + deck.getIdDeck()
+        );
+        t.setDaemon(true);
+        t.start();
+    }
+
     private StackPane buildDeckHeader(Deck deck, String color, String iconLit) {
         StackPane header = new StackPane();
         header.setPrefHeight(110);
         header.setStyle("-fx-background-color:" + grad(color) + ";-fx-background-radius:16 16 0 0;");
+        double cardWidth = currentDeckCardWidth;
         String imagePath = deck.getImage();
         if (imagePath != null && !imagePath.trim().isEmpty()) {
             try {
                 String raw = imagePath.trim();
                 Image img;
                 if (raw.startsWith("http://") || raw.startsWith("https://")) {
-                    img = new Image(raw, 230, 110, true, true, true);
+                    img = new Image(raw, cardWidth, 110, true, true, true);
                 } else {
                     File f = new File(raw);
                     if (!f.exists() && !raw.startsWith("/")) f = new File(System.getProperty("user.dir"), raw);
-                    img = f.exists() ? new Image(f.toURI().toString(), 230, 110, true, true, true) : null;
+                    img = f.exists() ? new Image(f.toURI().toString(), cardWidth, 110, true, true, true) : null;
                 }
                 if (img != null && !img.isError()) {
                     ImageView iv = new ImageView(img);
-                    iv.setFitWidth(230); iv.setFitHeight(110); iv.setPreserveRatio(false); iv.setSmooth(true);
+                    iv.setFitWidth(cardWidth); iv.setFitHeight(110); iv.setPreserveRatio(false); iv.setSmooth(true);
                     header.getChildren().add(iv);
                     return header;
                 }
@@ -887,20 +1002,11 @@ public abstract class FlashcardsFeaturesController implements Initializable {
         refreshDeckList();
     }
 
-    @FXML
-    protected void selectRating1() { updateRatingSelection(1); }
-
-    @FXML
-    protected void selectRating2() { updateRatingSelection(2); }
-
-    @FXML
-    protected void selectRating3() { updateRatingSelection(3); }
-
-    @FXML
-    protected void selectRating4() { updateRatingSelection(4); }
-
-    @FXML
-    protected void selectRating5() { updateRatingSelection(5); }
+    @FXML protected void selectRating1() { updateRatingSelection(1); }
+    @FXML protected void selectRating2() { updateRatingSelection(2); }
+    @FXML protected void selectRating3() { updateRatingSelection(3); }
+    @FXML protected void selectRating4() { updateRatingSelection(4); }
+    @FXML protected void selectRating5() { updateRatingSelection(5); }
 
     @FXML
     protected void submitDeckRating() {

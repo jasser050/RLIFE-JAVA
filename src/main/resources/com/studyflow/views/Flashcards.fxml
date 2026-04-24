@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.geometry.Insets?>
@@ -10,12 +9,9 @@
            fx:controller="com.studyflow.controllers.FlashcardsController"
            style="-fx-background-color:#020617;">
 
-    <!-- ╔══════════════════════════════════════════════════════════════╗
-         ║  VIEW 1 — DECK LIST                                         ║
-         ╚══════════════════════════════════════════════════════════════╝ -->
+    <!-- VIEW 1 – DECK LIST -->
     <VBox fx:id="listView" spacing="24">
         <padding><Insets top="0" right="0" bottom="24" left="0"/></padding>
-
         <HBox alignment="CENTER_LEFT" spacing="16">
             <VBox spacing="14" HBox.hgrow="ALWAYS">
                 <Label text="My Flashcards" styleClass="text-heading"/>
@@ -112,8 +108,8 @@
         </HBox>
 
         <!-- Decks + Quick Study -->
-        <HBox spacing="20" VBox.vgrow="ALWAYS">
-            <VBox spacing="16" HBox.hgrow="ALWAYS">
+        <HBox fx:id="deckStudyRow" alignment="TOP_LEFT" spacing="0" VBox.vgrow="ALWAYS">
+            <VBox fx:id="decksColumn" spacing="16" HBox.hgrow="ALWAYS">
                 <HBox alignment="CENTER_LEFT" spacing="12">
                     <Label text="Your Decks" styleClass="text-subheading" HBox.hgrow="ALWAYS"/>
                     <HBox spacing="4" alignment="CENTER"
@@ -128,12 +124,11 @@
                         </ToggleButton>
                     </HBox>
                     <HBox styleClass="filter-tabs" spacing="0">
-                        <Button fx:id="tabAll"        text="All"         styleClass="filter-tab, active"/>
+                        <Button fx:id="tabAll" text="All" styleClass="filter-tab, active"/>
                         <Button fx:id="tabInProgress" text="In Progress" styleClass="filter-tab"/>
-                        <Button fx:id="tabMastered"   text="Mastered"    styleClass="filter-tab"/>
+                        <Button fx:id="tabMastered" text="Mastered" styleClass="filter-tab"/>
                     </HBox>
                 </HBox>
-
                 <VBox fx:id="emptySearchState" alignment="CENTER" spacing="16"
                       visible="false" managed="false" style="-fx-padding:60 0;">
                     <FontIcon iconLiteral="fth-search" iconSize="48" iconColor="#1E293B"/>
@@ -146,15 +141,14 @@
                                    -fx-font-weight:700;-fx-background-radius:10;-fx-cursor:hand;-fx-padding:9 20;
                                    -fx-border-color:#334155;-fx-border-radius:10;-fx-border-width:1;"/>
                 </VBox>
-
                 <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS"
-                            style="-fx-background-color:transparent;-fx-background:transparent;">
+                            style="-fx-background-color:transparent;-fx-background:transparent;-fx-padding:0;">
                     <FlowPane fx:id="decksGrid" hgap="16" vgap="16" prefWrapLength="800"/>
                 </ScrollPane>
             </VBox>
 
             <!-- Quick Study panel -->
-            <VBox styleClass="card" prefWidth="320" spacing="0">
+            <VBox fx:id="quickStudyPanel" styleClass="card" prefWidth="340" minWidth="340" spacing="0" HBox.hgrow="ALWAYS">
                 <HBox styleClass="card-header" alignment="CENTER_LEFT" spacing="12">
                     <StackPane styleClass="stat-icon-box, primary" prefWidth="36" prefHeight="36">
                         <FontIcon iconLiteral="fth-play-circle" iconSize="16"/>
@@ -197,27 +191,96 @@
         </HBox>
     </VBox>
 
-    <!-- ╔══════════════════════════════════════════════════════════════╗
-         ║  VIEW 2 — FLASHCARD LIST                                   ║
-         ╚══════════════════════════════════════════════════════════════╝ -->
+    <!-- VIEW 2 – FLASHCARD LIST -->
     <VBox fx:id="flashcardsView" spacing="20" visible="false" managed="false">
         <padding><Insets top="0" right="0" bottom="24" left="0"/></padding>
 
-        <!-- HERO COMPACT — HBox au lieu de AnchorPane (fix erreur controller) -->
+        <!-- UNIFIED TOP BAR – without Add and Generate with AI buttons -->
+        <HBox spacing="8" alignment="CENTER_LEFT">
+            <!-- Back button -->
+            <Button onAction="#goBackToList"
+                    style="-fx-background-color:#1E293B;-fx-background-radius:10;-fx-cursor:hand;
+                           -fx-padding:8 12;-fx-border-color:#334155;-fx-border-radius:10;-fx-border-width:1;">
+                <graphic><FontIcon iconLiteral="fth-arrow-left" iconSize="14" iconColor="#94A3B8"/></graphic>
+            </Button>
+            <Label text="Back" style="-fx-text-fill:#CBD5E1;-fx-font-size:12px;-fx-font-weight:700;"/>
+
+            <!-- Card count badge -->
+            <Label fx:id="fcCountLabel" text="0 cards"
+                   style="-fx-background-color:#1E293B;-fx-text-fill:#A78BFA;
+                          -fx-font-size:11px;-fx-font-weight:700;
+                          -fx-padding:5 12;-fx-background-radius:20;"/>
+
+            <!-- Search box -->
+            <HBox fx:id="searchBoxFc" alignment="CENTER_LEFT" spacing="0"
+                  HBox.hgrow="ALWAYS"
+                  style="-fx-background-color:#0F172A;-fx-border-color:#1E293B;
+                         -fx-border-radius:14;-fx-background-radius:14;
+                         -fx-effect:dropshadow(gaussian,rgba(0,0,0,0.2),6,0,0,2);">
+                <ComboBox fx:id="searchScopeFc" prefWidth="108"
+                          style="-fx-background-color:#1E293B;-fx-border-color:transparent;
+                                 -fx-border-radius:14 0 0 14;-fx-background-radius:14 0 0 14;
+                                 -fx-font-size:11px;-fx-font-weight:600;-fx-text-fill:#94A3B8;-fx-padding:2 0;"/>
+                <Region style="-fx-background-color:#334155;-fx-pref-width:1;-fx-pref-height:24;"/>
+                <FontIcon iconLiteral="fth-search" iconSize="13" iconColor="#475569" mouseTransparent="true"
+                          style="-fx-padding:0 8 0 10;"/>
+                <TextField fx:id="searchFcField" promptText="Search flashcards…"
+                           HBox.hgrow="ALWAYS"
+                           style="-fx-background-color:transparent;-fx-text-fill:#F8FAFC;
+                                  -fx-prompt-text-fill:#475569;-fx-border-color:transparent;
+                                  -fx-padding:9 0;-fx-font-size:12px;"/>
+                <Label fx:id="fcMatchCount" text=""
+                       style="-fx-background-color:#1E293B;-fx-text-fill:#64748B;
+                              -fx-font-size:10px;-fx-font-weight:700;
+                              -fx-padding:3 8;-fx-background-radius:20;"/>
+                <Button fx:id="clearFcSearchBtn" text="" visible="false" managed="false"
+                        style="-fx-background-color:rgba(148,163,184,0.12);-fx-background-radius:100;
+                               -fx-cursor:hand;-fx-padding:4;-fx-pref-width:22;-fx-pref-height:22;">
+                    <graphic><FontIcon iconLiteral="fth-x" iconSize="10" iconColor="#94A3B8"/></graphic>
+                </Button>
+                <Region style="-fx-pref-width:6;"/>
+            </HBox>
+
+            <!-- Status filter -->
+            <ComboBox fx:id="filterEtat" prefWidth="128"
+                      style="-fx-background-color:#0F172A;-fx-border-color:#1E293B;
+                             -fx-border-radius:14;-fx-background-radius:14;-fx-font-size:11px;"/>
+
+            <!-- Difficulty filter -->
+            <ComboBox fx:id="filterDifficulty" prefWidth="128" promptText="Difficulty…"
+                      style="-fx-background-color:#0F172A;-fx-border-color:#1E293B;
+                             -fx-border-radius:14;-fx-background-radius:14;-fx-font-size:11px;"/>
+
+            <!-- Sort combo -->
+            <ComboBox fx:id="sortFcCombo" prefWidth="138" promptText="Sort cards…"
+                      style="-fx-background-color:#1E293B;-fx-border-color:#334155;
+                             -fx-border-radius:10;-fx-background-radius:10;-fx-font-size:11px;"/>
+        </HBox>
+
+        <!-- Active filter chips bar -->
+        <HBox fx:id="fcFiltersBar" spacing="8" alignment="CENTER_LEFT"
+              visible="false" managed="false">
+            <Label text="Active:" style="-fx-text-fill:#475569;-fx-font-size:11px;-fx-font-weight:600;"/>
+            <HBox fx:id="fcChipsBox" spacing="6" alignment="CENTER_LEFT"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Label fx:id="fcFilterResultCount" text="" style="-fx-text-fill:#475569;-fx-font-size:11px;"/>
+            <Button fx:id="clearFcFiltersBtn" text="Clear all"
+                    style="-fx-background-color:rgba(251,113,133,0.12);-fx-text-fill:#FB7185;
+                           -fx-font-size:10px;-fx-font-weight:700;-fx-background-radius:8;
+                           -fx-cursor:hand;-fx-padding:4 10;"/>
+        </HBox>
+
+        <!-- HERO COMPACT -->
         <HBox fx:id="deckHeroPane" spacing="0" alignment="CENTER_LEFT"
               style="-fx-background-color:linear-gradient(to bottom right,#0F172A,#130926,#0F172A);
                       -fx-background-radius:18;-fx-border-color:#1E293B;
                       -fx-border-radius:18;-fx-border-width:1;
                       -fx-min-height:168;-fx-max-height:190;">
-
-            <!-- Vignette gauche -->
             <StackPane fx:id="deckIconBox" prefWidth="130" prefHeight="130"
                        style="-fx-background-color:linear-gradient(to bottom right,#7C3AED,#6D28D9);
                               -fx-background-radius:18 0 0 18;">
                 <FontIcon fx:id="deckIconGlyph" iconLiteral="fth-layers" iconSize="28" iconColor="white"/>
             </StackPane>
-
-            <!-- Centre : titre + badge + stats -->
             <VBox spacing="6" HBox.hgrow="ALWAYS" style="-fx-padding:12 16;">
                 <Label fx:id="deckTitleLabel" text=""
                        style="-fx-text-fill:#F8FAFC;-fx-font-size:17px;-fx-font-weight:800;"/>
@@ -256,106 +319,31 @@
                     </VBox>
                 </HBox>
             </VBox>
+        </HBox>
 
-            <!-- Droite : Back + Add + AI -->
-            <VBox spacing="8" alignment="CENTER" style="-fx-padding:12 16 12 0;">
-                <Button onAction="#goBackToList"
-                        style="-fx-background-color:#1E293B;-fx-text-fill:#94A3B8;
-                               -fx-font-size:11px;-fx-font-weight:600;-fx-background-radius:10;
-                               -fx-cursor:hand;-fx-padding:7 14;-fx-border-color:#334155;
-                               -fx-border-radius:10;-fx-border-width:1;">
-                    <graphic><FontIcon iconLiteral="fth-arrow-left" iconSize="13" iconColor="#94A3B8"/></graphic>
-                </Button>
-                <Button text="Add" onAction="#showAddFlashcardForm"
-                        style="-fx-background-color:linear-gradient(to right,#7C3AED,#6D28D9);
-                               -fx-text-fill:white;-fx-font-size:12px;-fx-font-weight:700;
-                               -fx-background-radius:10;-fx-cursor:hand;-fx-padding:8 18;
-                               -fx-effect:dropshadow(gaussian,rgba(124,58,237,0.45),10,0,0,3);">
-                    <graphic><FontIcon iconLiteral="fth-plus" iconSize="13" iconColor="white"/></graphic>
-                </Button>
-                <Button text="✨ AI" onAction="#showAIGenerator"
-                        style="-fx-background-color:linear-gradient(to right,#059669,#10B981);
-                               -fx-text-fill:white;-fx-font-size:12px;-fx-font-weight:700;
-                               -fx-background-radius:10;-fx-cursor:hand;-fx-padding:8 14;
-                               -fx-effect:dropshadow(gaussian,rgba(16,185,129,0.45),10,0,0,3);">
-                </Button>
+        <!-- Flashcards card – Generate with AI button REMOVED -->
+        <VBox styleClass="card" spacing="0" VBox.vgrow="ALWAYS">
+            <HBox styleClass="card-header" alignment="CENTER_LEFT" spacing="12">
+                <StackPane styleClass="stat-icon-box, accent" prefWidth="40" prefHeight="40">
+                    <FontIcon iconLiteral="fth-book-open" iconSize="18"/>
+                </StackPane>
+                <VBox spacing="2" HBox.hgrow="ALWAYS">
+                    <Label text="Flashcards List" styleClass="card-title"/>
+                    <Label text="Browse and manage flashcards for this deck." styleClass="text-small"/>
+                </VBox>
+            </HBox>
+            <VBox styleClass="card-body" spacing="0" VBox.vgrow="ALWAYS">
+                <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS"
+                            style="-fx-background-color:transparent;-fx-background:transparent;">
+                    <FlowPane fx:id="flashcardsGrid" hgap="16" vgap="16" prefWrapLength="900"/>
+                </ScrollPane>
             </VBox>
-        </HBox>
-
-        <!-- TOOLBAR -->
-        <HBox spacing="10" alignment="CENTER_LEFT">
-            <Label fx:id="fcCountLabel" text="0 cards"
-                   style="-fx-background-color:#1E293B;-fx-text-fill:#A78BFA;
-                          -fx-font-size:12px;-fx-font-weight:700;
-                          -fx-padding:6 14;-fx-background-radius:20;"/>
-            <Region HBox.hgrow="ALWAYS"/>
-            <ComboBox fx:id="sortFcCombo" prefWidth="160" promptText="Sort cards…"
-                      style="-fx-background-color:#1E293B;-fx-border-color:#334155;
-                             -fx-border-radius:10;-fx-background-radius:10;-fx-font-size:12px;"/>
-        </HBox>
-
-        <!-- SEARCH BAR -->
-        <VBox spacing="8">
-            <HBox spacing="10" alignment="CENTER_LEFT">
-                <HBox fx:id="searchBoxFc" alignment="CENTER_LEFT" spacing="0"
-                      HBox.hgrow="ALWAYS"
-                      style="-fx-background-color:#0F172A;-fx-border-color:#1E293B;
-                             -fx-border-radius:14;-fx-background-radius:14;
-                             -fx-effect:dropshadow(gaussian,rgba(0,0,0,0.2),6,0,0,2);">
-                    <ComboBox fx:id="searchScopeFc" prefWidth="120"
-                              style="-fx-background-color:#1E293B;-fx-border-color:transparent;
-                                     -fx-border-radius:14 0 0 14;-fx-background-radius:14 0 0 14;
-                                     -fx-font-size:11px;-fx-font-weight:600;-fx-text-fill:#94A3B8;-fx-padding:2 0;"/>
-                    <Region style="-fx-background-color:#334155;-fx-pref-width:1;-fx-pref-height:26;"/>
-                    <FontIcon iconLiteral="fth-search" iconSize="14" iconColor="#475569" mouseTransparent="true"
-                              style="-fx-padding:0 10 0 12;"/>
-                    <TextField fx:id="searchFcField" promptText="Type to search flashcards…"
-                               HBox.hgrow="ALWAYS"
-                               style="-fx-background-color:transparent;-fx-text-fill:#F8FAFC;
-                                      -fx-prompt-text-fill:#475569;-fx-border-color:transparent;
-                                      -fx-padding:11 0;-fx-font-size:13px;"/>
-                    <Label fx:id="fcMatchCount" text=""
-                           style="-fx-background-color:#1E293B;-fx-text-fill:#64748B;
-                                  -fx-font-size:10px;-fx-font-weight:700;
-                                  -fx-padding:3 8;-fx-background-radius:20;"/>
-                    <Button fx:id="clearFcSearchBtn" text="" visible="false" managed="false"
-                            style="-fx-background-color:rgba(148,163,184,0.12);-fx-background-radius:100;
-                                   -fx-cursor:hand;-fx-padding:4;-fx-pref-width:22;-fx-pref-height:22;">
-                        <graphic><FontIcon iconLiteral="fth-x" iconSize="10" iconColor="#94A3B8"/></graphic>
-                    </Button>
-                    <Region style="-fx-pref-width:8;"/>
-                </HBox>
-                <ComboBox fx:id="filterEtat" prefWidth="145"
-                          style="-fx-background-color:#0F172A;-fx-border-color:#1E293B;
-                                 -fx-border-radius:14;-fx-background-radius:14;-fx-font-size:12px;"/>
-                <ComboBox fx:id="filterDifficulty" prefWidth="145" promptText="Difficulty…"
-                          style="-fx-background-color:#0F172A;-fx-border-color:#1E293B;
-                                 -fx-border-radius:14;-fx-background-radius:14;-fx-font-size:12px;"/>
-            </HBox>
-            <HBox fx:id="fcFiltersBar" spacing="8" alignment="CENTER_LEFT"
-                  visible="false" managed="false">
-                <Label text="Active:" style="-fx-text-fill:#475569;-fx-font-size:11px;-fx-font-weight:600;"/>
-                <HBox fx:id="fcChipsBox" spacing="6" alignment="CENTER_LEFT"/>
-                <Region HBox.hgrow="ALWAYS"/>
-                <Label fx:id="fcFilterResultCount" text="" style="-fx-text-fill:#475569;-fx-font-size:11px;"/>
-                <Button fx:id="clearFcFiltersBtn" text="Clear all"
-                        style="-fx-background-color:rgba(251,113,133,0.12);-fx-text-fill:#FB7185;
-                               -fx-font-size:10px;-fx-font-weight:700;-fx-background-radius:8;
-                               -fx-cursor:hand;-fx-padding:4 10;"/>
-            </HBox>
         </VBox>
-
-        <!-- GRILLE DE FLASHCARDS -->
-        <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS"
-                    style="-fx-background-color:transparent;-fx-background:transparent;">
-            <FlowPane fx:id="flashcardsGrid" hgap="16" vgap="16" prefWrapLength="900"/>
-        </ScrollPane>
     </VBox>
 
-    <!-- VIEW 3 — Form (loaded dynamically) -->
+    <!-- VIEW 2B – RATING VIEW -->
     <VBox fx:id="ratingView" spacing="22" visible="false" managed="false">
         <padding><Insets top="0" right="0" bottom="24" left="0"/></padding>
-
         <HBox alignment="CENTER_LEFT" spacing="10">
             <Button onAction="#handleRatingBack"
                     style="-fx-background-color:#1E293B;-fx-background-radius:10;-fx-cursor:hand;-fx-padding:8 12;-fx-border-color:#334155;-fx-border-radius:10;-fx-border-width:1;">
@@ -365,14 +353,12 @@
             <Label text="›" style="-fx-text-fill:#334155;-fx-font-size:14px;"/>
             <Label text="Deck Rating" style="-fx-text-fill:#F8FAFC;-fx-font-size:13px;-fx-font-weight:700;"/>
         </HBox>
-
         <HBox alignment="CENTER_LEFT" spacing="16">
             <VBox spacing="4" HBox.hgrow="ALWAYS">
                 <Label text="Rate This Deck" styleClass="text-heading"/>
                 <Label text="Open a deck rating page, select 1 to 5, then save your feedback." styleClass="text-muted"/>
             </VBox>
         </HBox>
-
         <VBox styleClass="card" spacing="0">
             <HBox styleClass="card-header" alignment="CENTER_LEFT" spacing="12">
                 <StackPane styleClass="stat-icon-box, accent" prefWidth="40" prefHeight="40">
@@ -383,7 +369,6 @@
                     <Label fx:id="ratingDeckMetaLabel" text="Choose a deck from My Flashcards." styleClass="text-small"/>
                 </VBox>
             </HBox>
-
             <VBox styleClass="card-body" spacing="18">
                 <VBox spacing="10">
                     <Label text="Choose your rating" style="-fx-text-fill:#CBD5E1;-fx-font-size:13px;-fx-font-weight:700;"/>
@@ -397,14 +382,12 @@
                     <Label fx:id="selectedStarsLabel" text="No rating selected"
                            style="-fx-text-fill:#94A3B8;-fx-font-size:12px;-fx-font-weight:600;"/>
                 </VBox>
-
                 <VBox spacing="8">
                     <Label text="Comment (optional)" style="-fx-text-fill:#CBD5E1;-fx-font-size:13px;-fx-font-weight:700;"/>
                     <TextArea fx:id="ratingCommentArea" promptText="Example: this deck is difficult / easy / needs simpler explanations..."
                               prefRowCount="4"
                               style="-fx-control-inner-background:#1E293B;-fx-background-color:#1E293B;-fx-text-fill:#F8FAFC;-fx-prompt-text-fill:#475569;-fx-border-color:#334155;-fx-border-width:1.5;-fx-border-radius:10;-fx-background-radius:10;-fx-font-size:13px;"/>
                 </VBox>
-
                 <HBox alignment="CENTER_LEFT" spacing="12">
                     <Button text="Submit Rating" onAction="#submitDeckRating"
                             style="-fx-background-color:linear-gradient(to right,#EC4899,#C026D3);-fx-text-fill:white;-fx-font-size:13px;-fx-font-weight:700;-fx-background-radius:12;-fx-cursor:hand;-fx-padding:10 22;">
@@ -413,13 +396,13 @@
                     <Button text="Cancel" onAction="#handleRatingBack"
                             style="-fx-background-color:#1E293B;-fx-text-fill:#CBD5E1;-fx-font-size:13px;-fx-font-weight:700;-fx-background-radius:12;-fx-cursor:hand;-fx-padding:10 18;-fx-border-color:#334155;-fx-border-radius:12;-fx-border-width:1;"/>
                 </HBox>
-
                 <Label fx:id="ratingStatusLabel" text="Rate a deck from the list to continue."
                        style="-fx-text-fill:#64748B;-fx-font-size:11px;"/>
             </VBox>
         </VBox>
     </VBox>
 
+    <!-- VIEW 3 – Form (loaded dynamically) -->
     <StackPane fx:id="formHost" visible="false" managed="false"/>
 
 </StackPane>

@@ -213,6 +213,22 @@
                 </VBox>
             </HBox>
 
+            <VBox spacing="10" style="-fx-background-color:#0B1220;-fx-background-radius:14;-fx-border-color:#1E293B;-fx-border-radius:14;-fx-border-width:1;-fx-padding:14 16;">
+                <HBox alignment="CENTER_LEFT" spacing="10">
+                    <StackPane prefWidth="34" prefHeight="34" style="-fx-background-color:rgba(251,191,36,0.12);-fx-background-radius:10;">
+                        <FontIcon iconLiteral="fth-bell" iconSize="14" iconColor="#FBBF24"/>
+                    </StackPane>
+                    <VBox spacing="2" HBox.hgrow="ALWAYS">
+                        <Label text="Bad Rating Alerts" style="-fx-text-fill:#F8FAFC;-fx-font-size:13px;-fx-font-weight:700;"/>
+                        <Label fx:id="ratingAlertsSummaryLabel" text="Support alerts will appear here when students rate a deck badly." style="-fx-text-fill:#64748B;-fx-font-size:11px;"/>
+                    </VBox>
+                </HBox>
+
+                <VBox fx:id="ratingAlertsContainer" spacing="10">
+                    <Label text="No support alert loaded yet." style="-fx-text-fill:#64748B;-fx-font-size:11px;"/>
+                </VBox>
+            </VBox>
+
             <ScrollPane fitToWidth="true" hbarPolicy="NEVER" VBox.vgrow="ALWAYS"
                         style="-fx-background-color:transparent;-fx-background:transparent;">
                 <VBox fx:id="ratingsListContainer" spacing="10" style="-fx-padding:2 0 2 0;">

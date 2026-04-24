@@ -2,6 +2,7 @@ package com.studyflow.controllers;
 
 import com.studyflow.models.Flashcard;
 import com.studyflow.services.AIFlashcardService;
+import com.studyflow.services.DeckQRCodeService;
 import javafx.animation.FadeTransition;
 import javafx.animation.PauseTransition;
 import javafx.animation.SequentialTransition;
@@ -33,6 +34,7 @@ import java.util.Map;
  *  - Compteurs de caractères en temps réel
  *  - Conseils 💡 intégrés dans le FXML
  *  - File pickers image / PDF avec contrôle de taille et extension
+ *  - Bouton QR Code unique par deck (📱)
  */
 public class FlashcardsController extends FlashcardsFeaturesController {
 
@@ -452,6 +454,27 @@ public class FlashcardsController extends FlashcardsFeaturesController {
     private void setFileLabel(Label lbl, String text) {
         if (lbl == null) return;
         lbl.setText(text); lbl.setVisible(true); lbl.setManaged(true);
+    }
+
+    /* ══════════════════════════════════════════════════════════════════════
+       QR CODE — bouton par deck
+       ══════════════════════════════════════════════════════════════════════ */
+
+    /**
+     * Appelé depuis les boutons "📱 QR Code" dans buildDeckCard()
+     * et "📱 QR" dans buildDeckListRow() (définis dans FlashcardsFeaturesController).
+     *
+     * Lance la génération + popup sur un thread daemon pour ne pas
+     * bloquer le FX thread.
+     */
+    public void showDeckQRCode(com.studyflow.models.Deck deck) {
+        if (deck == null) return;
+        Thread t = new Thread(
+                () -> DeckQRCodeService.showQRCode(deck, flashcardService),
+                "qr-gen-" + deck.getIdDeck()
+        );
+        t.setDaemon(true);
+        t.start();
     }
 
     /* ══════════════════════════════════════════════════════════════════════
