@@ -95,7 +95,7 @@
 
                     <VBox spacing="8">
                         <Label text="Question Text" styleClass="auth-field-label"/>
-                        <TextArea fx:id="questionTextArea" prefRowCount="9" wrapText="true" styleClass="admin-textarea"/>
+                            <TextArea fx:id="questionTextArea" prefRowCount="9" wrapText="true" styleClass="admin-textarea"/>
                         <Label text="Condition: obligatoire, minimum 5 caractères et maximum 1000 caractères." styleClass="text-small"/>
                     </VBox>
 

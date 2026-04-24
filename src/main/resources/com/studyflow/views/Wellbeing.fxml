@@ -186,7 +186,7 @@
                     <Label text="Quote Type" styleClass="text-small"/>
                     <ComboBox fx:id="quoteTypeCombo" prefWidth="140"/>
                     <CheckBox fx:id="quoteEnabledToggle" text="Enable quotes"/>
-                    <Button text="Reset position" styleClass="btn-secondary, tools-reset-btn" onAction="#handleApplyQuoteSettings"/>
+                    <Button text="Reset position" styleClass="btn-secondary, tools-reset-btn" onAction="#handleResetQuotePosition"/>
                     <Label text="Drag the quote card to any position on screen." styleClass="text-small, tools-control-hint"/>
                     <Region HBox.hgrow="ALWAYS"/>
                     <Button text="Apply" styleClass="btn-secondary" onAction="#handleApplyQuoteSettings"/>
@@ -206,22 +206,22 @@
                     <Label text="Quick Wellbeing Tips" styleClass="tools-tips-title"/>
                     <HBox spacing="12">
                         <VBox spacing="4" styleClass="tools-tip-card" HBox.hgrow="ALWAYS">
-                            <Label text="💧" styleClass="tools-tip-emoji"/>
+                            <FontIcon iconLiteral="fth-droplet" styleClass="tools-tip-emoji"/>
                             <Label text="Stay Hydrated" styleClass="tools-tip-title"/>
                             <Label text="Drink at least 8 glasses of water daily" styleClass="tools-tip-desc" wrapText="true"/>
                         </VBox>
                         <VBox spacing="4" styleClass="tools-tip-card" HBox.hgrow="ALWAYS">
-                            <Label text="🚶" styleClass="tools-tip-emoji"/>
+                            <FontIcon iconLiteral="fth-activity" styleClass="tools-tip-emoji"/>
                             <Label text="Take Breaks" styleClass="tools-tip-title"/>
                             <Label text="Walk for 5 mins every hour of studying" styleClass="tools-tip-desc" wrapText="true"/>
                         </VBox>
                         <VBox spacing="4" styleClass="tools-tip-card" HBox.hgrow="ALWAYS">
-                            <Label text="😴" styleClass="tools-tip-emoji"/>
+                            <FontIcon iconLiteral="fth-moon" styleClass="tools-tip-emoji"/>
                             <Label text="Sleep Well" styleClass="tools-tip-title"/>
                             <Label text="Aim for 7-8 hours of quality sleep" styleClass="tools-tip-desc" wrapText="true"/>
                         </VBox>
                         <VBox spacing="4" styleClass="tools-tip-card" HBox.hgrow="ALWAYS">
-                            <Label text="🎯" styleClass="tools-tip-emoji"/>
+                            <FontIcon iconLiteral="fth-target" styleClass="tools-tip-emoji"/>
                             <Label text="Set Boundaries" styleClass="tools-tip-title"/>
                             <Label text="It's okay to say no sometimes" styleClass="tools-tip-desc" wrapText="true"/>
                         </VBox>

@@ -3,6 +3,7 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Priority?>
@@ -17,91 +18,127 @@
             styleClass="admin-shell">
 
     <left>
-        <VBox styleClass="admin-sidebar-2" prefWidth="254">
+        <VBox styleClass="admin-sidebar-2" prefWidth="260">
             <HBox alignment="CENTER_LEFT" spacing="12" styleClass="admin-brand-row">
                 <padding>
                     <Insets top="22" right="20" bottom="18" left="20"/>
                 </padding>
                 <StackPane styleClass="admin-brand-logo">
-                    <Label text="R" styleClass="admin-brand-logo-text"/>
+                    <FontIcon iconLiteral="fth-settings" iconSize="15"/>
                 </StackPane>
                 <VBox spacing="2">
                     <Label text="RLIFE" styleClass="admin-brand-title"/>
-                    <Label text="Admin Panel" styleClass="admin-brand-subtitle"/>
+                    <Label text="Admin Workspace" styleClass="admin-brand-subtitle"/>
                 </VBox>
             </HBox>
 
-            <VBox spacing="10" VBox.vgrow="ALWAYS">
-                <VBox spacing="6" styleClass="admin-nav-group">
-                    <padding>
-                        <Insets top="10" right="12" bottom="0" left="12"/>
-                    </padding>
-                    <Label text="ADMINISTRATION" styleClass="admin-nav-section"/>
-                    <Button fx:id="btnDashboard" styleClass="admin-nav-btn, active" onAction="#showDashboard" maxWidth="Infinity">
-                        <graphic>
-                            <FontIcon iconLiteral="fth-grid" iconSize="17"/>
-                        </graphic>
-                        <text>Dashboard</text>
-                    </Button>
-                    <Button fx:id="btnUsers" styleClass="admin-nav-btn" onAction="#showUsers" maxWidth="Infinity">
-                        <graphic>
-                            <FontIcon iconLiteral="fth-users" iconSize="17"/>
-                        </graphic>
-                        <text>User Management</text>
-                    </Button>
-                    <Button fx:id="btnStats" styleClass="admin-nav-btn" onAction="#showStats" maxWidth="Infinity">
-                        <graphic>
-                            <FontIcon iconLiteral="fth-bar-chart-2" iconSize="17"/>
-                        </graphic>
-                        <text>Analytics</text>
-                    </Button>
-                </VBox>
+            <ScrollPane fitToWidth="true" hbarPolicy="NEVER" VBox.vgrow="ALWAYS" styleClass="admin-sidebar-scroll">
+                <content>
+                    <VBox spacing="8" styleClass="admin-sidebar-content">
+                        <padding>
+                            <Insets top="8" right="12" bottom="12" left="12"/>
+                        </padding>
 
-                <VBox spacing="6" styleClass="admin-nav-group">
-                    <padding>
-                        <Insets top="8" right="12" bottom="0" left="12"/>
-                    </padding>
-                    <Label text="CONTENT" styleClass="admin-nav-section"/>
-                    <Button fx:id="btnMatieres" styleClass="admin-nav-btn" onAction="#showMatieres" maxWidth="Infinity">
-                        <graphic>
-                            <FontIcon iconLiteral="fth-layers" iconSize="17"/>
-                        </graphic>
-                        <text>Deck Management</text>
-                    </Button>
-                </VBox>
+                        <Label text="MAIN" styleClass="admin-nav-section"/>
+                        <Button fx:id="btnDashboard" styleClass="admin-nav-btn, active" onAction="#showDashboard" maxWidth="Infinity">
+                            <graphic>
+                                <FontIcon iconLiteral="fth-home" iconSize="17"/>
+                            </graphic>
+                            <text>Dashboard</text>
+                        </Button>
+                        <Button fx:id="btnCourses" styleClass="admin-nav-btn" onAction="#showCoursesAdmin" maxWidth="Infinity">
+                            <graphic>
+                                <FontIcon iconLiteral="fth-book-open" iconSize="17"/>
+                            </graphic>
+                            <text>Courses</text>
+                        </Button>
+                        <Button fx:id="btnAssignments" styleClass="admin-nav-btn" onAction="#showAssignmentsAdmin" maxWidth="Infinity">
+                            <graphic>
+                                <FontIcon iconLiteral="fth-clipboard" iconSize="17"/>
+                            </graphic>
+                            <text>Assignments</text>
+                        </Button>
+                        <Button fx:id="btnPlanning" styleClass="admin-nav-btn" onAction="#showPlanningAdmin" maxWidth="Infinity">
+                            <graphic>
+                                <FontIcon iconLiteral="fth-calendar" iconSize="17"/>
+                            </graphic>
+                            <text>Planning</text>
+                        </Button>
 
-                <VBox spacing="6" styleClass="admin-nav-group">
-                    <padding>
-                        <Insets top="8" right="12" bottom="0" left="12"/>
-                    </padding>
-                    <Label text="WELLBEING" styleClass="admin-nav-section"/>
-                    <Button fx:id="btnStressQuestions" styleClass="admin-nav-btn" onAction="#showStressQuestions" maxWidth="Infinity">
-                        <graphic>
-                            <FontIcon iconLiteral="fth-heart" iconSize="17"/>
-                        </graphic>
-                        <text>Stress Questions</text>
-                    </Button>
-                    <Button fx:id="btnRecommendations" styleClass="admin-nav-btn" onAction="#showRecommendations" maxWidth="Infinity">
-                        <graphic>
-                            <FontIcon iconLiteral="fth-activity" iconSize="17"/>
-                        </graphic>
-                        <text>Recommendations</text>
-                    </Button>
-                </VBox>
+                        <Label text="STUDY TOOLS" styleClass="admin-nav-section">
+                            <padding>
+                                <Insets top="8"/>
+                            </padding>
+                        </Label>
+                        <Button fx:id="btnMatieres" styleClass="admin-nav-btn" onAction="#showMatieres" maxWidth="Infinity">
+                            <graphic>
+                                <FontIcon iconLiteral="fth-layers" iconSize="17"/>
+                            </graphic>
+                            <text>Decks</text>
+                        </Button>
+                        <Button fx:id="btnProjects" styleClass="admin-nav-btn" onAction="#showProjectsAdmin" maxWidth="Infinity">
+                            <graphic>
+                                <FontIcon iconLiteral="fth-users" iconSize="17"/>
+                            </graphic>
+                            <text>Projects</text>
+                        </Button>
+                        <Button fx:id="btnNotes" styleClass="admin-nav-btn" onAction="#showNotesAdmin" maxWidth="Infinity">
+                            <graphic>
+                                <FontIcon iconLiteral="fth-file-text" iconSize="17"/>
+                            </graphic>
+                            <text>Notes</text>
+                        </Button>
 
-                <VBox spacing="6" styleClass="admin-nav-group">
-                    <padding>
-                        <Insets top="8" right="12" bottom="0" left="12"/>
-                    </padding>
-                    <Label text="SYSTEM" styleClass="admin-nav-section"/>
-                    <Button fx:id="btnSettings" styleClass="admin-nav-btn" onAction="#showSettings" maxWidth="Infinity">
-                        <graphic>
-                            <FontIcon iconLiteral="fth-settings" iconSize="17"/>
-                        </graphic>
-                        <text>Settings</text>
-                    </Button>
-                </VBox>
-            </VBox>
+                        <Label text="WELLNESS" styleClass="admin-nav-section">
+                            <padding>
+                                <Insets top="8"/>
+                            </padding>
+                        </Label>
+                        <Button fx:id="btnStressQuestions" styleClass="admin-nav-btn" onAction="#showStressQuestions" maxWidth="Infinity">
+                            <graphic>
+                                <FontIcon iconLiteral="fth-help-circle" iconSize="17"/>
+                            </graphic>
+                            <text>Stress Questions</text>
+                        </Button>
+                        <Button fx:id="btnRecommendations" styleClass="admin-nav-btn" onAction="#showRecommendations" maxWidth="Infinity">
+                            <graphic>
+                                <FontIcon iconLiteral="fth-activity" iconSize="17"/>
+                            </graphic>
+                            <text>Recommendations</text>
+                        </Button>
+                        <Button fx:id="btnStats" styleClass="admin-nav-btn" onAction="#showStats" maxWidth="Infinity">
+                            <graphic>
+                                <FontIcon iconLiteral="fth-bar-chart-2" iconSize="17"/>
+                            </graphic>
+                            <text>Statistics</text>
+                        </Button>
+
+                        <Label text="ADMIN TOOLS" styleClass="admin-nav-section">
+                            <padding>
+                                <Insets top="8"/>
+                            </padding>
+                        </Label>
+                        <Button fx:id="btnUsers" styleClass="admin-nav-btn" onAction="#showUsers" maxWidth="Infinity">
+                            <graphic>
+                                <FontIcon iconLiteral="fth-user-plus" iconSize="17"/>
+                            </graphic>
+                            <text>Users</text>
+                        </Button>
+                        <Button fx:id="btnAuditLog" styleClass="admin-nav-btn" onAction="#showAuditLog" maxWidth="Infinity">
+                            <graphic>
+                                <FontIcon iconLiteral="fth-shield" iconSize="17"/>
+                            </graphic>
+                            <text>Audit Log</text>
+                        </Button>
+                        <Button fx:id="btnAiAgent" styleClass="admin-nav-btn" onAction="#showAiAgent" maxWidth="Infinity">
+                            <graphic>
+                                <FontIcon iconLiteral="fth-cpu" iconSize="17"/>
+                            </graphic>
+                            <text>AI Agent</text>
+                        </Button>
+                    </VBox>
+                </content>
+            </ScrollPane>
 
             <HBox styleClass="admin-profile-card" alignment="CENTER_LEFT" spacing="12">
                 <padding>
@@ -112,7 +149,7 @@
                 </StackPane>
                 <VBox spacing="2" HBox.hgrow="ALWAYS">
                     <Label fx:id="sidebarUserName" text="Admin RLife" styleClass="admin-profile-name"/>
-                    <Label fx:id="sidebarUserSub" text="Admin" styleClass="admin-profile-role"/>
+                    <Label fx:id="sidebarUserSub" text="admin@rlife.com" styleClass="admin-profile-role"/>
                 </VBox>
                 <Button styleClass="btn-ghost" onAction="#handleLogout">
                     <graphic>

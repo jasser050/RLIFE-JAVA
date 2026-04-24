@@ -15,7 +15,6 @@ import com.studyflow.services.ServiceWellBeing;
 import com.studyflow.services.ServiceWellbeingJournalEntry;
 import com.studyflow.services.SpeechToTextService;
 import com.studyflow.services.WellbeingAiService;
-import com.studyflow.services.WindowsSpeechRecognitionService;
 import com.studyflow.utils.UserSession;
 import com.studyflow.utils.EmojiUtils;
 import javafx.animation.KeyFrame;
@@ -183,7 +182,6 @@ public class WellbeingController implements Initializable {
     private final ServiceQuizStress serviceQuizStress = new ServiceQuizStress();
     private final ServiceRecommendationStress serviceRecommendationStress = new ServiceRecommendationStress();
     private final SpeechToTextService speechToTextService = new SpeechToTextService();
-    private final WindowsSpeechRecognitionService windowsSpeechRecognitionService = new WindowsSpeechRecognitionService();
     private final WellbeingAiService wellbeingAiService = new WellbeingAiService();
     private final ObservableList<WellBeing> allCheckins = FXCollections.observableArrayList();
     private final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("MMM d, yyyy");
@@ -200,13 +198,19 @@ public class WellbeingController implements Initializable {
     private static final int QUIZ_AI_QUESTION_COUNT = 10;
     private static final int MIN_NOTE_LENGTH = 6;
     private static final int MAX_NOTE_LENGTH = 1000;
+    private static final int GLOBAL_MESSAGE_HIDE_SECONDS = 5;
+    private static final double VOICE_SILENCE_AVG_THRESHOLD = 85.0;
+    private static final int VOICE_SILENCE_PEAK_THRESHOLD = 650;
     private static final String PREF_QUOTE_TYPE = "global.quote.type";
     private static final String PREF_QUOTE_ENABLED = "global.quote.enabled";
     private static final String PREF_QUOTE_DISMISSED_UNTIL = "global.quote.dismissed.until";
+    private static final String PREF_QUOTE_POS_X = "global.quote.position.x";
+    private static final String PREF_QUOTE_POS_Y = "global.quote.position.y";
     private static final int MOOD_EMOJI_SIZE = 56;
     private static final int MOOD_EMOJI_FALLBACK_FONT_SIZE = 50;
     private final Preferences preferences = Preferences.userNodeForPackage(MainController.class);
     private Runnable activeInlineToolCloser;
+    private Timeline globalMessageTimer;
     private String journalAutoCandidateCode = "";
     private int journalAutoCandidateHits = 0;
     private record CopingToolDef(String key, String title, String durationLabel, int durationSeconds, String description) {}
@@ -264,6 +268,14 @@ public class WellbeingController implements Initializable {
         showGlobalMessage("Quote settings updated.", false);
     }
 
+    @FXML
+    private void handleResetQuotePosition() {
+        preferences.remove(PREF_QUOTE_POS_X);
+        preferences.remove(PREF_QUOTE_POS_Y);
+        preferences.putLong(PREF_QUOTE_DISMISSED_UNTIL, 0L);
+        showGlobalMessage("Quote position reset.", false);
+    }
+
     private void setupFilters() {
         if (overviewSortCombo != null) {
             overviewSortCombo.setItems(FXCollections.observableArrayList(
@@ -295,13 +307,18 @@ public class WellbeingController implements Initializable {
     }
 
     private void setupForm() {
+        if (stressSlider == null || energySlider == null || stressValueLabel == null || energyValueLabel == null) {
+            return;
+        }
         stressSlider.valueProperty().addListener((obs, oldVal, newVal) -> stressValueLabel.setText(String.valueOf(newVal.intValue())));
         energySlider.valueProperty().addListener((obs, oldVal, newVal) -> energyValueLabel.setText(String.valueOf(newVal.intValue())));
         stressValueLabel.setText(String.valueOf((int) stressSlider.getValue()));
         energyValueLabel.setText(String.valueOf((int) energySlider.getValue()));
         configureMoodButtons();
-        cancelEditButton.setVisible(false);
-        cancelEditButton.setManaged(false);
+        if (cancelEditButton != null) {
+            cancelEditButton.setVisible(false);
+            cancelEditButton.setManaged(false);
+        }
         updateChoiceSelection(moodButtonsBox, selectedMood);
         updateChoiceSelection(sleepButtonsBox, String.valueOf((int) selectedSleepHours));
     }
@@ -343,12 +360,22 @@ public class WellbeingController implements Initializable {
         Integer currentUserId = getCurrentUserId();
         if (currentUserId == null || currentUserId <= 0) {
             allCheckins.clear();
+            refreshOverview();
+            refreshHistoryTable();
             showError("Please log in with a valid account to access your wellbeing data.");
             return;
         }
-        allCheckins.setAll(serviceWellBeing.findAllForUser(currentUserId));
-        refreshOverview();
-        refreshHistoryTable();
+        try {
+            allCheckins.setAll(serviceWellBeing.findAllForUser(currentUserId));
+            refreshOverview();
+            refreshHistoryTable();
+        } catch (RuntimeException e) {
+            allCheckins.clear();
+            refreshOverview();
+            refreshHistoryTable();
+            String message = e.getMessage() == null ? "Unable to load wellbeing data." : e.getMessage();
+            showError(message);
+        }
     }
 
     private void refreshOverview() {
@@ -679,7 +706,7 @@ public class WellbeingController implements Initializable {
                 new CopingToolDef("gratitude_journal", "Gratitude Journal", "2 min", 120, "Write three things you're grateful for"),
                 new CopingToolDef("nature_sounds", "Nature Sounds", "Ongoing", 300, "Relaxing ambient sounds for focus"),
                 new CopingToolDef("yoga_coach", "Yoga Coach", "6 min", 360, "Stress-relief yoga with dynamic demo"),
-                new CopingToolDef("ai_chat_coach", "AI Chat Coach", "Anytime", 300, "Talk with AI for motivation and practical advice")
+                new CopingToolDef("ai_chat_coach", "AI Chat Assistant", "Anytime", 300, "Talk with AI for general questions, study help, and wellbeing")
         );
     }
 
@@ -1125,10 +1152,14 @@ public class WellbeingController implements Initializable {
         AtomicBoolean voiceRunning = new AtomicBoolean(false);
         Thread[] voiceThread = new Thread[1];
         AtomicReference<String> selectedVoiceLanguage = new AtomicReference<>("auto");
+        AtomicReference<String> autoDetectedVoiceLanguage = new AtomicReference<>("");
         selectedVoiceLanguage.set(mapJournalLanguageSelection(languageBox.getValue()));
-        languageBox.valueProperty().addListener((obs, oldValue, newValue) ->
-                selectedVoiceLanguage.set(mapJournalLanguageSelection(newValue))
-        );
+        languageBox.valueProperty().addListener((obs, oldValue, newValue) -> {
+            selectedVoiceLanguage.set(mapJournalLanguageSelection(newValue));
+            if (!"Auto (AI detect)".equals(newValue)) {
+                autoDetectedVoiceLanguage.set("");
+            }
+        });
 
         Runnable[] reload = new Runnable[1];
         reload[0] = () -> {
@@ -1220,20 +1251,18 @@ public class WellbeingController implements Initializable {
                 return;
             }
             boolean canUseApi = speechToTextService.isConfigured();
-            boolean canUseWindowsLocal = windowsSpeechRecognitionService.isSupported();
-            if (!canUseApi && !canUseWindowsLocal) {
-                statusLabel.setText("Voice input unavailable on this device.");
+            if (!canUseApi) {
+                statusLabel.setText("Voice input unavailable: configure OPENAI_API_KEY.");
                 return;
             }
             voiceRunning.set(true);
             journalAutoCandidateCode = "";
             journalAutoCandidateHits = 0;
+            autoDetectedVoiceLanguage.set("");
             startVoiceBtn.setDisable(true);
             stopVoiceBtn.setDisable(false);
             voiceStatusLabel.setText("Voice: listening...");
-            statusLabel.setText(canUseApi
-                    ? "Voice input started (AI transcription)."
-                    : "Voice input started (local Windows recognition).");
+            statusLabel.setText("Voice input started (AI transcription: " + speechToTextService.getConfiguredProviderLabel() + ").");
 
             voiceThread[0] = new Thread(() -> runJournalVoiceLoop(
                     voiceRunning,
@@ -1244,7 +1273,8 @@ public class WellbeingController implements Initializable {
                     stopVoiceBtn,
                     selectedVoiceLanguage,
                     usedVoiceForEntry,
-                    languageBox
+                    languageBox,
+                    autoDetectedVoiceLanguage
             ), "journal-voice-loop");
             voiceThread[0].setDaemon(true);
             voiceThread[0].start();
@@ -1263,7 +1293,7 @@ public class WellbeingController implements Initializable {
             try {
                 String languageCode = mapJournalLanguageSelection(languageBox.getValue());
                 if ("auto".equalsIgnoreCase(languageCode)) {
-                    languageCode = null;
+                    languageCode = normalizeLanguageCode(autoDetectedVoiceLanguage.get());
                 }
 
                 if (editingId[0] > 0) {
@@ -1373,18 +1403,24 @@ public class WellbeingController implements Initializable {
             Button stopVoiceBtn,
             AtomicReference<String> languageCodeRef,
             boolean[] usedVoiceForEntry,
-            ComboBox<String> languageBox
+            ComboBox<String> languageBox,
+            AtomicReference<String> autoDetectedLanguageRef
     ) {
         if (!speechToTextService.isConfigured()) {
-            runJournalLocalWindowsVoiceLoop(
-                    running, input, statusLabel, voiceStatusLabel, startVoiceBtn, stopVoiceBtn, languageCodeRef, usedVoiceForEntry, languageBox
-            );
+            Platform.runLater(() -> {
+                statusLabel.setText("Voice input unavailable: configure OPENAI_API_KEY.");
+                voiceStatusLabel.setText("Voice: unavailable");
+                startVoiceBtn.setDisable(false);
+                stopVoiceBtn.setDisable(true);
+            });
+            running.set(false);
             return;
         }
 
         AudioFormat format = new AudioFormat(16000f, 16, 1, true, false);
         DataLine.Info info = new DataLine.Info(TargetDataLine.class, format);
         TargetDataLine line = null;
+        int transcriptionFailureStreak = 0;
 
         try {
             if (!AudioSystem.isLineSupported(info)) {
@@ -1403,24 +1439,51 @@ public class WellbeingController implements Initializable {
             line.start();
 
             while (running.get()) {
-                byte[] wavChunk = captureWavChunk(line, format, 1900, running);
+                byte[] wavChunk = captureWavChunk(line, format, 3200, running);
                 if (!running.get()) {
                     break;
                 }
                 if (wavChunk.length < 3000) {
                     continue;
                 }
-
-                String transcript = speechToTextService.transcribeWav(wavChunk, languageCodeRef.get());
-                if (transcript == null || transcript.isBlank()) {
+                if (isLikelySilentWav(wavChunk)) {
+                    Platform.runLater(() -> voiceStatusLabel.setText("Voice: listening..."));
                     continue;
                 }
 
-                String clean = transcript.trim();
+                String selectedLanguageCode = languageCodeRef.get();
+                String sttLanguage = "auto".equalsIgnoreCase(selectedLanguageCode) ? null : selectedLanguageCode;
+                SpeechToTextService.TranscriptionResult result = speechToTextService.transcribeWavDetailed(wavChunk, sttLanguage);
+                if (result == null || result.text() == null || result.text().isBlank()) {
+                    transcriptionFailureStreak++;
+                    String detail = speechToTextService.getLastError();
+                    if (transcriptionFailureStreak >= 3) {
+                        Platform.runLater(() -> statusLabel.setText(
+                                detail == null || detail.isBlank()
+                                        ? "Voice captured but no text detected."
+                                        : "Transcription issue: " + detail
+                        ));
+                    }
+                    continue;
+                }
+                transcriptionFailureStreak = 0;
+
+                String clean = result.text().trim();
+                if (!isMeaningfulSpeechText(clean)) {
+                    continue;
+                }
+                String detectedLanguageCode = result.languageCode();
                 Platform.runLater(() -> {
                     appendTranscriptToInput(input, clean);
                     usedVoiceForEntry[0] = true;
-                    updateJournalAutoLanguage(languageBox, languageCodeRef, clean, input.getText(), statusLabel);
+                    updateJournalAutoLanguage(
+                            languageBox,
+                            clean,
+                            input.getText(),
+                            statusLabel,
+                            detectedLanguageCode,
+                            autoDetectedLanguageRef
+                    );
                     voiceStatusLabel.setText("Voice: writing...");
                 });
             }
@@ -1450,79 +1513,21 @@ public class WellbeingController implements Initializable {
         }
     }
 
-    private void runJournalLocalWindowsVoiceLoop(
-            AtomicBoolean running,
-            TextArea input,
-            Label statusLabel,
-            Label voiceStatusLabel,
-            Button startVoiceBtn,
-            Button stopVoiceBtn,
-            AtomicReference<String> languageCodeRef,
-            boolean[] usedVoiceForEntry,
-            ComboBox<String> languageBox
-    ) {
-        try {
-            while (running.get()) {
-                String transcript = windowsSpeechRecognitionService.recognizeOnce(languageCodeRef.get());
-                if (!running.get()) {
-                    break;
-                }
-                if (transcript == null || transcript.isBlank()) {
-                    try {
-                        Thread.sleep(220);
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        break;
-                    }
-                    continue;
-                }
-
-                String clean = transcript.trim();
-                Platform.runLater(() -> {
-                    appendTranscriptToInput(input, clean);
-                    usedVoiceForEntry[0] = true;
-                    updateJournalAutoLanguage(languageBox, languageCodeRef, clean, input.getText(), statusLabel);
-                    voiceStatusLabel.setText("Voice: writing...");
-                });
-            }
-        } catch (RuntimeException e) {
-            Platform.runLater(() -> {
-                statusLabel.setText("Voice input error.");
-                voiceStatusLabel.setText("Voice: error");
-            });
-        } finally {
-            running.set(false);
-            Platform.runLater(() -> {
-                startVoiceBtn.setDisable(false);
-                stopVoiceBtn.setDisable(true);
-                if (!"Voice: error".equals(voiceStatusLabel.getText())) {
-                    voiceStatusLabel.setText("Voice: idle");
-                }
-            });
-        }
-    }
-
     private byte[] captureWavChunk(TargetDataLine line, AudioFormat format, int millis, AtomicBoolean running) {
         ByteArrayOutputStream pcm = new ByteArrayOutputStream();
         byte[] buffer = new byte[4096];
-        long endTime = System.currentTimeMillis() + millis;
+        int frameSize = Math.max(1, format.getFrameSize());
+        int targetBytes = Math.max(frameSize * 32, (int) ((format.getSampleRate() * frameSize * millis) / 1000.0));
+        int totalRead = 0;
 
-        while (running.get() && System.currentTimeMillis() < endTime) {
-            int available = line.available();
-            if (available <= 0) {
-                try {
-                    Thread.sleep(20);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    break;
-                }
-                continue;
-            }
-
-            int toRead = Math.min(buffer.length, available);
+        while (running.get() && totalRead < targetBytes) {
+            int toRead = Math.min(buffer.length, targetBytes - totalRead);
             int read = line.read(buffer, 0, toRead);
             if (read > 0) {
                 pcm.write(buffer, 0, read);
+                totalRead += read;
+            } else if (read < 0) {
+                break;
             }
         }
 
@@ -1542,7 +1547,7 @@ public class WellbeingController implements Initializable {
     }
 
     private void appendTranscriptToInput(TextArea input, String transcript) {
-        if (transcript == null || transcript.isBlank()) {
+        if (!isMeaningfulSpeechText(transcript)) {
             return;
         }
         String existing = input.getText() == null ? "" : input.getText().trim();
@@ -1557,14 +1562,52 @@ public class WellbeingController implements Initializable {
         input.positionCaret(input.getText().length());
     }
 
+    private boolean isMeaningfulSpeechText(String text) {
+        if (text == null) {
+            return false;
+        }
+        String clean = text.trim();
+        if (clean.isBlank() || clean.length() < 2) {
+            return false;
+        }
+        return clean.chars().anyMatch(Character::isLetterOrDigit);
+    }
+
+    private boolean isLikelySilentWav(byte[] wavChunk) {
+        if (wavChunk == null || wavChunk.length < 46) {
+            return true;
+        }
+        int start = wavChunk.length > 44 ? 44 : 0;
+        long sumAbs = 0L;
+        int sampleCount = 0;
+        int peak = 0;
+
+        for (int i = start; i + 1 < wavChunk.length; i += 2) {
+            int sample = (short) (((wavChunk[i + 1] & 0xFF) << 8) | (wavChunk[i] & 0xFF));
+            int abs = Math.abs(sample);
+            sumAbs += abs;
+            sampleCount++;
+            if (abs > peak) {
+                peak = abs;
+            }
+        }
+
+        if (sampleCount == 0) {
+            return true;
+        }
+        double avg = sumAbs / (double) sampleCount;
+        return avg < VOICE_SILENCE_AVG_THRESHOLD && peak < VOICE_SILENCE_PEAK_THRESHOLD;
+    }
+
     private void updateJournalAutoLanguage(
             ComboBox<String> languageBox,
-            AtomicReference<String> languageCodeRef,
             String transcript,
             String fullInputText,
-            Label statusLabel
+            Label statusLabel,
+            String detectedLanguageCode,
+            AtomicReference<String> autoDetectedLanguageRef
     ) {
-        if (languageBox == null || languageCodeRef == null || transcript == null || transcript.isBlank()) {
+        if (languageBox == null || transcript == null || transcript.isBlank()) {
             return;
         }
         String selection = languageBox.getValue();
@@ -1573,8 +1616,14 @@ public class WellbeingController implements Initializable {
             return;
         }
 
-        String code = detectJournalSpeechLanguageCode(transcript, fullInputText);
-        String current = languageCodeRef.get() == null ? "en-US" : languageCodeRef.get();
+        String code = normalizeLanguageCode(detectedLanguageCode);
+        if (code == null) {
+            code = detectJournalSpeechLanguageCode(transcript, fullInputText);
+        }
+        String current = normalizeLanguageCode(autoDetectedLanguageRef == null ? null : autoDetectedLanguageRef.get());
+        if (current == null) {
+            current = "en-US";
+        }
         if (code == null || code.isBlank()) {
             statusLabel.setText("Voice segment captured.");
             return;
@@ -1593,11 +1642,84 @@ public class WellbeingController implements Initializable {
             return;
         }
 
-        languageCodeRef.set(code);
+        if (autoDetectedLanguageRef != null) {
+            autoDetectedLanguageRef.set(code);
+        }
         statusLabel.setText("Voice segment captured. Auto-detected: " + languageLabelFromCode(code) + " (" + code + ")");
     }
 
     private String detectJournalSpeechLanguageCode(String transcript, String fullInputText) {
+        String segment = normalizeLanguageHeuristicsText(transcript);
+        String full = normalizeLanguageHeuristicsText(limitText(fullInputText, 800));
+        String merged = (full + " " + segment).trim();
+        if (merged.isBlank()) {
+            return "en-US";
+        }
+
+        if (merged.matches(".*[\\u0600-\\u06FF].*")) {
+            int tnArabic = scoreText(
+                    merged,
+                    "\u0628\u0631\u0634\u0629", // barsha
+                    "\u0634\u0646\u0648\u0629", // chnowa
+                    "\u062a\u0648\u0629", // tawa
+                    "\u064a\u0627\u0633\u0631", // yesser
+                    "\u0628\u0631\u0627\u0628\u064a", // brabi
+                    "\u0641\u0645\u0627", // famma
+                    "\u0644\u0627\u0628\u0627\u0633", // labes
+                    "\u0646\u062d\u0628", // nheb
+                    "\u062a\u0648\u0646\u0633" // tounes
+            );
+            return tnArabic >= 1 ? "ar-TN" : "ar-SA";
+        }
+
+        int tnLatin = scoreText(
+                merged,
+                "barsha", "barcha", "brcha",
+                "3lech", "alech",
+                "chnowa", "chnoua", "shnowa",
+                "kifech", "kifach",
+                "brabi", "rabi",
+                "yesser", "yaser",
+                "tawa", "taw",
+                "behi", "behy",
+                "mouch", "moch",
+                "famma", "famech",
+                "nheb", "n7eb",
+                "labes", "lebes",
+                "sa7a", "saha",
+                "ya3ni", "3andi", "3andek", "3andou",
+                "ma3ndich", "mandich",
+                "tounes", "tunis", "sfax", "sousse", "nabeul", "bizerte", "gabes", "djerba"
+        );
+        if (tnLatin >= 2) {
+            return "ar-TN";
+        }
+
+        int fr = scoreText(merged, "bonjour", "merci", "je ", "suis", "avec", "pour", "pas", "oui", "francais", "ca", "salut");
+        int en = scoreText(merged, "hello", "thanks", "i ", "am", "with", "for", "not", "yes", "english", "please");
+        if (tnLatin >= fr + 1 && tnLatin >= en + 1) {
+            return "ar-TN";
+        }
+        if (fr >= en + 1) {
+            return "fr-FR";
+        }
+
+        return "en-US";
+    }
+
+    private String normalizeLanguageHeuristicsText(String text) {
+        if (text == null || text.isBlank()) {
+            return "";
+        }
+        return text
+                .toLowerCase(Locale.ROOT)
+                .replace('’', '\'')
+                .replaceAll("[^\\p{IsAlphabetic}\\p{IsDigit}\\u0600-\\u06FF\\s']", " ")
+                .replaceAll("\\s+", " ")
+                .trim();
+    }
+
+    private String detectJournalSpeechLanguageCodeLegacy(String transcript, String fullInputText) {
         String segment = transcript == null ? "" : transcript.trim().toLowerCase(Locale.ROOT);
         String full = fullInputText == null ? "" : limitText(fullInputText, 600).toLowerCase(Locale.ROOT);
         String merged = (full + " " + segment).trim();
@@ -1622,6 +1744,26 @@ public class WellbeingController implements Initializable {
         }
 
         return "en-US";
+    }
+
+    private String normalizeLanguageCode(String code) {
+        if (code == null || code.isBlank()) {
+            return null;
+        }
+        String normalized = code.trim().toLowerCase(Locale.ROOT).replace('_', '-');
+        if (normalized.startsWith("fr")) {
+            return "fr-FR";
+        }
+        if (normalized.startsWith("ar-tn")) {
+            return "ar-TN";
+        }
+        if (normalized.startsWith("ar")) {
+            return "ar-SA";
+        }
+        if (normalized.startsWith("en")) {
+            return "en-US";
+        }
+        return null;
     }
 
     private int scoreText(String text, String... tokens) {
@@ -1659,7 +1801,7 @@ public class WellbeingController implements Initializable {
         );
         Label focusLabel = new Label("FOCUS SESSION");
         focusLabel.setStyle("-fx-text-fill: #A78BFA; -fx-font-size: 11px; -fx-font-weight: 700; -fx-letter-spacing: 1px;");
-        Label titleLabel = new Label("AI Chat Coach");
+        Label titleLabel = new Label("AI Chat Assistant");
         titleLabel.setStyle("-fx-text-fill: #e2e8f0; -fx-font-size: 38px; -fx-font-weight: 800;");
         Label subtitle = new Label("Motivation · Guidance · Support · Any Language");
         subtitle.setStyle("-fx-text-fill: #94A3B8; -fx-font-size: 13px;");
@@ -1671,7 +1813,7 @@ public class WellbeingController implements Initializable {
         VBox messagesBox = new VBox(12);
         messagesBox.setPadding(new Insets(14));
         messagesBox.setStyle("-fx-background-color: #111827;");
-        messagesBox.getChildren().add(chatBubble("assistant", "Hello! I am here to help. What do you need right now?"));
+        messagesBox.getChildren().add(chatBubble("assistant", "Hello! I can help with general questions, studies, or wellbeing. What do you need right now?"));
 
         ScrollPane messagesPane = new ScrollPane(messagesBox);
         messagesPane.setFitToWidth(true);
@@ -1706,10 +1848,10 @@ public class WellbeingController implements Initializable {
         HBox configRow = new HBox(10, modeBox, styleBox, levelBox, languageBox);
 
         HBox chipsRow = new HBox(8,
-                createChatChip("I feel stressed"),
-                createChatChip("Motivation boost"),
-                createChatChip("Focus tips"),
-                createChatChip("Help me relax")
+                createChatChip("Explain this concept"),
+                createChatChip("Help me write an email"),
+                createChatChip("Build a study plan"),
+                createChatChip("I feel stressed")
         );
 
         TextArea input = new TextArea();
@@ -1735,6 +1877,10 @@ public class WellbeingController implements Initializable {
         clearBtn.getStyleClass().add("btn-secondary");
         Button closeBtn = new Button("Back");
         closeBtn.getStyleClass().add("btn-secondary");
+        StackPane aiLoadingOverlay = createAiLoadingOverlay(
+                "AI is thinking...",
+                "This usually takes a few seconds while AI prepares your answer."
+        );
 
         Runnable sendAction = () -> {
             String text = input.getText() == null ? "" : input.getText().trim();
@@ -1748,6 +1894,9 @@ public class WellbeingController implements Initializable {
             input.clear();
             statusLabel.setText("AI is typing...");
             sendBtn.setDisable(true);
+            clearBtn.setDisable(true);
+            input.setDisable(true);
+            setAiLoadingVisible(aiLoadingOverlay, true);
 
             String selectedLanguageCode = switch (languageBox.getValue() == null ? "Auto" : languageBox.getValue()) {
                 case "Francais" -> "fr-FR";
@@ -1781,6 +1930,9 @@ public class WellbeingController implements Initializable {
                 statusLabel.setText(result != null && "ai".equals(result.source()) ? "Answered by AI" : "Fallback response");
                 completed[0] = true;
                 sendBtn.setDisable(false);
+                clearBtn.setDisable(false);
+                input.setDisable(false);
+                setAiLoadingVisible(aiLoadingOverlay, false);
                 Platform.runLater(() -> {
                     messagesPane.layout();
                     messagesPane.setVvalue(1.0);
@@ -1790,6 +1942,9 @@ public class WellbeingController implements Initializable {
                 messagesBox.getChildren().add(chatBubble("assistant", "Sorry, I could not generate a reply right now. Please try again."));
                 statusLabel.setText("Error while generating response.");
                 sendBtn.setDisable(false);
+                clearBtn.setDisable(false);
+                input.setDisable(false);
+                setAiLoadingVisible(aiLoadingOverlay, false);
             });
             Thread worker = new Thread(task, "wellbeing-ai-chat");
             worker.setDaemon(true);
@@ -1806,7 +1961,7 @@ public class WellbeingController implements Initializable {
 
         clearBtn.setOnAction(e -> {
             chatHistory.clear();
-            messagesBox.getChildren().setAll(chatBubble("assistant", "Hello! I am here to help. What do you need right now?"));
+            messagesBox.getChildren().setAll(chatBubble("assistant", "Hello! I can help with general questions, studies, or wellbeing. What do you need right now?"));
             statusLabel.setText("Ready");
         });
 
@@ -1834,7 +1989,8 @@ public class WellbeingController implements Initializable {
                         "-fx-border-radius: 16;"
         );
 
-        root.getChildren().addAll(header, chatCard);
+        StackPane chatCardStack = new StackPane(chatCard, aiLoadingOverlay);
+        root.getChildren().addAll(header, chatCardStack);
 
         LocalDateTime openedAt = LocalDateTime.now();
         Runnable closer = () -> closeSession(session, openedAt, completed[0]);
@@ -1847,7 +2003,7 @@ public class WellbeingController implements Initializable {
                 activeInlineToolCloser = null;
             }
         });
-        showInlineTool("AI Chat Coach", root, closer);
+        showInlineTool("AI Chat Assistant", root, closer);
     }
 
     private Button createChatChip(String text) {
@@ -1894,6 +2050,44 @@ public class WellbeingController implements Initializable {
         HBox row = new HBox(block);
         row.setAlignment("user".equals(role) ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
         return row;
+    }
+
+    private StackPane createAiLoadingOverlay(String title, String subtitle) {
+        StackPane overlay = new StackPane();
+        overlay.getStyleClass().add("ai-loading-overlay");
+        overlay.setVisible(false);
+        overlay.setManaged(false);
+        overlay.setPickOnBounds(true);
+
+        VBox card = new VBox(12);
+        card.setAlignment(Pos.CENTER);
+        card.getStyleClass().add("ai-loading-card");
+
+        Label titleLabel = new Label(title);
+        titleLabel.getStyleClass().add("ai-loading-title");
+
+        Label subtitleLabel = new Label(subtitle);
+        subtitleLabel.getStyleClass().add("ai-loading-subtitle");
+        subtitleLabel.setWrapText(true);
+        subtitleLabel.setMaxWidth(320);
+
+        ProgressBar loadingBar = new ProgressBar(ProgressBar.INDETERMINATE_PROGRESS);
+        loadingBar.getStyleClass().add("ai-loading-bar");
+        loadingBar.setMaxWidth(Double.MAX_VALUE);
+        loadingBar.setPrefWidth(280);
+
+        card.getChildren().addAll(titleLabel, subtitleLabel, loadingBar);
+        overlay.getChildren().add(card);
+        return overlay;
+    }
+
+    private void setAiLoadingVisible(StackPane overlay, boolean visible) {
+        if (overlay == null) {
+            return;
+        }
+        overlay.setVisible(visible);
+        overlay.setManaged(visible);
+        overlay.setMouseTransparent(!visible);
     }
 
     private void openNatureSoundsTool(CopingSession session) {
@@ -2798,6 +2992,7 @@ public class WellbeingController implements Initializable {
 
     @FXML
     private void handleQuizPrevious() {
+        hideGlobalMessage();
         if (currentQuizIndex > 0) {
             currentQuizIndex--;
             renderCurrentQuizQuestion();
@@ -2810,6 +3005,7 @@ public class WellbeingController implements Initializable {
             showError("Please select an answer before continuing.");
             return;
         }
+        hideGlobalMessage();
         if (currentQuizIndex < quizQuestions.size() - 1) {
             currentQuizIndex++;
             renderCurrentQuizQuestion();
@@ -2826,6 +3022,7 @@ public class WellbeingController implements Initializable {
             showError("Please answer all questions before submitting.");
             return;
         }
+        hideGlobalMessage();
 
         int totalScore = quizAnswers.values().stream().mapToInt(Integer::intValue).sum();
         int answeredCount = Math.max(1, quizAnswers.size());
@@ -2888,6 +3085,14 @@ public class WellbeingController implements Initializable {
     private void handleLoadAiSuggestions() {
         if (currentQuizResult == null) {
             return;
+        }
+        StackPane suggestionsLoadingOverlay = createAiLoadingOverlay(
+                "Analyzing your results...",
+                "Generating personalized AI suggestions for your current wellbeing status."
+        );
+        setAiLoadingVisible(suggestionsLoadingOverlay, true);
+        if (quizAiSuggestionsBox != null) {
+            quizAiSuggestionsBox.getChildren().setAll(suggestionsLoadingOverlay);
         }
         if (quizLoadAiSuggestionsButton != null) {
             quizLoadAiSuggestionsButton.setDisable(true);
@@ -3010,6 +3215,7 @@ public class WellbeingController implements Initializable {
     }
 
     private void startQuiz(QuizMode mode) {
+        hideGlobalMessage();
         currentQuizMode = mode == null ? QuizMode.SIMPLE : mode;
         quizQuestions.clear();
         quizAnswers.clear();
@@ -3108,6 +3314,7 @@ public class WellbeingController implements Initializable {
         if (quizQuestions.isEmpty()) {
             return;
         }
+        hideGlobalMessage();
         QuestionStress question = quizQuestions.get(currentQuizIndex);
 
         quizCurrentQuestionLabel.setText(String.valueOf(currentQuizIndex + 1));
@@ -3162,6 +3369,7 @@ public class WellbeingController implements Initializable {
             if (newToggle != null && newToggle.getUserData() instanceof Integer answerValue) {
                 quizAnswers.put(question.getId(), answerValue);
                 updateQuizProgress();
+                hideGlobalMessage();
             }
             refreshOptionSelectionStyle.run();
         });
@@ -3655,6 +3863,7 @@ public class WellbeingController implements Initializable {
         if (globalMessageLabel == null) {
             return;
         }
+        stopGlobalMessageTimer();
         globalMessageLabel.setText(message == null ? "" : message);
         globalMessageLabel.setStyle(
                 "-fx-background-color: " + (error ? "#dc2626" : "#16a34a") + ";" +
@@ -3664,155 +3873,124 @@ public class WellbeingController implements Initializable {
         );
         globalMessageLabel.setVisible(true);
         globalMessageLabel.setManaged(true);
+        globalMessageTimer = new Timeline(new KeyFrame(javafx.util.Duration.seconds(GLOBAL_MESSAGE_HIDE_SECONDS), event -> hideGlobalMessage()));
+        globalMessageTimer.setCycleCount(1);
+        globalMessageTimer.play();
     }
 
     private void hideGlobalMessage() {
         if (globalMessageLabel == null) {
             return;
         }
+        stopGlobalMessageTimer();
+        globalMessageLabel.setText("");
         globalMessageLabel.setVisible(false);
         globalMessageLabel.setManaged(false);
     }
 
+    private void stopGlobalMessageTimer() {
+        if (globalMessageTimer != null) {
+            globalMessageTimer.stop();
+            globalMessageTimer = null;
+        }
+    }
+
     private void showOverviewMode() {
         handleCloseInlineTool();
-        statsSection.setVisible(true);
-        statsSection.setManaged(true);
-        overviewSection.setVisible(true);
-        overviewSection.setManaged(true);
-        historySection.setVisible(false);
-        historySection.setManaged(false);
-        toolsSection.setVisible(false);
-        toolsSection.setManaged(false);
-        formSection.setVisible(false);
-        formSection.setManaged(false);
-        quizModeSection.setVisible(false);
-        quizModeSection.setManaged(false);
-        quizSection.setVisible(false);
-        quizSection.setManaged(false);
-        quizResultsSection.setVisible(false);
-        quizResultsSection.setManaged(false);
+        hideGlobalMessage();
+        setNodeVisibility(statsSection, true);
+        setNodeVisibility(overviewSection, true);
+        setNodeVisibility(historySection, false);
+        setNodeVisibility(toolsSection, false);
+        setNodeVisibility(formSection, false);
+        setNodeVisibility(quizModeSection, false);
+        setNodeVisibility(quizSection, false);
+        setNodeVisibility(quizResultsSection, false);
     }
 
     private void showCopingToolsMode() {
-        statsSection.setVisible(false);
-        statsSection.setManaged(false);
-        overviewSection.setVisible(false);
-        overviewSection.setManaged(false);
-        historySection.setVisible(false);
-        historySection.setManaged(false);
-        formSection.setVisible(false);
-        formSection.setManaged(false);
-        quizModeSection.setVisible(false);
-        quizModeSection.setManaged(false);
-        quizSection.setVisible(false);
-        quizSection.setManaged(false);
-        quizResultsSection.setVisible(false);
-        quizResultsSection.setManaged(false);
-        toolsSection.setVisible(true);
-        toolsSection.setManaged(true);
+        hideGlobalMessage();
+        setNodeVisibility(statsSection, false);
+        setNodeVisibility(overviewSection, false);
+        setNodeVisibility(historySection, false);
+        setNodeVisibility(formSection, false);
+        setNodeVisibility(quizModeSection, false);
+        setNodeVisibility(quizSection, false);
+        setNodeVisibility(quizResultsSection, false);
+        setNodeVisibility(toolsSection, true);
     }
 
     private void showCheckinMode() {
         handleCloseInlineTool();
-        statsSection.setVisible(false);
-        statsSection.setManaged(false);
-        overviewSection.setVisible(false);
-        overviewSection.setManaged(false);
-        historySection.setVisible(false);
-        historySection.setManaged(false);
-        toolsSection.setVisible(false);
-        toolsSection.setManaged(false);
-        formSection.setVisible(true);
-        formSection.setManaged(true);
-        quizModeSection.setVisible(false);
-        quizModeSection.setManaged(false);
-        quizSection.setVisible(false);
-        quizSection.setManaged(false);
-        quizResultsSection.setVisible(false);
-        quizResultsSection.setManaged(false);
+        hideGlobalMessage();
+        setNodeVisibility(statsSection, false);
+        setNodeVisibility(overviewSection, false);
+        setNodeVisibility(historySection, false);
+        setNodeVisibility(toolsSection, false);
+        setNodeVisibility(formSection, true);
+        setNodeVisibility(quizModeSection, false);
+        setNodeVisibility(quizSection, false);
+        setNodeVisibility(quizResultsSection, false);
     }
 
     private void showHistoryMode() {
         handleCloseInlineTool();
-        statsSection.setVisible(false);
-        statsSection.setManaged(false);
-        overviewSection.setVisible(false);
-        overviewSection.setManaged(false);
-        toolsSection.setVisible(false);
-        toolsSection.setManaged(false);
-        formSection.setVisible(false);
-        formSection.setManaged(false);
-        historySection.setVisible(true);
-        historySection.setManaged(true);
-        quizModeSection.setVisible(false);
-        quizModeSection.setManaged(false);
-        quizSection.setVisible(false);
-        quizSection.setManaged(false);
-        quizResultsSection.setVisible(false);
-        quizResultsSection.setManaged(false);
+        hideGlobalMessage();
+        setNodeVisibility(statsSection, false);
+        setNodeVisibility(overviewSection, false);
+        setNodeVisibility(toolsSection, false);
+        setNodeVisibility(formSection, false);
+        setNodeVisibility(historySection, true);
+        setNodeVisibility(quizModeSection, false);
+        setNodeVisibility(quizSection, false);
+        setNodeVisibility(quizResultsSection, false);
     }
 
     private void showQuizMode() {
         handleCloseInlineTool();
-        statsSection.setVisible(false);
-        statsSection.setManaged(false);
-        overviewSection.setVisible(false);
-        overviewSection.setManaged(false);
-        historySection.setVisible(false);
-        historySection.setManaged(false);
-        toolsSection.setVisible(false);
-        toolsSection.setManaged(false);
-        formSection.setVisible(false);
-        formSection.setManaged(false);
-        quizModeSection.setVisible(false);
-        quizModeSection.setManaged(false);
-        quizResultsSection.setVisible(false);
-        quizResultsSection.setManaged(false);
-        quizSection.setVisible(true);
-        quizSection.setManaged(true);
+        hideGlobalMessage();
+        setNodeVisibility(statsSection, false);
+        setNodeVisibility(overviewSection, false);
+        setNodeVisibility(historySection, false);
+        setNodeVisibility(toolsSection, false);
+        setNodeVisibility(formSection, false);
+        setNodeVisibility(quizModeSection, false);
+        setNodeVisibility(quizResultsSection, false);
+        setNodeVisibility(quizSection, true);
     }
 
     private void showQuizResultsMode() {
         handleCloseInlineTool();
-        statsSection.setVisible(false);
-        statsSection.setManaged(false);
-        overviewSection.setVisible(false);
-        overviewSection.setManaged(false);
-        historySection.setVisible(false);
-        historySection.setManaged(false);
-        toolsSection.setVisible(false);
-        toolsSection.setManaged(false);
-        formSection.setVisible(false);
-        formSection.setManaged(false);
-        quizModeSection.setVisible(false);
-        quizModeSection.setManaged(false);
-        quizSection.setVisible(false);
-        quizSection.setManaged(false);
-        quizResultsSection.setVisible(true);
-        quizResultsSection.setManaged(true);
+        hideGlobalMessage();
+        setNodeVisibility(statsSection, false);
+        setNodeVisibility(overviewSection, false);
+        setNodeVisibility(historySection, false);
+        setNodeVisibility(toolsSection, false);
+        setNodeVisibility(formSection, false);
+        setNodeVisibility(quizModeSection, false);
+        setNodeVisibility(quizSection, false);
+        setNodeVisibility(quizResultsSection, true);
     }
 
     private void showQuizModePickerInline() {
         handleCloseInlineTool();
-        statsSection.setVisible(false);
-        statsSection.setManaged(false);
-        overviewSection.setVisible(false);
-        overviewSection.setManaged(false);
-        historySection.setVisible(false);
-        historySection.setManaged(false);
-        toolsSection.setVisible(false);
-        toolsSection.setManaged(false);
-        formSection.setVisible(false);
-        formSection.setManaged(false);
-        quizSection.setVisible(false);
-        quizSection.setManaged(false);
-        quizResultsSection.setVisible(false);
-        quizResultsSection.setManaged(false);
-        if (quizModeSection != null) {
-            quizModeSection.setVisible(true);
-            quizModeSection.setManaged(true);
+        hideGlobalMessage();
+        setNodeVisibility(statsSection, false);
+        setNodeVisibility(overviewSection, false);
+        setNodeVisibility(historySection, false);
+        setNodeVisibility(toolsSection, false);
+        setNodeVisibility(formSection, false);
+        setNodeVisibility(quizSection, false);
+        setNodeVisibility(quizResultsSection, false);
+        setNodeVisibility(quizModeSection, true);
+    }
+
+    private void setNodeVisibility(Node node, boolean visible) {
+        if (node == null) {
+            return;
         }
+        node.setVisible(visible);
+        node.setManaged(visible);
     }
 
     private void updateStatsLabels(List<WellBeing> items, Label total, Label stress, Label energy, Label sleep) {

@@ -8,10 +8,15 @@
 <?import javafx.scene.text.*?>
 <?import org.kordamp.ikonli.javafx.FontIcon?>
 
-<VBox xmlns="http://javafx.com/javafx/21"
-      xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="com.studyflow.controllers.MainController"
-      styleClass="app-container">
+<AnchorPane xmlns="http://javafx.com/javafx/21"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.studyflow.controllers.MainController">
+
+    <VBox styleClass="app-container"
+          AnchorPane.topAnchor="0.0"
+          AnchorPane.rightAnchor="0.0"
+          AnchorPane.bottomAnchor="0.0"
+          AnchorPane.leftAnchor="0.0">
 
     <HBox fx:id="titleBar" styleClass="title-bar" alignment="CENTER_LEFT" spacing="0"
           onMousePressed="#onTitleBarPressed" onMouseDragged="#onTitleBarDragged">
@@ -203,4 +208,23 @@
             </VBox>
         </center>
     </BorderPane>
-</VBox>
+    </VBox>
+
+    <Pane fx:id="quoteOverlayPane" pickOnBounds="false"
+          AnchorPane.topAnchor="0.0"
+          AnchorPane.rightAnchor="0.0"
+          AnchorPane.bottomAnchor="0.0"
+          AnchorPane.leftAnchor="0.0">
+        <VBox fx:id="globalQuoteCard" styleClass="global-quote-card" spacing="6"
+              visible="false" managed="false" layoutX="16" layoutY="16">
+            <HBox alignment="CENTER_LEFT" spacing="8">
+                <Label text="QUOTE" styleClass="global-quote-top"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Button text="x" styleClass="global-quote-close-btn" onAction="#handleGlobalQuoteClose"/>
+            </HBox>
+            <Label text="&quot;" styleClass="global-quote-mark"/>
+            <Label fx:id="globalQuoteTextLabel" text="" styleClass="global-quote-text" wrapText="true"/>
+            <Label fx:id="globalQuoteMetaLabel" text="" styleClass="global-quote-meta"/>
+        </VBox>
+    </Pane>
+</AnchorPane>
