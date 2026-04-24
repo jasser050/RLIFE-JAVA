@@ -14,15 +14,6 @@ module com.studyflow {
     requires jdk.httpserver;
 
     requires mysql.connector.j;
-    requires jgltf.model;
-    requires org.apache.pdfbox;
-    requires jakarta.mail;
-    requires com.google.zxing;
-    requires com.google.zxing.javase;
-    requires com.fasterxml.jackson.databind;
-    requires com.fasterxml.jackson.core;
-    requires com.fasterxml.jackson.annotation;
-
     requires kernel;
     requires layout;
     requires io;
@@ -30,7 +21,7 @@ module com.studyflow {
     opens com.studyflow to javafx.fxml;
     opens com.studyflow.controllers to javafx.fxml;
     opens com.studyflow.controllers.admin to javafx.fxml;
-    opens com.studyflow.models to com.fasterxml.jackson.databind;
+    opens com.studyflow.models to javafx.fxml;
     opens com.studyflow.utils to javafx.fxml;
     opens com.studyflow.services to javafx.fxml;
 

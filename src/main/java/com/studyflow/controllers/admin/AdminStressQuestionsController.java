@@ -465,8 +465,6 @@ public class AdminStressQuestionsController implements Initializable {
         } catch (RuntimeException e) {
             showListFeedback(e.getMessage() == null ? "Failed to delete question." : e.getMessage(), false);
         }
-        service.delete(q.getId());
-        pendingDeleteQuestionId = null;
         showNotification("Question supprimée avec succès.", "success");
         handleBackToList();
     }
@@ -539,6 +537,18 @@ public class AdminStressQuestionsController implements Initializable {
         return new Cell()
                 .add(new Paragraph(text).setFontColor(fg).setFontSize(size))
                 .setBackgroundColor(bg).setPadding(6);
+    }
+
+    private void showNotification(String message, String type) {
+        boolean success = "success".equalsIgnoreCase(type);
+        showListFeedback(message, success);
+        if (notificationLabel != null) {
+            notificationLabel.setText(message);
+            notificationLabel.getStyleClass().removeAll("auth-error", "auth-success");
+            notificationLabel.getStyleClass().add(success ? "auth-success" : "auth-error");
+            notificationLabel.setVisible(true);
+            notificationLabel.setManaged(true);
+        }
     }
 
     private void clearForm() {

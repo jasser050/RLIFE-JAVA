@@ -89,8 +89,12 @@ public class MainController implements Initializable {
         showDashboard();
 
         // Load sidebar logo
-        Image logoImage = new Image(getClass().getResourceAsStream("/com/studyflow/images/logo.png"));
-        sidebarLogo.setImage(logoImage);
+        if (sidebarLogo != null) {
+            URL logoUrl = getClass().getResource("/com/studyflow/images/logo.png");
+            if (logoUrl != null) {
+                sidebarLogo.setImage(new Image(logoUrl.toExternalForm()));
+            }
+        }
 
         // Populate sidebar user info from session
         User user = UserSession.getInstance().getCurrentUser();
@@ -102,8 +106,12 @@ public class MainController implements Initializable {
         }
         
         // Add click handler for user profile row
-        userProfileRow.setOnMouseClicked(event -> showProfile());
-        userInfoBox.setOnMouseClicked(event -> showProfile());
+        if (userProfileRow != null) {
+            userProfileRow.setOnMouseClicked(event -> showProfile());
+        }
+        if (userInfoBox != null) {
+            userInfoBox.setOnMouseClicked(event -> showProfile());
+        }
         setupGlobalQuoteWidget();
     }
 
@@ -422,7 +430,7 @@ public class MainController implements Initializable {
     @FXML
     private void showRevisions() {
         setActiveButton(btnRevisions);
-        loadContent("views/Flashcards.fxml");
+        loadContent("views/Revisions.fxml");
     }
 
     @FXML
