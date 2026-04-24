@@ -81,6 +81,11 @@
                             <FontIcon iconLiteral="fth-cpu" iconSize="15"/>
                         </graphic>
                     </Button>
+                    <Button fx:id="openProjectMeetingButton" text="Meet" onAction="#handleOpenProjectMeeting" styleClass="panel-switch-button">
+                        <graphic>
+                            <FontIcon iconLiteral="fth-video" iconSize="15"/>
+                        </graphic>
+                    </Button>
                     <Button fx:id="showGitGuidePanelButton" text="Git Guide" onAction="#handleShowGitGuidePanel" styleClass="panel-switch-button">
                         <graphic>
                             <FontIcon iconLiteral="fth-book-open" iconSize="15"/>

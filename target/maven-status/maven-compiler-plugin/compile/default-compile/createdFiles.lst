@@ -55,6 +55,7 @@ com\studyflow\services\AIQuizService$ParsedQuestion.class
 com\studyflow\controllers\NotesController$NoteData.class
 com\studyflow\controllers\MainController.class
 com\studyflow\controllers\AssignmentsController$ProjectListCell.class
+com\studyflow\controllers\ProjectMeetingController.class
 com\studyflow\services\FlashcardService.class
 com\studyflow\services\ServiceWellbeingJournalEntry.class
 com\studyflow\controllers\ProjectsController$1.class

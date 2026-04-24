@@ -107,6 +107,7 @@ public class ProjectsController implements Initializable {
     @FXML private Button showProjectStatsPanelButton;
     @FXML private Button openProjectAiWorkspaceButton;
     @FXML private Button showGitGuidePanelButton;
+    @FXML private Button openProjectMeetingButton;
     @FXML private Button deleteProjectConfirmButton;
     @FXML private VBox projectList;
     @FXML private Label selectedProjectTitleLabel;
@@ -352,6 +353,22 @@ public class ProjectsController implements Initializable {
     @FXML
     private void handleShowStatsPanel() {
         setActivePanel("STATS");
+    }
+
+    @FXML
+    private void handleOpenProjectMeeting() {
+        if (!isReady() || selectedProject == null) {
+            showFeedback("Select a project before opening its meeting room.", true);
+            return;
+        }
+        if (!projectService.userHasProjectAccess(selectedProject.getId(), getCurrentUser().getId())) {
+            showFeedback("You do not have access to this project's meeting room.", true);
+            return;
+        }
+
+        CrudViewContext.setProjectContext(selectedProject);
+        CrudViewContext.rememberProjectSelection(selectedProject.getId());
+        MainController.loadContentInMainArea("views/ProjectMeeting.fxml");
     }
 
     @FXML
@@ -964,6 +981,7 @@ public class ProjectsController implements Initializable {
         updatePanelButton(showGitProjectPanelButton, "GIT".equals(panel));
         updatePanelButton(showProjectStatsPanelButton, "STATS".equals(panel));
         updatePanelButton(showGitGuidePanelButton, "GIT_GUIDE".equals(panel));
+        updatePanelButton(openProjectMeetingButton, false);
     }
 
     private void togglePanel(VBox panel, boolean visible) {
