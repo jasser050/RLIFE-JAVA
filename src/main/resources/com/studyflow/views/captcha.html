@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8"/>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: #0F172A;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
+        .card {
+            background: linear-gradient(145deg, #1E293B, #162032);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            border-radius: 20px;
+            padding: 40px 36px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
+                        0 0 60px rgba(139, 92, 246, 0.06);
+            max-width: 380px;
+            width: 100%;
+        }
+
+        .icon-circle {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #8B5CF6, #7C3AED);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 20px rgba(139, 92, 246, 0.35);
+        }
+
+        .icon-circle svg {
+            width: 26px;
+            height: 26px;
+            fill: none;
+            stroke: white;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        h2 {
+            color: #F1F5F9;
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            letter-spacing: -0.3px;
+        }
+
+        p {
+            color: #94A3B8;
+            font-size: 13px;
+            margin-bottom: 28px;
+            text-align: center;
+            line-height: 1.5;
+        }
+
+        .captcha-wrapper {
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 4px;
+        }
+
+        #submit-btn {
+            margin-top: 24px;
+            padding: 14px 48px;
+            background: linear-gradient(135deg, #8B5CF6, #7C3AED);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            display: none;
+            letter-spacing: 0.3px;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 16px rgba(139, 92, 246, 0.3);
+            width: 100%;
+        }
+
+        #submit-btn:hover {
+            background: linear-gradient(135deg, #A78BFA, #8B5CF6);
+            box-shadow: 0 6px 24px rgba(139, 92, 246, 0.45);
+            transform: translateY(-1px);
+        }
+
+        .divider {
+            width: 100%;
+            height: 1px;
+            background: linear-gradient(to right, transparent, #334155, transparent);
+            margin: 20px 0;
+        }
+
+        .footer-text {
+            color: #475569;
+            font-size: 11px;
+            text-align: center;
+        }
+
+        .footer-text span {
+            color: #8B5CF6;
+        }
+    </style>
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+    <script>
+        function onCaptchaSuccess(token) {
+            document.getElementById('submit-btn').style.display = 'block';
+        }
+        function submitCaptcha() {
+            var response = grecaptcha.getResponse();
+            if (response) {
+                document.title = 'CAPTCHA_OK:' + response;
+            }
+        }
+    </script>
+</head>
+<body>
+    <div class="card">
+        <div class="icon-circle">
+            <svg viewBox="0 0 24 24">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+        </div>
+
+        <h2>Security Check</h2>
+        <p>Complete the verification below to continue signing in to your account</p>
+
+        <div class="captcha-wrapper">
+            <div class="g-recaptcha"
+                 data-sitekey=""
+                 data-callback="onCaptchaSuccess"
+                 data-theme="dark">
+            </div>
+        </div>
+
+        <button id="submit-btn" onclick="submitCaptcha()">Continue to RLife</button>
+
+        <div class="divider"></div>
+        <p class="footer-text">Protected by reCAPTCHA &mdash; <span>RLife</span></p>
+    </div>
+</body>
+</html>
