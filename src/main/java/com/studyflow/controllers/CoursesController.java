@@ -684,7 +684,7 @@ public class CoursesController implements Initializable {
         String level      = detectLevel(getAvgForSubject(mat.getId()));
 
         showQuizLoading(true);
-        lblQuizLoadingStatus.setText("OpenRouter AI génère vos questions…");
+        lblQuizLoadingStatus.setText("Claude AI is generating your questions…");
 
         new Thread(() -> {
             try {
