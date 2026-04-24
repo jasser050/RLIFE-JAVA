@@ -1,7 +1,7 @@
 package com.studyflow.services;
 
 import com.studyflow.models.Rating;
-import com.studyflow.utils.DataSource;
+import com.studyflow.utils.MyDataBase;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -16,7 +16,7 @@ import java.util.List;
 public class RatingService {
 
     private Connection getConn() throws SQLException {
-        return DataSource.getInstance().getConnection();
+        return MyDataBase.getInstance().getConnection();
     }
 
     public void addRating(Rating rating) {

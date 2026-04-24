@@ -1,95 +1,269 @@
 package com.studyflow.models;
 
-import javafx.beans.property.*;
-
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 
-/**
- * Model class representing an Assignment
- */
 public class Assignment {
+    private int id;
+    private int userId;
+    private int ownerUserId;
+    private int projectId;
+    private String projectTitle;
+    private String title;
+    private String description;
+    private LocalDate startDate;
+    private LocalDate endDate;
+    private LocalTime startTime;
+    private LocalTime endTime;
+    private String priority;
+    private String status;
+    private Integer estimatedMinDays;
+    private Integer estimatedMaxDays;
+    private String complexityLevel;
+    private LocalDate aiSuggestedDueDate;
+    private boolean ownedByCurrentUser;
+    private String ownerName;
+    private String gitCommitMessage;
+    private String gitCommitPathspec;
+    private String gitLastCommitHash;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+    private LocalDateTime gitLastCommitAt;
 
-    public enum Priority { LOW, MEDIUM, HIGH }
-    public enum Status { PENDING, IN_PROGRESS, COMPLETED }
-
-    private final StringProperty id = new SimpleStringProperty();
-    private final StringProperty title = new SimpleStringProperty();
-    private final StringProperty description = new SimpleStringProperty();
-    private final StringProperty courseId = new SimpleStringProperty();
-    private final StringProperty courseName = new SimpleStringProperty();
-    private final ObjectProperty<LocalDate> dueDate = new SimpleObjectProperty<>();
-    private final ObjectProperty<Priority> priority = new SimpleObjectProperty<>(Priority.MEDIUM);
-    private final ObjectProperty<Status> status = new SimpleObjectProperty<>(Status.PENDING);
-
-    public Assignment() {}
-
-    public Assignment(String id, String title, String description, String courseId,
-                      String courseName, LocalDate dueDate, Priority priority, Status status) {
-        setId(id);
-        setTitle(title);
-        setDescription(description);
-        setCourseId(courseId);
-        setCourseName(courseName);
-        setDueDate(dueDate);
-        setPriority(priority);
-        setStatus(status);
+    public int getId() {
+        return id;
     }
 
-    // ID
-    public String getId() { return id.get(); }
-    public void setId(String value) { id.set(value); }
-    public StringProperty idProperty() { return id; }
+    public void setId(int id) {
+        this.id = id;
+    }
 
-    // Title
-    public String getTitle() { return title.get(); }
-    public void setTitle(String value) { title.set(value); }
-    public StringProperty titleProperty() { return title; }
+    public int getUserId() {
+        return userId;
+    }
 
-    // Description
-    public String getDescription() { return description.get(); }
-    public void setDescription(String value) { description.set(value); }
-    public StringProperty descriptionProperty() { return description; }
+    public void setUserId(int userId) {
+        this.userId = userId;
+    }
 
-    // Course ID
-    public String getCourseId() { return courseId.get(); }
-    public void setCourseId(String value) { courseId.set(value); }
-    public StringProperty courseIdProperty() { return courseId; }
+    public int getOwnerUserId() {
+        return ownerUserId;
+    }
 
-    // Course Name
-    public String getCourseName() { return courseName.get(); }
-    public void setCourseName(String value) { courseName.set(value); }
-    public StringProperty courseNameProperty() { return courseName; }
+    public void setOwnerUserId(int ownerUserId) {
+        this.ownerUserId = ownerUserId;
+    }
 
-    // Due Date
-    public LocalDate getDueDate() { return dueDate.get(); }
-    public void setDueDate(LocalDate value) { dueDate.set(value); }
-    public ObjectProperty<LocalDate> dueDateProperty() { return dueDate; }
+    public int getProjectId() {
+        return projectId;
+    }
 
-    // Priority
-    public Priority getPriority() { return priority.get(); }
-    public void setPriority(Priority value) { priority.set(value); }
-    public ObjectProperty<Priority> priorityProperty() { return priority; }
+    public void setProjectId(int projectId) {
+        this.projectId = projectId;
+    }
 
-    // Status
-    public Status getStatus() { return status.get(); }
-    public void setStatus(Status value) { status.set(value); }
-    public ObjectProperty<Status> statusProperty() { return status; }
+    public String getProjectTitle() {
+        return projectTitle;
+    }
 
-    /**
-     * Check if the assignment is overdue
-     */
+    public void setProjectTitle(String projectTitle) {
+        this.projectTitle = projectTitle;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public LocalDate getStartDate() {
+        return startDate;
+    }
+
+    public void setStartDate(LocalDate startDate) {
+        this.startDate = startDate;
+    }
+
+    public LocalDate getEndDate() {
+        return endDate;
+    }
+
+    public void setEndDate(LocalDate endDate) {
+        this.endDate = endDate;
+    }
+
+    public LocalTime getStartTime() {
+        return startTime;
+    }
+
+    public void setStartTime(LocalTime startTime) {
+        this.startTime = startTime;
+    }
+
+    public LocalTime getEndTime() {
+        return endTime;
+    }
+
+    public void setEndTime(LocalTime endTime) {
+        this.endTime = endTime;
+    }
+
+    public String getPriority() {
+        return priority;
+    }
+
+    public void setPriority(String priority) {
+        this.priority = priority;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public Integer getEstimatedMinDays() {
+        return estimatedMinDays;
+    }
+
+    public void setEstimatedMinDays(Integer estimatedMinDays) {
+        this.estimatedMinDays = estimatedMinDays;
+    }
+
+    public Integer getEstimatedMaxDays() {
+        return estimatedMaxDays;
+    }
+
+    public void setEstimatedMaxDays(Integer estimatedMaxDays) {
+        this.estimatedMaxDays = estimatedMaxDays;
+    }
+
+    public String getComplexityLevel() {
+        return complexityLevel;
+    }
+
+    public void setComplexityLevel(String complexityLevel) {
+        this.complexityLevel = complexityLevel;
+    }
+
+    public LocalDate getAiSuggestedDueDate() {
+        return aiSuggestedDueDate;
+    }
+
+    public void setAiSuggestedDueDate(LocalDate aiSuggestedDueDate) {
+        this.aiSuggestedDueDate = aiSuggestedDueDate;
+    }
+
+    public boolean isOwnedByCurrentUser() {
+        return ownedByCurrentUser;
+    }
+
+    public void setOwnedByCurrentUser(boolean ownedByCurrentUser) {
+        this.ownedByCurrentUser = ownedByCurrentUser;
+    }
+
+    public String getOwnerName() {
+        return ownerName;
+    }
+
+    public void setOwnerName(String ownerName) {
+        this.ownerName = ownerName;
+    }
+
+    public String getGitCommitMessage() {
+        return gitCommitMessage;
+    }
+
+    public void setGitCommitMessage(String gitCommitMessage) {
+        this.gitCommitMessage = gitCommitMessage;
+    }
+
+    public String getGitCommitPathspec() {
+        return gitCommitPathspec;
+    }
+
+    public void setGitCommitPathspec(String gitCommitPathspec) {
+        this.gitCommitPathspec = gitCommitPathspec;
+    }
+
+    public String getGitLastCommitHash() {
+        return gitLastCommitHash;
+    }
+
+    public void setGitLastCommitHash(String gitLastCommitHash) {
+        this.gitLastCommitHash = gitLastCommitHash;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
+    public LocalDateTime getGitLastCommitAt() {
+        return gitLastCommitAt;
+    }
+
+    public void setGitLastCommitAt(LocalDateTime gitLastCommitAt) {
+        this.gitLastCommitAt = gitLastCommitAt;
+    }
+
+    public boolean isCompleted() {
+        return "Completed".equalsIgnoreCase(status);
+    }
+
+    public boolean isInProgress() {
+        return "In Progress".equalsIgnoreCase(status);
+    }
+
+    public boolean isTodo() {
+        return "To Do".equalsIgnoreCase(status);
+    }
+
     public boolean isOverdue() {
-        return dueDate.get() != null && dueDate.get().isBefore(LocalDate.now()) && status.get() != Status.COMPLETED;
+        return endDate != null && endDate.isBefore(LocalDate.now()) && !isCompleted();
     }
 
-    /**
-     * Get the priority color
-     */
-    public String getPriorityColor() {
-        return switch (priority.get()) {
-            case HIGH -> "danger";
-            case MEDIUM -> "warning";
-            case LOW -> "success";
-        };
+    public String getPriorityStyleClass() {
+        if ("High".equalsIgnoreCase(priority)) {
+            return "danger";
+        }
+        if ("Medium".equalsIgnoreCase(priority)) {
+            return "warning";
+        }
+        return "success";
+    }
+
+    public String getComplexityStyleClass() {
+        if ("High".equalsIgnoreCase(complexityLevel) || "Complex".equalsIgnoreCase(complexityLevel)) {
+            return "danger";
+        }
+        if ("Medium".equalsIgnoreCase(complexityLevel) || "Moderate".equalsIgnoreCase(complexityLevel)) {
+            return "warning";
+        }
+        return "success";
     }
 }

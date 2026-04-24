@@ -3,6 +3,7 @@ package com.studyflow.controllers;
 import com.studyflow.models.Rating;
 import com.studyflow.services.AIRatingAnalysisService;
 import com.studyflow.services.RatingService;
+import com.studyflow.utils.MyDataBase;
 import com.studyflow.utils.UserSession;
 import javafx.animation.FadeTransition;
 import javafx.animation.PauseTransition;
@@ -163,7 +164,7 @@ public class RatingStarsController {
 
     /** Vérifie si une notification récente (< 10s) existe pour cet étudiant. */
     private boolean checkHasNewPendingNotification() {
-        try (var c = com.studyflow.utils.DataSource.getInstance().getConnection();
+        try (var c = MyDataBase.getInstance().getConnection();
              var ps = c.prepareStatement(
                      "SELECT COUNT(*) FROM admin_notifications " +
                      "WHERE student_id=? AND status='pending' " +

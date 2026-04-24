@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns="http://javafx.com/javafx/21"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.studyflow.controllers.ProjectDeleteController"
+      spacing="16"
+      styleClass="page-section">
+    <Label text="Delete Project" styleClass="text-heading"/>
+    <Label fx:id="feedbackLabel" managed="false" visible="false" maxWidth="Infinity" styleClass="inline-alert, inline-alert-error"/>
+
+    <VBox styleClass="card, form-shell" spacing="14">
+        <Label text="Deletion is handled in a separate interface, not in the main project page." styleClass="text-muted" wrapText="true"/>
+        <VBox styleClass="detail-row, delete-panel-shell" spacing="8">
+            <Label fx:id="titleLabel" styleClass="item-title"/>
+            <Label fx:id="metaLabel" styleClass="item-meta" wrapText="true"/>
+        </VBox>
+        <HBox spacing="10">
+            <Button fx:id="deleteButton" text="Delete Project" onAction="#handleDelete" styleClass="danger-outline-button" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+            <Button text="Cancel" onAction="#handleCancel" styleClass="btn-secondary"/>
+        </HBox>
+    </VBox>
+
+    <padding>
+        <Insets top="20" right="20" bottom="20" left="20"/>
+    </padding>
+</VBox>

@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.studyflow.models.AdminNotification;
 import com.studyflow.models.Deck;
 import com.studyflow.models.Flashcard;
-import com.studyflow.utils.DataSource;
+import com.studyflow.utils.MyDataBase;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -29,7 +29,7 @@ public class AdminNotificationService {
     private final AIFlashcardService aiFlashcardService = new AIFlashcardService();
 
     private Connection getConnection() throws SQLException {
-        return DataSource.getInstance().getConnection();
+        return MyDataBase.getInstance().getConnection();
     }
 
     public List<AdminNotification> getPendingNotificationsForDeck(String deckName) {

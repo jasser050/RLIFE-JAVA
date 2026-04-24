@@ -17,6 +17,7 @@
         <maven.compiler.release>17</maven.compiler.release>
         <javafx.version>21.0.1</javafx.version>
         <ikonli.version>12.3.1</ikonli.version>
+        <javafx.executable>java</javafx.executable>
     </properties>
 
     <dependencies>
@@ -58,6 +59,11 @@
             <artifactId>ikonli-feather-pack</artifactId>
             <version>${ikonli.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.kordamp.ikonli</groupId>
+            <artifactId>ikonli-fontawesome5-pack</artifactId>
+            <version>${ikonli.version}</version>
+        </dependency>
 
         <!-- MySQL -->
         <dependency>
@@ -78,7 +84,31 @@
         <dependency>
             <groupId>org.apache.pdfbox</groupId>
             <artifactId>pdfbox</artifactId>
-            <version>2.0.31</version>
+            <version>3.0.3</version>
+        </dependency>
+
+        <!-- JGit -->
+        <dependency>
+            <groupId>org.eclipse.jgit</groupId>
+            <artifactId>org.eclipse.jgit</artifactId>
+            <version>6.10.0.202406032230-r</version>
+        </dependency>
+
+        <!-- iText 7 -->
+        <dependency>
+            <groupId>com.itextpdf</groupId>
+            <artifactId>kernel</artifactId>
+            <version>7.2.5</version>
+        </dependency>
+        <dependency>
+            <groupId>com.itextpdf</groupId>
+            <artifactId>layout</artifactId>
+            <version>7.2.5</version>
+        </dependency>
+        <dependency>
+            <groupId>com.itextpdf</groupId>
+            <artifactId>io</artifactId>
+            <version>7.2.5</version>
         </dependency>
 
         <!-- Jakarta Mail -->
@@ -134,6 +164,7 @@
                 <version>0.0.8</version>
                 <configuration>
                     <mainClass>com.studyflow/com.studyflow.App</mainClass>
+                    <executable>${javafx.executable}</executable>
                     <options>
                         <option>-Xmx512m</option>
                         <option>-Dfile.encoding=UTF-8</option>
@@ -148,4 +179,18 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>project-local-jdk17</id>
+            <activation>
+                <file>
+                    <exists>${project.basedir}/.tools/jdk-17/bin/java.exe</exists>
+                </file>
+            </activation>
+            <properties>
+                <javafx.executable>${project.basedir}/.tools/jdk-17/bin/java.exe</javafx.executable>
+            </properties>
+        </profile>
+    </profiles>
 </project>

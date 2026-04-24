@@ -1,7 +1,7 @@
 package com.studyflow.services;
 
 import com.studyflow.models.Rating;
-import com.studyflow.utils.DataSource;
+import com.studyflow.utils.MyDataBase;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -356,7 +356,7 @@ public class AIRatingAnalysisService {
                 VALUES (?, ?, ?, ?, ?, ?, 'pending', NOW())
                 """;
 
-        try (Connection connection = DataSource.getInstance().getConnection();
+        try (Connection connection = MyDataBase.getInstance().getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, studentId);
             statement.setString(2, safe(studentName, "Unknown student"));
@@ -371,7 +371,7 @@ public class AIRatingAnalysisService {
     }
 
     private boolean hasAdminNotificationsTable() {
-        try (Connection connection = DataSource.getInstance().getConnection()) {
+        try (Connection connection = MyDataBase.getInstance().getConnection()) {
             return connection.getMetaData().getTables(null, null, "admin_notifications", null).next();
         } catch (SQLException e) {
             System.err.println("[AIRating] table check error: " + e.getMessage());
@@ -398,7 +398,7 @@ public class AIRatingAnalysisService {
                 )
                 """;
 
-        try (Connection connection = DataSource.getInstance().getConnection();
+        try (Connection connection = MyDataBase.getInstance().getConnection();
              Statement statement = connection.createStatement()) {
             statement.execute(sql);
         } catch (SQLException e) {
