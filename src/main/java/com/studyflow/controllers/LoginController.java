@@ -168,7 +168,7 @@ public class LoginController implements Initializable {
     private void verifyCaptchaAndLogin(String token, User user) {
         Thread thread = new Thread(() -> {
             try {
-                String secretKey = "";
+                String secretKey = "6Ld66scsAAAAAOUGu2Y6jJH27DA_nNLZB0kFsFWL";
                 String verifyBody = "secret=" + URLEncoder.encode(secretKey, StandardCharsets.UTF_8)
                         + "&response=" + URLEncoder.encode(token, StandardCharsets.UTF_8);
 
