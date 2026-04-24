@@ -1,5 +1,6 @@
 package com.studyflow.services;
 
+import com.studyflow.api.FraudApiClient;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
@@ -19,56 +20,43 @@ import java.util.*;
 import java.util.function.Consumer;
 
 /**
- * ═══════════════════════════════════════════════════════════════════
- *  AntiFraudEngine — Moteur anti-fraude complet pour quiz JavaFX
- * ═══════════════════════════════════════════════════════════════════
+ * ═══════════════════════════════════════════════════════════════
+ *  AntiFraudEngine — Moteur anti-fraude avec API REST intégrée
+ * ═══════════════════════════════════════════════════════════════
  *
- *  ✔ Détection perte de focus (Alt+Tab, autre fenêtre)
- *  ✔ Détection sortie fullscreen + remise automatique
- *  ✔ Score de triche progressif (warning → pénalité → fin)
- *  ✔ Timer d'inactivité (30s sans action = suspect)
- *  ✔ Détection réponse ultra-rapide (<2s = suspect)
- *  ✔ Blocage Ctrl+C / Ctrl+V / Ctrl+X / clic droit
- *  ✔ Alertes overlay non-bloquantes (auto-close 3s)
- *  ✔ Journal complet via FraudLogger
- *  ✔ Callbacks vers le controller (onWarning, onTerminate…)
+ *  Chaque événement suspect est envoyé à l'API locale (port 8085)
+ *  qui le persiste en BDD et retourne une décision (CONTINUE/TERMINATE).
  *
- *  UTILISATION dans CoursesController :
+ *  Si l'API est indisponible → mode local automatique (comportement
+ *  identique à l'ancienne version sans API).
+ *
+ *  UTILISATION dans CoursesController (inchangée) :
  *
  *    private final AntiFraudEngine antiFraud = new AntiFraudEngine();
- *
- *    // Dans initialize() :
  *    antiFraud.setOnTerminate(() -> finishQuiz());
  *    antiFraud.setOnPenalty(n -> quizScore--);
- *
- *    // Quand le quiz commence :
  *    antiFraud.attach(stage);
  *    antiFraud.blockSystemActions(scene);
- *    antiFraud.startMonitoring();
- *
- *    // Quand le quiz se termine :
- *    antiFraud.stopMonitoring();
- *    double finalScore = antiFraud.applyPenaltiesToScore(rawScore);
+ *    antiFraud.startMonitoring();   // ← démarre aussi la session API
+ *    antiFraud.stopMonitoring();    // ← clôture la session API
+ *    double score = antiFraud.applyPenaltiesToScore(rawScore);
  */
 public class AntiFraudEngine {
 
-    // ── Seuils (modifiables selon rigueur souhaitée) ─────────────
-    public static final int THRESHOLD_WARNING   = 5;   // → alerte jaune
-    public static final int THRESHOLD_PENALTY   = 10;  // → -1 point
-    public static final int THRESHOLD_TERMINATE = 15;  // → fin forcée
+    // ── Seuils ───────────────────────────────────────────────────
+    public static final int THRESHOLD_WARNING   = 5;
+    public static final int THRESHOLD_PENALTY   = 10;
+    public static final int THRESHOLD_TERMINATE = 15;
 
-    // Points par type d'événement
-    private static final int PTS_FOCUS_LOST   = 3;
-    private static final int PTS_FULLSCREEN   = 4;
-    private static final int PTS_INACTIVITY   = 2;
-    private static final int PTS_FAST_ANSWER  = 1;
-    private static final int PTS_COPY_PASTE   = 1;
-    private static final int PTS_RIGHT_CLICK  = 1;
+    private static final int PTS_FOCUS_LOST  = 3;
+    private static final int PTS_FULLSCREEN  = 4;
+    private static final int PTS_INACTIVITY  = 2;
+    private static final int PTS_FAST_ANSWER = 1;
+    private static final int PTS_COPY_PASTE  = 1;
+    private static final int PTS_RIGHT_CLICK = 1;
+    private static final int INACTIVITY_SEC  = 30;
 
-    // Inactivité : 30 secondes sans action
-    private static final int INACTIVITY_SEC   = 30;
-
-    // ── État ──────────────────────────────────────────────────────
+    // ── État ─────────────────────────────────────────────────────
     private Stage   monitoredStage;
     private int     fraudScore          = 0;
     private int     focusLostCount      = 0;
@@ -77,43 +65,41 @@ public class AntiFraudEngine {
     private boolean isActive            = false;
     private boolean quizTerminated      = false;
     private long    questionStartTime   = 0;
+    private String  sessionId           = null; // UUID de la session API
 
     private final List<FraudEvent> eventLog = new ArrayList<>();
     private final FraudLogger      logger   = new FraudLogger();
 
-    // ── Callbacks vers le controller ──────────────────────────────
+    // ── API CLIENT ← NOUVEAU ─────────────────────────────────────
+    private final FraudApiClient apiClient = new FraudApiClient();
+
+    // ── Callbacks vers le controller ─────────────────────────────
     private Consumer<FraudEvent> onFraudDetected;
     private Consumer<String>     onWarning;
     private Runnable             onTerminate;
     private Consumer<Integer>    onPenalty;
     private Consumer<Integer>    onFraudScoreUpdated;
 
-    // ── Timers ────────────────────────────────────────────────────
+    // ── Timers ───────────────────────────────────────────────────
     private Timeline inactivityTimer;
     private Timeline questionTimer;
 
-    // ── Overlay d'alerte ──────────────────────────────────────────
+    // ── Overlay ──────────────────────────────────────────────────
     private Stage warningOverlay;
 
-    // ═══════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════
     //  INITIALISATION
-    // ═══════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════
 
-    /**
-     * Attache le moteur à la fenêtre JavaFX du quiz.
-     * À appeler UNE FOIS quand la scène est disponible.
-     */
     public void attach(Stage stage) {
         this.monitoredStage = stage;
 
-        // Détection perte de focus
         stage.focusedProperty().addListener((obs, wasFocused, isFocused) -> {
             if (!isActive) return;
             if (!isFocused) handleFocusLost();
             else            resetInactivityTimer();
         });
 
-        // Détection sortie fullscreen
         stage.fullScreenProperty().addListener((obs, wasFS, isFS) -> {
             if (isActive && !isFS) handleFullscreenExit(stage);
         });
@@ -122,7 +108,7 @@ public class AntiFraudEngine {
     }
 
     /**
-     * Démarre la surveillance. Appeler au début du quiz.
+     * Démarre la surveillance + crée une session dans l'API.
      */
     public void startMonitoring() {
         isActive            = true;
@@ -133,52 +119,62 @@ public class AntiFraudEngine {
         penaltyCount        = 0;
         questionStartTime   = System.currentTimeMillis();
         eventLog.clear();
+
+        // Générer un UUID de session
+        sessionId = java.util.UUID.randomUUID().toString();
+        log("Session ID: " + sessionId);
+
+        // Vérifier que l'API est disponible, puis démarrer la session
+        new Thread(() -> {
+            boolean available = apiClient.checkHealth();
+            if (available) {
+                apiClient.startSession(sessionId);
+                log("API mode active — session registered");
+            } else {
+                log("API unavailable — local mode active");
+            }
+        }, "FraudInit").start();
+
         startInactivityTimer();
-        log("Monitoring STARTED");
+        log("Monitoring STARTED — session: " + sessionId);
     }
 
     /**
-     * Arrête la surveillance. Appeler en fin de quiz.
+     * Arrête la surveillance + clôture la session dans l'API.
      */
     public void stopMonitoring() {
         isActive = false;
         stopInactivityTimer();
         stopQuestionTimer();
         closeOverlay();
-        log("Monitoring STOPPED — fraud score final: " + fraudScore);
+
+        // Clôturer la session via l'API
+        if (sessionId != null) {
+            apiClient.endSession(sessionId, fraudScore, penaltyCount, adjustedScore -> {
+                log("Session closed — adjustedScore from API: " + adjustedScore);
+            });
+        }
+
+        log("Monitoring STOPPED — fraud score: " + fraudScore);
     }
 
-    /**
-     * Notifie un changement de question.
-     * Détecte les réponses ultra-rapides.
-     */
     public void onQuestionChanged(int questionIndex) {
         long elapsedSec = (System.currentTimeMillis() - questionStartTime) / 1000;
         if (elapsedSec < 2 && questionIndex > 0) {
             addFraud(PTS_FAST_ANSWER, FraudEvent.Type.FAST_ANSWER,
-                    "Question answered in " + elapsedSec + "s (suspiciously fast)");
+                    "Question answered in " + elapsedSec + "s");
         }
         questionStartTime = System.currentTimeMillis();
         resetInactivityTimer();
     }
 
-    /**
-     * Démarre un chronomètre par question.
-     *
-     * @param limitSec  Durée max en secondes
-     * @param onTick    Appelé chaque seconde avec les secondes restantes
-     * @param onTimeUp  Appelé quand le temps est écoulé
-     */
     public void startQuestionTimer(int limitSec, Consumer<Integer> onTick, Runnable onTimeUp) {
         stopQuestionTimer();
         int[] remaining = {limitSec};
         questionTimer = new Timeline(new KeyFrame(Duration.seconds(1), e -> {
             remaining[0]--;
             if (onTick != null) onTick.accept(remaining[0]);
-            if (remaining[0] <= 0) {
-                stopQuestionTimer();
-                if (onTimeUp != null) onTimeUp.run();
-            }
+            if (remaining[0] <= 0) { stopQuestionTimer(); if (onTimeUp != null) onTimeUp.run(); }
         }));
         questionTimer.setCycleCount(limitSec);
         questionTimer.play();
@@ -188,32 +184,25 @@ public class AntiFraudEngine {
         if (questionTimer != null) { questionTimer.stop(); questionTimer = null; }
     }
 
-    // ═══════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════
     //  BLOCAGE ACTIONS SYSTÈME
-    // ═══════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════
 
-    /**
-     * Bloque Ctrl+C/V/X, clic droit, et réinitialise le timer
-     * d'inactivité à chaque interaction utilisateur.
-     * À appeler après que la scene est disponible.
-     */
-    public void blockSystemActions(Scene scene) {
+    public void blockSystemActions(javafx.scene.Scene scene) {
 
-        // Bloquer copier/coller/couper
         scene.addEventFilter(javafx.scene.input.KeyEvent.KEY_PRESSED, event -> {
             if (event.isControlDown()) {
                 switch (event.getCode()) {
                     case C, V, X, A -> {
                         event.consume();
                         addFraud(PTS_COPY_PASTE, FraudEvent.Type.COPY_PASTE,
-                                "Keyboard shortcut blocked: Ctrl+" + event.getCode());
+                                "Ctrl+" + event.getCode() + " blocked");
                     }
                     default -> {}
                 }
             }
         });
 
-        // Bloquer clic droit
         scene.addEventFilter(javafx.scene.input.MouseEvent.MOUSE_PRESSED, event -> {
             if (event.isSecondaryButtonDown()) {
                 event.consume();
@@ -221,7 +210,6 @@ public class AntiFraudEngine {
             }
         });
 
-        // Réinitialiser inactivité sur toute interaction
         scene.addEventFilter(javafx.scene.input.MouseEvent.MOUSE_MOVED,
                 e -> { if (isActive) resetInactivityTimer(); });
         scene.addEventFilter(javafx.scene.input.KeyEvent.KEY_PRESSED,
@@ -230,38 +218,38 @@ public class AntiFraudEngine {
                 e -> { if (isActive) resetInactivityTimer(); });
     }
 
-    // ═══════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════
     //  HANDLERS INTERNES
-    // ═══════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════
 
     private void handleFocusLost() {
         focusLostCount++;
         addFraud(PTS_FOCUS_LOST, FraudEvent.Type.FOCUS_LOST,
-                "Window lost focus — attempt #" + focusLostCount);
+                "Window lost focus — #" + focusLostCount);
         Platform.runLater(() ->
-                showOverlay("⚠ Focus lost!\nPlease stay in the exam window.", "#F59E0B"));
+                showOverlay("⚠ Focus lost!\nStay in the exam window.", "#F59E0B"));
     }
 
     private void handleFullscreenExit(Stage stage) {
         fullscreenExitCount++;
         addFraud(PTS_FULLSCREEN, FraudEvent.Type.FULLSCREEN_EXIT,
-                "Fullscreen exited — attempt #" + fullscreenExitCount);
+                "Fullscreen exited — #" + fullscreenExitCount);
         Platform.runLater(() -> {
             if (!quizTerminated) {
-                stage.setFullScreen(true); // Remise en fullscreen automatique
-                showOverlay("⚠ Fullscreen exit detected!\nWindow has been restored.", "#EF4444");
+                stage.setFullScreen(true);
+                showOverlay("⚠ Fullscreen exit detected!\nWindow restored.", "#EF4444");
             }
         });
     }
 
     private void handleInactivity() {
         addFraud(PTS_INACTIVITY, FraudEvent.Type.INACTIVITY,
-                "No activity detected for " + INACTIVITY_SEC + "+ seconds");
+                "No activity for " + INACTIVITY_SEC + "s");
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    //  SYSTÈME DE SCORE DE TRICHE
-    // ═══════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════
+    //  SYSTÈME DE SCORE — ENVOIE À L'API
+    // ═══════════════════════════════════════════════════════════
 
     private void addFraud(int points, FraudEvent.Type type, String description) {
         if (quizTerminated || !isActive) return;
@@ -269,15 +257,46 @@ public class AntiFraudEngine {
         fraudScore += points;
         FraudEvent event = new FraudEvent(type, description, fraudScore);
         eventLog.add(event);
-        logger.log(event);
+        logger.log(event); // log local conservé
 
         if (onFraudDetected     != null) onFraudDetected.accept(event);
         if (onFraudScoreUpdated != null) onFraudScoreUpdated.accept(fraudScore);
 
-        evaluateThresholds();
+        // ── Envoyer à l'API → la décision revient via callback ───
+        if (sessionId != null && apiClient.isApiAvailable()) {
+            String severity = getSeverity(type);
+            apiClient.logEvent(
+                    sessionId,
+                    type.name(),
+                    description,
+                    fraudScore,
+                    severity,
+                    decision -> {
+                        // L'API retourne "TERMINATE" ou "CONTINUE"
+                        if ("TERMINATE".equals(decision) && !quizTerminated) {
+                            quizTerminated = true;
+                            stopMonitoring();
+                            Platform.runLater(() -> {
+                                showTerminationAlert();
+                                if (onTerminate != null) onTerminate.run();
+                            });
+                        }
+                        // Si CONTINUE → évaluation locale aussi
+                        else {
+                            evaluateThresholdsLocal();
+                        }
+                    }
+            );
+        } else {
+            // Mode local (API indisponible)
+            evaluateThresholdsLocal();
+        }
     }
 
-    private void evaluateThresholds() {
+    /**
+     * Évaluation locale — utilisée en fallback si l'API est down.
+     */
+    private void evaluateThresholdsLocal() {
         if (fraudScore >= THRESHOLD_TERMINATE && !quizTerminated) {
             quizTerminated = true;
             stopMonitoring();
@@ -296,14 +315,22 @@ public class AntiFraudEngine {
             }
         } else if (fraudScore >= THRESHOLD_WARNING) {
             if (onWarning != null)
-                onWarning.accept("Suspicious activity — fraud score: "
+                onWarning.accept("Suspicious activity — score: "
                         + fraudScore + "/" + THRESHOLD_TERMINATE);
         }
     }
 
-    // ═══════════════════════════════════════════════════════════════
+    private String getSeverity(FraudEvent.Type type) {
+        return switch (type) {
+            case FOCUS_LOST, FULLSCREEN_EXIT, SUSPICIOUS_PATTERN -> "HIGH";
+            case INACTIVITY, FAST_ANSWER                         -> "MEDIUM";
+            default                                               -> "LOW";
+        };
+    }
+
+    // ═══════════════════════════════════════════════════════════
     //  TIMERS
-    // ═══════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════
 
     private void startInactivityTimer() {
         stopInactivityTimer();
@@ -320,44 +347,33 @@ public class AntiFraudEngine {
         if (inactivityTimer != null) { inactivityTimer.stop(); inactivityTimer = null; }
     }
 
-    public void resetInactivityTimer() {
-        startInactivityTimer(); // repart de zéro
-    }
+    public void resetInactivityTimer() { startInactivityTimer(); }
 
-    // ═══════════════════════════════════════════════════════════════
-    //  OVERLAYS D'ALERTE
-    // ═══════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════
+    //  OVERLAYS
+    // ═══════════════════════════════════════════════════════════
 
     private void showOverlay(String message, String bgColor) {
         closeOverlay();
-
         Stage overlay = new Stage(StageStyle.TRANSPARENT);
         overlay.setAlwaysOnTop(true);
 
         Label lbl = new Label(message);
         lbl.setWrapText(true);
-        lbl.setStyle(
-                "-fx-text-fill:white;" +
-                        "-fx-font-size:13px;" +
-                        "-fx-font-weight:700;" +
-                        "-fx-text-alignment:center;"
-        );
+        lbl.setStyle("-fx-text-fill:white;-fx-font-size:13px;-fx-font-weight:700;-fx-text-alignment:center;");
 
         VBox box = new VBox(lbl);
         box.setAlignment(Pos.CENTER);
         box.setStyle(
-                "-fx-background-color:" + bgColor + ";" +
-                        "-fx-background-radius:12;" +
-                        "-fx-padding:18 24;" +
-                        "-fx-effect:dropshadow(gaussian,rgba(0,0,0,0.7),20,0,0,6);"
+                "-fx-background-color:" + bgColor + ";-fx-background-radius:12;" +
+                        "-fx-padding:18 24;-fx-effect:dropshadow(gaussian,rgba(0,0,0,0.7),20,0,0,6);"
         );
         box.setMaxWidth(280);
 
-        javafx.scene.Scene scene = new javafx.scene.Scene(box);
+        Scene scene = new Scene(box);
         scene.setFill(javafx.scene.paint.Color.TRANSPARENT);
         overlay.setScene(scene);
 
-        // Positionner en haut à droite de la fenêtre surveillée
         if (monitoredStage != null) {
             overlay.setX(monitoredStage.getX() + monitoredStage.getWidth() - 310);
             overlay.setY(monitoredStage.getY() + 20);
@@ -365,7 +381,6 @@ public class AntiFraudEngine {
         overlay.show();
         warningOverlay = overlay;
 
-        // Auto-fermeture après 3 secondes
         new Timeline(new KeyFrame(Duration.seconds(3),
                 e -> { if (overlay.isShowing()) overlay.close(); }
         )).play();
@@ -380,19 +395,20 @@ public class AntiFraudEngine {
         alert.setTitle("🚫 Quiz Terminated");
         alert.setHeaderText("Suspicious activity detected");
         alert.setContentText(
-                "Your quiz has been terminated due to repeated suspicious behavior.\n\n" +
-                        "• Window focus lost:    " + focusLostCount + " time(s)\n" +
-                        "• Fullscreen exits:     " + fullscreenExitCount + " time(s)\n" +
-                        "• Fraud score:          " + fraudScore + "/" + THRESHOLD_TERMINATE + "\n\n" +
+                "Your quiz has been terminated.\n\n" +
+                        "• Focus lost:       " + focusLostCount + " time(s)\n" +
+                        "• Fullscreen exits: " + fullscreenExitCount + " time(s)\n" +
+                        "• Fraud score:      " + fraudScore + "/" + THRESHOLD_TERMINATE + "\n\n" +
+                        "Session ID: " + sessionId + "\n" +
                         "Your answers have been recorded."
         );
         alert.getButtonTypes().setAll(ButtonType.OK);
         alert.showAndWait();
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    //  GETTERS ET CALLBACKS
-    // ═══════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════
+    //  GETTERS / CALLBACKS
+    // ═══════════════════════════════════════════════════════════
 
     public int     getFraudScore()          { return fraudScore; }
     public int     getFocusLostCount()      { return focusLostCount; }
@@ -400,30 +416,32 @@ public class AntiFraudEngine {
     public int     getPenaltyCount()        { return penaltyCount; }
     public boolean isTerminated()           { return quizTerminated; }
     public boolean isActive()               { return isActive; }
+    public String  getSessionId()           { return sessionId; }
+    public boolean isApiMode()              { return apiClient.isApiAvailable(); }
+
     public List<FraudEvent> getEventLog()   { return Collections.unmodifiableList(eventLog); }
 
-    /** Résumé lisible pour l'affichage dans les résultats */
     public String getSummary() {
         return String.format(
-                "Fraud Score: %d/%d | Focus Lost: %d | Fullscreen Exits: %d | Penalties: %d",
-                fraudScore, THRESHOLD_TERMINATE, focusLostCount, fullscreenExitCount, penaltyCount
+                "Fraud Score: %d/%d | Focus Lost: %d | Fullscreen: %d | Penalties: %d | Mode: %s",
+                fraudScore, THRESHOLD_TERMINATE, focusLostCount, fullscreenExitCount, penaltyCount,
+                apiClient.isApiAvailable() ? "API" : "Local"
         );
     }
 
-    /** Applique les pénalités au score brut du quiz */
     public double applyPenaltiesToScore(double rawScore) {
         return Math.max(0, rawScore - penaltyCount);
     }
 
-    // Setters callbacks
-    public void setOnFraudDetected(Consumer<FraudEvent> cb)   { this.onFraudDetected = cb; }
-    public void setOnWarning(Consumer<String> cb)              { this.onWarning = cb; }
-    public void setOnTerminate(Runnable cb)                    { this.onTerminate = cb; }
-    public void setOnPenalty(Consumer<Integer> cb)             { this.onPenalty = cb; }
-    public void setOnFraudScoreUpdated(Consumer<Integer> cb)   { this.onFraudScoreUpdated = cb; }
+    public void setOnFraudDetected(Consumer<FraudEvent> cb)  { this.onFraudDetected = cb; }
+    public void setOnWarning(Consumer<String> cb)             { this.onWarning = cb; }
+    public void setOnTerminate(Runnable cb)                   { this.onTerminate = cb; }
+    public void setOnPenalty(Consumer<Integer> cb)            { this.onPenalty = cb; }
+    public void setOnFraudScoreUpdated(Consumer<Integer> cb)  { this.onFraudScoreUpdated = cb; }
 
     private void log(String msg) {
         System.out.println("[AntiFraud] " +
                 LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss")) + " — " + msg);
     }
+
 }

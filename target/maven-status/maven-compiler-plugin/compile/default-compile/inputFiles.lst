@@ -41,16 +41,19 @@ C:\Users\minok\Downloads\RLIFE-JAVA-main (1)2\RLIFE-JAVA-main\src\main\java\com\
 C:\Users\minok\Downloads\RLIFE-JAVA-main (1)2\RLIFE-JAVA-main\src\main\java\com\studyflow\models\Assignment.java
 C:\Users\minok\Downloads\RLIFE-JAVA-main (1)2\RLIFE-JAVA-main\src\main\java\com\studyflow\services\SpeechService.java
 C:\Users\minok\Downloads\RLIFE-JAVA-main (1)2\RLIFE-JAVA-main\src\main\java\com\studyflow\controllers\AdminDashboardController.java
+C:\Users\minok\Downloads\RLIFE-JAVA-main (1)2\RLIFE-JAVA-main\src\main\java\com\studyflow\api\AntiFraudServer.java
 C:\Users\minok\Downloads\RLIFE-JAVA-main (1)2\RLIFE-JAVA-main\src\main\java\com\studyflow\services\AIQuizService.java
 C:\Users\minok\Downloads\RLIFE-JAVA-main (1)2\RLIFE-JAVA-main\src\main\java\com\studyflow\services\ServiceUser.java
 C:\Users\minok\Downloads\RLIFE-JAVA-main (1)2\RLIFE-JAVA-main\src\main\java\com\studyflow\controllers\StatisticsController.java
 C:\Users\minok\Downloads\RLIFE-JAVA-main (1)2\RLIFE-JAVA-main\src\main\java\com\studyflow\utils\GlbTest.java
 C:\Users\minok\Downloads\RLIFE-JAVA-main (1)2\RLIFE-JAVA-main\src\main\java\com\studyflow\services\AITranslationService.java
+C:\Users\minok\Downloads\RLIFE-JAVA-main (1)2\RLIFE-JAVA-main\src\main\java\com\studyflow\models\FraudSessionRecord.java
 C:\Users\minok\Downloads\RLIFE-JAVA-main (1)2\RLIFE-JAVA-main\src\main\java\com\studyflow\models\Flashcard.java
 C:\Users\minok\Downloads\RLIFE-JAVA-main (1)2\RLIFE-JAVA-main\src\main\java\com\studyflow\utils\RobotScene3D.java
 C:\Users\minok\Downloads\RLIFE-JAVA-main (1)2\RLIFE-JAVA-main\src\main\java\com\studyflow\controllers\DashboardController.java
 C:\Users\minok\Downloads\RLIFE-JAVA-main (1)2\RLIFE-JAVA-main\src\main\java\com\studyflow\controllers\LandingController.java
 C:\Users\minok\Downloads\RLIFE-JAVA-main (1)2\RLIFE-JAVA-main\src\main\java\com\studyflow\models\Matiere.java
+C:\Users\minok\Downloads\RLIFE-JAVA-main (1)2\RLIFE-JAVA-main\src\main\java\com\studyflow\api\FraudApiHandler.java
 C:\Users\minok\Downloads\RLIFE-JAVA-main (1)2\RLIFE-JAVA-main\src\main\java\com\studyflow\controllers\AdminAIController.java
 C:\Users\minok\Downloads\RLIFE-JAVA-main (1)2\RLIFE-JAVA-main\src\main\java\com\studyflow\controllers\AdminUsersController.java
 C:\Users\minok\Downloads\RLIFE-JAVA-main (1)2\RLIFE-JAVA-main\src\main\java\com\studyflow\utils\UserSession.java
@@ -58,5 +61,6 @@ C:\Users\minok\Downloads\RLIFE-JAVA-main (1)2\RLIFE-JAVA-main\src\main\java\com\
 C:\Users\minok\Downloads\RLIFE-JAVA-main (1)2\RLIFE-JAVA-main\src\main\java\com\studyflow\utils\AvatarCard.java
 C:\Users\minok\Downloads\RLIFE-JAVA-main (1)2\RLIFE-JAVA-main\src\main\java\com\studyflow\services\DeckService.java
 C:\Users\minok\Downloads\RLIFE-JAVA-main (1)2\RLIFE-JAVA-main\src\main\java\com\studyflow\controllers\ForgotPasswordController.java
+C:\Users\minok\Downloads\RLIFE-JAVA-main (1)2\RLIFE-JAVA-main\src\main\java\com\studyflow\api\FraudApiClient.java
 C:\Users\minok\Downloads\RLIFE-JAVA-main (1)2\RLIFE-JAVA-main\src\main\java\com\studyflow\controllers\ProfileController.java
 C:\Users\minok\Downloads\RLIFE-JAVA-main (1)2\RLIFE-JAVA-main\src\main\java\com\studyflow\models\Deck.java
