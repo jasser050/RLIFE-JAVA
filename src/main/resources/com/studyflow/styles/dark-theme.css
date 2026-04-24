@@ -4634,6 +4634,13 @@
     -fx-background-color: rgba(99, 102, 241, 0.18);
 }
 
+.wellbeing-page .tool-icon-mood_camera {
+    -fx-background-color: rgba(56, 189, 248, 0.18);
+    -fx-border-color: rgba(56, 189, 248, 0.30);
+    -fx-border-width: 1;
+    -fx-border-radius: 14;
+}
+
 .wellbeing-page .tool-icon-gratitude_journal,
 .wellbeing-page .tool-icon-ai_chat_coach {
     -fx-background-color: rgba(217, 119, 6, 0.20);
@@ -4652,6 +4659,10 @@
 .wellbeing-page .tool-icon-nature_sounds .ikonli-font-icon,
 .wellbeing-page .tool-icon-yoga_coach .ikonli-font-icon {
     -fx-icon-color: #4ADE80;
+}
+
+.wellbeing-page .tool-icon-mood_camera .ikonli-font-icon {
+    -fx-icon-color: #67E8F9;
 }
 
 .wellbeing-page .tools-card-title {
