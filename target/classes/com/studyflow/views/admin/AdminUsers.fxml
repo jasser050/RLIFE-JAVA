@@ -15,37 +15,16 @@
     <HBox alignment="CENTER_LEFT" spacing="16">
         <VBox spacing="4" HBox.hgrow="ALWAYS">
             <Label text="User Management" styleClass="text-heading"/>
-            <Label text="View, ban, and unban platform users" styleClass="text-muted"/>
+            <Label text="View, ban, and manage platform users" styleClass="text-muted"/>
         </VBox>
-        <Button fx:id="refreshBtn" text="Refresh" styleClass="btn-secondary" onAction="#refreshUsers">
-            <graphic><FontIcon iconLiteral="fth-refresh-cw" iconSize="14"/></graphic>
-        </Button>
+        <Label fx:id="userCountLabel" text="0 users" styleClass="font-size-preview"/>
     </HBox>
 
-    <!-- Users Table -->
-    <VBox styleClass="card" VBox.vgrow="ALWAYS">
-        <HBox styleClass="card-header" alignment="CENTER_LEFT" spacing="12">
-            <StackPane styleClass="stat-icon-box, primary" prefWidth="36" prefHeight="36">
-                <FontIcon iconLiteral="fth-users" iconSize="16"/>
-            </StackPane>
-            <VBox spacing="2" HBox.hgrow="ALWAYS">
-                <Label text="All Users" styleClass="card-title"/>
-                <Label fx:id="userCountLabel" text="0 users" styleClass="text-small"/>
-            </VBox>
-        </HBox>
-        <VBox styleClass="card-body" VBox.vgrow="ALWAYS">
-            <TableView fx:id="usersTable" VBox.vgrow="ALWAYS" styleClass="admin-table" prefHeight="500">
-                <columns>
-                    <TableColumn fx:id="colId" text="ID" prefWidth="50"/>
-                    <TableColumn fx:id="colName" text="Name" prefWidth="150"/>
-                    <TableColumn fx:id="colEmail" text="Email" prefWidth="220"/>
-                    <TableColumn fx:id="colUsername" text="Username" prefWidth="120"/>
-                    <TableColumn fx:id="colGender" text="Gender" prefWidth="80"/>
-                    <TableColumn fx:id="colUniversity" text="University" prefWidth="130"/>
-                    <TableColumn fx:id="colStatus" text="Status" prefWidth="90"/>
-                    <TableColumn fx:id="colActions" text="Actions" prefWidth="140"/>
-                </columns>
-            </TableView>
+    <!-- User Cards Container -->
+    <ScrollPane fitToWidth="true" hbarPolicy="NEVER" VBox.vgrow="ALWAYS"
+                styleClass="auth-scroll">
+        <VBox fx:id="userCardsContainer" spacing="10">
+            <padding><Insets top="4" right="4" bottom="4" left="4"/></padding>
         </VBox>
-    </VBox>
+    </ScrollPane>
 </VBox>

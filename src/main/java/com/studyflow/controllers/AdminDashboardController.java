@@ -14,6 +14,7 @@ import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.font.PDType1Font;
+import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
 
 import java.io.File;
 import java.io.IOException;
@@ -22,6 +23,9 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class AdminDashboardController implements Initializable {
+    private static final PDType1Font FONT_REGULAR = new PDType1Font(Standard14Fonts.FontName.HELVETICA);
+    private static final PDType1Font FONT_BOLD = new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD);
+
 
     @FXML private Label totalUsersLabel;
     @FXML private Label activeUsersLabel;
@@ -88,8 +92,8 @@ public class AdminDashboardController implements Initializable {
         long females = allUsers.stream().filter(u -> "female".equalsIgnoreCase(u.getGender())).count();
         long other = allUsers.size() - males - females;
         genderChart.setData(FXCollections.observableArrayList(
-            new PieChart.Data("Male (" + males + ")", males),
-            new PieChart.Data("Female (" + females + ")", females)
+                new PieChart.Data("Male (" + males + ")", males),
+                new PieChart.Data("Female (" + females + ")", females)
         ));
         if (other > 0) genderChart.getData().add(new PieChart.Data("Other (" + other + ")", other));
     }
@@ -143,8 +147,8 @@ public class AdminDashboardController implements Initializable {
                 if (empty || item == null) { setText(null); setStyle(""); return; }
                 setText(item);
                 setStyle("Banned".equals(item)
-                    ? "-fx-text-fill: #F43F5E; -fx-font-weight: bold;"
-                    : "-fx-text-fill: #34D399; -fx-font-weight: bold;");
+                        ? "-fx-text-fill: #F43F5E; -fx-font-weight: bold;"
+                        : "-fx-text-fill: #34D399; -fx-font-weight: bold;");
             }
         });
 
@@ -166,11 +170,11 @@ public class AdminDashboardController implements Initializable {
         rows.add(new String[]{"ID", "Name", "Email", "Gender", "Status"});
         for (User u : allUsers) {
             rows.add(new String[]{
-                String.valueOf(u.getId()),
-                trunc(u.getFullName().trim(), 24),
-                trunc(u.getEmail(), 30),
-                u.getGender() != null ? u.getGender() : "N/A",
-                u.isBanned() ? "BANNED" : "Active"
+                    String.valueOf(u.getId()),
+                    trunc(u.getFullName().trim(), 24),
+                    trunc(u.getEmail(), 30),
+                    u.getGender() != null ? u.getGender() : "N/A",
+                    u.isBanned() ? "BANNED" : "Active"
             });
         }
         savePdf("RLife - User List", "Total Users: " + allUsers.size(), rows, "user_list.pdf");
@@ -183,10 +187,10 @@ public class AdminDashboardController implements Initializable {
         rows.add(new String[]{"ID", "Name", "Email", "Ban Reason"});
         for (User u : banned) {
             rows.add(new String[]{
-                String.valueOf(u.getId()),
-                trunc(u.getFullName().trim(), 24),
-                trunc(u.getEmail(), 30),
-                trunc(u.getBanReason() != null ? u.getBanReason() : "No reason", 28)
+                    String.valueOf(u.getId()),
+                    trunc(u.getFullName().trim(), 24),
+                    trunc(u.getEmail(), 30),
+                    trunc(u.getBanReason() != null ? u.getBanReason() : "No reason", 28)
             });
         }
         savePdf("RLife - Banned Users", "Banned: " + banned.size() + " / " + allUsers.size() + " total", rows, "banned_users.pdf");
@@ -225,12 +229,12 @@ public class AdminDashboardController implements Initializable {
                     float marginLeft = 40;
 
                     // Title
-                    cs.setFont(PDType1Font.HELVETICA_BOLD, 18);
+                    cs.setFont(FONT_BOLD, 18);
                     cs.beginText(); cs.newLineAtOffset(marginLeft, y); cs.showText(title); cs.endText();
                     y -= 22;
 
                     // Subtitle + date
-                    cs.setFont(PDType1Font.HELVETICA, 10);
+                    cs.setFont(FONT_REGULAR, 10);
                     cs.beginText(); cs.newLineAtOffset(marginLeft, y);
                     cs.showText(subtitle + "  |  Generated: " + new SimpleDateFormat("yyyy-MM-dd HH:mm").format(new Date()));
                     cs.endText();
@@ -247,7 +251,7 @@ public class AdminDashboardController implements Initializable {
                     int cols = header.length;
                     float colWidth = 515f / cols;
 
-                    cs.setFont(PDType1Font.HELVETICA_BOLD, 9);
+                    cs.setFont(FONT_BOLD, 9);
                     for (int c = 0; c < cols; c++) {
                         cs.beginText(); cs.newLineAtOffset(marginLeft + c * colWidth, y); cs.showText(header[c]); cs.endText();
                     }
@@ -258,7 +262,7 @@ public class AdminDashboardController implements Initializable {
                     y -= 14;
 
                     // Data rows for this page
-                    cs.setFont(PDType1Font.HELVETICA, 8);
+                    cs.setFont(FONT_REGULAR, 8);
                     int startRow = 1 + page * rowsPerPage;
                     int endRow = Math.min(startRow + rowsPerPage, rows.size());
                     for (int r = startRow; r < endRow; r++) {
@@ -270,7 +274,7 @@ public class AdminDashboardController implements Initializable {
                     }
 
                     // Footer
-                    cs.setFont(PDType1Font.HELVETICA, 7);
+                    cs.setFont(FONT_REGULAR, 7);
                     cs.beginText(); cs.newLineAtOffset(marginLeft, 30);
                     cs.showText("RLife Admin  -  Page " + (page + 1) + " of " + pages);
                     cs.endText();

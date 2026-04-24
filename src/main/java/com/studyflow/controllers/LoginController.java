@@ -91,6 +91,12 @@ public class LoginController implements Initializable {
         loginBtn.setDisable(true);
         loginBtn.setText("Signing in...");
 
+        if (!serviceUser.isDatabaseAvailable()) {
+            showError("Database unavailable. Check MySQL and database name 'rlife'.");
+            resetButton();
+            return;
+        }
+
         // Admin shortcut — hardcoded credentials, no DB record needed (skip CAPTCHA)
         if ("admin@rlife.com".equalsIgnoreCase(email) && "admin123".equals(password)) {
             User admin = new User();
@@ -244,6 +250,11 @@ public class LoginController implements Initializable {
         }
 
         // Check if user exists and has face data
+        if (!serviceUser.isDatabaseAvailable()) {
+            showError("Database unavailable. Check MySQL and database name 'rlife'.");
+            return;
+        }
+
         User user = serviceUser.findByEmail(email);
         if (user == null) {
             showError("No account found with this email.");
