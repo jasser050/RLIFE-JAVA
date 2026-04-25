@@ -451,13 +451,15 @@ public class MainController implements Initializable {
         String type = safeQuoteType(preferences.get(PREF_QUOTE_TYPE, "motivation"));
         preferences.put(PREF_QUOTE_TYPE, type);
 
-        // Force-enable widget to recover from stale disabled state.
-        if (!preferences.getBoolean(PREF_QUOTE_ENABLED, true)) {
+        // Initialize once, but never override an explicit user choice.
+        if (preferences.get(PREF_QUOTE_ENABLED, null) == null) {
             preferences.putBoolean(PREF_QUOTE_ENABLED, true);
         }
 
-        // Always show quotes by default when app starts.
-        preferences.putLong(PREF_QUOTE_DISMISSED_UNTIL, 0L);
+        // Initialize dismissed state only if key is missing.
+        if (preferences.get(PREF_QUOTE_DISMISSED_UNTIL, null) == null) {
+            preferences.putLong(PREF_QUOTE_DISMISSED_UNTIL, 0L);
+        }
     }
 
     private void setupGlobalQuoteDrag() {
