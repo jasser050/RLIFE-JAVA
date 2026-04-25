@@ -1834,3 +1834,114 @@
     -fx-text-fill: #64748B;
     -fx-font-size: 14px;
 }
+
+/* Wellbeing page: force light surface overrides over imported dark theme */
+.wellbeing-page,
+.wellbeing-page .wellbeing-tools-page {
+    -fx-background-color: #F3F6FB;
+}
+
+.wellbeing-page .card,
+.wellbeing-page .wellbeing-kpi-card,
+.wellbeing-page #formSection,
+.wellbeing-page #historySection .card,
+.wellbeing-page #quizSection,
+.wellbeing-page #quizResultsSection,
+.wellbeing-page #quizModeSection,
+.wellbeing-page #inlineToolSection,
+.wellbeing-page .wellbeing-tools-preview-shell,
+.wellbeing-page .wellbeing-tool-preview-card,
+.wellbeing-page .wellbeing-tool-card,
+.wellbeing-page .tools-tips-shell,
+.wellbeing-page .wellbeing-input-card {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #D7E0EE;
+    -fx-border-width: 1;
+}
+
+.wellbeing-page .card-header,
+.wellbeing-page #quizSection .card-header,
+.wellbeing-page #quizResultsSection .card-header,
+.wellbeing-page .wellbeing-panel-header,
+.wellbeing-page .tools-control-bar {
+    -fx-background-color: #F8FBFF;
+    -fx-border-color: #E2E8F0;
+}
+
+.wellbeing-page .card-title,
+.wellbeing-page .text-heading,
+.wellbeing-page .text-subheading,
+.wellbeing-page .text-body,
+.wellbeing-page .wellbeing-kpi-value,
+.wellbeing-page .tools-main-title,
+.wellbeing-page .tools-highlight-title,
+.wellbeing-page .tools-tip-title,
+.wellbeing-page .tools-tips-title,
+.wellbeing-page .tools-card-title {
+    -fx-text-fill: #122033;
+}
+
+.wellbeing-page .text-small,
+.wellbeing-page .text-muted,
+.wellbeing-page .wellbeing-kpi-label,
+.wellbeing-page .tools-main-subtitle,
+.wellbeing-page .tools-highlight-subtitle,
+.wellbeing-page .tools-tip-desc,
+.wellbeing-page .tools-card-desc,
+.wellbeing-page .tools-control-hint {
+    -fx-text-fill: #5F728A;
+}
+
+.wellbeing-page .wellbeing-inner-scroll,
+.wellbeing-page .wellbeing-inner-scroll > .viewport,
+.wellbeing-page .wellbeing-inner-scroll .content {
+    -fx-background-color: transparent;
+}
+
+.wellbeing-page .wellbeing-quote-card,
+.wellbeing-page .wellbeing-quote-controls {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #D7E0EE;
+}
+
+.wellbeing-page .wellbeing-quote-text {
+    -fx-text-fill: #122033;
+}
+
+.wellbeing-page .wellbeing-quote-meta {
+    -fx-text-fill: #2563EB;
+}
+
+.wellbeing-page .wellbeing-quote-mark {
+    -fx-text-fill: #6366F1;
+}
+
+.wellbeing-page .wellbeing-quote-shell .check-box .text,
+.wellbeing-page .wellbeing-quote-controls .check-box .text {
+    -fx-fill: #334155;
+}
+
+.global-quote-card {
+    -fx-background-color: linear-gradient(to bottom right, #FFFFFF, #F8FBFF);
+    -fx-border-color: #CBD5E1;
+}
+
+.global-quote-top {
+    -fx-text-fill: #2563EB;
+}
+
+.global-quote-mark {
+    -fx-text-fill: #3B82F6;
+}
+
+.global-quote-text {
+    -fx-text-fill: #0F172A;
+}
+
+.global-quote-meta {
+    -fx-text-fill: #475569;
+}
+
+.global-quote-close-btn {
+    -fx-text-fill: #64748B;
+}
