@@ -267,6 +267,8 @@ public class WellbeingController implements Initializable {
         };
         quoteTypeCombo.setValue(selected);
         quoteEnabledToggle.setSelected(preferences.getBoolean(PREF_QUOTE_ENABLED, true));
+        quoteEnabledToggle.selectedProperty().addListener((obs, wasSelected, isSelected) ->
+                preferences.putBoolean(PREF_QUOTE_ENABLED, isSelected));
     }
 
     @FXML
