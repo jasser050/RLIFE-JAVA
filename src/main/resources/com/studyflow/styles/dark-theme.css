@@ -3007,6 +3007,279 @@
     -fx-text-fill: #A78BFA;
 }
 
+/* ============================================
+   WELLBEING QUIZ (Symfony-inspired)
+   ============================================ */
+
+.wellbeing-page #quizSection,
+.wellbeing-page #quizResultsSection {
+    -fx-background-color: linear-gradient(to bottom, rgba(15, 23, 42, 0.98), rgba(17, 24, 39, 0.98));
+    -fx-background-radius: 22;
+    -fx-border-color: rgba(251, 191, 36, 0.30);
+    -fx-border-radius: 22;
+    -fx-border-width: 1.2;
+    -fx-effect: dropshadow(gaussian, rgba(245, 158, 11, 0.18), 18, 0.22, 0, 4);
+}
+
+.wellbeing-page #quizModeSection {
+    -fx-background-color: linear-gradient(to right, rgba(6, 22, 50, 0.98), rgba(20, 18, 45, 0.98));
+    -fx-background-radius: 22;
+    -fx-border-color: rgba(30, 64, 175, 0.45);
+    -fx-border-radius: 22;
+    -fx-border-width: 1;
+    -fx-padding: 18 20 22 20;
+}
+
+.wellbeing-page #quizSection .card-header,
+.wellbeing-page #quizResultsSection .card-header {
+    -fx-background-color: linear-gradient(to right, rgba(251, 191, 36, 0.18), rgba(249, 115, 22, 0.16));
+    -fx-border-color: rgba(251, 191, 36, 0.22);
+    -fx-border-width: 0 0 1 0;
+}
+
+.wellbeing-page #quizSection .wellbeing-header-icon,
+.wellbeing-page #quizResultsSection .wellbeing-header-icon {
+    -fx-background-color: linear-gradient(to bottom right, #FBBF24, #F97316);
+    -fx-background-radius: 12;
+    -fx-pref-width: 36;
+    -fx-pref-height: 36;
+    -fx-min-width: 36;
+    -fx-min-height: 36;
+}
+
+.wellbeing-page #quizSection .wellbeing-header-icon .ikonli-font-icon,
+.wellbeing-page #quizResultsSection .wellbeing-header-icon .ikonli-font-icon {
+    -fx-icon-color: white;
+}
+
+#quizProgressBar {
+    -fx-pref-height: 10;
+    -fx-background-radius: 999;
+}
+
+#quizProgressBar > .track {
+    -fx-background-color: #334155;
+    -fx-background-radius: 999;
+    -fx-background-insets: 0;
+}
+
+#quizProgressBar > .bar {
+    -fx-background-color: linear-gradient(to right, #FBBF24, #F97316);
+    -fx-background-radius: 999;
+    -fx-background-insets: 0;
+}
+
+.quiz-option-card {
+    -fx-background-color: rgba(15, 23, 42, 0.88);
+    -fx-background-radius: 12;
+    -fx-border-color: #334155;
+    -fx-border-width: 2;
+    -fx-border-radius: 12;
+    -fx-padding: 12 14;
+    -fx-cursor: hand;
+}
+
+.quiz-option-card:hover {
+    -fx-border-color: rgba(251, 191, 36, 0.62);
+    -fx-background-color: rgba(30, 41, 59, 0.9);
+}
+
+.quiz-option-card.quiz-option-selected {
+    -fx-border-color: #FBBF24;
+    -fx-background-color: linear-gradient(to bottom right, rgba(251, 191, 36, 0.19), rgba(245, 158, 11, 0.10));
+    -fx-effect: dropshadow(gaussian, rgba(245, 158, 11, 0.34), 14, 0.15, 0, 3);
+}
+
+.quiz-option-radio .radio {
+    -fx-background-color: #0F172A;
+    -fx-border-color: #475569;
+    -fx-border-radius: 100;
+    -fx-background-radius: 100;
+}
+
+.quiz-option-radio:selected .radio {
+    -fx-background-color: #F59E0B;
+    -fx-border-color: #FBBF24;
+}
+
+.quiz-option-radio .dot {
+    -fx-background-color: white;
+}
+
+#quizResultEmojiLabel {
+    -fx-font-size: 52px;
+}
+
+#quizResultTitleLabel {
+    -fx-text-fill: #F8FAFC;
+    -fx-font-size: 30px;
+    -fx-font-weight: 800;
+}
+
+#quizResultSubtitleLabel {
+    -fx-text-fill: #CBD5E1;
+}
+
+#quizResultScoreLabel {
+    -fx-text-fill: #FBBF24;
+    -fx-font-size: 32px;
+    -fx-font-weight: 900;
+}
+
+#quizRecommendationsBox .wellbeing-input-card {
+    -fx-background-color: linear-gradient(to right, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.92));
+    -fx-background-radius: 14;
+    -fx-border-color: rgba(96, 165, 250, 0.38);
+    -fx-border-radius: 14;
+    -fx-border-width: 1.1;
+}
+
+/* Quiz mode picker (Simple vs AI) */
+.quiz-mode-hero {
+    -fx-max-width: 820;
+}
+
+.quiz-mode-hero-icon {
+    -fx-background-color: linear-gradient(to bottom right, #F59E0B, #FB923C);
+    -fx-background-radius: 16;
+    -fx-pref-width: 64;
+    -fx-pref-height: 64;
+    -fx-min-width: 64;
+    -fx-min-height: 64;
+}
+
+.quiz-mode-hero-icon .ikonli-font-icon {
+    -fx-icon-color: #FFFFFF;
+}
+
+.quiz-mode-hero-title {
+    -fx-text-fill: #F8FAFC;
+    -fx-font-size: 34px;
+    -fx-font-weight: 800;
+}
+
+.quiz-mode-hero-subtitle {
+    -fx-text-fill: #18CED2;
+    -fx-font-size: 13px;
+    -fx-font-weight: 700;
+    -fx-max-width: 650;
+    -fx-alignment: center;
+    -fx-text-alignment: center;
+}
+
+.quiz-mode-shell {
+    -fx-background-color: rgba(8, 18, 47, 0.82);
+    -fx-background-radius: 16;
+    -fx-border-color: rgba(37, 99, 235, 0.45);
+    -fx-border-radius: 16;
+    -fx-border-width: 1;
+    -fx-padding: 16 18;
+    -fx-max-width: 760;
+}
+
+.quiz-mode-dialog {
+    -fx-background-color: linear-gradient(to bottom, #0F172A, #111827);
+    -fx-background-radius: 18;
+    -fx-border-color: rgba(148, 163, 184, 0.28);
+    -fx-border-radius: 18;
+    -fx-border-width: 1;
+}
+
+.quiz-mode-title {
+    -fx-font-size: 24px;
+    -fx-font-weight: 800;
+    -fx-text-fill: #F8FAFC;
+}
+
+.quiz-mode-subtitle {
+    -fx-font-size: 13px;
+    -fx-text-fill: #94A3B8;
+}
+
+.quiz-mode-card {
+    -fx-background-radius: 14;
+    -fx-border-radius: 14;
+    -fx-border-width: 2;
+    -fx-padding: 14 16;
+    -fx-cursor: hand;
+    -fx-alignment: TOP_LEFT;
+    -fx-content-display: graphic-only;
+    -fx-min-height: 86;
+    -fx-pref-height: 86;
+    -fx-max-height: 86;
+    -fx-min-width: 340;
+    -fx-pref-width: 340;
+}
+
+.quiz-mode-card-title {
+    -fx-font-size: 17px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #F8FAFC;
+}
+
+.quiz-mode-card-desc {
+    -fx-font-size: 12px;
+    -fx-text-fill: #20D1BE;
+}
+
+.quiz-mode-card-simple {
+    -fx-background-color: linear-gradient(to bottom right, rgba(251, 191, 36, 0.16), rgba(245, 158, 11, 0.10));
+    -fx-border-color: rgba(251, 191, 36, 0.55);
+}
+
+.quiz-mode-card-simple:hover {
+    -fx-background-color: linear-gradient(to bottom right, rgba(251, 191, 36, 0.24), rgba(245, 158, 11, 0.14));
+    -fx-border-color: rgba(251, 191, 36, 0.88);
+}
+
+.quiz-mode-card-ai {
+    -fx-background-color: linear-gradient(to bottom right, rgba(99, 102, 241, 0.16), rgba(79, 70, 229, 0.12));
+    -fx-border-color: rgba(129, 140, 248, 0.55);
+}
+
+.quiz-mode-card-ai:hover {
+    -fx-background-color: linear-gradient(to bottom right, rgba(99, 102, 241, 0.24), rgba(79, 70, 229, 0.16));
+    -fx-border-color: rgba(165, 180, 252, 0.88);
+}
+
+.quiz-ai-suggestion-card {
+    -fx-background-color: linear-gradient(to right, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.90));
+    -fx-border-color: rgba(148, 163, 184, 0.36);
+    -fx-border-width: 1;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+    -fx-cursor: hand;
+}
+
+.quiz-ai-suggestion-card:hover {
+    -fx-border-color: rgba(96, 165, 250, 0.72);
+    -fx-effect: dropshadow(gaussian, rgba(59, 130, 246, 0.20), 14, 0.15, 0, 2);
+}
+
+.quiz-ai-suggestion-card-selected {
+    -fx-border-color: rgba(34, 211, 238, 0.95);
+    -fx-effect: dropshadow(gaussian, rgba(34, 211, 238, 0.24), 16, 0.2, 0, 3);
+}
+
+.quiz-ai-suggestion-title {
+    -fx-text-fill: #F8FAFC;
+    -fx-font-size: 15px;
+    -fx-font-weight: 700;
+}
+
+.quiz-ai-suggestion-content {
+    -fx-text-fill: #CBD5E1;
+    -fx-font-size: 13px;
+}
+
+#quizSelectedRecommendationBox {
+    -fx-background-color: linear-gradient(to right, rgba(8, 145, 178, 0.16), rgba(6, 182, 212, 0.12));
+    -fx-border-color: rgba(34, 211, 238, 0.52);
+    -fx-border-width: 1;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+}
+
 /* Accent Default Reset Button */
 .accent-default-btn {
     -fx-background-color: #1E293B;
@@ -3927,3 +4200,855 @@
     -fx-background-color: white;
 }
 
+/* ============================================
+   ADMIN WELLNESS (Stress Questions + Recommendations)
+   Imported from RLIFE-JAVA-main_fi design
+   ============================================ */
+.stress-root {
+    -fx-background-color: #060B1F;
+}
+.stress-page {
+    -fx-background-color: #060B1F;
+}
+.stress-title {
+    -fx-text-fill: white;
+    -fx-font-size: 32px;
+    -fx-font-weight: 800;
+}
+.stress-subtitle {
+    -fx-text-fill: #22D3EE;
+    -fx-font-size: 15px;
+}
+.stress-stat-card {
+    -fx-background-radius: 20;
+    -fx-border-radius: 20;
+    -fx-border-width: 1;
+    -fx-padding: 18 22;
+}
+.stress-stat-card.blue {
+    -fx-background-color: linear-gradient(to bottom right, rgba(59, 130, 246, 0.18), rgba(30, 41, 59, 0.92));
+    -fx-border-color: rgba(59, 130, 246, 0.20);
+}
+.stress-stat-card.green {
+    -fx-background-color: linear-gradient(to bottom right, rgba(34, 197, 94, 0.16), rgba(18, 40, 52, 0.92));
+    -fx-border-color: rgba(34, 197, 94, 0.20);
+}
+.stress-stat-card.gray {
+    -fx-background-color: linear-gradient(to bottom right, rgba(148, 163, 184, 0.12), rgba(30, 41, 59, 0.92));
+    -fx-border-color: rgba(148, 163, 184, 0.20);
+}
+.stress-stat-card.warning {
+    -fx-background-color: linear-gradient(to bottom right, rgba(245, 158, 11, 0.16), rgba(45, 31, 22, 0.92));
+    -fx-border-color: rgba(245, 158, 11, 0.20);
+}
+.stress-stat-card.danger {
+    -fx-background-color: linear-gradient(to bottom right, rgba(239, 68, 68, 0.16), rgba(48, 24, 24, 0.92));
+    -fx-border-color: rgba(239, 68, 68, 0.20);
+}
+.stress-stat-number {
+    -fx-text-fill: white;
+    -fx-font-size: 34px;
+    -fx-font-weight: 800;
+}
+.stress-stat-label {
+    -fx-text-fill: #22D3EE;
+    -fx-font-size: 14px;
+}
+.stress-search-card {
+    -fx-background-color: #151F35;
+    -fx-background-radius: 20;
+    -fx-border-color: rgba(71, 85, 105, 0.65);
+    -fx-border-radius: 20;
+    -fx-border-width: 1;
+}
+.stress-table-shell {
+    -fx-background-color: #151F35;
+    -fx-background-radius: 22;
+    -fx-border-radius: 22;
+    -fx-border-color: rgba(71, 85, 105, 0.55);
+    -fx-border-width: 1;
+}
+.stress-form-card {
+    -fx-max-width: 760;
+    -fx-background-color: #151F35;
+    -fx-background-radius: 22;
+    -fx-border-radius: 22;
+    -fx-border-color: rgba(71, 85, 105, 0.55);
+    -fx-border-width: 1;
+}
+.stress-table-header {
+    -fx-background-color: rgba(30, 41, 59, 0.92);
+    -fx-border-color: rgba(71, 85, 105, 0.65);
+    -fx-border-width: 0 0 1 0;
+}
+.stress-table-head-label {
+    -fx-text-fill: #93C5FD;
+    -fx-font-size: 12px;
+    -fx-font-weight: 700;
+}
+.stress-table-row {
+    -fx-background-color: rgba(15, 23, 42, 0.86);
+    -fx-border-color: rgba(51, 65, 85, 0.55);
+    -fx-border-width: 0 0 1 0;
+}
+.stress-table-row:hover {
+    -fx-background-color: rgba(30, 41, 59, 0.94);
+}
+.stress-table-num {
+    -fx-text-fill: #E2E8F0;
+    -fx-font-size: 13px;
+    -fx-font-weight: 700;
+}
+.stress-table-question {
+    -fx-text-fill: #E2E8F0;
+    -fx-font-size: 13px;
+}
+.stress-table-date {
+    -fx-text-fill: #94A3B8;
+    -fx-font-size: 12px;
+}
+.stress-action-btn {
+    -fx-padding: 6 10;
+    -fx-font-size: 12px;
+    -fx-font-weight: 700;
+    -fx-min-width: 62;
+}
+.stress-draggable-row {
+    -fx-cursor: open-hand;
+}
+.stress-drag-source {
+    -fx-opacity: 0.72;
+}
+.stress-drag-target {
+    -fx-border-color: #60A5FA;
+    -fx-border-width: 1;
+}
+.stress-list-item {
+    -fx-background-color: rgba(15, 23, 42, 0.82);
+    -fx-border-color: rgba(51, 65, 85, 0.65);
+    -fx-border-width: 1;
+    -fx-border-radius: 16;
+    -fx-background-radius: 16;
+}
+.stress-list-item:hover {
+    -fx-background-color: rgba(30, 41, 59, 0.95);
+    -fx-border-color: rgba(96, 165, 250, 0.35);
+}
+.stress-list-number {
+    -fx-min-width: 34;
+    -fx-pref-width: 34;
+    -fx-min-height: 34;
+    -fx-pref-height: 34;
+    -fx-alignment: center;
+    -fx-background-color: rgba(59, 130, 246, 0.18);
+    -fx-background-radius: 999;
+    -fx-border-color: rgba(96, 165, 250, 0.35);
+    -fx-border-radius: 999;
+    -fx-text-fill: #BFDBFE;
+    -fx-font-size: 13px;
+    -fx-font-weight: 800;
+}
+.stress-list-question {
+    -fx-text-fill: #E2E8F0;
+    -fx-font-size: 14px;
+}
+.stress-list-date {
+    -fx-text-fill: #94A3B8;
+    -fx-font-size: 12px;
+}
+.reco-list-item {
+    -fx-background-color: rgba(15, 23, 42, 0.82);
+    -fx-border-color: rgba(51, 65, 85, 0.65);
+    -fx-border-width: 1;
+    -fx-border-radius: 16;
+    -fx-background-radius: 16;
+}
+.reco-list-item:hover {
+    -fx-background-color: rgba(30, 41, 59, 0.95);
+    -fx-border-color: rgba(96, 165, 250, 0.35);
+}
+.reco-list-title {
+    -fx-text-fill: #F8FAFC;
+    -fx-font-size: 15px;
+    -fx-font-weight: 700;
+}
+.reco-list-preview {
+    -fx-text-fill: #CBD5E1;
+    -fx-font-size: 13px;
+}
+.reco-actions .button {
+    -fx-padding: 6 10;
+    -fx-font-size: 12px;
+    -fx-font-weight: 700;
+}
+
+/* Dark-mode form controls for admin wellness forms */
+.stress-root .admin-input,
+.stress-root .combo-box.admin-input,
+.stress-root .text-field.admin-input {
+    -fx-background-color: #0F172A;
+    -fx-border-color: rgba(71, 85, 105, 0.85);
+    -fx-border-width: 1;
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
+    -fx-text-fill: #E2E8F0;
+    -fx-prompt-text-fill: #64748B;
+}
+
+.stress-root .admin-input:focused,
+.stress-root .combo-box.admin-input:focused,
+.stress-root .text-field.admin-input:focused {
+    -fx-border-color: #60A5FA;
+    -fx-background-color: #0B1324;
+}
+
+.stress-root .combo-box.admin-input .list-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: #E2E8F0;
+}
+
+.stress-root .combo-box-popup .list-view {
+    -fx-background-color: #0F172A;
+    -fx-border-color: rgba(71, 85, 105, 0.85);
+}
+
+.stress-root .admin-textarea {
+    -fx-background-color: #0F172A;
+    -fx-border-color: rgba(71, 85, 105, 0.85);
+    -fx-border-width: 1;
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
+    -fx-text-fill: #E2E8F0;
+    -fx-prompt-text-fill: #64748B;
+    -fx-highlight-fill: rgba(59, 130, 246, 0.45);
+    -fx-highlight-text-fill: #FFFFFF;
+}
+
+.stress-root .admin-textarea:focused {
+    -fx-border-color: #60A5FA;
+    -fx-background-color: #0B1324;
+}
+
+.stress-root .admin-textarea .content {
+    -fx-background-color: transparent;
+}
+
+/* Dark-mode wellbeing check-in controls */
+.wellbeing-page .wellbeing-input-card {
+    -fx-background-color: linear-gradient(to bottom right, rgba(15, 23, 42, 0.92), rgba(17, 24, 39, 0.88));
+    -fx-border-color: rgba(71, 85, 105, 0.7);
+    -fx-border-width: 1;
+    -fx-border-radius: 16;
+    -fx-background-radius: 16;
+    -fx-padding: 16;
+}
+
+.wellbeing-page .wellbeing-tools-page {
+    -fx-background-color: linear-gradient(to right, rgba(8, 19, 49, 0.98), rgba(22, 20, 48, 0.96));
+    -fx-background-radius: 16;
+    -fx-border-color: rgba(30, 64, 175, 0.4);
+    -fx-border-width: 1;
+    -fx-border-radius: 16;
+    -fx-padding: 16 20 10 20;
+}
+
+.wellbeing-page .tools-main-title {
+    -fx-text-fill: #EAF2FF;
+    -fx-font-size: 34px;
+    -fx-font-weight: 800;
+}
+
+.wellbeing-page .tools-main-subtitle {
+    -fx-text-fill: #9CA7BE;
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+}
+
+.wellbeing-page .wellbeing-choice-card {
+    -fx-background-color: #111827;
+    -fx-border-color: #334155;
+    -fx-border-width: 1;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+    -fx-text-fill: #E2E8F0;
+    -fx-font-size: 13px;
+    -fx-font-weight: 700;
+    -fx-padding: 10 12;
+}
+
+.wellbeing-page .wellbeing-choice-card:hover {
+    -fx-background-color: #1E293B;
+    -fx-border-color: #475569;
+}
+
+.wellbeing-page .wellbeing-choice-card.selected {
+    -fx-background-color: linear-gradient(to right, rgba(59, 130, 246, 0.34), rgba(14, 165, 233, 0.30));
+    -fx-border-color: #60A5FA;
+    -fx-text-fill: #F8FAFC;
+}
+
+.wellbeing-page .wellbeing-sleep-card {
+    -fx-background-color: #111827;
+    -fx-border-color: #334155;
+    -fx-border-width: 1;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+    -fx-text-fill: #E2E8F0;
+    -fx-font-size: 13px;
+    -fx-font-weight: 700;
+    -fx-padding: 10 12;
+}
+
+.wellbeing-page .wellbeing-sleep-card:hover {
+    -fx-background-color: #1E293B;
+    -fx-border-color: #475569;
+}
+
+.wellbeing-page .wellbeing-sleep-card.selected {
+    -fx-background-color: linear-gradient(to right, rgba(99, 102, 241, 0.35), rgba(139, 92, 246, 0.32));
+    -fx-border-color: #818CF8;
+    -fx-text-fill: #F8FAFC;
+}
+
+.wellbeing-page .wellbeing-notes-area {
+    -fx-background-color: #0F172A;
+    -fx-border-color: #334155;
+    -fx-border-width: 1;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+    -fx-text-fill: #E2E8F0;
+    -fx-prompt-text-fill: #64748B;
+    -fx-padding: 12;
+}
+
+.wellbeing-page .wellbeing-notes-area:focused {
+    -fx-background-color: #0B1324;
+    -fx-border-color: #818CF8;
+}
+
+.wellbeing-page .wellbeing-notes-area .content {
+    -fx-background-color: transparent;
+}
+
+/* Wellbeing quotes card */
+.wellbeing-page .wellbeing-quote-shell .check-box .text {
+    -fx-fill: #CBD5E1;
+}
+
+.wellbeing-page .wellbeing-quote-card {
+    -fx-background-color: linear-gradient(to bottom right, rgba(15,23,42,0.98), rgba(30,41,59,0.92));
+    -fx-background-radius: 16;
+    -fx-border-color: rgba(167,139,250,0.45);
+    -fx-border-radius: 16;
+    -fx-border-width: 1;
+    -fx-padding: 18 18 16 18;
+}
+
+.wellbeing-page .wellbeing-quote-mark {
+    -fx-font-size: 30px;
+    -fx-text-fill: #A78BFA;
+}
+
+.wellbeing-page .wellbeing-quote-text {
+    -fx-font-size: 15px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #F8FAFC;
+}
+
+.wellbeing-page .wellbeing-quote-meta {
+    -fx-font-size: 11px;
+    -fx-text-fill: #93C5FD;
+    -fx-font-weight: 700;
+}
+
+.wellbeing-page .wellbeing-quote-controls {
+    -fx-background-color: rgba(15, 23, 42, 0.55);
+    -fx-background-radius: 12;
+    -fx-padding: 10 12;
+}
+
+.wellbeing-page .tools-control-bar {
+    -fx-background-color: rgba(9, 18, 44, 0.9);
+    -fx-border-color: rgba(30, 64, 175, 0.55);
+    -fx-border-width: 1;
+    -fx-border-radius: 12;
+}
+
+.wellbeing-page .tools-control-hint {
+    -fx-text-fill: #95A3BE;
+    -fx-font-size: 12px;
+}
+
+.wellbeing-page .tools-reset-btn {
+    -fx-background-color: #1E2D48;
+    -fx-text-fill: #E2E8F0;
+}
+
+.wellbeing-page .tools-highlight-banner {
+    -fx-background-color: linear-gradient(to right, rgba(99, 102, 241, 0.9), rgba(38, 180, 193, 0.95));
+    -fx-background-radius: 14;
+    -fx-padding: 18 20;
+}
+
+.wellbeing-page .tools-highlight-title {
+    -fx-text-fill: #F8FAFC;
+    -fx-font-size: 34px;
+    -fx-font-weight: 800;
+}
+
+.wellbeing-page .tools-highlight-subtitle {
+    -fx-text-fill: #D9EAF6;
+    -fx-font-size: 13px;
+    -fx-font-weight: 700;
+}
+
+.wellbeing-page .tools-highlight-btn {
+    -fx-background-color: rgba(248, 250, 252, 0.95);
+    -fx-text-fill: #4F46E5;
+    -fx-font-weight: 800;
+    -fx-background-radius: 16;
+}
+
+.wellbeing-page .wellbeing-tool-card {
+    -fx-background-color: rgba(7, 17, 43, 0.9);
+    -fx-border-color: rgba(37, 99, 235, 0.4);
+    -fx-border-width: 1;
+    -fx-border-radius: 14;
+    -fx-background-radius: 14;
+    -fx-padding: 16 18;
+}
+
+.wellbeing-page .wellbeing-tool-icon {
+    -fx-pref-width: 48;
+    -fx-pref-height: 48;
+    -fx-min-width: 48;
+    -fx-min-height: 48;
+    -fx-background-radius: 14;
+}
+
+.wellbeing-page .wellbeing-tool-icon .ikonli-font-icon {
+    -fx-icon-color: #A5B4FC;
+}
+
+.wellbeing-page .tool-icon-breathing_exercise {
+    -fx-background-color: rgba(99, 102, 241, 0.18);
+}
+
+.wellbeing-page .tool-icon-mood_camera {
+    -fx-background-color: rgba(56, 189, 248, 0.18);
+    -fx-border-color: rgba(56, 189, 248, 0.30);
+    -fx-border-width: 1;
+    -fx-border-radius: 14;
+}
+
+.wellbeing-page .tool-icon-gratitude_journal,
+.wellbeing-page .tool-icon-ai_chat_coach {
+    -fx-background-color: rgba(217, 119, 6, 0.20);
+}
+
+.wellbeing-page .tool-icon-nature_sounds,
+.wellbeing-page .tool-icon-yoga_coach {
+    -fx-background-color: rgba(5, 150, 105, 0.20);
+}
+
+.wellbeing-page .tool-icon-gratitude_journal .ikonli-font-icon,
+.wellbeing-page .tool-icon-ai_chat_coach .ikonli-font-icon {
+    -fx-icon-color: #FBBF24;
+}
+
+.wellbeing-page .tool-icon-nature_sounds .ikonli-font-icon,
+.wellbeing-page .tool-icon-yoga_coach .ikonli-font-icon {
+    -fx-icon-color: #4ADE80;
+}
+
+.wellbeing-page .tool-icon-mood_camera .ikonli-font-icon {
+    -fx-icon-color: #67E8F9;
+}
+
+.wellbeing-page .tools-card-title {
+    -fx-text-fill: #F8FAFC;
+    -fx-font-size: 15px;
+    -fx-font-weight: 800;
+}
+
+.wellbeing-page .tools-card-desc {
+    -fx-text-fill: #CFD8EA;
+    -fx-font-size: 12px;
+    -fx-font-weight: 600;
+}
+
+.wellbeing-page .tools-start-btn {
+    -fx-background-color: linear-gradient(to right, #06B6D4, #0891B2);
+    -fx-text-fill: #EAFBFF;
+    -fx-font-weight: 800;
+    -fx-background-radius: 14;
+    -fx-padding: 8 22;
+}
+
+.wellbeing-page .tools-card-badge {
+    -fx-background-radius: 10;
+    -fx-padding: 3 9;
+    -fx-font-size: 11px;
+    -fx-font-weight: 800;
+}
+
+.wellbeing-page .tools-card-badge-time {
+    -fx-background-color: rgba(71, 85, 105, 0.55);
+    -fx-text-fill: #CBD5E1;
+}
+
+.wellbeing-page .tools-card-badge-ongoing {
+    -fx-background-color: rgba(22, 163, 74, 0.35);
+    -fx-text-fill: #86EFAC;
+}
+
+.wellbeing-page .tools-card-badge-anytime {
+    -fx-background-color: rgba(30, 41, 59, 0.7);
+    -fx-text-fill: #E2E8F0;
+}
+
+.wellbeing-page .tools-tips-shell {
+    -fx-background-color: rgba(7, 17, 43, 0.75);
+    -fx-border-color: rgba(37, 99, 235, 0.35);
+    -fx-border-width: 1;
+    -fx-border-radius: 14;
+    -fx-background-radius: 14;
+    -fx-padding: 14 18 16 18;
+}
+
+.wellbeing-page .tools-tips-title {
+    -fx-text-fill: #EAF2FF;
+    -fx-font-size: 15px;
+    -fx-font-weight: 800;
+}
+
+.wellbeing-page .tools-tip-card {
+    -fx-padding: 8 10;
+}
+
+.wellbeing-page .tools-tip-emoji {
+    -fx-font-size: 20px;
+}
+
+.wellbeing-page .tools-tip-title {
+    -fx-text-fill: #E5ECF9;
+    -fx-font-size: 13px;
+    -fx-font-weight: 800;
+}
+
+.wellbeing-page .tools-tip-desc {
+    -fx-text-fill: #B9C5DA;
+    -fx-font-size: 12px;
+    -fx-font-weight: 600;
+}
+
+.wellbeing-page .wellbeing-tools-preview-shell {
+    -fx-background-color: rgba(8, 18, 44, 0.92);
+    -fx-border-color: rgba(37, 99, 235, 0.42);
+    -fx-border-width: 1;
+    -fx-border-radius: 16;
+    -fx-background-radius: 16;
+}
+
+.wellbeing-page .wellbeing-tool-preview-card {
+    -fx-background-color: rgba(8, 19, 49, 0.84);
+    -fx-border-color: rgba(20, 184, 166, 0.55);
+    -fx-border-width: 1;
+    -fx-border-radius: 14;
+    -fx-background-radius: 14;
+    -fx-padding: 14 16;
+}
+
+/* Unify all wellbeing sections with coping-tools palette */
+.wellbeing-page .card,
+.wellbeing-page .wellbeing-kpi-card,
+.wellbeing-page #formSection,
+.wellbeing-page #historySection .card,
+.wellbeing-page #quizSection,
+.wellbeing-page #quizResultsSection,
+.wellbeing-page #quizModeSection,
+.wellbeing-page #inlineToolSection {
+    -fx-background-color: linear-gradient(to right, rgba(8, 19, 49, 0.96), rgba(22, 20, 48, 0.92));
+    -fx-border-color: rgba(30, 64, 175, 0.42);
+    -fx-border-width: 1;
+    -fx-border-radius: 16;
+    -fx-background-radius: 16;
+}
+
+.wellbeing-page .card-header,
+.wellbeing-page #quizSection .card-header,
+.wellbeing-page #quizResultsSection .card-header {
+    -fx-background-color: rgba(7, 17, 43, 0.92);
+    -fx-border-color: rgba(20, 184, 166, 0.45);
+    -fx-border-width: 0 0 1 0;
+}
+
+.wellbeing-page .card-title,
+.wellbeing-page .text-heading,
+.wellbeing-page .text-subheading,
+.wellbeing-page .text-body {
+    -fx-text-fill: #EAF2FF;
+}
+
+.wellbeing-page .text-small,
+.wellbeing-page .text-muted,
+.wellbeing-page .wellbeing-kpi-label {
+    -fx-text-fill: #9CA7BE;
+}
+
+.wellbeing-page .wellbeing-quote-controls .check-box .text {
+    -fx-fill: #CBD5E1;
+}
+
+/* Global quote widget */
+.global-quote-card {
+    -fx-min-width: 310;
+    -fx-pref-width: 310;
+    -fx-max-width: 310;
+    -fx-min-height: 155;
+    -fx-pref-height: 155;
+    -fx-max-height: 155;
+    -fx-padding: 8 10 8 10;
+    -fx-background-color: linear-gradient(to bottom right, rgba(5,14,34,0.98), rgba(8,22,51,0.95));
+    -fx-border-color: rgba(56,189,248,0.55);
+    -fx-border-width: 1;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+}
+
+.global-quote-top {
+    -fx-text-fill: #7DD3FC;
+    -fx-font-size: 10px;
+    -fx-font-weight: 700;
+}
+
+.global-quote-mark {
+    -fx-text-fill: #38BDF8;
+    -fx-font-size: 18px;
+}
+
+.global-quote-text {
+    -fx-text-fill: #E6F3FF;
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+}
+
+.global-quote-meta {
+    -fx-text-fill: #67E8F9;
+    -fx-font-size: 10px;
+    -fx-font-weight: 700;
+}
+
+.global-quote-close-btn {
+    -fx-background-color: transparent;
+    -fx-text-fill: #94A3B8;
+    -fx-padding: 2 6;
+    -fx-font-size: 12px;
+}
+
+.global-quote-close-btn:hover {
+    -fx-background-color: rgba(148,163,184,0.14);
+    -fx-background-radius: 8;
+    -fx-text-fill: #E2E8F0;
+}
+
+/* ===============================
+   Admin Sidebar / Layout (v2)
+   =============================== */
+.admin-shell {
+    -fx-background-color: #020b24;
+}
+
+.admin-sidebar-2 {
+    -fx-background-color: linear-gradient(to bottom, #0B1631 0%, #0A1430 100%);
+    -fx-border-color: #1A2947;
+    -fx-border-width: 0 1 0 0;
+}
+
+.admin-sidebar-scroll,
+.admin-sidebar-scroll > .viewport {
+    -fx-background-color: transparent;
+}
+
+.admin-sidebar-content {
+    -fx-background-color: transparent;
+}
+
+.admin-brand-row {
+    -fx-border-color: #1A2947;
+    -fx-border-width: 0 0 1 0;
+}
+
+.admin-brand-logo {
+    -fx-min-width: 34;
+    -fx-min-height: 34;
+    -fx-pref-width: 34;
+    -fx-pref-height: 34;
+    -fx-max-width: 34;
+    -fx-max-height: 34;
+    -fx-background-color: radial-gradient(radius 100%, #8B5CF6 0%, #7C3AED 50%, #1E293B 100%);
+    -fx-background-radius: 999;
+}
+
+.admin-brand-logo .ikonli-font-icon {
+    -fx-icon-color: #C4B5FD;
+}
+
+.admin-brand-logo-text {
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 14px;
+    -fx-font-weight: 800;
+}
+
+.admin-brand-title {
+    -fx-text-fill: #f8fafc;
+    -fx-font-size: 17px;
+    -fx-font-weight: 800;
+}
+
+.admin-brand-subtitle {
+    -fx-text-fill: #8EA4CA;
+    -fx-font-size: 12px;
+}
+
+.admin-nav-group {
+    -fx-padding: 0 0 2 0;
+}
+
+.admin-nav-section {
+    -fx-text-fill: #64748B;
+    -fx-font-size: 11px;
+    -fx-font-weight: 800;
+    -fx-padding: 10 10 4 10;
+}
+
+.admin-nav-btn {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+    -fx-padding: 12 14;
+    -fx-text-fill: #94A3B8;
+    -fx-font-size: 15px;
+    -fx-font-weight: 600;
+    -fx-alignment: CENTER_LEFT;
+    -fx-graphic-text-gap: 10;
+    -fx-cursor: hand;
+}
+
+.admin-nav-btn .ikonli-font-icon {
+    -fx-icon-color: #8498B8;
+}
+
+.admin-nav-btn:hover {
+    -fx-background-color: rgba(58, 78, 119, 0.24);
+    -fx-text-fill: #C5D3EA;
+}
+
+.admin-nav-btn:hover .ikonli-font-icon {
+    -fx-icon-color: #B7C6E0;
+}
+
+.admin-nav-btn.active {
+    -fx-background-color: #2A2857;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+    -fx-text-fill: #B7A7FF;
+}
+
+.admin-nav-btn.active .ikonli-font-icon {
+    -fx-icon-color: #B7A7FF;
+}
+
+.admin-profile-card {
+    -fx-border-color: #1A2947;
+    -fx-border-width: 1 0 0 0;
+    -fx-background-color: rgba(7, 17, 37, 0.9);
+}
+
+.admin-profile-avatar {
+    -fx-min-width: 34;
+    -fx-min-height: 34;
+    -fx-pref-width: 34;
+    -fx-pref-height: 34;
+    -fx-background-color: linear-gradient(to bottom right, #EF4444, #A855F7);
+    -fx-background-radius: 999;
+}
+
+.admin-profile-avatar-text {
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 12px;
+    -fx-font-weight: 800;
+}
+
+.admin-profile-name {
+    -fx-text-fill: #e2e8f0;
+    -fx-font-size: 13px;
+    -fx-font-weight: 700;
+}
+
+.admin-profile-role {
+    -fx-text-fill: #7389AD;
+    -fx-font-size: 12px;
+}
+
+.admin-profile-card .btn-ghost {
+    -fx-background-color: transparent;
+    -fx-text-fill: #7389AD;
+    -fx-padding: 8;
+    -fx-background-radius: 8;
+    -fx-border-color: transparent;
+}
+
+.admin-profile-card .btn-ghost:hover {
+    -fx-background-color: rgba(58, 84, 136, 0.22);
+    -fx-text-fill: #B7C7E7;
+}
+
+.admin-main-shell {
+    -fx-background-color: #020b24;
+}
+
+.admin-topbar-2 {
+    -fx-background-color: rgba(4, 15, 42, 0.96);
+    -fx-border-color: #0f2850;
+    -fx-border-width: 0 0 1 0;
+}
+
+.admin-topbar-title {
+    -fx-text-fill: #94a3b8;
+    -fx-font-size: 24px;
+    -fx-font-weight: 700;
+}
+
+.admin-top-icon {
+    -fx-min-width: 44;
+    -fx-min-height: 36;
+    -fx-background-color: rgba(15, 23, 42, 0.94);
+    -fx-border-color: #2d3c59;
+    -fx-border-width: 1;
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
+    -fx-cursor: hand;
+}
+
+.admin-top-icon .ikonli-font-icon {
+    -fx-icon-color: #e2e8f0;
+}
+
+.admin-top-icon:hover {
+    -fx-background-color: rgba(30, 41, 59, 0.98);
+}
+
+.admin-top-icon.danger {
+    -fx-border-color: #7f1d1d;
+}
+
+.admin-top-icon.danger:hover {
+    -fx-background-color: rgba(127, 29, 29, 0.35);
+}
+
+.admin-content-shell {
+    -fx-background-color: #030f30;
+}

@@ -38,7 +38,7 @@ public class AIQuizService {
      */
     private static final String API_KEY = System.getenv("OPENROUTER_API_KEY") != null
             ? System.getenv("OPENROUTER_API_KEY")
-            : "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";   // ← remplacer
+            : "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";   // ← remplacer
 
     /** Modèle utilisé. "openrouter/free" sélectionne automatiquement un modèle gratuit. */
     private static final String MODEL = "openrouter/free";

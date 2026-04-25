@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import org.kordamp.ikonli.javafx.FontIcon?>
+
+<StackPane xmlns="http://javafx.com/javafx/21"
+           xmlns:fx="http://javafx.com/fxml/1"
+           fx:controller="com.studyflow.controllers.ProjectAiWorkspaceController"
+           fx:id="workspaceRoot">
+
+    <VBox spacing="20" styleClass="page-section">
+        <HBox alignment="CENTER_LEFT" spacing="16">
+            <VBox spacing="4" HBox.hgrow="ALWAYS">
+                <Label text="Project AI Workspace" styleClass="text-heading"/>
+                <Label fx:id="subtitleLabel" text="Dependencies, deadline intelligence, and export tools for the selected project." styleClass="text-muted"/>
+            </VBox>
+            <Button text="Back To Projects" onAction="#handleBack" styleClass="btn-secondary">
+                <graphic>
+                    <FontIcon iconLiteral="fth-arrow-left" iconSize="15"/>
+                </graphic>
+            </Button>
+        </HBox>
+
+        <Label fx:id="feedbackLabel" managed="false" visible="false" maxWidth="Infinity" styleClass="inline-alert, inline-alert-success"/>
+
+        <VBox styleClass="card, board-hero-card" spacing="14">
+            <HBox alignment="CENTER_LEFT" spacing="16">
+                <VBox spacing="4" HBox.hgrow="ALWAYS">
+                    <Label fx:id="projectTitleLabel" text="Project" styleClass="card-title"/>
+                    <Label fx:id="projectMetaLabel" text="Project summary" styleClass="card-subtitle"/>
+                </VBox>
+                <HBox spacing="10">
+                    <VBox styleClass="mini-stat-card, mini-stat-violet">
+                        <Label fx:id="totalAssignmentsLabel" text="0" styleClass="mini-stat-value"/>
+                        <Label text="Assignments" styleClass="mini-stat-label"/>
+                    </VBox>
+                    <VBox styleClass="mini-stat-card, mini-stat-amber">
+                        <Label fx:id="dependencyCountLabel" text="0" styleClass="mini-stat-value"/>
+                        <Label text="Dependencies" styleClass="mini-stat-label"/>
+                    </VBox>
+                    <VBox fx:id="healthScoreCard" styleClass="mini-stat-card, mini-stat-green">
+                        <Label fx:id="healthScoreLabel" text="0.0" styleClass="mini-stat-value"/>
+                        <Label text="Health Score" styleClass="mini-stat-label"/>
+                    </VBox>
+                </HBox>
+            </HBox>
+
+            <HBox spacing="10" styleClass="panel-toolbar">
+                <Button fx:id="analyzeDependenciesButton" text="Analyze Dependencies" onAction="#handleAnalyzeDependencies" styleClass="panel-switch-button, active">
+                    <graphic>
+                        <FontIcon iconLiteral="fth-git-merge" iconSize="15"/>
+                    </graphic>
+                </Button>
+                <Button fx:id="generateReportButton" text="Generate AI PDF Report" onAction="#handleGenerateReport" styleClass="panel-switch-button">
+                    <graphic>
+                        <FontIcon iconLiteral="fth-file-text" iconSize="15"/>
+                    </graphic>
+                </Button>
+            </HBox>
+        </VBox>
+
+        <VBox styleClass="card, form-shell" spacing="14">
+            <HBox styleClass="card-header" alignment="CENTER_LEFT">
+                <VBox spacing="4" HBox.hgrow="ALWAYS">
+                    <Label text="Health Dashboard" styleClass="card-title"/>
+                    <Label text="AI-scored project health with issue summary and category breakdown." styleClass="card-subtitle" wrapText="true"/>
+                </VBox>
+                <Label fx:id="healthStatusBadge" text="--" styleClass="badge, secondary"/>
+            </HBox>
+
+            <HBox spacing="20">
+                <VBox spacing="10" styleClass="detail-row" HBox.hgrow="ALWAYS">
+                    <Label text="Category Scores" styleClass="form-label"/>
+                    <VBox spacing="8">
+                        <HBox spacing="10" alignment="CENTER_LEFT">
+                            <Label text="Progress" styleClass="item-meta" prefWidth="90"/>
+                            <ProgressBar fx:id="progressScoreBar" progress="0.0" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                            <Label fx:id="progressScoreLabel" text="0.0" styleClass="item-meta"/>
+                        </HBox>
+                        <HBox spacing="10" alignment="CENTER_LEFT">
+                            <Label text="Activity" styleClass="item-meta" prefWidth="90"/>
+                            <ProgressBar fx:id="activityScoreBar" progress="0.0" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                            <Label fx:id="activityScoreLabel" text="0.0" styleClass="item-meta"/>
+                        </HBox>
+                        <HBox spacing="10" alignment="CENTER_LEFT">
+                            <Label text="Deadlines" styleClass="item-meta" prefWidth="90"/>
+                            <ProgressBar fx:id="deadlinesScoreBar" progress="0.0" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                            <Label fx:id="deadlinesScoreLabel" text="0.0" styleClass="item-meta"/>
+                        </HBox>
+                        <HBox spacing="10" alignment="CENTER_LEFT">
+                            <Label text="Balance" styleClass="item-meta" prefWidth="90"/>
+                            <ProgressBar fx:id="balanceScoreBar" progress="0.0" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                            <Label fx:id="balanceScoreLabel" text="0.0" styleClass="item-meta"/>
+                        </HBox>
+                    </VBox>
+                </VBox>
+
+                <VBox spacing="10" styleClass="detail-row" prefWidth="360" minWidth="300">
+                    <Label text="AI Issue Summary" styleClass="form-label"/>
+                    <Label fx:id="healthSummaryLabel" text="Health insights will appear here." wrapText="true" styleClass="item-desc"/>
+                </VBox>
+            </HBox>
+        </VBox>
+
+        <HBox spacing="20" VBox.vgrow="ALWAYS">
+            <VBox styleClass="card, form-shell" spacing="14" HBox.hgrow="ALWAYS">
+                <HBox styleClass="card-header" alignment="CENTER_LEFT">
+                    <VBox spacing="4" HBox.hgrow="ALWAYS">
+                        <Label text="Dependency Map" styleClass="card-title"/>
+                        <Label text="AI-detected sequencing for owned and shared project assignments." styleClass="card-subtitle"/>
+                    </VBox>
+                    <Label text="Live" styleClass="badge, secondary"/>
+                </HBox>
+
+                <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS" styleClass="transparent-scroll">
+                    <VBox fx:id="dependencyList" spacing="12" style="-fx-padding: 0 4 8 0;"/>
+                </ScrollPane>
+            </VBox>
+
+            <VBox styleClass="card, form-shell" spacing="14" prefWidth="360" minWidth="320" maxWidth="380">
+                <HBox styleClass="card-header" alignment="CENTER_LEFT">
+                    <VBox spacing="4" HBox.hgrow="ALWAYS">
+                        <Label text="Report Preview" styleClass="card-title"/>
+                        <Label text="Executive summary and actions that will be embedded into the PDF." styleClass="card-subtitle" wrapText="true"/>
+                    </VBox>
+                </HBox>
+
+                <VBox spacing="10" styleClass="detail-row">
+                    <Label text="Executive Summary" styleClass="form-label"/>
+                    <Label fx:id="executiveSummaryLabel" text="Generate the report to produce an AI summary." wrapText="true" styleClass="item-desc"/>
+                </VBox>
+
+                <VBox spacing="10" styleClass="detail-row">
+                    <Label text="Recommendations" styleClass="form-label"/>
+                    <VBox fx:id="recommendationsList" spacing="8"/>
+                </VBox>
+
+                <VBox spacing="10" styleClass="detail-row">
+                    <Label text="Export Target" styleClass="form-label"/>
+                    <Label fx:id="exportPathLabel" text="Desktop / user folder" wrapText="true" styleClass="item-meta"/>
+                </VBox>
+            </VBox>
+        </HBox>
+
+        <padding>
+            <Insets top="20" right="20" bottom="20" left="20"/>
+        </padding>
+    </VBox>
+
+    <VBox fx:id="loadingOverlay"
+          visible="false"
+          managed="false"
+          alignment="CENTER"
+          spacing="18"
+          maxWidth="Infinity"
+          maxHeight="Infinity"
+          mouseTransparent="false"
+          styleClass="ai-loading-overlay">
+        <VBox alignment="CENTER" spacing="14" styleClass="ai-loading-card">
+            <HBox alignment="CENTER" spacing="8">
+                <Label text="AI Workspace" styleClass="badge, primary"/>
+                <Label text="Analyzing" styleClass="badge, accent"/>
+            </HBox>
+            <Label fx:id="loadingLabel" text="Analyzing project..." styleClass="ai-loading-title"/>
+            <Label fx:id="loadingSubtitleLabel" text="AI insights are loading in the background." styleClass="ai-loading-subtitle" wrapText="true"/>
+            <ProgressBar progress="-1" maxWidth="260" prefWidth="260" styleClass="ai-loading-bar"/>
+        </VBox>
+    </VBox>
+</StackPane>

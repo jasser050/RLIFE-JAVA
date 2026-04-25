@@ -700,7 +700,7 @@ public class CoursesController implements Initializable {
                     }
                     quizQuestions.clear();
                     for (AIQuizService.ParsedQuestion pq : parsed) {
-                        quizQuestions.add(new QuizQuestion(
+                        boolean add = quizQuestions.add(new QuizQuestion(
                                 pq.question, pq.options, pq.correct,
                                 pq.difficulty, pq.category, pq.explanation));
                     }

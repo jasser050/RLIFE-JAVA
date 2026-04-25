@@ -380,7 +380,7 @@ public class DashboardController implements Initializable {
         if (quickCardAssignment != null)
             quickCardAssignment.setOnMouseClicked(e -> navigateTo("views/Courses.fxml"));
         if (quickCardDecks != null) {
-            quickCardDecks.setOnMouseClicked(e -> navigateTo("views/Revisions.fxml"));
+            quickCardDecks.setOnMouseClicked(e -> navigateTo("views/Flashcards.fxml"));
             quickCardDecks.setStyle(quickCardDecks.getStyle() + "; -fx-cursor: hand;");
         }
         if (quickCardSchedule != null)
@@ -390,14 +390,7 @@ public class DashboardController implements Initializable {
     }
 
     private void navigateTo(String fxmlPath) {
-        try {
-            FXMLLoader loader = new FXMLLoader(App.class.getResource(fxmlPath));
-            Parent content = loader.load();
-            StackPane contentArea = (StackPane) welcomeLabel.getScene().lookup("#contentArea");
-            if (contentArea != null) contentArea.getChildren().setAll(content);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        MainController.loadContentInMainArea(fxmlPath);
     }
 
     // ══════════════════════════════════════════════════════════════════

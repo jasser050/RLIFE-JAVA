@@ -1,9 +1,13 @@
 package com.studyflow.controllers;
 
+import com.studyflow.models.AdminNotification;
 import com.studyflow.models.Deck;
 import com.studyflow.models.Flashcard;
+import com.studyflow.models.Rating;
+import com.studyflow.services.AdminNotificationService;
 import com.studyflow.services.DeckService;
 import com.studyflow.services.FlashcardService;
+import com.studyflow.services.RatingService;
 import javafx.animation.FadeTransition;
 import javafx.animation.PauseTransition;
 import javafx.animation.SequentialTransition;
@@ -43,6 +47,7 @@ public class RevisionsController implements Initializable {
 
     // ── List-view fields (null when loaded as standalone form FXML) ──
     @FXML private VBox listView;
+    @FXML private VBox ratingView;
     @FXML private Label totalDecksLabel;
     @FXML private Label masteredLabel;
     @FXML private Label dueReviewLabel;
@@ -54,6 +59,11 @@ public class RevisionsController implements Initializable {
     @FXML private StackPane donutChartPane;
     @FXML private StackPane lineChartPane;
     @FXML private StackPane barChartPane;
+    @FXML private Label selectedRatingDeckLabel;
+    @FXML private Label ratingsSummaryLabel;
+    @FXML private Label ratingAlertsSummaryLabel;
+    @FXML private VBox ratingAlertsContainer;
+    @FXML private VBox ratingsListContainer;
 
     // ── Form fields ──
     @FXML private VBox formView;
@@ -75,9 +85,12 @@ public class RevisionsController implements Initializable {
 
     private final DeckService deckService = new DeckService();
     private final FlashcardService flashcardService = new FlashcardService();
+    private final RatingService ratingService = new RatingService();
+    private final AdminNotificationService adminNotificationService = new AdminNotificationService();
     private List<Deck> decks;
     private List<Deck> visibleDecks = List.of();
     private Deck selectedDeck = null;
+    private Deck selectedRatingsDeck = null;
     private final Map<Integer, List<Flashcard>> flashcardsByDeck = new HashMap<>();
     private final Map<Object, Popup> popupMap = new HashMap<>();
     private final Set<Integer> masteredDeckIds = new HashSet<>();
@@ -136,6 +149,8 @@ public class RevisionsController implements Initializable {
         if (searchField != null && searchField.getParent() != null) {
             searchField.getParent().setOnMouseClicked(event -> searchField.requestFocus());
         }
+
+        clearRatingsPanel();
     }
 
     private void initFormListeners() {
@@ -710,20 +725,59 @@ public class RevisionsController implements Initializable {
     // NAVIGATION
     // ══════════════════════════════════════════════
     private void goToList() {
-        if (listView == null || formView == null) return;
-        listView.setVisible(true);  listView.setManaged(true);
-        formView.setVisible(false); formView.setManaged(false);
+        if (listView != null) {
+            listView.setVisible(true);
+            listView.setManaged(true);
+        }
+        if (formView != null) {
+            formView.setVisible(false);
+            formView.setManaged(false);
+        }
+        if (ratingView != null) {
+            ratingView.setVisible(false);
+            ratingView.setManaged(false);
+        }
     }
 
     private void goToForm() {
-        if (listView == null || formView == null) return;
-        listView.setVisible(false); listView.setManaged(false);
-        formView.setVisible(true);  formView.setManaged(true);
+        if (listView != null) {
+            listView.setVisible(false);
+            listView.setManaged(false);
+        }
+        if (formView != null) {
+            formView.setVisible(true);
+            formView.setManaged(true);
+        }
+        if (ratingView != null) {
+            ratingView.setVisible(false);
+            ratingView.setManaged(false);
+        }
+    }
+
+    private void goToRatingView() {
+        if (listView != null) {
+            listView.setVisible(false);
+            listView.setManaged(false);
+        }
+        if (formView != null) {
+            formView.setVisible(false);
+            formView.setManaged(false);
+        }
+        if (ratingView != null) {
+            ratingView.setVisible(true);
+            ratingView.setManaged(true);
+        }
     }
 
     @FXML public void showAddView() { selectedDeck = null; clearForm(); if (formTitle != null) formTitle.setText("New Deck"); goToForm(); }
 
     @FXML public void handleCancel() { hideAllPopups(); clearForm(); goToList(); }
+
+    @FXML public void handleRatingBack() {
+        selectedRatingsDeck = null;
+        clearRatingsPanel();
+        goToList();
+    }
 
     private void openEditForm(Deck d) {
         selectedDeck = d;
@@ -823,8 +877,20 @@ public class RevisionsController implements Initializable {
     // ══════════════════════════════════════════════
     private void refreshAll() {
         decks = deckService.getAll();
+        if (selectedRatingsDeck != null) {
+            int selectedDeckId = selectedRatingsDeck.getIdDeck();
+            selectedRatingsDeck = decks.stream()
+                    .filter(deck -> deck.getIdDeck() == selectedDeckId)
+                    .findFirst()
+                    .orElse(null);
+        }
         refreshDeckFlashcardsCache();
         applySearchFilter();
+        if (selectedRatingsDeck == null) {
+            clearRatingsPanel();
+        } else if (ratingView != null && ratingView.isVisible()) {
+            showDeckRatings(selectedRatingsDeck);
+        }
     }
 
     private void setupSearchFilter() {
@@ -926,14 +992,268 @@ public class RevisionsController implements Initializable {
         boolean alreadyM = (dueCards == 0 && totalCards > 0) || (totalCards == 0 && forceMastered);
         Button masterBtn = alreadyM ? chipBtn("✓ Mastered", "rgba(52,211,153,0.20)", "#34D399", "rgba(52,211,153,0.35)") : chipBtn("★ Master", "rgba(251,191,36,0.15)", "#FBBF24", "rgba(251,191,36,0.3)");
         masterBtn.setOnAction(e -> markDeckAsMastered(deck, masterBtn));
+        Button ratingBtn = chipBtn("★ Rating", "rgba(236,72,153,0.15)", "#F472B6", "rgba(236,72,153,0.30)");
         Button editBtn = chipBtn("✎ Edit", "rgba(99,102,241,0.15)", "#818CF8", "rgba(99,102,241,0.3)");
         Button delBtn  = chipBtn("🗑 Delete", "rgba(244,63,94,0.15)", "#FB7185", "rgba(244,63,94,0.3)");
+        ratingBtn.setOnAction(e -> showDeckRatings(deck));
         editBtn.setOnAction(e -> openEditForm(deck));
         delBtn.setOnAction(e -> handleDelete(deck));
-        acts.getChildren().addAll(masterBtn, editBtn, delBtn);
+        acts.getChildren().addAll(masterBtn, ratingBtn, editBtn, delBtn);
         content.getChildren().add(acts);
         card.getChildren().addAll(header, content);
         return card;
+    }
+
+    private void showDeckRatings(Deck deck) {
+        selectedRatingsDeck = deck;
+        goToRatingView();
+        if (selectedRatingDeckLabel != null) {
+            selectedRatingDeckLabel.setText(deck.getTitre() + "  |  " + deck.getMatiere());
+        }
+
+        loadRatingAlerts(deck);
+
+        List<Rating> ratings = ratingService.getRatingsForDeckAdmin(deck.getIdDeck());
+        if (ratingsSummaryLabel != null) {
+            if (ratings.isEmpty()) {
+                ratingsSummaryLabel.setText("No student has rated this deck yet.");
+            } else {
+                double average = ratings.stream().mapToInt(Rating::getStars).average().orElse(0.0);
+                ratingsSummaryLabel.setText(ratings.size() + " rating(s)  |  average " + String.format(Locale.US, "%.1f", average) + "/5");
+            }
+        }
+
+        if (ratingsListContainer == null) {
+            return;
+        }
+
+        ratingsListContainer.getChildren().clear();
+        if (ratings.isEmpty()) {
+            Label empty = new Label("No ratings available for this deck.");
+            empty.setWrapText(true);
+            empty.setStyle("-fx-text-fill:#64748B;-fx-font-size:11px;");
+            ratingsListContainer.getChildren().add(empty);
+            return;
+        }
+
+        for (Rating rating : ratings) {
+            ratingsListContainer.getChildren().add(buildRatingCard(rating));
+        }
+    }
+
+    private void clearRatingsPanel() {
+        if (selectedRatingDeckLabel != null) {
+            selectedRatingDeckLabel.setText("No deck selected");
+        }
+        if (ratingAlertsSummaryLabel != null) {
+            ratingAlertsSummaryLabel.setText("Support alerts will appear here when students rate a deck badly.");
+        }
+        if (ratingAlertsContainer != null) {
+            ratingAlertsContainer.getChildren().clear();
+            Label placeholder = new Label("No support alert loaded yet.");
+            placeholder.setStyle("-fx-text-fill:#64748B;-fx-font-size:11px;");
+            ratingAlertsContainer.getChildren().add(placeholder);
+        }
+        if (ratingsSummaryLabel != null) {
+            ratingsSummaryLabel.setText("Click Rating on a deck to see who rated it.");
+        }
+        if (ratingsListContainer != null) {
+            ratingsListContainer.getChildren().clear();
+            Label placeholder = new Label("No ratings loaded yet.");
+            placeholder.setStyle("-fx-text-fill:#64748B;-fx-font-size:11px;");
+            ratingsListContainer.getChildren().add(placeholder);
+        }
+    }
+
+    private void loadRatingAlerts(Deck deck) {
+        if (ratingAlertsSummaryLabel == null || ratingAlertsContainer == null) {
+            return;
+        }
+
+        List<AdminNotification> notifications = adminNotificationService.getPendingNotificationsForDeck(deck.getTitre());
+        ratingAlertsContainer.getChildren().clear();
+
+        if (notifications.isEmpty()) {
+            ratingAlertsSummaryLabel.setText("No pending support alert for this deck.");
+            Label empty = new Label("When a student gives a weak rating, the admin alert will appear here.");
+            empty.setWrapText(true);
+            empty.setStyle("-fx-text-fill:#64748B;-fx-font-size:11px;");
+            ratingAlertsContainer.getChildren().add(empty);
+            return;
+        }
+
+        ratingAlertsSummaryLabel.setText(notifications.size() + " pending alert(s) linked to this deck.");
+        for (AdminNotification notification : notifications) {
+            ratingAlertsContainer.getChildren().add(buildAlertCard(notification));
+        }
+    }
+
+    private VBox buildAlertCard(AdminNotification notification) {
+        VBox card = new VBox(12);
+        card.setPadding(new Insets(14));
+        card.setStyle("-fx-background-color:#111827;-fx-background-radius:14;-fx-border-color:#1E293B;-fx-border-radius:14;-fx-border-width:1;");
+
+        HBox header = new HBox(10);
+        header.setAlignment(Pos.CENTER_LEFT);
+
+        Label badge = new Label(notification.getUrgencyBadgeLabel());
+        badge.setStyle("-fx-background-color:" + withAlpha(notification.getUrgencyColor(), 0.18)
+                + ";-fx-text-fill:" + notification.getUrgencyColor()
+                + ";-fx-background-radius:999;-fx-padding:5 10;-fx-font-size:10px;-fx-font-weight:800;");
+
+        VBox identity = new VBox(3);
+        HBox.setHgrow(identity, Priority.ALWAYS);
+
+        Label student = new Label(safe(notification.getStudentName(), "Student") + "  |  user #" + notification.getStudentId());
+        student.setStyle("-fx-text-fill:#F8FAFC;-fx-font-size:12px;-fx-font-weight:800;");
+
+        Label weakDecks = new Label("Weak decks: " + notification.getWeakDecksLabel());
+        weakDecks.setWrapText(true);
+        weakDecks.setStyle("-fx-text-fill:#64748B;-fx-font-size:10px;");
+
+        identity.getChildren().addAll(student, weakDecks);
+        header.getChildren().addAll(badge, identity);
+
+        Label message = new Label(notification.getAdminMessage());
+        message.setWrapText(true);
+        message.setStyle("-fx-text-fill:#CBD5E1;-fx-font-size:11px;");
+
+        VBox suggestion = new VBox(5);
+        suggestion.setStyle("-fx-background-color:#0F172A;-fx-background-radius:12;-fx-padding:12;");
+
+        Label suggestionTitle = new Label("Suggested deck: " + safe(notification.getSuggestionTitle(), "AI Support Deck"));
+        suggestionTitle.setStyle("-fx-text-fill:#F8FAFC;-fx-font-size:11px;-fx-font-weight:700;");
+
+        Label suggestionMeta = new Label("Subject: "
+                + safe(notification.getSuggestionSubject(), "Personalized Support")
+                + "  |  Difficulty: "
+                + safe(notification.getSuggestionDifficulty(), "beginner")
+                + "  |  Focus: "
+                + notification.getFocusTopicsLabel());
+        suggestionMeta.setWrapText(true);
+        suggestionMeta.setStyle("-fx-text-fill:#94A3B8;-fx-font-size:10px;");
+
+        suggestion.getChildren().addAll(suggestionTitle, suggestionMeta);
+
+        if (notification.getSuggestionReason() != null && !notification.getSuggestionReason().isBlank()) {
+            Label reason = new Label(notification.getSuggestionReason());
+            reason.setWrapText(true);
+            reason.setStyle("-fx-text-fill:#64748B;-fx-font-size:10px;");
+            suggestion.getChildren().add(reason);
+        }
+
+        HBox footer = new HBox(10);
+        footer.setAlignment(Pos.CENTER_LEFT);
+
+        Label created = new Label("Alert date: " + formatDateTime(notification.getCreatedAt()));
+        created.setStyle("-fx-text-fill:#475569;-fx-font-size:10px;");
+
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+
+        Button generateBtn = chipBtn("Generate Support Deck", "rgba(139,92,246,0.18)", "#A78BFA", "rgba(139,92,246,0.30)");
+        generateBtn.setOnAction(e -> handleGenerateSupportDeck(notification, generateBtn));
+
+        footer.getChildren().addAll(created, spacer, generateBtn);
+        card.getChildren().addAll(header, message, suggestion, footer);
+        return card;
+    }
+
+    private void handleGenerateSupportDeck(AdminNotification notification, Button triggerButton) {
+        triggerButton.setDisable(true);
+        triggerButton.setText("Generating...");
+
+        new Thread(() -> {
+            try {
+                AdminNotificationService.GeneratedDeckResult result = adminNotificationService.generateSupportDeck(notification);
+                Platform.runLater(() -> {
+                    triggerButton.setDisable(false);
+                    triggerButton.setText("Generate Support Deck");
+                    showSuccessPopup("Support deck \"" + result.deck().getTitre() + "\" created for "
+                            + safe(notification.getStudentName(), "student")
+                            + " with " + result.flashcardCount() + " flashcard(s).");
+                    if (selectedRatingsDeck != null) {
+                        showDeckRatings(selectedRatingsDeck);
+                    }
+                    refreshAll();
+                });
+            } catch (Exception ex) {
+                Platform.runLater(() -> {
+                    triggerButton.setDisable(false);
+                    triggerButton.setText("Generate Support Deck");
+                    showErrorPopup(triggerButton, ex.getMessage() == null ? "Deck generation failed." : ex.getMessage());
+                });
+            }
+        }, "admin-support-deck-generator").start();
+    }
+
+    private VBox buildRatingCard(Rating rating) {
+        VBox card = new VBox(8);
+        card.setPadding(new Insets(12));
+        card.setStyle("-fx-background-color:#111827;-fx-background-radius:12;-fx-border-color:#1E293B;-fx-border-radius:12;-fx-border-width:1;");
+
+        HBox header = new HBox(10);
+        header.setAlignment(Pos.CENTER_LEFT);
+
+        VBox studentBox = new VBox(3);
+        HBox.setHgrow(studentBox, Priority.ALWAYS);
+
+        Label studentName = new Label(displayRatingUser(rating));
+        studentName.setStyle("-fx-text-fill:#F8FAFC;-fx-font-size:12px;-fx-font-weight:700;");
+
+        Label studentMeta = new Label(buildStudentMeta(rating));
+        studentMeta.setWrapText(true);
+        studentMeta.setStyle("-fx-text-fill:#64748B;-fx-font-size:10px;");
+
+        studentBox.getChildren().addAll(studentName, studentMeta);
+
+        Label stars = new Label(rating.getStars() + "/5  " + rating.getStarsLabel());
+        stars.setStyle("-fx-text-fill:" + rating.getStarsColor() + ";-fx-font-size:11px;-fx-font-weight:700;");
+
+        header.getChildren().addAll(studentBox, stars);
+
+        Label comment = new Label(buildRatingComment(rating));
+        comment.setWrapText(true);
+        comment.setStyle("-fx-text-fill:#CBD5E1;-fx-font-size:11px;");
+
+        Label date = new Label("Date: " + formatRatingDate(rating));
+        date.setStyle("-fx-text-fill:#475569;-fx-font-size:10px;");
+
+        card.getChildren().addAll(header, comment, date);
+        return card;
+    }
+
+    private String displayRatingUser(Rating rating) {
+        if (rating.getUserName() != null && !rating.getUserName().isBlank()) {
+            return rating.getUserName();
+        }
+        if (rating.getUsername() != null && !rating.getUsername().isBlank()) {
+            return rating.getUsername();
+        }
+        return "User #" + rating.getUserId();
+    }
+
+    private String buildStudentMeta(Rating rating) {
+        List<String> parts = new ArrayList<>();
+        if (rating.getUserEmail() != null && !rating.getUserEmail().isBlank()) {
+            parts.add(rating.getUserEmail());
+        }
+        if (rating.getUsername() != null && !rating.getUsername().isBlank()) {
+            parts.add("@" + rating.getUsername());
+        }
+        return parts.isEmpty() ? "Student ID: " + rating.getUserId() : String.join("  |  ", parts);
+    }
+
+    private String buildRatingComment(Rating rating) {
+        if (rating.getComment() != null && !rating.getComment().isBlank()) {
+            return rating.getComment();
+        }
+        return "Meaning: " + rating.getStarsLabel();
+    }
+
+    private String formatRatingDate(Rating rating) {
+        LocalDateTime ts = rating.getUpdatedAt() != null ? rating.getUpdatedAt() : rating.getCreatedAt();
+        return ts == null ? "-" : ts.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
     }
 
     private void markDeckAsMastered(Deck deck, Button anchor) {
@@ -1160,6 +1480,16 @@ public class RevisionsController implements Initializable {
     }
 
     private String safe(String v) { return v == null ? "" : v; }
+    private String safe(String v, String fallback) { return v == null || v.isBlank() ? fallback : v.trim(); }
+    private String formatDateTime(LocalDateTime value) { return value == null ? "-" : value.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")); }
+    private String withAlpha(String hex, double alpha) {
+        Color color = Color.web(hex == null || hex.isBlank() ? "#64748B" : hex);
+        return "rgba("
+                + (int) Math.round(color.getRed() * 255) + ","
+                + (int) Math.round(color.getGreen() * 255) + ","
+                + (int) Math.round(color.getBlue() * 255) + ","
+                + alpha + ")";
+    }
     private String truncateStr(String s, int max) { if (s == null || s.isEmpty()) return ""; return s.length() <= max ? s : s.substring(0, max - 1) + "."; }
     private String hex(String c)  { return switch (c) { case "primary" -> "#A78BFA"; case "success" -> "#34D399"; case "warning" -> "#FBBF24"; case "danger" -> "#FB7185"; case "accent" -> "#FB923C"; default -> "#94A3B8"; }; }
     private String grad(String c) { return switch (c) { case "primary" -> "linear-gradient(to bottom right,#7C3AED,#8B5CF6)"; case "success" -> "linear-gradient(to bottom right,#059669,#10B981)"; case "warning" -> "linear-gradient(to bottom right,#D97706,#F59E0B)"; case "danger" -> "linear-gradient(to bottom right,#DC2626,#F43F5E)"; case "accent" -> "linear-gradient(to bottom right,#EA580C,#F97316)"; default -> "linear-gradient(to bottom right,#475569,#64748B)"; }; }

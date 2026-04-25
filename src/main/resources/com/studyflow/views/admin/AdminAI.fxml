@@ -8,7 +8,7 @@
 <VBox xmlns="http://javafx.com/javafx/21"
       xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="com.studyflow.controllers.AdminAIController"
-      spacing="0" style="-fx-background-color: #020617;" VBox.vgrow="ALWAYS">
+      spacing="0" VBox.vgrow="ALWAYS">
 
     <!-- Header -->
     <HBox alignment="CENTER_LEFT" spacing="14" style="-fx-padding: 20 24;">

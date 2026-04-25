@@ -1,5 +1,6 @@
 package com.studyflow.controllers;
 
+import com.studyflow.App;
 import com.studyflow.models.User;
 import com.studyflow.services.ServiceUser;
 import javafx.fxml.FXML;
@@ -317,11 +318,15 @@ public class AdminUsersController implements Initializable {
 
         root.getChildren().addAll(header, body, footer);
 
-        // Load the dark theme CSS
+        // Respect current application theme for the dialog
         Scene scene = new Scene(root);
         scene.setFill(Color.TRANSPARENT);
-        String darkCss = getClass().getResource("/com/studyflow/styles/dark-theme.css").toExternalForm();
-        scene.getStylesheets().add(darkCss);
+        String themeCss = getClass()
+                .getResource(App.isDarkTheme()
+                        ? "/com/studyflow/styles/dark-theme.css"
+                        : "/com/studyflow/styles/light-theme.css")
+                .toExternalForm();
+        scene.getStylesheets().add(themeCss);
 
         dialog.setScene(scene);
         dialog.showAndWait();
