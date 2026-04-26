@@ -10,6 +10,8 @@ import com.studyflow.services.ServiceSeance;
 import com.studyflow.services.AIPlanningService;
 import com.studyflow.services.FootballDataService;
 import com.studyflow.services.PlanningEmailNotificationService;
+import com.studyflow.services.SpeechToTextService;
+import com.studyflow.services.SmartPlanService;
 import com.studyflow.services.ServiceTypeSeance;
 import com.studyflow.utils.UserSession;
 import javafx.application.Platform;
@@ -18,7 +20,10 @@ import javafx.animation.KeyFrame;
 import javafx.animation.PauseTransition;
 import javafx.animation.ScaleTransition;
 import javafx.animation.Timeline;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.geometry.Insets;
@@ -27,6 +32,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.ColorPicker;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Control;
@@ -38,6 +44,7 @@ import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.OverrunStyle;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.TextInputDialog;
 import javafx.scene.control.TextField;
 import javafx.scene.control.Tooltip;
 import javafx.scene.control.Toggle;
@@ -65,6 +72,7 @@ import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.io.IOException;
 import java.net.URL;
+import java.nio.file.Path;
 import java.text.Normalizer;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -91,6 +99,13 @@ import java.util.concurrent.CompletableFuture;
 import java.util.prefs.Preferences;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.sound.sampled.AudioFileFormat;
+import javax.sound.sampled.AudioFormat;
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.DataLine;
+import javax.sound.sampled.LineUnavailableException;
+import javax.sound.sampled.TargetDataLine;
 
 public class PlanningController implements Initializable {
 
@@ -157,6 +172,10 @@ public class PlanningController implements Initializable {
     private static final String ASSISTANT_MODE_CHAT = "Chat mode";
     private static final String ASSISTANT_MODE_TERMINAL = "Terminal mode";
     private static final String ANTHROPIC_API_KEY_ENV = "ANTHROPIC_API_KEY";
+    private static final String GROQ_API_KEY_ENV = "GROQ_API_KEY";
+    private static final String XAI_API_KEY_ENV = "XAI_API_KEY";
+    private static final String GROQ_API_KEY_PREF = "groq.api.key";
+    private static final String XAI_API_KEY_PREF = "xai.api.key";
     private static final Pattern ASSISTANT_TIME_PATTERN = Pattern.compile("(?<!\\d)([01]?\\d|2[0-3])(?:[:h]([0-5]\\d))?(?!\\d)");
     private static final Pattern ASSISTANT_ISO_DATE_PATTERN = Pattern.compile("(\\d{4})-(\\d{2})-(\\d{2})");
     private static final Pattern ASSISTANT_SHORT_DATE_PATTERN = Pattern.compile("(?<!\\d)(\\d{1,2})[/-](\\d{1,2})(?:[/-](\\d{2,4}))?(?!\\d)");
@@ -166,6 +185,14 @@ public class PlanningController implements Initializable {
     private static final LocalTime ASSISTANT_MIN_TIME = LocalTime.of(6, 0);
     private static final LocalTime ASSISTANT_MAX_TIME = LocalTime.of(23, 30);
     private static final int ASSISTANT_TIME_STEP_MINUTES = 30;
+    private static final AudioFormat ASSISTANT_AUDIO_FORMAT = new AudioFormat(16000f, 16, 1, true, false);
+    private static final List<LocalTime> SMART_PLAN_START_SLOTS = List.of(
+            LocalTime.of(9, 0),
+            LocalTime.of(11, 0),
+            LocalTime.of(14, 0),
+            LocalTime.of(16, 0),
+            LocalTime.of(18, 0)
+    );
 
     @FXML private Label currentMonthLabel;
     @FXML private Label todayDateLabel;
@@ -185,8 +212,20 @@ public class PlanningController implements Initializable {
     @FXML private Button feedbackOpenQueueButton;
     @FXML private VBox feedbackPage;
     @FXML private VBox feedbackPickerPage;
+    @FXML private VBox smartPlanPage;
     @FXML private VBox feedbackPendingListContainer;
     @FXML private ListView<Planning> feedbackPendingListView;
+    @FXML private DatePicker smartPlanStartDatePicker;
+    @FXML private DatePicker smartPlanEndDatePicker;
+    @FXML private ComboBox<String> smartPlanBidTypeComboBox;
+    @FXML private TextField smartPlanBidInputField;
+    @FXML private DatePicker smartPlanBidDatePicker;
+    @FXML private ComboBox<LocalTime> smartPlanBidStartTimeComboBox;
+    @FXML private ComboBox<LocalTime> smartPlanBidEndTimeComboBox;
+    @FXML private ListView<SmartPlanService.StudentBidView> smartPlanBidListView;
+    @FXML private ListView<SmartPlanPreviewItem> smartPlanPreviewListView;
+    @FXML private Label smartPlanStatusLabel;
+    @FXML private Button smartPlanValidateButton;
     @FXML private Label feedbackSelectedSessionLabel;
     @FXML private Label formMessageLabel;
     @FXML private Label planningFormTitleLabel;
@@ -230,6 +269,7 @@ public class PlanningController implements Initializable {
     @FXML private ScrollPane chatScrollPane;
     @FXML private VBox chatBox;
     @FXML private TextField assistantInputField;
+    @FXML private Button assistantMicButton;
     @FXML private Label assistantHintLabel;
 
     private final ServicePlanning servicePlanning = new ServicePlanning();
@@ -238,6 +278,8 @@ public class PlanningController implements Initializable {
     private final PlanningEmailNotificationService planningEmailNotificationService = new PlanningEmailNotificationService();
     private final AIPlanningService claudePlanningService = new AIPlanningService();
     private final FootballDataService footballDataService = new FootballDataService();
+    private final SmartPlanService smartPlanService = new SmartPlanService();
+    private final SpeechToTextService speechToTextService = new SpeechToTextService();
     private final Preferences planningPreferences = Preferences.userNodeForPackage(PlanningController.class);
     private final DateTimeFormatter monthFormatter = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ENGLISH);
     private final DateTimeFormatter fullDateFormatter = DateTimeFormatter.ofPattern("EEEE, MMM d", Locale.ENGLISH);
@@ -262,8 +304,18 @@ public class PlanningController implements Initializable {
     private String assistantSessionResolutionError;
     private HBox assistantTypingRow;
     private AssistantCommand pendingAssistantCommand;
+    private TargetDataLine assistantRecordingLine;
+    private Thread assistantRecordingThread;
+    private Path assistantRecordingPath;
+    private boolean assistantRecording;
+    private boolean assistantTranscriptionRunning;
     private FootballDataService.NextMatch selectedNextMatch;
     private Timeline liveClockTimeline;
+    private boolean smartPlanUsedFallback;
+    private List<SmartPlanService.SmartPlanTask> smartPlanPendingTasks = new ArrayList<>();
+    private final List<ManualSmartBid> smartPlanManualBids = new ArrayList<>();
+    private final ObservableList<SmartPlanPreviewItem> smartPlanPreviewItems = FXCollections.observableArrayList();
+    private String smartPlanGenerationSignature;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -273,6 +325,7 @@ public class PlanningController implements Initializable {
         configurePlanningEditFeedbackField();
         configurePlanningDatePickerReadability();
         configureListViews();
+        configureSmartPlanControls();
         configureFormInteractions();
         configureFeedbackControls();
         configureUpcomingControls();
@@ -290,6 +343,10 @@ public class PlanningController implements Initializable {
         if (feedbackPickerPage != null) {
             feedbackPickerPage.setManaged(false);
             feedbackPickerPage.setVisible(false);
+        }
+        if (smartPlanPage != null) {
+            smartPlanPage.setManaged(false);
+            smartPlanPage.setVisible(false);
         }
         addMessage("Hello! Ask me to plan or remove sessions. Example: \"Plan a math session tomorrow at 14:00\".", false);
     }
@@ -311,98 +368,549 @@ public class PlanningController implements Initializable {
         liveClockTimeline.play();
     }
 
-    // Force explicit day-number colors to keep DatePicker readable in both themes.
+    // ── Force explicit day-number colors to keep DatePicker readable in both themes ──
+
     private void configurePlanningDatePickerReadability() {
         if (planningDatePicker == null) {
             return;
         }
-
         planningDatePicker.setDayCellFactory(datePicker -> new DateCell() {
             @Override
             public void updateItem(LocalDate item, boolean empty) {
                 super.updateItem(item, empty);
-
                 if (empty || item == null) {
                     setStyle("");
                     return;
                 }
-
                 boolean isLightTheme = isLightThemeActive();
-                String normalColor = isLightTheme ? "#0F172A" : "#E2E8F0";
-                String outsideMonthColor = isLightTheme ? "#94A3B8" : "#64748B";
-                Paint normalPaint = Color.web(normalColor);
+                String normalColor  = isLightTheme ? "#0F172A" : "#E2E8F0";
+                String outsideMonthColor = isLightTheme ? "#94A3B8" : "#475569";
+                boolean outsideMonth = planningDatePicker.getValue() != null
+                        && item.getMonth() != planningDatePicker.getValue().getMonth();
                 Paint outsidePaint = Color.web(outsideMonthColor);
-
-                boolean outsideMonth = getStyleClass().contains("previous-month")
-                        || getStyleClass().contains("next-month");
-
-                if (isSelected()) {
-                    setTextFill(Color.WHITE);
-                    setStyle("-fx-text-fill: #FFFFFF; -fx-font-weight: 700; -fx-opacity: 1;");
-                } else {
-                    setTextFill(outsideMonth ? outsidePaint : normalPaint);
-                    String cellColor = outsideMonth ? outsideMonthColor : normalColor;
-                    setStyle("-fx-text-fill: " + cellColor + "; -fx-font-weight: 600; -fx-opacity: 1;");
-                }
+                Paint normalPaint  = Color.web(normalColor);
+                setTextFill(outsideMonth ? outsidePaint : normalPaint);
+                String cellColor = outsideMonth ? outsideMonthColor : normalColor;
+                setStyle("-fx-text-fill: " + cellColor + "; -fx-font-weight: 600; -fx-opacity: 1;");
             }
         });
     }
 
     private boolean isLightThemeActive() {
-        Scene scene = App.getScene();
+        Scene scene = planningDatePicker != null ? planningDatePicker.getScene() : null;
         if (scene == null) {
             return App.getCurrentTheme() == App.Theme.LIGHT;
         }
-        return scene.getStylesheets().stream().anyMatch(css -> css != null && css.contains("light-theme.css"));
+        return scene.getStylesheets().stream().anyMatch(s -> s.contains("light"));
+    }
+
+    // ── Smart Plan : bouton principal → ouvre la page preview ──
+
+    @FXML
+    private void handleSmartPlan() {
+        User currentUser = UserSession.getInstance().getCurrentUser();
+        if (currentUser == null) {
+            showErrorOn(pageMessageLabel, "No logged-in user found.");
+            return;
+        }
+
+        // Réinitialiser l'état
+        smartPlanPendingTasks = new ArrayList<>();
+        smartPlanUsedFallback = false;
+        smartPlanManualBids.clear();
+        smartPlanGenerationSignature = null;
+        if (smartPlanPreviewListView != null) {
+            smartPlanPreviewItems.clear();
+            smartPlanPreviewListView.setItems(smartPlanPreviewItems);
+        }
+        if (smartPlanStatusLabel != null) {
+            smartPlanStatusLabel.setText("Choose the period first. Add bids if needed, then generate the preview.");
+        }
+        if (smartPlanValidateButton != null) {
+            smartPlanValidateButton.setDisable(true);
+        }
+        if (smartPlanBidInputField != null) {
+            smartPlanBidInputField.clear();
+        }
+        if (smartPlanBidDatePicker != null) {
+            smartPlanBidDatePicker.setValue(null);
+        }
+        if (smartPlanBidStartTimeComboBox != null) {
+            smartPlanBidStartTimeComboBox.setValue(null);
+        }
+        if (smartPlanBidEndTimeComboBox != null) {
+            smartPlanBidEndTimeComboBox.setValue(null);
+        }
+        if (smartPlanStartDatePicker != null) {
+            smartPlanStartDatePicker.setValue(null);
+        }
+        if (smartPlanEndDatePicker != null) {
+            smartPlanEndDatePicker.setValue(null);
+        }
+        if (smartPlanBidTypeComboBox != null && !smartPlanBidTypeComboBox.getItems().isEmpty()) {
+            smartPlanBidTypeComboBox.getSelectionModel().selectFirst();
+        }
+
+        refreshSmartPlanBidList(currentUser);
+
+        showSmartPlanPage(true);
+        hideMessage();
+    }
+
+    // ── Bouton "Generate Planning" dans la page SmartPlan ──
+
+    @FXML
+    private void handleGenerateSmartPlanPreview() {
+        User currentUser = UserSession.getInstance().getCurrentUser();
+        if (currentUser == null) {
+            showErrorOn(pageMessageLabel, "No logged-in user found.");
+            return;
+        }
+        LocalDate periodStart = smartPlanStartDatePicker == null ? null : smartPlanStartDatePicker.getValue();
+        LocalDate periodEnd = smartPlanEndDatePicker == null ? null : smartPlanEndDatePicker.getValue();
+        if (periodStart == null || periodEnd == null) {
+            if (smartPlanStatusLabel != null) {
+                smartPlanStatusLabel.setText("Choose the smart plan period first.");
+            }
+            return;
+        }
+        if (periodEnd.isBefore(periodStart)) {
+            if (smartPlanStatusLabel != null) {
+                smartPlanStatusLabel.setText("The end date must be after the start date.");
+            }
+            return;
+        }
+        String generationSignature = buildSmartPlanGenerationSignature(currentUser.getId(), periodStart, periodEnd);
+        if (generationSignature.equals(smartPlanGenerationSignature) && !smartPlanPreviewItems.isEmpty()) {
+            if (smartPlanStatusLabel != null) {
+                smartPlanStatusLabel.setText("Generated suggestions are already up to date for this period and these bids.");
+            }
+            updateSmartPlanValidateButtonState();
+            return;
+        }
+        if (smartPlanStatusLabel != null) {
+            smartPlanStatusLabel.setText("Generating smart planning suggestions...");
+        }
+
+        try {
+            SmartPlanService.SmartPlanResult result = smartPlanService.buildSmartPlan(currentUser.getId(), periodStart, periodEnd);
+            List<SmartPlanService.SmartPlanTask> smartTasks = result == null || result.tasks() == null
+                    ? new ArrayList<>()
+                    : new ArrayList<>(result.tasks());
+            smartTasks.removeIf(task -> task == null || task.date() == null || !isDateWithinSmartPlanPeriod(task.date(), periodStart, periodEnd));
+            smartTasks.addAll(buildTasksFromManualBids(periodStart, periodEnd));
+
+            smartPlanUsedFallback = false;
+            List<SmartPlanService.SmartPlanTask> fallbackTasks = buildFallbackSmartTasksFromSessions(periodStart, periodEnd);
+            if (!fallbackTasks.isEmpty()) {
+                int initialSize = smartTasks.size();
+                smartTasks = mergeSmartPlanTasks(smartTasks, fallbackTasks);
+                smartPlanUsedFallback = smartTasks.size() > initialSize;
+            }
+
+            if (smartTasks.isEmpty()) {
+                if (smartPlanStatusLabel != null) {
+                    smartPlanStatusLabel.setText("No generated sessions for this period. Add bids or choose another period.");
+                }
+                if (smartPlanPreviewListView != null) {
+                    smartPlanPreviewItems.clear();
+                }
+                if (smartPlanValidateButton != null) {
+                    smartPlanValidateButton.setDisable(true);
+                }
+                return;
+            }
+
+            smartPlanPendingTasks = smartTasks;
+            smartPlanGenerationSignature = generationSignature;
+            if (smartPlanPreviewListView != null) {
+                smartPlanPreviewItems.setAll(smartTasks.stream()
+                        .filter(task -> task != null && task.date() != null)
+                        .map(SmartPlanPreviewItem::new)
+                        .toList());
+                smartPlanPreviewListView.setItems(smartPlanPreviewItems);
+            }
+            updateSmartPlanValidateButtonState();
+            if (smartPlanStatusLabel != null) {
+                smartPlanStatusLabel.setText("Generated " + smartPlanPreviewItems.size() + " suggestion(s). Select the sessions to plan, then validate.");
+            }
+        } catch (Exception exception) {
+            if (smartPlanStatusLabel != null) {
+                smartPlanStatusLabel.setText("Smart Plan failed: " + exception.getMessage());
+            }
+            if (smartPlanValidateButton != null) {
+                smartPlanValidateButton.setDisable(true);
+            }
+        }
+    }
+
+    // ── Bouton "Validate" → sauvegarde réelle dans le planning ──
+
+    @FXML
+    private void handleValidateSmartPlan() {
+        User currentUser = UserSession.getInstance().getCurrentUser();
+        if (currentUser == null) {
+            showErrorOn(pageMessageLabel, "No logged-in user found.");
+            return;
+        }
+        if (smartPlanPendingTasks == null || smartPlanPendingTasks.isEmpty()) {
+            if (smartPlanStatusLabel != null) {
+                smartPlanStatusLabel.setText("Generate planning first.");
+            }
+            return;
+        }
+        List<SmartPlanService.SmartPlanTask> selectedTasks = smartPlanPreviewItems.stream()
+                .filter(SmartPlanPreviewItem::isSelected)
+                .map(SmartPlanPreviewItem::task)
+                .toList();
+        if (selectedTasks.isEmpty()) {
+            if (smartPlanStatusLabel != null) {
+                smartPlanStatusLabel.setText("Select at least one generated session before validation.");
+            }
+            return;
+        }
+
+        int created = 0;
+        int skipped = 0;
+        List<String> createdDetails = new ArrayList<>();
+
+        for (SmartPlanService.SmartPlanTask task : selectedTasks) {
+            if (task == null || task.date() == null) {
+                skipped++;
+                continue;
+            }
+
+            LocalDate targetDate = task.date().isBefore(LocalDate.now()) ? LocalDate.now() : task.date();
+            String typeName = task.dayOff() ? "day off" : normalizeSmartType(task.sessionType());
+            String title    = task.dayOff() ? "Day Off" : normalizeSmartTitle(task.title());
+
+            Seance seance = resolveSessionForSmartPlan(currentUser.getId(), title, typeName);
+            if (seance == null || seance.getId() <= 0) {
+                skipped++;
+                continue;
+            }
+
+            LocalTime start = task.dayOff()
+                    ? DAY_OFF_START_TIME
+                    : (task.preferredStart() == null ? LocalTime.of(14, 0) : task.preferredStart());
+            LocalTime end = task.dayOff()
+                    ? DAY_OFF_END_TIME
+                    : (task.preferredEnd() == null ? start.plusHours(2) : task.preferredEnd());
+
+            SmartPlanSlot slot = findSmartPlanSlot(currentUser.getId(), targetDate, start, end, seance, task.dayOff());
+            if (slot == null) {
+                skipped++;
+                continue;
+            }
+
+            Planning planningEntry = new Planning();
+            planningEntry.setUserId(currentUser.getId());
+            planningEntry.setSeanceId(seance.getId());
+            planningEntry.setSeanceTitle(seance.getTitre());
+            planningEntry.setPlanningDate(slot.date());
+            planningEntry.setStartTime(slot.start());
+            planningEntry.setEndTime(slot.end());
+            planningEntry.setColorHex(task.dayOff() ? DAY_OFF_COLOR_HEX : findAvailableColor(slot.date(), null));
+
+            servicePlanning.add(planningEntry);
+            if (planningEntry.getId() > 0) {
+                created++;
+                createdDetails.add(seance.getTitre() + " on " + slot.date().format(shortDateFormatter)
+                        + " (" + slot.start().format(timeFormatter) + "-" + slot.end().format(timeFormatter) + ")");
+            } else {
+                skipped++;
+            }
+        }
+
+        refreshPlanningData();
+        showSmartPlanPage(false);
+
+        if (created <= 0) {
+            showInfo("Smart Plan ran, but no entry was saved. Check bids, priorities, and session types.");
+            return;
+        }
+
+        String suffix = skipped > 0 ? " (" + skipped + " skipped)" : "";
+        if (smartPlanUsedFallback) {
+            showInfo("Smart Plan created " + created + " planning entr" + (created == 1 ? "y" : "ies") + suffix + " using session-priority fallback.");
+        } else {
+            showInfo("Smart Plan created " + created + " planning entr" + (created == 1 ? "y" : "ies") + suffix + ".");
+        }
+        if (!createdDetails.isEmpty()) {
+            addMessage("Smart Plan created: " + String.join(" | ", createdDetails), false);
+        }
+    }
+
+    // ── Bouton "Back" dans la page SmartPlan ──
+
+    @FXML
+    private void handleBackFromSmartPlan() {
+        showSmartPlanPage(false);
     }
 
     @FXML
-    private void handlePreviousMonth() {
-        currentYearMonth = currentYearMonth.minusMonths(1);
-        updateCalendar();
+    private void handleAddSmartPlanBid() {
+        User currentUser = UserSession.getInstance().getCurrentUser();
+        if (currentUser == null) {
+            showErrorOn(pageMessageLabel, "No logged-in user found.");
+            return;
+        }
+        LocalDate periodStart = smartPlanStartDatePicker == null ? null : smartPlanStartDatePicker.getValue();
+        LocalDate periodEnd = smartPlanEndDatePicker == null ? null : smartPlanEndDatePicker.getValue();
+        if (periodStart == null || periodEnd == null) {
+            if (smartPlanStatusLabel != null) {
+                smartPlanStatusLabel.setText("Choose the period before adding a bid.");
+            }
+            return;
+        }
+        String bidType = smartPlanBidTypeComboBox == null ? null : smartPlanBidTypeComboBox.getValue();
+        String bidText = smartPlanBidInputField == null ? null : smartPlanBidInputField.getText();
+        LocalDate bidDate = smartPlanBidDatePicker == null ? null : smartPlanBidDatePicker.getValue();
+        LocalTime bidStart = smartPlanBidStartTimeComboBox == null ? null : smartPlanBidStartTimeComboBox.getValue();
+        LocalTime bidEnd = smartPlanBidEndTimeComboBox == null ? null : smartPlanBidEndTimeComboBox.getValue();
+        if (bidType == null || bidType.isBlank() || bidText == null || bidText.isBlank()) {
+            if (smartPlanStatusLabel != null) {
+                smartPlanStatusLabel.setText("Choose a bid type and write the bid details.");
+            }
+            return;
+        }
+        if (bidDate == null) {
+            if (smartPlanStatusLabel != null) {
+                smartPlanStatusLabel.setText("Choose the bid date.");
+            }
+            return;
+        }
+        boolean dayOffBid = normalize(bidType).contains("day off");
+        if (!dayOffBid) {
+            if (bidStart == null || bidEnd == null || !bidEnd.isAfter(bidStart)) {
+                if (smartPlanStatusLabel != null) {
+                    smartPlanStatusLabel.setText("Choose a valid bid start and end time.");
+                }
+                return;
+            }
+        } else {
+            bidStart = DAY_OFF_START_TIME;
+            bidEnd = DAY_OFF_END_TIME;
+        }
+        if (bidDate.isBefore(periodStart) || bidDate.isAfter(periodEnd)) {
+            if (smartPlanStatusLabel != null) {
+                smartPlanStatusLabel.setText("The bid date must be inside the selected period.");
+            }
+            return;
+        }
+        boolean saved = smartPlanService.saveStudentBid(
+                currentUser.getId(),
+                bidType,
+                bidText.trim(),
+                bidText.trim(),
+                periodStart,
+                periodEnd,
+                bidDate,
+                bidStart,
+                bidEnd
+        );
+        if (!saved) {
+            if (smartPlanStatusLabel != null) {
+                smartPlanStatusLabel.setText("Unable to save this bid into student_bids.");
+            }
+            return;
+        }
+        if (smartPlanBidInputField != null) {
+            smartPlanBidInputField.clear();
+        }
+        if (smartPlanBidDatePicker != null) {
+            smartPlanBidDatePicker.setValue(null);
+        }
+        if (smartPlanBidStartTimeComboBox != null) {
+            smartPlanBidStartTimeComboBox.setValue(dayOffBid ? DAY_OFF_START_TIME : null);
+        }
+        if (smartPlanBidEndTimeComboBox != null) {
+            smartPlanBidEndTimeComboBox.setValue(dayOffBid ? DAY_OFF_END_TIME : null);
+        }
+        invalidateSmartPlanPreview();
+        refreshSmartPlanBidList(currentUser);
+        if (smartPlanStatusLabel != null) {
+            smartPlanStatusLabel.setText("Bid saved in student_bids. The bid list has been refreshed.");
+        }
     }
 
-    @FXML
-    private void handleNextMonth() {
-        currentYearMonth = currentYearMonth.plusMonths(1);
-        updateCalendar();
+    // ── Peuple la liste des bid insights (colonne gauche de la page SmartPlan) ──
+
+    private void refreshSmartPlanBidListForCurrentUser() {
+        User currentUser = UserSession.getInstance().getCurrentUser();
+        if (currentUser != null) {
+            refreshSmartPlanBidList(currentUser);
+        }
+    }
+
+    private void refreshSmartPlanBidList(User currentUser) {
+        if (smartPlanBidListView == null) {
+            return;
+        }
+        LocalDate periodStart = smartPlanStartDatePicker == null ? null : smartPlanStartDatePicker.getValue();
+        LocalDate periodEnd = smartPlanEndDatePicker == null ? null : smartPlanEndDatePicker.getValue();
+        List<SmartPlanService.StudentBidView> bids = periodStart != null && periodEnd != null
+                ? smartPlanService.loadStudentBidsForPeriod(currentUser.getId(), periodStart, periodEnd)
+                : List.of();
+        smartPlanBidListView.setItems(FXCollections.observableArrayList(bids));
+        smartPlanBidListView.setPlaceholder(new Label("No bids found in this period."));
+    }
+
+    private String buildSmartPlanGenerationSignature(int userId, LocalDate periodStart, LocalDate periodEnd) {
+        StringBuilder builder = new StringBuilder()
+                .append(userId).append('|')
+                .append(periodStart).append('|')
+                .append(periodEnd);
+        for (SmartPlanService.StudentBidView bidView : smartPlanBidListView == null || smartPlanBidListView.getItems() == null
+                ? List.<SmartPlanService.StudentBidView>of()
+                : smartPlanBidListView.getItems()) {
+            builder.append('|')
+                    .append(bidView.id()).append(':')
+                    .append(bidView.date()).append(':')
+                    .append(bidView.type()).append(':')
+                    .append(bidView.title());
+        }
+        return builder.toString();
+    }
+
+    private void populateSmartPlanBidInsights(User currentUser) {
+        if (smartPlanBidListView == null) {
+            return;
+        }
+        List<String> lines = new ArrayList<>();
+        SmartPlanService.SmartPlanResult result = smartPlanService.buildSmartPlan(currentUser.getId(), LocalDate.now());
+        if (result != null && result.tasks() != null) {
+            for (SmartPlanService.SmartPlanTask task : result.tasks()) {
+                if (task == null) {
+                    continue;
+                }
+                String bidLine = task.reason() == null || task.reason().isBlank()
+                        ? normalizeSmartTitle(task.title())
+                        : task.reason() + " → " + normalizeSmartTitle(task.title());
+                if (!lines.contains(bidLine)) {
+                    lines.add(bidLine);
+                }
+                if (lines.size() >= 10) {
+                    break;
+                }
+            }
+        }
+        if (lines.isEmpty()) {
+            lines.add("No bid insights yet. Smart Plan can still use session-priority fallback.");
+        }
+        smartPlanBidListView.setItems((ObservableList) FXCollections.observableArrayList(lines));
+    }
+
+    // ── Affiche / cache la page SmartPlan et gère la visibilité des autres pages ──
+
+    private void showSmartPlanPage(boolean visible) {
+        if (smartPlanPage == null) {
+            return;
+        }
+        smartPlanPage.setManaged(visible);
+        smartPlanPage.setVisible(visible);
+        if (visible) {
+            planningBoardView.setManaged(false);
+            planningBoardView.setVisible(false);
+            planningFormPage.setManaged(false);
+            planningFormPage.setVisible(false);
+            if (feedbackPage != null) {
+                feedbackPage.setManaged(false);
+                feedbackPage.setVisible(false);
+            }
+            if (feedbackPickerPage != null) {
+                feedbackPickerPage.setManaged(false);
+                feedbackPickerPage.setVisible(false);
+            }
+        } else {
+            planningBoardView.setManaged(true);
+            planningBoardView.setVisible(true);
+            smartPlanPendingTasks = new ArrayList<>();
+            smartPlanUsedFallback = false;
+            smartPlanGenerationSignature = null;
+            smartPlanPreviewItems.clear();
+        }
     }
 
     @FXML
     private void handleViewSessions() {
-        MainController mainController = MainController.getInstance();
-        if (mainController != null) {
-            mainController.showSessions();
-            return;
-        }
         try {
-            App.setRoot("views/Sessions");
+            App.setRoot("views/Seance");
         } catch (IOException exception) {
-            showErrorOn(pageMessageLabel, "Unable to open sessions page: " + exception.getMessage());
+            showErrorOn(pageMessageLabel, "Unable to open sessions view: " + exception.getMessage());
         }
     }
 
     @FXML
     private void handleManageSessionTypes() {
-        MainController mainController = MainController.getInstance();
-        if (mainController != null) {
-            mainController.showSessionTypes();
-            return;
-        }
         try {
             App.setRoot("views/TypeSeance");
         } catch (IOException exception) {
-            showErrorOn(pageMessageLabel, "Unable to open session types page: " + exception.getMessage());
+            showErrorOn(pageMessageLabel, "Unable to open session types view: " + exception.getMessage());
         }
     }
 
     @FXML
-    private void handleOpenPlanningGame() {
-        MainController mainController = MainController.getInstance();
-        if (mainController != null) {
-            mainController.showPlanningGame();
-            return;
+    private void handleViewMatieres() {
+        try {
+            App.setRoot("views/Matiere");
+        } catch (IOException exception) {
+            showErrorOn(pageMessageLabel, "Unable to open matieres view: " + exception.getMessage());
         }
+    }
+
+    @FXML
+    private void handleViewEvaluations() {
+        try {
+            App.setRoot("views/EvaluationMatiere");
+        } catch (IOException exception) {
+            showErrorOn(pageMessageLabel, "Unable to open evaluations view: " + exception.getMessage());
+        }
+    }
+
+    @FXML
+    private void handleViewBids() {
+        try {
+            App.setRoot("views/StudentBids");
+        } catch (IOException exception) {
+            showErrorOn(pageMessageLabel, "Unable to open bids view: " + exception.getMessage());
+        }
+    }
+
+    @FXML
+    private void handleNavigateBack() {
+        showForm(false);
+        showSmartPlanPage(false);
+        if (feedbackPage != null) feedbackPage.setVisible(false);
+        if (feedbackPickerPage != null) feedbackPickerPage.setVisible(false);
+    }
+
+    @FXML
+    private void handleRefreshPlanning() {
+        refreshPlanningData();
+        showInfo("Planning refreshed.");
+    }
+
+    @FXML
+    private void handlePreviousMonth() {
+        currentYearMonth = currentYearMonth.minusMonths(1);
+        refreshPlanningData();
+    }
+
+    @FXML
+    private void handleNextMonth() {
+        currentYearMonth = currentYearMonth.plusMonths(1);
+        refreshPlanningData();
+    }
+
+    @FXML
+    private void handleGoToToday() {
+        currentYearMonth = YearMonth.now();
+        refreshPlanningData();
+    }
+
+    @FXML
+    private void handleOpenPlanningGame() {
         try {
             App.setRoot("views/PlanningGame");
         } catch (IOException exception) {
@@ -418,6 +926,356 @@ public class PlanningController implements Initializable {
         planningFormTitleLabel.setText("Add Planning");
         showForm(true);
         showInfo("Choose one session, one date, one time range and one unique color for that day.");
+    }
+
+    private List<SmartPlanService.SmartPlanTask> buildFallbackSmartTasksFromSessions(LocalDate periodStart, LocalDate periodEnd) {
+        List<SmartPlanService.SmartPlanTask> tasks = new ArrayList<>();
+        if (periodStart == null || periodEnd == null || periodEnd.isBefore(periodStart)) {
+            return tasks;
+        }
+        if (sessionComboBox == null || sessionComboBox.getItems() == null || sessionComboBox.getItems().isEmpty()) {
+            return tasks;
+        }
+
+        List<Seance> candidates = new ArrayList<>();
+        for (Seance seance : sessionComboBox.getItems()) {
+            if (seance == null || seance.getTitre() == null || seance.getTitre().isBlank()) {
+                continue;
+            }
+            if (isDayOffSeance(seance) || isMatchSeance(seance)) {
+                continue;
+            }
+            candidates.add(seance);
+        }
+
+        if (candidates.isEmpty()) {
+            return tasks;
+        }
+
+        candidates.sort((left, right) -> Integer.compare(scoreSmartPriority(right), scoreSmartPriority(left)));
+        int planned = 0;
+        for (Seance seance : candidates) {
+            if (planned >= 4) {
+                break;
+            }
+            LocalDate date = periodStart.plusDays(planned);
+            if (!isDateWithinSmartPlanPeriod(date, periodStart, periodEnd)) {
+                break;
+            }
+            tasks.add(new SmartPlanService.SmartPlanTask(
+                    seance.getTitre(),
+                    "revision",
+                    date,
+                    false,
+                    "Fallback from session priority",
+                    null,
+                    null,
+                    false
+            ));
+            planned++;
+        }
+
+        return tasks;
+    }
+
+    private boolean isDateWithinSmartPlanPeriod(LocalDate date, LocalDate startDate, LocalDate endDate) {
+        if (date == null || startDate == null || endDate == null) {
+            return false;
+        }
+        return !date.isBefore(startDate) && !date.isAfter(endDate);
+    }
+
+    private List<SmartPlanService.SmartPlanTask> buildTasksFromManualBids(LocalDate periodStart, LocalDate periodEnd) {
+        List<SmartPlanService.SmartPlanTask> tasks = new ArrayList<>();
+        if (periodStart == null || periodEnd == null || periodEnd.isBefore(periodStart)) {
+            return tasks;
+        }
+        Set<String> dedup = new HashSet<>();
+        for (ManualSmartBid bid : smartPlanManualBids) {
+            if (bid == null || bid.details() == null || bid.details().isBlank()) {
+                continue;
+            }
+            String normalizedType = normalize(bid.type());
+            String cleanDetails = normalizeSmartTitle(bid.details());
+            if (normalizedType.contains("day off")) {
+                String key = "dayoff|" + bid.date();
+                if (dedup.add(key)) {
+                    tasks.add(new SmartPlanService.SmartPlanTask(
+                            "Day Off",
+                            "day off",
+                            bid.date(),
+                            true,
+                            "Manual bid",
+                            DAY_OFF_START_TIME,
+                            DAY_OFF_END_TIME,
+                            true
+                    ));
+                }
+                continue;
+            }
+            if (normalizedType.contains("exam")) {
+                List<LocalDate> revisionDates = List.of(bid.date().minusDays(2), bid.date().minusDays(1));
+                for (LocalDate revisionDate : revisionDates) {
+                    if (!isDateWithinSmartPlanPeriod(revisionDate, periodStart, periodEnd)) {
+                        continue;
+                    }
+                    String key = "exam|" + cleanDetails + "|" + revisionDate;
+                    if (dedup.add(key)) {
+                        tasks.add(new SmartPlanService.SmartPlanTask(
+                                cleanDetails + " - Revision",
+                                "revision",
+                                revisionDate,
+                                false,
+                                "Manual exam bid",
+                                bid.startTime(),
+                                bid.endTime(),
+                                true
+                        ));
+                    }
+                }
+                continue;
+            }
+            String key = "session|" + cleanDetails + "|" + bid.date();
+            if (dedup.add(key)) {
+                tasks.add(new SmartPlanService.SmartPlanTask(
+                        cleanDetails,
+                        "revision",
+                        bid.date(),
+                        false,
+                        "Manual specific session",
+                        bid.startTime(),
+                        bid.endTime(),
+                        true
+                ));
+            }
+        }
+        return tasks;
+    }
+
+    private List<SmartPlanService.SmartPlanTask> mergeSmartPlanTasks(List<SmartPlanService.SmartPlanTask> primaryTasks,
+                                                                     List<SmartPlanService.SmartPlanTask> secondaryTasks) {
+        List<SmartPlanService.SmartPlanTask> merged = new ArrayList<>();
+        Set<String> keys = new HashSet<>();
+        for (SmartPlanService.SmartPlanTask task : primaryTasks) {
+            if (task == null) {
+                continue;
+            }
+            String key = smartPlanTaskKey(task);
+            if (keys.add(key)) {
+                merged.add(task);
+            }
+        }
+        for (SmartPlanService.SmartPlanTask task : secondaryTasks) {
+            if (task == null) {
+                continue;
+            }
+            String key = smartPlanTaskKey(task);
+            if (keys.add(key)) {
+                merged.add(task);
+            }
+        }
+        merged.sort(Comparator.comparing(SmartPlanService.SmartPlanTask::date).thenComparing(SmartPlanService.SmartPlanTask::title));
+        return merged;
+    }
+
+    private String smartPlanTaskKey(SmartPlanService.SmartPlanTask task) {
+        return (task.title() == null ? "" : normalize(task.title())) + "|"
+                + (task.date() == null ? "" : task.date()) + "|"
+                + (task.sessionType() == null ? "" : normalize(task.sessionType()));
+    }
+
+    private void updateSmartPlanValidateButtonState() {
+        if (smartPlanValidateButton == null) {
+            return;
+        }
+        smartPlanValidateButton.setDisable(smartPlanPreviewItems.stream().noneMatch(SmartPlanPreviewItem::isSelected));
+    }
+
+    private int scoreSmartPriority(Seance seance) {
+        if (seance == null) {
+            return 0;
+        }
+        String full = normalizeAssistant((seance.getTitre() == null ? "" : seance.getTitre()) + " " +
+                (seance.getDescription() == null ? "" : seance.getDescription()));
+        int score = 0;
+        if (containsAny(full, "exam", "examen", "quiz", "midterm", "final", "controle", "test")) {
+            score += 100;
+        }
+        if (containsAny(full, "urgent", "priority", "important", "critical")) {
+            score += 60;
+        }
+        if (containsAny(full, "revision", "review", "reviser")) {
+            score += 35;
+        }
+        if (seance.getTypeSeanceName() != null && normalizeAssistant(seance.getTypeSeanceName()).contains("revision")) {
+            score += 20;
+        }
+        return score;
+    }
+
+    private String normalizeSmartType(String rawType) {
+        if (rawType == null || rawType.isBlank()) {
+            return "Revision";
+        }
+        String normalized = normalizeAssistant(rawType);
+        if (normalized.contains("day off") || normalized.contains("dayoff") || normalized.contains("repos")) {
+            return "Day Off";
+        }
+        if (normalized.contains("exam")) {
+            return "Exam";
+        }
+        if (normalized.contains("revision") || normalized.contains("review") || normalized.contains("reviser")) {
+            return "Revision";
+        }
+        if (normalized.contains("session") || normalized.contains("seance") || normalized.contains("study")) {
+            return "Study Session";
+        }
+        return toTitleCase(rawType.trim());
+    }
+
+    private String normalizeSmartTitle(String rawTitle) {
+        if (rawTitle == null || rawTitle.isBlank()) {
+            return "Smart Session";
+        }
+        String trimmed = rawTitle.trim();
+        return trimmed.length() > 90 ? trimmed.substring(0, 90) : trimmed;
+    }
+
+    private Seance resolveSessionForSmartPlan(int userId, String requestedTitle, String requestedType) {
+        if (sessionComboBox != null && sessionComboBox.getItems() != null && !sessionComboBox.getItems().isEmpty()) {
+            String normalizedRequested = normalizeSmartPlanLookupTitle(requestedTitle);
+            String normalizedBase = normalizeSmartPlanLookupTitle(stripSmartPlanGeneratedSuffix(requestedTitle));
+
+            List<Seance> rankedCandidates = new ArrayList<>();
+            for (Seance seance : sessionComboBox.getItems()) {
+                if (seance == null || !isSessionTypeValid(seance) || isDayOffSeance(seance) || isMatchSeance(seance)) {
+                    continue;
+                }
+                if (scoreSmartPlanSessionCandidate(seance, normalizedRequested, normalizedBase) > 0) {
+                    rankedCandidates.add(seance);
+                }
+            }
+
+            rankedCandidates.sort((left, right) -> Integer.compare(
+                    scoreSmartPlanSessionCandidate(right, normalizedRequested, normalizedBase),
+                    scoreSmartPlanSessionCandidate(left, normalizedRequested, normalizedBase)
+            ));
+
+            if (!rankedCandidates.isEmpty()) {
+                return rankedCandidates.get(0);
+            }
+        }
+
+        return resolveSessionForAssistant(userId, requestedTitle, requestedType);
+    }
+
+    private int scoreSmartPlanSessionCandidate(Seance seance, String normalizedRequested, String normalizedBase) {
+        if (seance == null) {
+            return 0;
+        }
+
+        String title = normalizeSmartPlanLookupTitle(seance.getTitre());
+        String strippedTitle = normalizeSmartPlanLookupTitle(stripSmartPlanGeneratedSuffix(seance.getTitre()));
+        if (title.isBlank() && strippedTitle.isBlank()) {
+            return 0;
+        }
+
+        int score = 0;
+        boolean normalSeance = isNormalSmartPlanSeance(seance);
+        if (normalSeance) {
+            score += 1000;
+        } else if (isRevisionSeance(seance)) {
+            score += 100;
+        }
+
+        if (!normalizedBase.isBlank()) {
+            if (normalizedBase.equals(title) || normalizedBase.equals(strippedTitle)) {
+                score += 700;
+            } else if (title.contains(normalizedBase) || normalizedBase.contains(title)
+                    || strippedTitle.contains(normalizedBase) || normalizedBase.contains(strippedTitle)) {
+                score += 400;
+            }
+        }
+
+        if (!normalizedRequested.isBlank()) {
+            if (normalizedRequested.equals(title) || normalizedRequested.equals(strippedTitle)) {
+                score += 450;
+            } else if (title.contains(normalizedRequested) || normalizedRequested.contains(title)
+                    || strippedTitle.contains(normalizedRequested) || normalizedRequested.contains(strippedTitle)) {
+                score += 250;
+            }
+        }
+
+        return score;
+    }
+
+    private boolean isNormalSmartPlanSeance(Seance seance) {
+        return seance != null
+                && !isRevisionSeance(seance)
+                && !isDayOffSeance(seance)
+                && !isMatchSeance(seance);
+    }
+
+    private boolean isRevisionSeance(Seance seance) {
+        if (seance == null) {
+            return false;
+        }
+        String full = normalizeAssistant((seance.getTitre() == null ? "" : seance.getTitre()) + " "
+                + (seance.getDescription() == null ? "" : seance.getDescription()) + " "
+                + (seance.getTypeSeanceName() == null ? "" : seance.getTypeSeanceName()) + " "
+                + (seance.getTypeSeance() == null ? "" : seance.getTypeSeance()));
+        return containsAny(full, "revision", "review", "reviser", "revise");
+    }
+
+    private String stripSmartPlanGeneratedSuffix(String title) {
+        if (title == null || title.isBlank()) {
+            return "";
+        }
+        return title.replaceFirst("(?i)\\s*-\\s*(revision|review|study session|exam)\\s*$", "").trim();
+    }
+
+    private String normalizeSmartPlanLookupTitle(String title) {
+        return normalizeAssistant(stripSmartPlanGeneratedSuffix(title));
+    }
+
+    private SmartPlanSlot findSmartPlanSlot(int userId,
+                                            LocalDate preferredDate,
+                                            LocalTime preferredStart,
+                                            LocalTime preferredEnd,
+                                            Seance seance,
+                                            boolean dayOff) {
+        if (dayOff) {
+            for (int i = 0; i < 14; i++) {
+                LocalDate date = preferredDate.plusDays(i);
+                if (canApplyPlanningTime(userId, date, DAY_OFF_START_TIME, DAY_OFF_END_TIME, null, seance, false)) {
+                    return new SmartPlanSlot(date, DAY_OFF_START_TIME, DAY_OFF_END_TIME);
+                }
+            }
+            return null;
+        }
+
+        LocalTime baseStart = preferredStart == null ? LocalTime.of(14, 0) : preferredStart;
+        int baseDuration = preferredEnd != null && preferredEnd.isAfter(baseStart)
+                ? Math.max(60, (preferredEnd.toSecondOfDay() - baseStart.toSecondOfDay()) / 60)
+                : 120;
+
+        for (int dayOffset = 0; dayOffset < 14; dayOffset++) {
+            LocalDate date = preferredDate.plusDays(dayOffset);
+            for (LocalTime slotStart : SMART_PLAN_START_SLOTS) {
+                LocalTime candidateStart = dayOffset == 0 ? (slotStart.isBefore(baseStart) ? baseStart : slotStart) : slotStart;
+                LocalTime candidateEnd = candidateStart.plusMinutes(baseDuration);
+                if (!candidateEnd.isAfter(candidateStart) || candidateEnd.isAfter(LocalTime.of(23, 59))) {
+                    continue;
+                }
+                if (canApplyPlanningTime(userId, date, candidateStart, candidateEnd, null, seance, false)) {
+                    return new SmartPlanSlot(date, candidateStart, candidateEnd);
+                }
+            }
+        }
+        return null;
+    }
+
+    private record SmartPlanSlot(LocalDate date, LocalTime start, LocalTime end) {
     }
 
     @FXML
@@ -469,7 +1327,7 @@ public class PlanningController implements Initializable {
         boolean isCreation = editingPlanning == null;
         if (isCreation) {
             servicePlanning.add(planningEntry);
-            sendPlanningCreationEmailAsync(currentUser, planningEntry);
+            sendPlanningCreationEmailAsync(currentUser, planningEntry, selectedSeance);
         } else {
             servicePlanning.update(planningEntry);
         }
@@ -508,6 +1366,14 @@ public class PlanningController implements Initializable {
         endTimeComboBox.setItems(FXCollections.observableArrayList(timeSlots));
         configureTimeCell(startTimeComboBox);
         configureTimeCell(endTimeComboBox);
+        if (smartPlanBidStartTimeComboBox != null) {
+            smartPlanBidStartTimeComboBox.setItems(FXCollections.observableArrayList(timeSlots));
+            configureTimeCell(smartPlanBidStartTimeComboBox);
+        }
+        if (smartPlanBidEndTimeComboBox != null) {
+            smartPlanBidEndTimeComboBox.setItems(FXCollections.observableArrayList(timeSlots));
+            configureTimeCell(smartPlanBidEndTimeComboBox);
+        }
     }
 
     private void configurePlanningEditFeedbackField() {
@@ -569,6 +1435,57 @@ public class PlanningController implements Initializable {
         if (feedbackPendingListView != null) {
             feedbackPendingListView.setCellFactory(list -> new FeedbackPendingCell());
         }
+        if (smartPlanBidListView != null) {
+            smartPlanBidListView.setCellFactory(list -> new SmartPlanBidCell());
+        }
+    }
+
+    private void configureSmartPlanControls() {
+        if (smartPlanBidTypeComboBox != null) {
+            smartPlanBidTypeComboBox.setItems(FXCollections.observableArrayList("Specific Session", "Exam", "Day Off"));
+            smartPlanBidTypeComboBox.getSelectionModel().selectFirst();
+            smartPlanBidTypeComboBox.valueProperty().addListener((observable, oldValue, newValue) -> updateSmartPlanBidTimeInputs(newValue));
+        }
+        if (smartPlanPreviewListView != null) {
+            smartPlanPreviewListView.setItems(smartPlanPreviewItems);
+            smartPlanPreviewListView.setCellFactory(list -> new SmartPlanPreviewCell());
+        }
+        if (smartPlanStartDatePicker != null) {
+            smartPlanStartDatePicker.valueProperty().addListener((observable, oldValue, newValue) -> {
+                if (smartPlanEndDatePicker != null && newValue != null && smartPlanEndDatePicker.getValue() != null
+                        && smartPlanEndDatePicker.getValue().isBefore(newValue)) {
+                    smartPlanEndDatePicker.setValue(newValue);
+                }
+                invalidateSmartPlanPreview();
+                refreshSmartPlanBidListForCurrentUser();
+            });
+        }
+        if (smartPlanEndDatePicker != null) {
+            smartPlanEndDatePicker.valueProperty().addListener((observable, oldValue, newValue) -> {
+                invalidateSmartPlanPreview();
+                refreshSmartPlanBidListForCurrentUser();
+            });
+        }
+        updateSmartPlanBidTimeInputs(smartPlanBidTypeComboBox == null ? null : smartPlanBidTypeComboBox.getValue());
+    }
+
+    private void updateSmartPlanBidTimeInputs(String bidType) {
+        boolean dayOff = bidType != null && normalize(bidType).contains("day off");
+        if (smartPlanBidStartTimeComboBox != null) {
+            smartPlanBidStartTimeComboBox.setDisable(dayOff);
+            smartPlanBidStartTimeComboBox.setValue(dayOff ? DAY_OFF_START_TIME : null);
+        }
+        if (smartPlanBidEndTimeComboBox != null) {
+            smartPlanBidEndTimeComboBox.setDisable(dayOff);
+            smartPlanBidEndTimeComboBox.setValue(dayOff ? DAY_OFF_END_TIME : null);
+        }
+    }
+
+    private void invalidateSmartPlanPreview() {
+        smartPlanGenerationSignature = null;
+        smartPlanPendingTasks = new ArrayList<>();
+        smartPlanPreviewItems.clear();
+        updateSmartPlanValidateButtonState();
     }
 
     private void configureFormInteractions() {
@@ -867,7 +1784,7 @@ public class PlanningController implements Initializable {
         planningEntry.setColorHex(findAvailableColor(matchDate, null));
 
         servicePlanning.add(planningEntry);
-        sendPlanningCreationEmailAsync(currentUser, planningEntry);
+        sendPlanningCreationEmailAsync(currentUser, planningEntry, matchSession);
         refreshPlanningData();
         showForm(false);
         showInfo("Match planned directly in your calendar.");
@@ -1080,7 +1997,199 @@ public class PlanningController implements Initializable {
             });
         }
 
+        updateAssistantMicButton();
         updateAssistantHint();
+    }
+
+    @FXML
+    private void handleAssistantVoiceInput() {
+        if (assistantTranscriptionRunning) {
+            addMessage("Please wait, your previous voice command is still transcribing.", false);
+            return;
+        }
+        if (assistantRecording) {
+            stopAssistantRecordingAndTranscribe();
+            return;
+        }
+        startAssistantRecording();
+    }
+
+    private void startAssistantRecording() {
+        DataLine.Info lineInfo = new DataLine.Info(TargetDataLine.class, ASSISTANT_AUDIO_FORMAT);
+        if (!AudioSystem.isLineSupported(lineInfo)) {
+            addMessage("No compatible microphone was found for voice input.", false);
+            return;
+        }
+
+        try {
+            assistantRecordingPath = java.nio.file.Files.createTempFile("studyflow-voice-command-", ".wav");
+            assistantRecordingLine = (TargetDataLine) AudioSystem.getLine(lineInfo);
+            assistantRecordingLine.open(ASSISTANT_AUDIO_FORMAT);
+            assistantRecordingLine.start();
+
+            assistantRecording = true;
+            updateAssistantMicButton();
+            addMessage("Recording... click the mic button again to stop.", false);
+
+            assistantRecordingThread = new Thread(() -> {
+                try (AudioInputStream audioStream = new AudioInputStream(assistantRecordingLine)) {
+                    AudioSystem.write(audioStream, AudioFileFormat.Type.WAVE, assistantRecordingPath.toFile());
+                } catch (IOException exception) {
+                    Platform.runLater(() ->
+                            addMessage("Audio recording failed: " + exception.getMessage(), false));
+                }
+            }, "planning-assistant-audio-recorder");
+            assistantRecordingThread.setDaemon(true);
+            assistantRecordingThread.start();
+        } catch (LineUnavailableException | IOException exception) {
+            if (assistantRecordingLine != null) {
+                assistantRecordingLine.stop();
+                assistantRecordingLine.close();
+                assistantRecordingLine = null;
+            }
+            assistantRecording = false;
+            updateAssistantMicButton();
+            cleanupAssistantRecordingFile();
+            addMessage("Unable to start microphone recording: " + exception.getMessage(), false);
+        }
+    }
+
+    private void stopAssistantRecordingAndTranscribe() {
+        assistantRecording = false;
+        if (assistantRecordingLine != null) {
+            assistantRecordingLine.stop();
+            assistantRecordingLine.close();
+            assistantRecordingLine = null;
+        }
+        updateAssistantMicButton();
+
+        String apiKey = resolveSpeechApiKey();
+        if (apiKey == null || apiKey.isBlank()) {
+            apiKey = promptForSpeechApiKey();
+        }
+        if (apiKey == null || apiKey.isBlank()) {
+            addMessage("Voice transcription is disabled: set GROQ_API_KEY first.", false);
+            cleanupAssistantRecordingFile();
+            return;
+        }
+        final String resolvedApiKey = apiKey;
+        if (assistantRecordingPath == null) {
+            addMessage("No audio was captured. Try again.", false);
+            return;
+        }
+
+        assistantTranscriptionRunning = true;
+        updateAssistantMicButton();
+        addMessage("Transcribing voice command...", false);
+
+        Path audioPath = assistantRecordingPath;
+        CompletableFuture
+                .supplyAsync(() -> speechToTextService.transcribe(resolvedApiKey, audioPath, "fr"))
+                .thenAccept(result -> Platform.runLater(() -> {
+                    assistantTranscriptionRunning = false;
+                    updateAssistantMicButton();
+
+                    if (!result.isSuccess()) {
+                        addMessage(result.getError(), false);
+                        cleanupAssistantRecordingFile();
+                        return;
+                    }
+
+                    String transcript = result.getText();
+                    if (transcript == null || transcript.isBlank()) {
+                        addMessage("I could not detect speech. Please try again.", false);
+                        cleanupAssistantRecordingFile();
+                        return;
+                    }
+
+                    if (assistantInputField != null) {
+                        assistantInputField.setText(transcript);
+                        assistantInputField.positionCaret(transcript.length());
+                    }
+                    handleAssistantSend();
+                    cleanupAssistantRecordingFile();
+                }))
+                .exceptionally(exception -> {
+                    Platform.runLater(() -> {
+                        assistantTranscriptionRunning = false;
+                        updateAssistantMicButton();
+                        addMessage("Voice transcription failed: " + exception.getMessage(), false);
+                        cleanupAssistantRecordingFile();
+                    });
+                    return null;
+                });
+    }
+
+    private String resolveSpeechApiKey() {
+        String apiKey = System.getenv(GROQ_API_KEY_ENV);
+        if (apiKey == null || apiKey.isBlank()) {
+            apiKey = System.getProperty(GROQ_API_KEY_ENV);
+        }
+        if (apiKey == null || apiKey.isBlank()) {
+            apiKey = planningPreferences.get(GROQ_API_KEY_PREF, null);
+        }
+
+        // Legacy xAI fallback if user still has old configuration.
+        if (apiKey == null || apiKey.isBlank()) {
+            apiKey = System.getenv(XAI_API_KEY_ENV);
+        }
+        if (apiKey == null || apiKey.isBlank()) {
+            apiKey = System.getProperty(XAI_API_KEY_ENV);
+        }
+        if (apiKey == null || apiKey.isBlank()) {
+            apiKey = planningPreferences.get(XAI_API_KEY_PREF, null);
+        }
+        if (apiKey == null) {
+            return null;
+        }
+        String trimmed = apiKey.trim();
+        return trimmed.isBlank() ? null : trimmed;
+    }
+
+    private String promptForSpeechApiKey() {
+        TextInputDialog dialog = new TextInputDialog();
+        dialog.setTitle("Groq API Key");
+        dialog.setHeaderText("Voice transcription requires a Groq API key.");
+        dialog.setContentText("GROQ_API_KEY:");
+
+        Optional<String> result = dialog.showAndWait();
+        if (result.isEmpty()) {
+            return null;
+        }
+
+        String key = result.get() == null ? "" : result.get().trim();
+        if (key.isBlank()) {
+            return null;
+        }
+
+        planningPreferences.put(GROQ_API_KEY_PREF, key);
+        System.setProperty(GROQ_API_KEY_ENV, key);
+        addMessage("Groq API key saved locally for future voice commands.", false);
+        return key;
+    }
+
+    private void cleanupAssistantRecordingFile() {
+        if (assistantRecordingPath != null) {
+            try {
+                java.nio.file.Files.deleteIfExists(assistantRecordingPath);
+            } catch (IOException ignored) {
+            }
+            assistantRecordingPath = null;
+        }
+    }
+
+    private void updateAssistantMicButton() {
+        if (assistantMicButton == null) {
+            return;
+        }
+        assistantMicButton.setDisable(assistantTranscriptionRunning);
+        String tooltipText = assistantRecording
+                ? "Stop recording"
+                : (assistantTranscriptionRunning ? "Transcribing..." : "Start voice command");
+        assistantMicButton.setTooltip(new Tooltip(tooltipText));
+        if (assistantMicButton.getGraphic() instanceof FontIcon icon) {
+            icon.setIconLiteral(assistantRecording ? "fth-square" : "fth-mic");
+        }
     }
 
     @FXML
@@ -1661,7 +2770,7 @@ public class PlanningController implements Initializable {
         entry.setColorHex(pickRandomAssistantColor(currentUser.getId(), command.date));
 
         servicePlanning.add(entry);
-        sendPlanningCreationEmailAsync(currentUser, entry);
+        sendPlanningCreationEmailAsync(currentUser, entry, seance);
         refreshPlanningData();
         trackAssistantGeneratedEntry(entry);
         pendingAssistantCommand = null;
@@ -2650,7 +3759,7 @@ public class PlanningController implements Initializable {
             cell.getStyleClass().add("planning-calendar-cell-dayoff");
             StackPane dayOffMarker = new StackPane();
             dayOffMarker.getStyleClass().add("planning-dayoff-calendar-cell-marker");
-            Label dayOffLabel = new Label("XX");
+            Label dayOffLabel = new Label("🌴");
             dayOffLabel.getStyleClass().add("planning-dayoff-calendar-cell-marker-text");
             dayOffMarker.getChildren().add(dayOffLabel);
             VBox.setVgrow(dayOffMarker, Priority.ALWAYS);
@@ -2738,7 +3847,7 @@ public class PlanningController implements Initializable {
         if (matchEntry) {
             sessionTitle = "⚽ " + sessionTitle;
         } else if (dayOffEntry) {
-            sessionTitle = "XX";
+            sessionTitle = "🌴";
         }
         int maxTitleLength = matchEntry ? Integer.MAX_VALUE : 15;
         if (!matchEntry && sessionTitle.length() > maxTitleLength) {
@@ -3686,9 +4795,9 @@ public class PlanningController implements Initializable {
 
     private void updateFeedbackPendingBanner() {
         List<Planning> pendingEntries = allPlanningEntries.stream()
-                 .filter(entry -> isSessionCompleted(entry.getPlanningDate(), entry.getEndTime()))
-                 .filter(this::isAwaitingFeedback)
-                 .toList();
+                .filter(entry -> isSessionCompleted(entry.getPlanningDate(), entry.getEndTime()))
+                .filter(this::isAwaitingFeedback)
+                .toList();
         long pendingCount = pendingEntries.size();
 
         if (feedbackPendingBox == null || feedbackPendingLabel == null) {
@@ -3835,6 +4944,10 @@ public class PlanningController implements Initializable {
         planningBoardView.setVisible(!visible);
         planningFormPage.setManaged(visible);
         planningFormPage.setVisible(visible);
+        if (smartPlanPage != null && visible) {
+            smartPlanPage.setManaged(false);
+            smartPlanPage.setVisible(false);
+        }
         if (feedbackPage != null && visible) {
             feedbackPage.setManaged(false);
             feedbackPage.setVisible(false);
@@ -3856,6 +4969,10 @@ public class PlanningController implements Initializable {
             planningBoardView.setVisible(false);
             planningFormPage.setManaged(false);
             planningFormPage.setVisible(false);
+            if (smartPlanPage != null) {
+                smartPlanPage.setManaged(false);
+                smartPlanPage.setVisible(false);
+            }
             if (feedbackPickerPage != null) {
                 feedbackPickerPage.setManaged(false);
                 feedbackPickerPage.setVisible(false);
@@ -3883,6 +5000,10 @@ public class PlanningController implements Initializable {
             planningBoardView.setVisible(false);
             planningFormPage.setManaged(false);
             planningFormPage.setVisible(false);
+            if (smartPlanPage != null) {
+                smartPlanPage.setManaged(false);
+                smartPlanPage.setVisible(false);
+            }
             if (feedbackPage != null) {
                 feedbackPage.setManaged(false);
                 feedbackPage.setVisible(false);
@@ -3927,9 +5048,9 @@ public class PlanningController implements Initializable {
         return entry.getPlanningDate().format(shortDateFormatter) + " • " + formatEntryTime(entry);
     }
 
-    private void sendPlanningCreationEmailAsync(User user, Planning planningEntry) {
+    private void sendPlanningCreationEmailAsync(User user, Planning planningEntry, Seance seance) {
         CompletableFuture
-                .supplyAsync(() -> planningEmailNotificationService.sendPlanningCreatedEmail(user, planningEntry))
+                .supplyAsync(() -> planningEmailNotificationService.sendPlanningCreatedEmail(user, planningEntry, seance))
                 .thenAccept(error -> {
                     if (error == null || error.isBlank()) {
                         return;
@@ -4145,6 +5266,179 @@ public class PlanningController implements Initializable {
             detailLabel.setText(item.getPlanningDate().format(shortDateFormatter) + " • " + formatEntryTime(item) + " • " + status);
             setGraphic(root);
         }
+    }
+
+    private final class SmartPlanPreviewCell extends ListCell<SmartPlanPreviewItem> {
+        private final VBox root = new VBox(4);
+        private final CheckBox selectBox = new CheckBox();
+        private final Label mandatoryLabel = new Label("Required");
+        private final HBox topRow = new HBox(8);
+        private final Label detailLabel = new Label();
+        private SmartPlanPreviewItem boundItem;
+
+        private SmartPlanPreviewCell() {
+            root.getStyleClass().add("planning-feedback-item-card");
+            root.setPadding(new Insets(10, 12, 10, 12));
+            selectBox.setWrapText(true);
+            mandatoryLabel.getStyleClass().add("planning-ai-badge");
+            detailLabel.getStyleClass().add("planning-feedback-item-detail");
+            detailLabel.setWrapText(true);
+            topRow.setAlignment(Pos.CENTER_LEFT);
+            topRow.getChildren().addAll(selectBox, mandatoryLabel);
+            root.getChildren().addAll(topRow, detailLabel);
+            setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
+        }
+
+        @Override
+        protected void updateItem(SmartPlanPreviewItem item, boolean empty) {
+            super.updateItem(item, empty);
+            if (boundItem != null) {
+                selectBox.selectedProperty().unbindBidirectional(boundItem.selectedProperty());
+            }
+            boundItem = null;
+            if (empty || item == null) {
+                setGraphic(null);
+                return;
+            }
+
+            boundItem = item;
+            if (item.isSelectable()) {
+                selectBox.setVisible(true);
+                selectBox.setManaged(true);
+                selectBox.selectedProperty().bindBidirectional(item.selectedProperty());
+                selectBox.setText(item.displayText());
+                mandatoryLabel.setVisible(false);
+                mandatoryLabel.setManaged(false);
+            } else {
+                selectBox.setVisible(false);
+                selectBox.setManaged(false);
+                mandatoryLabel.setVisible(true);
+                mandatoryLabel.setManaged(true);
+                mandatoryLabel.setText(item.displayText());
+            }
+            detailLabel.setText(item.task().reason() == null || item.task().reason().isBlank()
+                    ? "Generated by Smart Plan"
+                    : item.task().reason());
+            selectBox.setOnAction(event -> updateSmartPlanValidateButtonState());
+            setGraphic(root);
+        }
+    }
+
+    private final class SmartPlanBidCell extends ListCell<SmartPlanService.StudentBidView> {
+        private final VBox root = new VBox(4);
+        private final HBox topRow = new HBox(8);
+        private final Label titleLabel = new Label();
+        private final Label detailLabel = new Label();
+        private final Region spacer = new Region();
+        private final Button deleteButton = new Button("Delete");
+
+        private SmartPlanBidCell() {
+            root.getStyleClass().add("planning-feedback-item-card");
+            root.setPadding(new Insets(10, 12, 10, 12));
+            titleLabel.getStyleClass().add("planning-feedback-item-title");
+            detailLabel.getStyleClass().add("planning-feedback-item-detail");
+            detailLabel.setWrapText(true);
+            deleteButton.getStyleClass().add("btn-danger");
+            deleteButton.setOnAction(event -> {
+                SmartPlanService.StudentBidView item = getItem();
+                User currentUser = UserSession.getInstance().getCurrentUser();
+                if (item == null || currentUser == null) {
+                    return;
+                }
+                boolean deleted = smartPlanService.deleteStudentBid(currentUser.getId(), item.id());
+                if (deleted) {
+                    invalidateSmartPlanPreview();
+                    refreshSmartPlanBidList(currentUser);
+                    if (smartPlanStatusLabel != null) {
+                        smartPlanStatusLabel.setText("Bid deleted.");
+                    }
+                } else if (smartPlanStatusLabel != null) {
+                    smartPlanStatusLabel.setText("Unable to delete this bid.");
+                }
+                event.consume();
+            });
+            HBox.setHgrow(spacer, Priority.ALWAYS);
+            topRow.getChildren().addAll(titleLabel, spacer, deleteButton);
+            root.getChildren().addAll(topRow, detailLabel);
+            setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
+        }
+
+        @Override
+        protected void updateItem(SmartPlanService.StudentBidView item, boolean empty) {
+            super.updateItem(item, empty);
+            if (empty || item == null) {
+                setGraphic(null);
+                return;
+            }
+            String date = item.date() == null ? "-" : item.date().format(shortDateFormatter);
+            String time = item.dayOff()
+                    ? "00:00-23:59"
+                    : ((item.startTime() == null || item.endTime() == null)
+                    ? "-"
+                    : item.startTime().format(timeFormatter) + "-" + item.endTime().format(timeFormatter));
+            String typeLabel = item.type() == null ? "Bid" : normalizeSmartType(item.type());
+            titleLabel.setText(typeLabel + " - " + (item.title() == null ? "Student bid" : item.title()));
+            detailLabel.setText(date + " | " + time + (item.description() == null || item.description().isBlank() ? "" : " | " + item.description()));
+            setGraphic(root);
+        }
+    }
+
+    private static final class SmartPlanPreviewItem {
+        private final SmartPlanService.SmartPlanTask task;
+        private final BooleanProperty selected;
+
+        private SmartPlanPreviewItem(SmartPlanService.SmartPlanTask task) {
+            this.task = task;
+            this.selected = new SimpleBooleanProperty(task != null && task.mandatory() || task != null);
+        }
+
+        private SmartPlanService.SmartPlanTask task() {
+            return task;
+        }
+
+        private BooleanProperty selectedProperty() {
+            return selected;
+        }
+
+        private boolean isSelected() {
+            return selected.get();
+        }
+
+        private boolean isSelectable() {
+            return task != null && !task.mandatory();
+        }
+
+        private String displayText() {
+            String dateLabel = task.date() == null ? "-" : task.date().format(DateTimeFormatter.ofPattern("EEE, MMM d", Locale.ENGLISH));
+            String typeLabel;
+            if (task.dayOff()) {
+                typeLabel = "Day Off";
+            } else if (task.sessionType() == null || task.sessionType().isBlank()) {
+                typeLabel = "Revision";
+            } else {
+                String normalizedType = task.sessionType().trim().toLowerCase(Locale.ENGLISH);
+                if (normalizedType.contains("day off") || normalizedType.contains("dayoff") || normalizedType.contains("repos")) {
+                    typeLabel = "Day Off";
+                } else if (normalizedType.contains("exam")) {
+                    typeLabel = "Exam";
+                } else if (normalizedType.contains("revision") || normalizedType.contains("review") || normalizedType.contains("reviser")) {
+                    typeLabel = "Revision";
+                } else if (normalizedType.contains("session") || normalizedType.contains("seance") || normalizedType.contains("study")) {
+                    typeLabel = "Study Session";
+                } else {
+                    typeLabel = task.sessionType().trim();
+                }
+            }
+            String timeLabel = task.dayOff()
+                    ? "00:00-23:59"
+                    : ((task.preferredStart() == null || task.preferredEnd() == null)
+                    ? "-"
+                    : task.preferredStart().format(DateTimeFormatter.ofPattern("HH:mm")) + "-" + task.preferredEnd().format(DateTimeFormatter.ofPattern("HH:mm")));
+            return task.title() + " | " + dateLabel + " | " + typeLabel + " | " + timeLabel;
+        }
+    }
+
+    private record ManualSmartBid(String type, String details, LocalDate date, LocalTime startTime, LocalTime endTime) {
     }
 
     private enum AssistantCommandType {
