@@ -10,7 +10,7 @@ import com.studyflow.services.ServiceSeance;
 import com.studyflow.services.AIPlanningService;
 import com.studyflow.services.FootballDataService;
 import com.studyflow.services.PlanningEmailNotificationService;
-import com.studyflow.services.SpeechToTextService;
+import com.studyflow.services.SpeechToTextPlanningService;
 import com.studyflow.services.SmartPlanService;
 import com.studyflow.services.ServiceTypeSeance;
 import com.studyflow.utils.UserSession;
@@ -279,7 +279,7 @@ public class PlanningController implements Initializable {
     private final AIPlanningService claudePlanningService = new AIPlanningService();
     private final FootballDataService footballDataService = new FootballDataService();
     private final SmartPlanService smartPlanService = new SmartPlanService();
-    private final SpeechToTextService speechToTextService = new SpeechToTextService();
+    private final SpeechToTextPlanningService speechToTextService = new SpeechToTextPlanningService();
     private final Preferences planningPreferences = Preferences.userNodeForPackage(PlanningController.class);
     private final DateTimeFormatter monthFormatter = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ENGLISH);
     private final DateTimeFormatter fullDateFormatter = DateTimeFormatter.ofPattern("EEEE, MMM d", Locale.ENGLISH);
