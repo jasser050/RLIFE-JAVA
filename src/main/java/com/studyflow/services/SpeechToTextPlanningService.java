@@ -27,7 +27,8 @@ public class SpeechToTextPlanningService {
     }
 
     public TranscriptionResult transcribe(String apiKey, Path audioFile, String language) {
-        if (apiKey == null || apiKey.isBlank()) {
+        String resolvedApiKey = resolveApiKey(apiKey);
+        if (resolvedApiKey == null || resolvedApiKey.isBlank()) {
             return TranscriptionResult.error("Missing GROQ_API_KEY environment variable.");
         }
         if (audioFile == null || !Files.exists(audioFile)) {
@@ -39,7 +40,7 @@ public class SpeechToTextPlanningService {
 
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(API_URL))
-                    .header("Authorization", "Bearer " + apiKey)
+                    .header("Authorization", "Bearer " + resolvedApiKey)
                     .header("Content-Type", "multipart/form-data; boundary=" + payload.boundary())
                     .POST(HttpRequest.BodyPublishers.ofByteArray(payload.body()))
                     .build();
@@ -179,6 +180,21 @@ public class SpeechToTextPlanningService {
     }
 
     private record MultipartPayload(String boundary, byte[] body) {}
+
+    private String resolveApiKey(String preferredApiKey) {
+        if (preferredApiKey != null && !preferredApiKey.isBlank()) {
+            return preferredApiKey.trim();
+        }
+        String envKey = System.getenv("GROQ_API_KEY");
+        if (envKey != null && !envKey.isBlank()) {
+            return envKey.trim();
+        }
+        String propertyKey = System.getProperty("groq.api.key");
+        if (propertyKey != null && !propertyKey.isBlank()) {
+            return propertyKey.trim();
+        }
+        return null;
+    }
 
     public static final class TranscriptionResult {
         private final boolean success;

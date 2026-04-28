@@ -18,15 +18,18 @@ import java.util.List;
 public class ServiceSeance implements IService<Seance> {
 
     private final Connection cnx;
+    private final boolean hasMatiereIdColumn;
 
     public ServiceSeance() {
         this.cnx = MyDataBase.getInstance().getConnection();
+        this.hasMatiereIdColumn = hasColumn("seance", "matiere_id");
     }
 
     @Override
     public void add(Seance seance) {
-        String req = "INSERT INTO seance (user_id, titre, type_seance, description, partage_avec, statut, created_at, updated_at, type_seance_id, matiere_id) " +
-                "VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW(), ?, ?)";
+        String req = hasMatiereIdColumn
+                ? "INSERT INTO seance (user_id, titre, type_seance, description, partage_avec, statut, created_at, updated_at, type_seance_id, matiere_id) VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW(), ?, ?)"
+                : "INSERT INTO seance (user_id, titre, type_seance, description, partage_avec, statut, created_at, updated_at, type_seance_id) VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW(), ?)";
 
         try (PreparedStatement pstm = cnx.prepareStatement(req, Statement.RETURN_GENERATED_KEYS)) {
             bindWriteFields(pstm, seance);
@@ -44,8 +47,9 @@ public class ServiceSeance implements IService<Seance> {
 
     @Override
     public void update(Seance seance) {
-        String req = "UPDATE seance SET titre = ?, type_seance = ?, description = ?, partage_avec = ?, statut = ?, updated_at = NOW(), type_seance_id = ?, matiere_id = ? " +
-                "WHERE id = ? AND user_id = ?";
+        String req = hasMatiereIdColumn
+                ? "UPDATE seance SET titre = ?, type_seance = ?, description = ?, partage_avec = ?, statut = ?, updated_at = NOW(), type_seance_id = ?, matiere_id = ? WHERE id = ? AND user_id = ?"
+                : "UPDATE seance SET titre = ?, type_seance = ?, description = ?, partage_avec = ?, statut = ?, updated_at = NOW(), type_seance_id = ? WHERE id = ? AND user_id = ?";
 
         try (PreparedStatement pstm = cnx.prepareStatement(req)) {
             pstm.setString(1, seance.getTitre());
@@ -58,9 +62,14 @@ public class ServiceSeance implements IService<Seance> {
             } else {
                 pstm.setInt(6, seance.getTypeSeanceId());
             }
-            pstm.setNull(7, java.sql.Types.INTEGER);
-            pstm.setInt(8, seance.getId());
-            pstm.setInt(9, seance.getUserId());
+            if (hasMatiereIdColumn) {
+                pstm.setNull(7, java.sql.Types.INTEGER);
+                pstm.setInt(8, seance.getId());
+                pstm.setInt(9, seance.getUserId());
+            } else {
+                pstm.setInt(7, seance.getId());
+                pstm.setInt(8, seance.getUserId());
+            }
             pstm.executeUpdate();
         } catch (SQLException e) {
             System.out.println("ServiceSeance.update: " + e.getMessage());
@@ -84,11 +93,10 @@ public class ServiceSeance implements IService<Seance> {
         List<Seance> seances = new ArrayList<>();
         Integer userId = resolveCurrentUserId();
 
-        String req = "SELECT s.id, s.user_id, s.titre, s.type_seance, s.description, s.partage_avec, s.statut, s.created_at, s.updated_at, s.type_seance_id, s.matiere_id, ts.name AS type_name " +
-                "FROM seance s " +
-                "LEFT JOIN type_seance ts ON ts.id = s.type_seance_id " +
-                (userId != null ? "WHERE s.user_id = ? " : "") +
-                "ORDER BY s.created_at DESC, s.id DESC";
+        String req = hasMatiereIdColumn
+                ? "SELECT s.id, s.user_id, s.titre, s.type_seance, s.description, s.partage_avec, s.statut, s.created_at, s.updated_at, s.type_seance_id, s.matiere_id, ts.name AS type_name FROM seance s LEFT JOIN type_seance ts ON ts.id = s.type_seance_id "
+                : "SELECT s.id, s.user_id, s.titre, s.type_seance, s.description, s.partage_avec, s.statut, s.created_at, s.updated_at, s.type_seance_id, ts.name AS type_name FROM seance s LEFT JOIN type_seance ts ON ts.id = s.type_seance_id ";
+        req += (userId != null ? "WHERE s.user_id = ? " : "") + "ORDER BY s.created_at DESC, s.id DESC";
 
         try (PreparedStatement pstm = cnx.prepareStatement(req)) {
             if (userId != null) {
@@ -119,7 +127,9 @@ public class ServiceSeance implements IService<Seance> {
         } else {
             pstm.setInt(7, seance.getTypeSeanceId());
         }
-        pstm.setNull(8, java.sql.Types.INTEGER);
+        if (hasMatiereIdColumn) {
+            pstm.setNull(8, java.sql.Types.INTEGER);
+        }
     }
 
     private Seance mapSeance(ResultSet rs) throws SQLException {
@@ -135,8 +145,12 @@ public class ServiceSeance implements IService<Seance> {
         seance.setUpdatedAt(rs.getTimestamp("updated_at"));
         int typeSeanceId = rs.getInt("type_seance_id");
         seance.setTypeSeanceId(rs.wasNull() ? null : typeSeanceId);
-        int matiereId = rs.getInt("matiere_id");
-        seance.setMatiereId(rs.wasNull() ? null : matiereId);
+        if (hasMatiereIdColumn) {
+            int matiereId = rs.getInt("matiere_id");
+            seance.setMatiereId(rs.wasNull() ? null : matiereId);
+        } else {
+            seance.setMatiereId(null);
+        }
         seance.setTypeSeanceName(rs.getString("type_name"));
         return seance;
     }
@@ -152,5 +166,16 @@ public class ServiceSeance implements IService<Seance> {
         }
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private boolean hasColumn(String tableName, String columnName) {
+        try {
+            var metadata = cnx.getMetaData();
+            try (ResultSet rs = metadata.getColumns(cnx.getCatalog(), null, tableName, columnName)) {
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            return false;
+        }
     }
 }

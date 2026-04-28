@@ -9,8 +9,9 @@ import com.studyflow.services.ServicePlanning;
 import com.studyflow.services.ServiceSeance;
 import com.studyflow.services.AIPlanningService;
 import com.studyflow.services.FootballDataService;
+import com.studyflow.services.PlanningPdfExportService;
 import com.studyflow.services.PlanningEmailNotificationService;
-import com.studyflow.services.SpeechToTextPlanningService;
+import com.studyflow.services.SpeechToTextService;
 import com.studyflow.services.SmartPlanService;
 import com.studyflow.services.ServiceTypeSeance;
 import com.studyflow.utils.UserSession;
@@ -66,6 +67,8 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
+import javafx.stage.FileChooser;
+import javafx.stage.Window;
 import javafx.util.Duration;
 import javafx.util.StringConverter;
 import org.kordamp.ikonli.javafx.FontIcon;
@@ -172,8 +175,10 @@ public class PlanningController implements Initializable {
     private static final String ASSISTANT_MODE_CHAT = "Chat mode";
     private static final String ASSISTANT_MODE_TERMINAL = "Terminal mode";
     private static final String ANTHROPIC_API_KEY_ENV = "ANTHROPIC_API_KEY";
+    private static final String PDFSHIFT_API_KEY_ENV = "PDFSHIFT_API_KEY";
     private static final String GROQ_API_KEY_ENV = "GROQ_API_KEY";
     private static final String XAI_API_KEY_ENV = "XAI_API_KEY";
+    private static final String PDFSHIFT_API_KEY_PREF = "pdfshift.api.key";
     private static final String GROQ_API_KEY_PREF = "groq.api.key";
     private static final String XAI_API_KEY_PREF = "xai.api.key";
     private static final Pattern ASSISTANT_TIME_PATTERN = Pattern.compile("(?<!\\d)([01]?\\d|2[0-3])(?:[:h]([0-5]\\d))?(?!\\d)");
@@ -276,10 +281,11 @@ public class PlanningController implements Initializable {
     private final ServiceSeance serviceSeance = new ServiceSeance();
     private final ServiceTypeSeance serviceTypeSeance = new ServiceTypeSeance();
     private final PlanningEmailNotificationService planningEmailNotificationService = new PlanningEmailNotificationService();
+    private final PlanningPdfExportService planningPdfExportService = new PlanningPdfExportService();
     private final AIPlanningService claudePlanningService = new AIPlanningService();
     private final FootballDataService footballDataService = new FootballDataService();
     private final SmartPlanService smartPlanService = new SmartPlanService();
-    private final SpeechToTextPlanningService speechToTextService = new SpeechToTextPlanningService();
+    private final SpeechToTextService speechToTextService = new SpeechToTextService();
     private final Preferences planningPreferences = Preferences.userNodeForPackage(PlanningController.class);
     private final DateTimeFormatter monthFormatter = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ENGLISH);
     private final DateTimeFormatter fullDateFormatter = DateTimeFormatter.ofPattern("EEEE, MMM d", Locale.ENGLISH);
@@ -838,6 +844,51 @@ public class PlanningController implements Initializable {
             App.setRoot("views/Seance");
         } catch (IOException exception) {
             showErrorOn(pageMessageLabel, "Unable to open sessions view: " + exception.getMessage());
+        }
+    }
+
+    @FXML
+    private void handleExportPlanningPdf() {
+        User currentUser = UserSession.getInstance().getCurrentUser();
+        if (currentUser == null) {
+            showErrorOn(pageMessageLabel, "No logged-in user found.");
+            return;
+        }
+
+        List<Planning> entries = allPlanningEntries == null ? List.of() : new ArrayList<>(allPlanningEntries);
+        if (entries.isEmpty()) {
+            showInfo("No planning entries available to export.");
+            return;
+        }
+
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Export Planning to PDF");
+        fileChooser.setInitialFileName("planning-export-" + LocalDate.now() + ".pdf");
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("PDF Document", "*.pdf"));
+
+        Window owner = planningBoardView == null || planningBoardView.getScene() == null
+                ? null
+                : planningBoardView.getScene().getWindow();
+        java.io.File selected = fileChooser.showSaveDialog(owner);
+        if (selected == null) {
+            showInfo("PDF export cancelled.");
+            return;
+        }
+
+        String apiKey = resolvePdfApiKey();
+        if (apiKey == null || apiKey.isBlank()) {
+            apiKey = promptForPdfApiKey();
+        }
+        if (apiKey == null || apiKey.isBlank()) {
+            showErrorOn(pageMessageLabel, "PDF export API is disabled: set PDFSHIFT_API_KEY first.");
+            return;
+        }
+
+        try {
+            planningPdfExportService.export(selected.toPath(), currentUser, entries, apiKey);
+            showInfo("Planning PDF exported successfully via API.");
+        } catch (Exception exception) {
+            showErrorOn(pageMessageLabel, "PDF export failed: " + exception.getMessage());
         }
     }
 
@@ -2165,6 +2216,43 @@ public class PlanningController implements Initializable {
         planningPreferences.put(GROQ_API_KEY_PREF, key);
         System.setProperty(GROQ_API_KEY_ENV, key);
         addMessage("Groq API key saved locally for future voice commands.", false);
+        return key;
+    }
+
+    private String resolvePdfApiKey() {
+        String apiKey = System.getenv(PDFSHIFT_API_KEY_ENV);
+        if (apiKey == null || apiKey.isBlank()) {
+            apiKey = System.getProperty(PDFSHIFT_API_KEY_ENV);
+        }
+        if (apiKey == null || apiKey.isBlank()) {
+            apiKey = planningPreferences.get(PDFSHIFT_API_KEY_PREF, null);
+        }
+        if (apiKey == null) {
+            return null;
+        }
+        String trimmed = apiKey.trim();
+        return trimmed.isBlank() ? null : trimmed;
+    }
+
+    private String promptForPdfApiKey() {
+        TextInputDialog dialog = new TextInputDialog();
+        dialog.setTitle("PDF API Key");
+        dialog.setHeaderText("PDF export requires a PDFShift API key.");
+        dialog.setContentText("PDFSHIFT_API_KEY:");
+
+        Optional<String> result = dialog.showAndWait();
+        if (result.isEmpty()) {
+            return null;
+        }
+
+        String key = result.get() == null ? "" : result.get().trim();
+        if (key.isBlank()) {
+            return null;
+        }
+
+        planningPreferences.put(PDFSHIFT_API_KEY_PREF, key);
+        System.setProperty(PDFSHIFT_API_KEY_ENV, key);
+        showInfo("PDF API key saved locally for future exports.");
         return key;
     }
 

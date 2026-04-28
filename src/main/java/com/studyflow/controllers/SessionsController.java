@@ -3,6 +3,7 @@ package com.studyflow.controllers;
 import com.studyflow.models.Seance;
 import com.studyflow.models.TypeSeance;
 import com.studyflow.models.User;
+import com.studyflow.services.PlanningPdfApiService;
 import com.studyflow.services.ServiceSeance;
 import com.studyflow.services.ServiceTypeSeance;
 import com.studyflow.utils.UserSession;
@@ -118,6 +119,7 @@ public class SessionsController implements Initializable {
 
     private final ServiceSeance serviceSeance = new ServiceSeance();
     private final ServiceTypeSeance serviceTypeSeance = new ServiceTypeSeance();
+    private final PlanningPdfApiService planningPdfApiService = new PlanningPdfApiService();
     private final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd MMM yyyy HH:mm");
     private final ObservableList<Seance> masterSessions = FXCollections.observableArrayList();
 
@@ -259,37 +261,43 @@ public class SessionsController implements Initializable {
             return;
         }
 
-        try (PDDocument document = new PDDocument()) {
-            float margin = 50f;
-            PDImageXObject logo = loadPdfLogo(document);
-            PDPage page = null;
-            PDPageContentStream contentStream = null;
-            float y = 0f;
+        try {
+            planningPdfApiService.exportSessionsPdf(sessionsToExport, selectedPath);
+            showSuccess("PDF file exported successfully via aPDF.io.");
+        } catch (Exception apiException) {
+            // Fallback to local export if API is unavailable.
+            try (PDDocument document = new PDDocument()) {
+                float margin = 50f;
+                PDImageXObject logo = loadPdfLogo(document);
+                PDPage page = null;
+                PDPageContentStream contentStream = null;
+                float y = 0f;
 
-            try {
-                for (Seance seance : sessionsToExport) {
-                    float estimatedHeight = estimatePdfHeight(seance);
-                    if (contentStream == null || y - estimatedHeight < 70) {
-                        if (contentStream != null) {
-                            contentStream.close();
+                try {
+                    for (Seance seance : sessionsToExport) {
+                        float estimatedHeight = estimatePdfHeight(seance);
+                        if (contentStream == null || y - estimatedHeight < 70) {
+                            if (contentStream != null) {
+                                contentStream.close();
+                            }
+                            page = new PDPage(PDRectangle.A4);
+                            document.addPage(page);
+                            contentStream = new PDPageContentStream(document, page);
+                            y = writePdfHeader(contentStream, margin, page.getMediaBox().getHeight() - margin, logo);
                         }
-                        page = new PDPage(PDRectangle.A4);
-                        document.addPage(page);
-                        contentStream = new PDPageContentStream(document, page);
-                        y = writePdfHeader(contentStream, margin, page.getMediaBox().getHeight() - margin, logo);
+                        y = writePdfSession(contentStream, margin, y, seance);
                     }
-                    y = writePdfSession(contentStream, margin, y, seance);
+                } finally {
+                    if (contentStream != null) {
+                        contentStream.close();
+                    }
                 }
-            } finally {
-                if (contentStream != null) {
-                    contentStream.close();
-                }
-            }
 
-            document.save(selectedPath.toFile());
-            showSuccess("PDF file exported successfully.");
-        } catch (IOException exception) {
-            showErrorOn(pageMessageLabel, "PDF export failed: " + exception.getMessage());
+                document.save(selectedPath.toFile());
+                showSuccess("PDF exported locally (aPDF.io unavailable): " + apiException.getMessage());
+            } catch (IOException localException) {
+                showErrorOn(pageMessageLabel, "PDF export failed: " + localException.getMessage());
+            }
         }
     }
 

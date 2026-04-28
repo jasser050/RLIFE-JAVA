@@ -44,6 +44,11 @@
                     <FontIcon iconLiteral="fth-list" iconSize="16" />
                 </graphic>
             </Button>
+            <Button onAction="#handleExportPlanningPdf" styleClass="btn-secondary" text="Export PDF">
+                <graphic>
+                    <FontIcon iconLiteral="fth-download" iconSize="16" />
+                </graphic>
+            </Button>
             <Button onAction="#handleManageSessionTypes" styleClass="btn-secondary" text="Manage Session Types">
                 <graphic>
                     <FontIcon iconLiteral="fth-settings" iconSize="16" />
