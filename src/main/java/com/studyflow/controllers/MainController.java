@@ -136,6 +136,10 @@ public class MainController implements Initializable {
         setupGlobalQuoteWidget();
     }
 
+    public static MainController getInstance() {
+        return activeInstance;
+    }
+
     // ============================================
     // WINDOW CONTROL METHODS
     // ============================================
@@ -625,7 +629,7 @@ public class MainController implements Initializable {
     }
 
     @FXML
-    private void showPlanning() {
+    public void showPlanning() {
         setActiveButton(btnPlanning);
         loadContent("views/Planning.fxml");
     }

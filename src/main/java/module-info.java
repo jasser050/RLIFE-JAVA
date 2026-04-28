@@ -16,6 +16,9 @@ module com.studyflow {
     requires jdk.httpserver;
     requires jdk.jsobject;
     requires webcam.capture;
+    requires com.google.gson;
+    requires org.apache.poi.poi;
+    requires org.apache.poi.ooxml;
 
     requires mysql.connector.j;
 
