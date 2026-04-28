@@ -34,6 +34,7 @@ C:\Users\User\Desktop\RLIFE-JAVA-main-git-new\RLIFE-JAVA-main\src\main\java\com\
 C:\Users\User\Desktop\RLIFE-JAVA-main-git-new\RLIFE-JAVA-main\src\main\java\com\studyflow\controllers\LoginController.java
 C:\Users\User\Desktop\RLIFE-JAVA-main-git-new\RLIFE-JAVA-main\src\main\java\com\studyflow\controllers\MainController.java
 C:\Users\User\Desktop\RLIFE-JAVA-main-git-new\RLIFE-JAVA-main\src\main\java\com\studyflow\controllers\NotesController.java
+C:\Users\User\Desktop\RLIFE-JAVA-main-git-new\RLIFE-JAVA-main\src\main\java\com\studyflow\controllers\PetMetaverseController.java
 C:\Users\User\Desktop\RLIFE-JAVA-main-git-new\RLIFE-JAVA-main\src\main\java\com\studyflow\controllers\PlanningController.java
 C:\Users\User\Desktop\RLIFE-JAVA-main-git-new\RLIFE-JAVA-main\src\main\java\com\studyflow\controllers\ProfileController.java
 C:\Users\User\Desktop\RLIFE-JAVA-main-git-new\RLIFE-JAVA-main\src\main\java\com\studyflow\controllers\ProjectAiWorkspaceController.java
@@ -60,6 +61,8 @@ C:\Users\User\Desktop\RLIFE-JAVA-main-git-new\RLIFE-JAVA-main\src\main\java\com\
 C:\Users\User\Desktop\RLIFE-JAVA-main-git-new\RLIFE-JAVA-main\src\main\java\com\studyflow\models\Flashcard.java
 C:\Users\User\Desktop\RLIFE-JAVA-main-git-new\RLIFE-JAVA-main\src\main\java\com\studyflow\models\Matiere.java
 C:\Users\User\Desktop\RLIFE-JAVA-main-git-new\RLIFE-JAVA-main\src\main\java\com\studyflow\models\Notification.java
+C:\Users\User\Desktop\RLIFE-JAVA-main-git-new\RLIFE-JAVA-main\src\main\java\com\studyflow\models\Pet.java
+C:\Users\User\Desktop\RLIFE-JAVA-main-git-new\RLIFE-JAVA-main\src\main\java\com\studyflow\models\PetEvent.java
 C:\Users\User\Desktop\RLIFE-JAVA-main-git-new\RLIFE-JAVA-main\src\main\java\com\studyflow\models\Project.java
 C:\Users\User\Desktop\RLIFE-JAVA-main-git-new\RLIFE-JAVA-main\src\main\java\com\studyflow\models\QuestionStress.java
 C:\Users\User\Desktop\RLIFE-JAVA-main-git-new\RLIFE-JAVA-main\src\main\java\com\studyflow\models\QuizStress.java
@@ -85,6 +88,7 @@ C:\Users\User\Desktop\RLIFE-JAVA-main-git-new\RLIFE-JAVA-main\src\main\java\com\
 C:\Users\User\Desktop\RLIFE-JAVA-main-git-new\RLIFE-JAVA-main\src\main\java\com\studyflow\services\MatiereService.java
 C:\Users\User\Desktop\RLIFE-JAVA-main-git-new\RLIFE-JAVA-main\src\main\java\com\studyflow\services\NotificationService.java
 C:\Users\User\Desktop\RLIFE-JAVA-main-git-new\RLIFE-JAVA-main\src\main\java\com\studyflow\services\OpenRouterService.java
+C:\Users\User\Desktop\RLIFE-JAVA-main-git-new\RLIFE-JAVA-main\src\main\java\com\studyflow\services\PetService.java
 C:\Users\User\Desktop\RLIFE-JAVA-main-git-new\RLIFE-JAVA-main\src\main\java\com\studyflow\services\ProjectService.java
 C:\Users\User\Desktop\RLIFE-JAVA-main-git-new\RLIFE-JAVA-main\src\main\java\com\studyflow\services\ServiceCopingSession.java
 C:\Users\User\Desktop\RLIFE-JAVA-main-git-new\RLIFE-JAVA-main\src\main\java\com\studyflow\services\ServiceQuestionStress.java
@@ -106,6 +110,7 @@ C:\Users\User\Desktop\RLIFE-JAVA-main-git-new\RLIFE-JAVA-main\src\main\java\com\
 C:\Users\User\Desktop\RLIFE-JAVA-main-git-new\RLIFE-JAVA-main\src\main\java\com\studyflow\utils\MyDataBase.java
 C:\Users\User\Desktop\RLIFE-JAVA-main-git-new\RLIFE-JAVA-main\src\main\java\com\studyflow\utils\PdfExporter.java
 C:\Users\User\Desktop\RLIFE-JAVA-main-git-new\RLIFE-JAVA-main\src\main\java\com\studyflow\utils\PdfExportUtil.java
+C:\Users\User\Desktop\RLIFE-JAVA-main-git-new\RLIFE-JAVA-main\src\main\java\com\studyflow\utils\PetUiSupport.java
 C:\Users\User\Desktop\RLIFE-JAVA-main-git-new\RLIFE-JAVA-main\src\main\java\com\studyflow\utils\RobotScene3D.java
 C:\Users\User\Desktop\RLIFE-JAVA-main-git-new\RLIFE-JAVA-main\src\main\java\com\studyflow\utils\SplineRobotPanel.java
 C:\Users\User\Desktop\RLIFE-JAVA-main-git-new\RLIFE-JAVA-main\src\main\java\com\studyflow\utils\UserSession.java

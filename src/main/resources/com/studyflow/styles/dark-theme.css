@@ -5231,3 +5231,144 @@
     -fx-background-insets: 0;
     -fx-background-radius: 999;
 }
+
+.pet-selection-summary,
+.pet-hero-image-shell {
+    -fx-background-color: linear-gradient(to right, rgba(59, 130, 246, 0.16), rgba(168, 85, 247, 0.18));
+    -fx-background-radius: 18;
+    -fx-border-color: rgba(125, 211, 252, 0.24);
+    -fx-border-radius: 18;
+}
+
+.pet-selection-summary {
+    -fx-padding: 14 18;
+}
+
+.pet-selected-title,
+.pet-display-name {
+    -fx-text-fill: #F8FAFC;
+    -fx-font-size: 22px;
+    -fx-font-weight: 800;
+}
+
+.pet-selected-subtitle,
+.pet-event-desc,
+.pet-empty-desc,
+.pet-achievement-desc {
+    -fx-text-fill: #94A3B8;
+    -fx-font-size: 13px;
+}
+
+.pet-choice-card {
+    -fx-background-color: #0F172A;
+    -fx-background-radius: 18;
+    -fx-border-color: rgba(51, 65, 85, 0.9);
+    -fx-border-radius: 18;
+    -fx-cursor: hand;
+}
+
+.pet-choice-card.selected {
+    -fx-border-color: #8B5CF6;
+    -fx-effect: dropshadow(gaussian, rgba(139, 92, 246, 0.32), 22, 0.18, 0, 8);
+}
+
+.pet-choice-image {
+    -fx-background-color: linear-gradient(to bottom right, rgba(8, 145, 178, 0.18), rgba(91, 33, 182, 0.22));
+    -fx-background-radius: 16;
+    -fx-padding: 10;
+}
+
+.pet-choice-title,
+.pet-achievement-title,
+.pet-event-title,
+.pet-empty-title {
+    -fx-text-fill: #F8FAFC;
+    -fx-font-size: 15px;
+    -fx-font-weight: 700;
+}
+
+.pet-choice-desc,
+.pet-event-time,
+.pet-achievement-state {
+    -fx-text-fill: #94A3B8;
+    -fx-font-size: 12px;
+}
+
+.pet-rarity-badge,
+.pet-chip-value {
+    -fx-background-color: rgba(168, 85, 247, 0.18);
+    -fx-text-fill: #DDD6FE;
+    -fx-padding: 4 10;
+    -fx-background-radius: 999;
+    -fx-font-size: 12px;
+    -fx-font-weight: 700;
+}
+
+.pet-chip-label,
+.pet-stat-title {
+    -fx-text-fill: #CBD5E1;
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+}
+
+.pet-stat-value {
+    -fx-text-fill: #F8FAFC;
+    -fx-font-size: 13px;
+    -fx-font-weight: 700;
+}
+
+.pet-progress-hunger,
+.pet-progress-happiness,
+.pet-progress-energy,
+.pet-progress-health,
+.pet-progress-xp {
+    -fx-pref-height: 9;
+}
+
+.pet-progress-hunger > .track,
+.pet-progress-happiness > .track,
+.pet-progress-energy > .track,
+.pet-progress-health > .track,
+.pet-progress-xp > .track {
+    -fx-background-color: rgba(51, 65, 85, 0.95);
+    -fx-background-radius: 999;
+}
+
+.pet-progress-hunger > .bar { -fx-background-color: linear-gradient(to right, #F59E0B, #EF4444); -fx-background-radius: 999; }
+.pet-progress-happiness > .bar { -fx-background-color: linear-gradient(to right, #EC4899, #8B5CF6); -fx-background-radius: 999; }
+.pet-progress-energy > .bar { -fx-background-color: linear-gradient(to right, #22C55E, #06B6D4); -fx-background-radius: 999; }
+.pet-progress-health > .bar { -fx-background-color: linear-gradient(to right, #10B981, #14B8A6); -fx-background-radius: 999; }
+.pet-progress-xp > .bar { -fx-background-color: linear-gradient(to right, #6366F1, #A855F7); -fx-background-radius: 999; }
+
+.pet-event-item,
+.pet-empty-card {
+    -fx-background-color: rgba(15, 23, 42, 0.76);
+    -fx-background-radius: 14;
+    -fx-padding: 12;
+}
+
+.pet-achievement-card {
+    -fx-background-radius: 14;
+    -fx-padding: 14;
+    -fx-pref-width: 160;
+}
+
+.pet-achievement-card.unlocked {
+    -fx-background-color: linear-gradient(to bottom right, rgba(99, 102, 241, 0.20), rgba(16, 185, 129, 0.14));
+    -fx-border-color: rgba(99, 102, 241, 0.28);
+    -fx-border-radius: 14;
+}
+
+.pet-achievement-card.locked {
+    -fx-background-color: rgba(15, 23, 42, 0.76);
+    -fx-border-color: rgba(51, 65, 85, 0.9);
+    -fx-border-radius: 14;
+}
+
+.pet-message-success {
+    -fx-text-fill: #6EE7B7;
+}
+
+.pet-message-error {
+    -fx-text-fill: #FCA5A5;
+}

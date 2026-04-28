@@ -54,7 +54,6 @@ com\studyflow\controllers\ProjectDeleteController.class
 com\studyflow\models\AssignmentComment.class
 com\studyflow\utils\AvatarCard.class
 com\studyflow\services\AIQuizService$ParsedQuestion.class
-com\studyflow\controllers\NotesController$NoteData.class
 com\studyflow\controllers\MainController.class
 com\studyflow\controllers\AssignmentsController$ProjectListCell.class
 com\studyflow\controllers\ProjectMeetingController.class
@@ -98,7 +97,6 @@ com\studyflow\controllers\ProjectsController.class
 com\studyflow\services\AiProjectInsightsService$5.class
 com\studyflow\controllers\WellbeingController$MoodEntry.class
 com\studyflow\utils\CrudViewContext$FlashMessage.class
-com\studyflow\controllers\NotesController$FolderData.class
 com\studyflow\services\AiProjectInsightsService$1.class
 com\studyflow\controllers\AdminPdfExportController.class
 com\studyflow\controllers\AdminStatisticsController.class
