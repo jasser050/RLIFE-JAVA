@@ -12,45 +12,50 @@
         <Insets bottom="24" left="0" right="0" top="0" />
     </padding>
 
-    <HBox alignment="CENTER_LEFT" spacing="16">
-        <VBox spacing="4" HBox.hgrow="ALWAYS">
-            <Label styleClass="text-heading" text="Planning &amp; Calendar" />
-            <Label styleClass="text-muted" text="Plan each session with date, time and color" />
-        </VBox>
-        <Button onAction="#handlePreviousMonth" styleClass="btn-secondary">
-            <graphic>
-                <FontIcon iconLiteral="fth-chevron-left" iconSize="16" />
-            </graphic>
-        </Button>
-        <Label fx:id="currentMonthLabel" styleClass="card-title" text="January 2025" />
-        <Button onAction="#handleNextMonth" styleClass="btn-secondary">
-            <graphic>
-                <FontIcon iconLiteral="fth-chevron-right" iconSize="16" />
-            </graphic>
-        </Button>
-        <Region HBox.hgrow="ALWAYS" />
-        <StackPane styleClass="planning-live-clock-card">
-            <VBox alignment="CENTER_RIGHT" spacing="1">
-                <Label fx:id="liveClockLabel" styleClass="planning-live-clock-time" text="00:00:00" />
-                <Label fx:id="liveClockDateLabel" styleClass="planning-live-clock-date" text="Mon, Jan 1 2026" />
+    <VBox spacing="10" styleClass="planning-top-zone">
+        <HBox alignment="CENTER_LEFT" spacing="16">
+            <VBox spacing="4" HBox.hgrow="ALWAYS">
+                <Label styleClass="text-heading" text="Planning &amp; Calendar" />
+                <Label styleClass="text-muted" text="Plan each session with date, time and color" />
             </VBox>
-        </StackPane>
-        <Button onAction="#handleAddPlanning" styleClass="btn-primary" text="Add Planning">
-            <graphic>
-                <FontIcon iconColor="white" iconLiteral="fth-plus" iconSize="16" />
-            </graphic>
-        </Button>
-        <Button onAction="#handleViewSessions" styleClass="btn-secondary" text="View Sessions">
-            <graphic>
-                <FontIcon iconLiteral="fth-list" iconSize="16" />
-            </graphic>
-        </Button>
-        <Button onAction="#handleManageSessionTypes" styleClass="btn-secondary" text="Manage Session Types">
-            <graphic>
-                <FontIcon iconLiteral="fth-settings" iconSize="16" />
-            </graphic>
-        </Button>
-    </HBox>
+
+            <Region HBox.hgrow="ALWAYS" />
+            <StackPane styleClass="planning-live-clock-card">
+                <VBox alignment="CENTER_LEFT" spacing="1">
+                    <Label fx:id="liveClockLabel" styleClass="planning-live-clock-time" text="00:00:00" />
+                    <Label fx:id="liveClockDateLabel" styleClass="planning-live-clock-date" text="Mon, Jan 1 2026" />
+                </VBox>
+            </StackPane>
+        </HBox>
+
+        <FlowPane alignment="CENTER_RIGHT" hgap="10" vgap="8">
+            <Button onAction="#handleAddPlanning" styleClass="btn-primary" text="Add Planning">
+                <graphic>
+                    <FontIcon iconColor="white" iconLiteral="fth-plus" iconSize="16" />
+                </graphic>
+            </Button>
+            <Button onAction="#handleSmartPlan" styleClass="btn-primary" text="Smart Plan">
+                <graphic>
+                    <FontIcon iconColor="white" iconLiteral="fth-cpu" iconSize="16" text="" />
+                </graphic>
+            </Button>
+            <Button onAction="#handleViewSessions" styleClass="btn-secondary" text="View Sessions">
+                <graphic>
+                    <FontIcon iconLiteral="fth-list" iconSize="16" />
+                </graphic>
+            </Button>
+            <Button onAction="#handleManageSessionTypes" styleClass="btn-secondary" text="Manage Session Types">
+                <graphic>
+                    <FontIcon iconLiteral="fth-settings" iconSize="16" />
+                </graphic>
+            </Button>
+            <Button onAction="#handleOpenPlanningGame" styleClass="btn-secondary" text="Gaming">
+                <graphic>
+                    <FontIcon iconLiteral="fth-zap" iconSize="16" />
+                </graphic>
+            </Button>
+        </FlowPane>
+    </VBox>
 
     <Label fx:id="pageMessageLabel" managed="false" visible="false" />
 
@@ -81,6 +86,19 @@
                         <Label styleClass="card-title" text="Monthly Planning Board" />
                         <Label styleClass="text-small" text="Every session keeps its own date, time range and color" />
                     </VBox>
+                    <HBox alignment="CENTER_LEFT" spacing="10" translateY="4.0">
+                        <Button onAction="#handlePreviousMonth" styleClass="btn-secondary">
+                            <graphic>
+                                <FontIcon iconLiteral="fth-chevron-left" iconSize="16" />
+                            </graphic>
+                        </Button>
+                        <Label fx:id="currentMonthLabel" styleClass="card-title" text="January 2025" />
+                        <Button onAction="#handleNextMonth" styleClass="btn-secondary">
+                            <graphic>
+                                <FontIcon iconLiteral="fth-chevron-right" iconSize="16" />
+                            </graphic>
+                        </Button>
+                    </HBox>
                 </HBox>
 
                 <GridPane hgap="6" styleClass="planning-week-header-grid">
@@ -223,6 +241,11 @@
                             <!-- INPUT BAR -->
                             <HBox alignment="CENTER_LEFT" spacing="10" styleClass="chat-input-bar">
                                 <TextField fx:id="assistantInputField" promptText="Type a command... (e.g. Add math session tomorrow at 14:00)" styleClass="chat-input" HBox.hgrow="ALWAYS" />
+                                <Button fx:id="assistantMicButton" onAction="#handleAssistantVoiceInput" styleClass="chat-send-btn">
+                                    <graphic>
+                                        <FontIcon iconColor="white" iconLiteral="fth-mic" iconSize="14" />
+                                    </graphic>
+                                </Button>
                                 <Button onAction="#handleAssistantSend" styleClass="chat-send-btn">
                                     <graphic>
                                         <FontIcon iconColor="white" iconLiteral="fth-send" iconSize="14" />
@@ -234,6 +257,87 @@
 
                     </VBox>
         </HBox>
+
+        <VBox fx:id="smartPlanPage" fillWidth="true" managed="false" maxWidth="980" spacing="0" styleClass="card" visible="false">
+            <HBox alignment="CENTER_LEFT" spacing="12" styleClass="card-header">
+                <StackPane prefHeight="36" prefWidth="36" styleClass="stat-icon-box, accent">
+                    <FontIcon iconLiteral="fth-cpu" iconSize="16" />
+                </StackPane>
+                <VBox spacing="2" HBox.hgrow="ALWAYS">
+                    <Label styleClass="card-title" text="Smart Plan" />
+                    <Label styleClass="text-small" text="Choose a period, optionally add bids, preview generated sessions, then validate" />
+                </VBox>
+            </HBox>
+
+            <VBox spacing="16" styleClass="card-body">
+                <Label fx:id="smartPlanStatusLabel" styleClass="text-muted" text="Choose the smart plan period first." wrapText="true" />
+
+                <VBox spacing="12" styleClass="card">
+                    <HBox alignment="CENTER_LEFT" spacing="8" styleClass="card-header">
+                        <FontIcon iconLiteral="fth-calendar" iconSize="14" />
+                        <Label styleClass="card-title" text="Planning Period" />
+                    </HBox>
+                    <GridPane hgap="12" vgap="12">
+                        <columnConstraints>
+                            <ColumnConstraints percentWidth="50.0" />
+                            <ColumnConstraints percentWidth="50.0" />
+                        </columnConstraints>
+                        <VBox spacing="6" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                            <Label styleClass="text-body" text="Start date" />
+                            <DatePicker fx:id="smartPlanStartDatePicker" editable="false" maxWidth="1.7976931348623157E308" promptText="Select start date" />
+                        </VBox>
+                        <VBox spacing="6" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                            <Label styleClass="text-body" text="End date" />
+                            <DatePicker fx:id="smartPlanEndDatePicker" editable="false" maxWidth="1.7976931348623157E308" promptText="Select end date" />
+                        </VBox>
+                    </GridPane>
+                </VBox>
+
+                <VBox spacing="12" styleClass="card">
+                    <HBox alignment="CENTER_LEFT" spacing="8" styleClass="card-header">
+                        <FontIcon iconLiteral="fth-edit-3" iconSize="14" />
+                        <Label styleClass="card-title" text="Student Bid" />
+                    </HBox>
+                    <VBox spacing="10">
+                        <HBox alignment="CENTER_LEFT" spacing="10">
+                            <ComboBox fx:id="smartPlanBidTypeComboBox" maxWidth="180" promptText="Bid type" />
+                            <TextField fx:id="smartPlanBidInputField" promptText="Example: Math exam, specific Java session, day off..." HBox.hgrow="ALWAYS" />
+                        </HBox>
+                        <HBox alignment="CENTER_LEFT" spacing="10">
+                            <DatePicker fx:id="smartPlanBidDatePicker" editable="false" maxWidth="180" promptText="Bid date" />
+                            <ComboBox fx:id="smartPlanBidStartTimeComboBox" maxWidth="140" promptText="Start time" />
+                            <ComboBox fx:id="smartPlanBidEndTimeComboBox" maxWidth="140" promptText="End time" />
+                            <Button onAction="#handleAddSmartPlanBid" styleClass="btn-secondary" text="Add Bid" />
+                        </HBox>
+                    </VBox>
+                    <Label styleClass="text-small" text="If you do not add a bid, Smart Plan will generate sessions automatically from its calculation." wrapText="true" />
+                </VBox>
+
+                <HBox spacing="14" VBox.vgrow="ALWAYS">
+                    <VBox spacing="10" styleClass="card" HBox.hgrow="ALWAYS">
+                        <HBox alignment="CENTER_LEFT" spacing="8" styleClass="card-header">
+                            <FontIcon iconLiteral="fth-file-text" iconSize="14" />
+                            <Label styleClass="card-title" text="Bids To Consider" />
+                        </HBox>
+                        <ListView fx:id="smartPlanBidListView" minHeight="200" styleClass="sessions-list-view planning-list-view" VBox.vgrow="ALWAYS" />
+                    </VBox>
+
+                    <VBox spacing="10" styleClass="card" HBox.hgrow="ALWAYS">
+                        <HBox alignment="CENTER_LEFT" spacing="8" styleClass="card-header">
+                            <FontIcon iconLiteral="fth-check-square" iconSize="14" />
+                            <Label styleClass="card-title" text="Generated Sessions To Validate" />
+                        </HBox>
+                        <ListView fx:id="smartPlanPreviewListView" minHeight="200" styleClass="sessions-list-view planning-list-view" VBox.vgrow="ALWAYS" />
+                    </VBox>
+                </HBox>
+
+                <HBox alignment="CENTER_RIGHT" spacing="10">
+                    <Button onAction="#handleBackFromSmartPlan" styleClass="btn-secondary" text="Back" />
+                    <Button onAction="#handleGenerateSmartPlanPreview" styleClass="btn-secondary" text="Generate Planning" />
+                    <Button fx:id="smartPlanValidateButton" disable="true" onAction="#handleValidateSmartPlan" styleClass="btn-primary" text="Validate Planning" />
+                </HBox>
+            </VBox>
+        </VBox>
 
         <VBox fx:id="planningFormPage" fillWidth="true" managed="false" maxWidth="860" spacing="0" styleClass="card" visible="false">
             <HBox alignment="CENTER_LEFT" spacing="12" styleClass="card-header">

@@ -1155,4 +1155,37 @@
     -fx-border-radius: 8;
 }
 
+.planning-game-kpi-card {
+    -fx-background-color: linear-gradient(to bottom right, #ffffff, #f8fafc);
+    -fx-border-color: #d6dfeb;
+}
+
+.planning-game-main-value {
+    -fx-text-fill: #0f172a;
+}
+
+.planning-game-card {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #dbe5f0;
+}
+
+.planning-game-mission-title {
+    -fx-text-fill: #0f172a;
+}
+
+.planning-game-mission-status {
+    -fx-text-fill: #6d28d9;
+}
+
+.planning-game-mission-item {
+    -fx-background-color: #f8fafc;
+    -fx-background-radius: 10;
+    -fx-border-color: #d8e2ef;
+    -fx-border-radius: 10;
+    -fx-text-fill: #1e293b;
+    -fx-font-size: 13px;
+    -fx-font-weight: 700;
+    -fx-padding: 10 12;
+}
+
 
