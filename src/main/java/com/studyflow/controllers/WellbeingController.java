@@ -1,5 +1,6 @@
 package com.studyflow.controllers;
 
+import com.github.sarxos.webcam.Webcam;
 import com.studyflow.models.CopingSession;
 import com.studyflow.models.User;
 import com.studyflow.models.WellBeing;
@@ -7,6 +8,8 @@ import com.studyflow.models.QuestionStress;
 import com.studyflow.models.QuizStress;
 import com.studyflow.models.RecommendationStress;
 import com.studyflow.models.WellbeingJournalEntry;
+import com.studyflow.services.GroqMoodService;
+import com.studyflow.services.MoodCameraAnalysisService;
 import com.studyflow.services.ServiceCopingSession;
 import com.studyflow.services.ServiceQuestionStress;
 import com.studyflow.services.ServiceQuizStress;
@@ -15,13 +18,13 @@ import com.studyflow.services.ServiceWellBeing;
 import com.studyflow.services.ServiceWellbeingJournalEntry;
 import com.studyflow.services.SpeechToTextService;
 import com.studyflow.services.WellbeingAiService;
-import com.studyflow.services.WindowsSpeechRecognitionService;
 import com.studyflow.utils.UserSession;
 import com.studyflow.utils.EmojiUtils;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
+import javafx.embed.swing.SwingFXUtils;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
@@ -72,16 +75,22 @@ import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.DataLine;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.TargetDataLine;
+import javax.imageio.ImageIO;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.awt.Dimension;
+import java.awt.image.BufferedImage;
 import java.net.URL;
 import java.time.LocalDateTime;
 import java.time.Duration;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Deque;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -90,6 +99,8 @@ import java.util.ResourceBundle;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Set;
+import java.util.Base64;
+import java.util.Collections;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -176,6 +187,7 @@ public class WellbeingController implements Initializable {
     @FXML private Label notesErrorLabel;
     @FXML private ComboBox<String> quoteTypeCombo;
     @FXML private CheckBox quoteEnabledToggle;
+    @FXML private Label cameraMoodResultLabel;
     private final ServiceWellBeing serviceWellBeing = new ServiceWellBeing();
     private final ServiceCopingSession serviceCopingSession = new ServiceCopingSession();
     private final ServiceWellbeingJournalEntry serviceJournalEntry = new ServiceWellbeingJournalEntry();
@@ -183,8 +195,9 @@ public class WellbeingController implements Initializable {
     private final ServiceQuizStress serviceQuizStress = new ServiceQuizStress();
     private final ServiceRecommendationStress serviceRecommendationStress = new ServiceRecommendationStress();
     private final SpeechToTextService speechToTextService = new SpeechToTextService();
-    private final WindowsSpeechRecognitionService windowsSpeechRecognitionService = new WindowsSpeechRecognitionService();
     private final WellbeingAiService wellbeingAiService = new WellbeingAiService();
+    private final GroqMoodService groqMoodService = new GroqMoodService();
+    private final MoodCameraAnalysisService moodCameraAnalysisService = new MoodCameraAnalysisService();
     private final ObservableList<WellBeing> allCheckins = FXCollections.observableArrayList();
     private final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("MMM d, yyyy");
     private WellBeing editingItem;
@@ -200,15 +213,27 @@ public class WellbeingController implements Initializable {
     private static final int QUIZ_AI_QUESTION_COUNT = 10;
     private static final int MIN_NOTE_LENGTH = 6;
     private static final int MAX_NOTE_LENGTH = 1000;
+    private static final int GLOBAL_MESSAGE_HIDE_SECONDS = 5;
+    private static final double VOICE_SILENCE_AVG_THRESHOLD = 85.0;
+    private static final int VOICE_SILENCE_PEAK_THRESHOLD = 650;
     private static final String PREF_QUOTE_TYPE = "global.quote.type";
     private static final String PREF_QUOTE_ENABLED = "global.quote.enabled";
     private static final String PREF_QUOTE_DISMISSED_UNTIL = "global.quote.dismissed.until";
+    private static final String PREF_QUOTE_POS_X = "global.quote.position.x";
+    private static final String PREF_QUOTE_POS_Y = "global.quote.position.y";
     private static final int MOOD_EMOJI_SIZE = 56;
     private static final int MOOD_EMOJI_FALLBACK_FONT_SIZE = 50;
+    private static final int MOOD_CAMERA_SAMPLE_COUNT = 3;
+    private static final double MOOD_CAMERA_MIN_CONFIDENCE_TO_SAVE = 0.45;
     private final Preferences preferences = Preferences.userNodeForPackage(MainController.class);
     private Runnable activeInlineToolCloser;
+    private Timeline globalMessageTimer;
     private String journalAutoCandidateCode = "";
     private int journalAutoCandidateHits = 0;
+    private final AtomicBoolean moodDetectionInProgress = new AtomicBoolean(false);
+    private final AtomicBoolean moodCameraRunning = new AtomicBoolean(false);
+    private Webcam activeMoodWebcam;
+    private Thread activeMoodCameraThread;
     private record CopingToolDef(String key, String title, String durationLabel, int durationSeconds, String description) {}
     private record MoodEntry(String day, String mood, String icon, String color) {}
     private record HabitData(String name, String icon, String color, boolean[] weekProgress) {}
@@ -225,6 +250,8 @@ public class WellbeingController implements Initializable {
             setupQuoteControls();
             loadData();
             showOverviewMode();
+            syncCameraMoodLabelFromSession();
+            tryDetectMoodFromFaceIdSnapshot();
         } catch (Exception e) {
             allCheckins.clear();
             showOverviewMode();
@@ -247,6 +274,8 @@ public class WellbeingController implements Initializable {
         };
         quoteTypeCombo.setValue(selected);
         quoteEnabledToggle.setSelected(preferences.getBoolean(PREF_QUOTE_ENABLED, true));
+        quoteEnabledToggle.selectedProperty().addListener((obs, wasSelected, isSelected) ->
+                preferences.putBoolean(PREF_QUOTE_ENABLED, isSelected));
     }
 
     @FXML
@@ -262,6 +291,14 @@ public class WellbeingController implements Initializable {
         preferences.putBoolean(PREF_QUOTE_ENABLED, quoteEnabledToggle.isSelected());
         preferences.putLong(PREF_QUOTE_DISMISSED_UNTIL, 0L);
         showGlobalMessage("Quote settings updated.", false);
+    }
+
+    @FXML
+    private void handleResetQuotePosition() {
+        preferences.remove(PREF_QUOTE_POS_X);
+        preferences.remove(PREF_QUOTE_POS_Y);
+        preferences.putLong(PREF_QUOTE_DISMISSED_UNTIL, 0L);
+        showGlobalMessage("Quote position reset.", false);
     }
 
     private void setupFilters() {
@@ -295,13 +332,18 @@ public class WellbeingController implements Initializable {
     }
 
     private void setupForm() {
+        if (stressSlider == null || energySlider == null || stressValueLabel == null || energyValueLabel == null) {
+            return;
+        }
         stressSlider.valueProperty().addListener((obs, oldVal, newVal) -> stressValueLabel.setText(String.valueOf(newVal.intValue())));
         energySlider.valueProperty().addListener((obs, oldVal, newVal) -> energyValueLabel.setText(String.valueOf(newVal.intValue())));
         stressValueLabel.setText(String.valueOf((int) stressSlider.getValue()));
         energyValueLabel.setText(String.valueOf((int) energySlider.getValue()));
         configureMoodButtons();
-        cancelEditButton.setVisible(false);
-        cancelEditButton.setManaged(false);
+        if (cancelEditButton != null) {
+            cancelEditButton.setVisible(false);
+            cancelEditButton.setManaged(false);
+        }
         updateChoiceSelection(moodButtonsBox, selectedMood);
         updateChoiceSelection(sleepButtonsBox, String.valueOf((int) selectedSleepHours));
     }
@@ -343,12 +385,22 @@ public class WellbeingController implements Initializable {
         Integer currentUserId = getCurrentUserId();
         if (currentUserId == null || currentUserId <= 0) {
             allCheckins.clear();
+            refreshOverview();
+            refreshHistoryTable();
             showError("Please log in with a valid account to access your wellbeing data.");
             return;
         }
-        allCheckins.setAll(serviceWellBeing.findAllForUser(currentUserId));
-        refreshOverview();
-        refreshHistoryTable();
+        try {
+            allCheckins.setAll(serviceWellBeing.findAllForUser(currentUserId));
+            refreshOverview();
+            refreshHistoryTable();
+        } catch (RuntimeException e) {
+            allCheckins.clear();
+            refreshOverview();
+            refreshHistoryTable();
+            String message = e.getMessage() == null ? "Unable to load wellbeing data." : e.getMessage();
+            showError(message);
+        }
     }
 
     private void refreshOverview() {
@@ -657,6 +709,7 @@ public class WellbeingController implements Initializable {
         return switch (key) {
             case "breathing_exercise" -> "fth-activity";
             case "gratitude_journal" -> "fth-book-open";
+            case "mood_camera" -> "fth-video";
             case "nature_sounds", "yoga_coach" -> "fth-moon";
             default -> "fth-cpu";
         };
@@ -677,13 +730,15 @@ public class WellbeingController implements Initializable {
         return List.of(
                 new CopingToolDef("breathing_exercise", "Breathing Exercise", "3 min", 180, "4-7-8 breathing technique for quick relaxation"),
                 new CopingToolDef("gratitude_journal", "Gratitude Journal", "2 min", 120, "Write three things you're grateful for"),
+                new CopingToolDef("mood_camera", "Mood Camera", "Anytime", 120, "Use webcam + Groq Vision to detect your current mood"),
                 new CopingToolDef("nature_sounds", "Nature Sounds", "Ongoing", 300, "Relaxing ambient sounds for focus"),
                 new CopingToolDef("yoga_coach", "Yoga Coach", "6 min", 360, "Stress-relief yoga with dynamic demo"),
-                new CopingToolDef("ai_chat_coach", "AI Chat Coach", "Anytime", 300, "Talk with AI for motivation and practical advice")
+                new CopingToolDef("ai_chat_coach", "AI Chat Assistant", "Anytime", 300, "Talk with AI for general questions, study help, and wellbeing")
         );
     }
 
     private void openCopingTool(CopingToolDef tool) {
+        stopActiveMoodCamera();
         Integer userId = getCurrentUserId();
         if (userId == null || userId <= 0) {
             showError("Please log in with a valid account to start coping tools.");
@@ -703,8 +758,26 @@ public class WellbeingController implements Initializable {
             case "yoga_coach" -> openYogaTool(session);
             case "ai_chat_coach" -> openAiChatTool(session);
             case "nature_sounds" -> openNatureSoundsSpotifyTool(session);
+            case "mood_camera" -> openMoodCameraTool(session);
             default -> openBreathingTool(session);
         }
+    }
+
+    @FXML
+    private void handleOpenMoodCameraTool() {
+        Integer userId = getCurrentUserId();
+        if (userId == null || userId <= 0) {
+            showError("Please log in with a valid account to start coping tools.");
+            return;
+        }
+        final CopingSession session;
+        try {
+            session = serviceCopingSession.startSession(userId, "mood_camera", "Mood Camera", 120);
+        } catch (RuntimeException e) {
+            showError(e.getMessage());
+            return;
+        }
+        openMoodCameraTool(session);
     }
 
     private Stage createToolStage(String title, Pane body, int width, int height) {
@@ -724,6 +797,14 @@ public class WellbeingController implements Initializable {
     private void showInlineTool(String title, Node content, Runnable closer) {
         if (inlineToolSection == null || inlineToolHost == null || inlineToolTitleLabel == null) {
             return;
+        }
+        if (activeInlineToolCloser != null) {
+            try {
+                activeInlineToolCloser.run();
+            } catch (Exception ignored) {
+            } finally {
+                activeInlineToolCloser = null;
+            }
         }
         activeInlineToolCloser = closer;
         inlineToolTitleLabel.setText(title);
@@ -746,6 +827,7 @@ public class WellbeingController implements Initializable {
 
     @FXML
     private void handleCloseInlineTool() {
+        stopActiveMoodCamera();
         if (activeInlineToolCloser != null) {
             activeInlineToolCloser.run();
             activeInlineToolCloser = null;
@@ -849,6 +931,655 @@ public class WellbeingController implements Initializable {
         });
         stage.setOnCloseRequest(e -> closer.run());
         stage.show();
+    }
+
+    private void openMoodCameraTool(CopingSession session) {
+        VBox root = new VBox(12);
+        root.setPadding(new Insets(16));
+        root.setStyle("-fx-background-color: #0F172A;");
+
+        Label title = new Label("Mood Camera");
+        title.setStyle("-fx-text-fill: #E2E8F0; -fx-font-size: 22px; -fx-font-weight: 800;");
+
+        Label hint = new Label("Start camera, then click Capture & Analyze.");
+        hint.setStyle("-fx-text-fill: #94A3B8; -fx-font-size: 12px;");
+
+        Label statusLabel = new Label("Ready.");
+        statusLabel.setStyle("-fx-text-fill: #C4B5FD; -fx-font-size: 12px; -fx-font-weight: 700;");
+
+        Label resultLabel = new Label("Detected mood: -");
+        resultLabel.setWrapText(true);
+        resultLabel.setStyle("-fx-text-fill: #E2E8F0; -fx-font-size: 13px; -fx-font-weight: 700;");
+
+        Label recommendationsTitle = new Label("Recommendations");
+        recommendationsTitle.setStyle("-fx-text-fill: #E2E8F0; -fx-font-size: 15px; -fx-font-weight: 800;");
+        recommendationsTitle.setVisible(false);
+        recommendationsTitle.setManaged(false);
+
+        VBox recommendationsBox = new VBox(8);
+        recommendationsBox.setVisible(false);
+        recommendationsBox.setManaged(false);
+
+        Label suggestedToolsTitle = new Label("Suggested Coping Tools");
+        suggestedToolsTitle.setStyle("-fx-text-fill: #E2E8F0; -fx-font-size: 15px; -fx-font-weight: 800;");
+        suggestedToolsTitle.setVisible(false);
+        suggestedToolsTitle.setManaged(false);
+
+        FlowPane suggestedToolsPane = new FlowPane(10, 10);
+        suggestedToolsPane.setVisible(false);
+        suggestedToolsPane.setManaged(false);
+
+        Label envHint = new Label(
+                groqMoodService.isConfigured()
+                        ? "Groq API configured."
+                        : "Groq API missing. Set GROQ_API_KEY to enable detection."
+        );
+        envHint.setStyle("-fx-text-fill: " + (groqMoodService.isConfigured() ? "#34D399" : "#FCA5A5") + "; -fx-font-size: 11px;");
+
+        ImageView preview = new ImageView();
+        preview.setFitWidth(760);
+        preview.setFitHeight(430);
+        preview.setPreserveRatio(true);
+        preview.setSmooth(true);
+        preview.setStyle("-fx-background-color: #000000; -fx-border-color: #334155; -fx-border-radius: 12; -fx-background-radius: 12;");
+        StackPane previewBox = new StackPane(preview);
+        previewBox.setPrefHeight(430);
+        previewBox.setStyle("-fx-background-color: #020617; -fx-border-color: #334155; -fx-border-radius: 12; -fx-background-radius: 12;");
+
+        final BufferedImage[] lastFrame = new BufferedImage[1];
+        final Deque<BufferedImage> recentFrames = new ArrayDeque<>();
+
+        Button startCameraBtn = new Button("Start Camera");
+        startCameraBtn.getStyleClass().add("btn-primary");
+        Button stopCameraBtn = new Button("Stop Camera");
+        stopCameraBtn.getStyleClass().add("btn-danger");
+        stopCameraBtn.setDisable(true);
+        Button captureBtn = new Button("Capture & Analyze");
+        captureBtn.getStyleClass().add("btn-secondary");
+        captureBtn.setDisable(true);
+
+        startCameraBtn.setOnAction(event -> {
+            if (moodCameraRunning.get()) {
+                return;
+            }
+            statusLabel.setText("Starting camera...");
+            try {
+                stopActiveMoodCamera();
+                forceReleaseWebcamDevices();
+                Webcam webcam = Webcam.getDefault();
+                if (webcam == null) {
+                    statusLabel.setText("No webcam detected on this machine.");
+                    return;
+                }
+                if (webcam.isOpen()) {
+                    webcam.close();
+                }
+                webcam.setViewSize(new Dimension(640, 480));
+                webcam.open(true);
+
+                activeMoodWebcam = webcam;
+                moodCameraRunning.set(true);
+                startCameraBtn.setDisable(true);
+                stopCameraBtn.setDisable(false);
+                captureBtn.setDisable(false);
+                statusLabel.setText("Camera started.");
+
+                activeMoodCameraThread = new Thread(() -> {
+                    while (moodCameraRunning.get()) {
+                        try {
+                            BufferedImage frame = webcam.getImage();
+                            if (frame != null) {
+                                lastFrame[0] = frame;
+                                synchronized (recentFrames) {
+                                    recentFrames.addLast(frame);
+                                    while (recentFrames.size() > 8) {
+                                        recentFrames.removeFirst();
+                                    }
+                                }
+                                javafx.scene.image.Image fxImage = SwingFXUtils.toFXImage(frame, null);
+                                Platform.runLater(() -> preview.setImage(fxImage));
+                            }
+                            Thread.sleep(120);
+                        } catch (InterruptedException interruptedException) {
+                            Thread.currentThread().interrupt();
+                            break;
+                        } catch (Exception ignored) {
+                        }
+                    }
+                }, "native-mood-camera-preview");
+                activeMoodCameraThread.setDaemon(true);
+                activeMoodCameraThread.start();
+            } catch (Exception ex) {
+                statusLabel.setText("Camera start failed: " + ex.getMessage());
+            }
+        });
+
+        stopCameraBtn.setOnAction(event -> {
+            stopActiveMoodCamera();
+            captureBtn.setDisable(true);
+            stopCameraBtn.setDisable(true);
+            startCameraBtn.setDisable(false);
+            statusLabel.setText("Camera stopped.");
+        });
+
+        captureBtn.setOnAction(event -> {
+            BufferedImage frame = lastFrame[0];
+            if (frame == null) {
+                statusLabel.setText("No frame captured yet.");
+                return;
+            }
+            try {
+                List<BufferedImage> snapshotFrames;
+                synchronized (recentFrames) {
+                    snapshotFrames = new ArrayList<>(recentFrames);
+                }
+                if (snapshotFrames.isEmpty()) {
+                    snapshotFrames = List.of(frame);
+                }
+                List<String> samples = buildDetectionSamples(snapshotFrames, MOOD_CAMERA_SAMPLE_COUNT);
+                detectMoodFromImageData(
+                        samples,
+                        statusLabel,
+                        resultLabel,
+                        recommendationsTitle,
+                        recommendationsBox,
+                        suggestedToolsTitle,
+                        suggestedToolsPane,
+                        "Camera",
+                        session.getId()
+                );
+            } catch (Exception ex) {
+                statusLabel.setText("Capture failed: " + ex.getMessage());
+            }
+        });
+
+        Button closeBtn = new Button("Back to Coping Tools");
+        closeBtn.getStyleClass().add("btn-secondary");
+        closeBtn.setOnAction(e -> handleCloseInlineTool());
+
+        HBox controls = new HBox(10, startCameraBtn, stopCameraBtn, captureBtn, new Region(), closeBtn);
+        HBox.setHgrow(controls.getChildren().get(3), Priority.ALWAYS);
+        root.getChildren().addAll(
+                title,
+                hint,
+                envHint,
+                previewBox,
+                statusLabel,
+                resultLabel,
+                recommendationsTitle,
+                recommendationsBox,
+                suggestedToolsTitle,
+                suggestedToolsPane,
+                controls
+        );
+        Runnable closer = () -> {
+            try {
+                stopActiveMoodCamera();
+                Integer userId = getCurrentUserId();
+                serviceCopingSession.finishSession(session.getId(), userId, "finished", 120);
+            } catch (RuntimeException ignored) {
+            } catch (Exception ignored) {
+            }
+        };
+        showInlineTool("Mood Camera", root, closer);
+    }
+
+    private void stopActiveMoodCamera() {
+        moodCameraRunning.set(false);
+        try {
+            if (activeMoodCameraThread != null) {
+                activeMoodCameraThread.interrupt();
+                activeMoodCameraThread = null;
+            }
+        } catch (Exception ignored) {
+        }
+        try {
+            if (activeMoodWebcam != null && activeMoodWebcam.isOpen()) {
+                activeMoodWebcam.close();
+            }
+        } catch (Exception ignored) {
+        } finally {
+            activeMoodWebcam = null;
+        }
+        forceReleaseWebcamDevices();
+    }
+
+    private void forceReleaseWebcamDevices() {
+        try {
+            for (Webcam webcam : Webcam.getWebcams()) {
+                if (webcam == null) {
+                    continue;
+                }
+                try {
+                    if (webcam.isOpen()) {
+                        webcam.close();
+                    }
+                } catch (Exception ignored) {
+                }
+            }
+        } catch (Exception ignored) {
+        }
+    }
+
+    private String bufferedImageToDataUrl(BufferedImage image) {
+        try {
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            ImageIO.write(image, "jpg", out);
+            String base64 = Base64.getEncoder().encodeToString(out.toByteArray());
+            return "data:image/jpeg;base64," + base64;
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to encode camera frame.", e);
+        }
+    }
+
+    private void detectMoodFromImageData(
+            List<String> dataUrls,
+            Label statusLabel,
+            Label resultLabel,
+            Label recommendationsTitle,
+            VBox recommendationsBox,
+            Label suggestedToolsTitle,
+            FlowPane suggestedToolsPane,
+            String sourceLabel,
+            Integer copingSessionId
+    ) {
+        if (dataUrls == null || dataUrls.isEmpty()) {
+            showError("No camera frame captured.");
+            return;
+        }
+        if (!groqMoodService.isConfigured()) {
+            showError("Missing GROQ_API_KEY. Add it to environment variables.");
+            return;
+        }
+        if (!moodDetectionInProgress.compareAndSet(false, true)) {
+            statusLabel.setText("Analysis already in progress...");
+            return;
+        }
+
+        statusLabel.setText("Analyzing mood with Groq (" + dataUrls.size() + " samples)...");
+        Thread worker = new Thread(() -> {
+            try {
+                List<GroqMoodService.MoodDetectionResult> rawResults = new ArrayList<>();
+                for (String dataUrl : dataUrls) {
+                    if (dataUrl == null || dataUrl.isBlank()) {
+                        continue;
+                    }
+                    rawResults.add(groqMoodService.detectMoodFromDataUrl(dataUrl));
+                }
+                if (rawResults.isEmpty()) {
+                    throw new RuntimeException("No valid mood analysis result.");
+                }
+                GroqMoodService.MoodDetectionResult result = aggregateMoodResults(rawResults);
+                String voteBreakdown = buildVoteBreakdown(rawResults);
+                Integer checkinId = tryAutoSaveMoodCheckin(result, sourceLabel, rawResults.size());
+                trySaveMoodAnalysis(result, sourceLabel, rawResults.size(), voteBreakdown, copingSessionId, checkinId);
+
+                Platform.runLater(() -> {
+                    selectedMood = result.mood();
+                    updateChoiceSelection(moodButtonsBox, selectedMood);
+                    UserSession.getInstance().setLastDetectedMood(result.mood(), result.confidence());
+                    syncCameraMoodLabelFromSession();
+                    resultLabel.setText(
+                            "Detected mood: " + capitalize(result.mood())
+                                    + " (" + Math.round(result.confidence() * 100) + "%)"
+                                    + " - " + result.reason()
+                    );
+                    if (checkinId != null && checkinId > 0) {
+                        statusLabel.setText("Mood detection complete. Saved to database.");
+                        showGlobalMessage(sourceLabel + " mood detected and saved: " + capitalize(result.mood()), false);
+                        loadData();
+                    } else {
+                        statusLabel.setText("Mood detected, but confidence too low to auto-save.");
+                        showGlobalMessage(sourceLabel + " mood detected: " + capitalize(result.mood()) + " (low confidence)", false);
+                    }
+                    renderMoodDetectionRecommendations(
+                            result,
+                            recommendationsTitle,
+                            recommendationsBox,
+                            suggestedToolsTitle,
+                            suggestedToolsPane
+                    );
+                });
+            } catch (Exception ex) {
+                Platform.runLater(() -> {
+                    statusLabel.setText("Detection failed.");
+                    showError(ex.getMessage() == null ? "Groq mood detection failed." : ex.getMessage());
+                });
+            } finally {
+                moodDetectionInProgress.set(false);
+            }
+        }, "groq-mood-detector");
+        worker.setDaemon(true);
+        worker.start();
+    }
+
+    private void renderMoodDetectionRecommendations(
+            GroqMoodService.MoodDetectionResult result,
+            Label recommendationsTitle,
+            VBox recommendationsBox,
+            Label suggestedToolsTitle,
+            FlowPane suggestedToolsPane
+    ) {
+        if (result == null || recommendationsBox == null || suggestedToolsPane == null) {
+            return;
+        }
+
+        recommendationsBox.getChildren().clear();
+        String level = mapMoodToStressLevel(result.mood());
+        List<RecommendationStress> recommendations = serviceRecommendationStress.findByLevel(level);
+        if (recommendations == null) {
+            recommendations = List.of();
+        }
+
+        List<RecommendationStress> selected = recommendations.stream()
+                .filter(RecommendationStress::isActive)
+                .limit(3)
+                .collect(Collectors.toList());
+
+        if (selected.isEmpty()) {
+            List<WellbeingAiService.RecommendationItem> generated = wellbeingAiService.generateRecommendations(
+                    inferStressFromMood(result.mood()),
+                    result.mood(),
+                    List.of("camera-detection", "confidence:" + Math.round(result.confidence() * 100) + "%")
+            );
+            for (WellbeingAiService.RecommendationItem item : generated.stream().limit(3).toList()) {
+                VBox card = new VBox(4);
+                card.setStyle("-fx-background-color: rgba(30,41,59,0.7); -fx-padding: 10; -fx-background-radius: 10; -fx-border-color: #334155; -fx-border-radius: 10;");
+                Label title = new Label(item.title());
+                title.setStyle("-fx-text-fill: #F8FAFC; -fx-font-size: 13px; -fx-font-weight: 700;");
+                Label content = new Label(item.description());
+                content.setWrapText(true);
+                content.setStyle("-fx-text-fill: #CBD5E1; -fx-font-size: 12px;");
+                card.getChildren().addAll(title, content);
+                recommendationsBox.getChildren().add(card);
+            }
+        } else {
+            for (RecommendationStress recommendation : selected) {
+                VBox card = new VBox(4);
+                card.setStyle("-fx-background-color: rgba(30,41,59,0.7); -fx-padding: 10; -fx-background-radius: 10; -fx-border-color: #334155; -fx-border-radius: 10;");
+                Label title = new Label(recommendation.getTitle());
+                title.setStyle("-fx-text-fill: #F8FAFC; -fx-font-size: 13px; -fx-font-weight: 700;");
+                Label content = new Label(recommendation.getContent());
+                content.setWrapText(true);
+                content.setStyle("-fx-text-fill: #CBD5E1; -fx-font-size: 12px;");
+                card.getChildren().addAll(title, content);
+                recommendationsBox.getChildren().add(card);
+            }
+        }
+
+        List<CopingToolDef> suggestedTools = suggestedToolsForMood(result.mood());
+        List<CopingToolDef> allTools = copingToolsCatalog();
+        LinkedHashMap<String, CopingToolDef> toolOrder = new LinkedHashMap<>();
+        for (CopingToolDef tool : suggestedTools) {
+            toolOrder.put(tool.key(), tool);
+        }
+        for (CopingToolDef tool : allTools) {
+            toolOrder.putIfAbsent(tool.key(), tool);
+        }
+        suggestedToolsPane.getChildren().clear();
+        for (CopingToolDef tool : toolOrder.values()) {
+            Button btn = new Button(tool.title());
+            btn.getStyleClass().add("btn-secondary");
+            btn.setOnAction(e -> openCopingTool(tool));
+            suggestedToolsPane.getChildren().add(btn);
+        }
+
+        if (recommendationsTitle != null) {
+            recommendationsTitle.setVisible(true);
+            recommendationsTitle.setManaged(true);
+        }
+        recommendationsBox.setVisible(true);
+        recommendationsBox.setManaged(true);
+        if (suggestedToolsTitle != null) {
+            suggestedToolsTitle.setVisible(true);
+            suggestedToolsTitle.setManaged(true);
+        }
+        suggestedToolsPane.setVisible(true);
+        suggestedToolsPane.setManaged(true);
+    }
+
+    private String mapMoodToStressLevel(String mood) {
+        return switch (mood == null ? "" : mood.toLowerCase(Locale.ROOT)) {
+            case "great" -> "minimal";
+            case "good" -> "mild";
+            case "okay" -> "mild";
+            case "stressed" -> "high";
+            case "tired" -> "moderate";
+            default -> "mild";
+        };
+    }
+
+    private List<CopingToolDef> suggestedToolsForMood(String mood) {
+        String key = mood == null ? "" : mood.toLowerCase(Locale.ROOT);
+        List<String> toolKeys = switch (key) {
+            case "stressed" -> List.of("breathing_exercise", "nature_sounds", "gratitude_journal", "yoga_coach", "ai_chat_coach");
+            case "tired" -> List.of("nature_sounds", "breathing_exercise", "gratitude_journal", "ai_chat_coach");
+            case "okay" -> List.of("gratitude_journal", "breathing_exercise", "ai_chat_coach");
+            case "good", "great" -> List.of("gratitude_journal", "yoga_coach", "ai_chat_coach");
+            default -> List.of("breathing_exercise", "gratitude_journal", "ai_chat_coach");
+        };
+        Map<String, CopingToolDef> byKey = copingToolsCatalog().stream()
+                .collect(Collectors.toMap(CopingToolDef::key, tool -> tool));
+        List<CopingToolDef> out = new ArrayList<>();
+        for (String toolKey : toolKeys) {
+            CopingToolDef tool = byKey.get(toolKey);
+            if (tool != null) {
+                out.add(tool);
+            }
+        }
+        return out;
+    }
+
+    private List<String> buildDetectionSamples(List<BufferedImage> frames, int sampleCount) {
+        if (frames == null || frames.isEmpty()) {
+            return List.of();
+        }
+        int count = Math.max(1, sampleCount);
+        if (frames.size() <= count) {
+            List<String> all = new ArrayList<>();
+            for (BufferedImage frame : frames) {
+                all.add(bufferedImageToDataUrl(frame));
+            }
+            return all;
+        }
+        List<String> out = new ArrayList<>();
+        int maxIndex = frames.size() - 1;
+        for (int i = 0; i < count; i++) {
+            int idx = (int) Math.round((i * 1.0 / (count - 1)) * maxIndex);
+            out.add(bufferedImageToDataUrl(frames.get(idx)));
+        }
+        return out;
+    }
+
+    private GroqMoodService.MoodDetectionResult aggregateMoodResults(List<GroqMoodService.MoodDetectionResult> results) {
+        Map<String, Integer> votes = new LinkedHashMap<>();
+        Map<String, Double> confidences = new LinkedHashMap<>();
+
+        for (GroqMoodService.MoodDetectionResult r : results) {
+            votes.merge(r.mood(), 1, Integer::sum);
+            confidences.merge(r.mood(), r.confidence(), Double::sum);
+        }
+
+        String winnerMood = null;
+        int bestVotes = -1;
+        double bestConfidenceSum = -1d;
+        for (Map.Entry<String, Integer> entry : votes.entrySet()) {
+            String mood = entry.getKey();
+            int voteCount = entry.getValue();
+            double confidenceSum = confidences.getOrDefault(mood, 0d);
+            if (voteCount > bestVotes || (voteCount == bestVotes && confidenceSum > bestConfidenceSum)) {
+                winnerMood = mood;
+                bestVotes = voteCount;
+                bestConfidenceSum = confidenceSum;
+            }
+        }
+
+        if (winnerMood == null) {
+            return results.get(0);
+        }
+
+        final String selectedWinnerMood = winnerMood;
+        List<GroqMoodService.MoodDetectionResult> winners = results.stream()
+                .filter(r -> selectedWinnerMood.equalsIgnoreCase(r.mood()))
+                .toList();
+        double avgConfidence = winners.stream().mapToDouble(GroqMoodService.MoodDetectionResult::confidence).average().orElse(0.5);
+        String reason = winners.stream()
+                .max(Comparator.comparingDouble(GroqMoodService.MoodDetectionResult::confidence))
+                .map(GroqMoodService.MoodDetectionResult::reason)
+                .orElse("Detected from facial expression.");
+
+        return new GroqMoodService.MoodDetectionResult(selectedWinnerMood, avgConfidence, reason, "groq-ensemble");
+    }
+
+    private String buildVoteBreakdown(List<GroqMoodService.MoodDetectionResult> results) {
+        Map<String, Integer> counts = new LinkedHashMap<>();
+        for (GroqMoodService.MoodDetectionResult result : results) {
+            counts.merge(result.mood(), 1, Integer::sum);
+        }
+        List<String> parts = new ArrayList<>();
+        for (Map.Entry<String, Integer> entry : counts.entrySet()) {
+            parts.add(entry.getKey() + ":" + entry.getValue());
+        }
+        return String.join(", ", parts);
+    }
+
+    private Integer tryAutoSaveMoodCheckin(
+            GroqMoodService.MoodDetectionResult result,
+            String sourceLabel,
+            int sampleCount
+    ) {
+        if (result.confidence() < MOOD_CAMERA_MIN_CONFIDENCE_TO_SAVE) {
+            return null;
+        }
+        Integer userId = getCurrentUserId();
+        if (userId == null || userId <= 0) {
+            return null;
+        }
+
+        WellBeing item = new WellBeing();
+        item.setEntryDate(LocalDateTime.now());
+        item.setMood(result.mood());
+        item.setStressLevel(inferStressFromMood(result.mood()));
+        item.setEnergyLevel(inferEnergyFromMood(result.mood()));
+        item.setSleepHours(inferSleepFromMood(result.mood()));
+        item.setNote(buildMoodAnalysisNote(result, sourceLabel, sampleCount));
+        item.setCreatedAt(LocalDateTime.now());
+        item.setUserId(userId);
+        serviceWellBeing.add(item);
+        return item.getId();
+    }
+
+    private void trySaveMoodAnalysis(
+            GroqMoodService.MoodDetectionResult result,
+            String sourceLabel,
+            int sampleCount,
+            String voteBreakdown,
+            Integer copingSessionId,
+            Integer checkinId
+    ) {
+        try {
+            Integer userId = getCurrentUserId();
+            if (userId == null || userId <= 0) {
+                return;
+            }
+            moodCameraAnalysisService.addAnalysis(
+                    userId,
+                    copingSessionId,
+                    checkinId,
+                    result.mood(),
+                    result.confidence(),
+                    result.reason(),
+                    sourceLabel,
+                    sampleCount,
+                    voteBreakdown,
+                    groqMoodService.getModel()
+            );
+        } catch (RuntimeException ignored) {
+        }
+    }
+
+    private int inferStressFromMood(String mood) {
+        return switch (mood == null ? "" : mood.toLowerCase(Locale.ROOT)) {
+            case "great" -> 2;
+            case "good" -> 4;
+            case "okay" -> 5;
+            case "stressed" -> 8;
+            case "tired" -> 6;
+            default -> 5;
+        };
+    }
+
+    private int inferEnergyFromMood(String mood) {
+        return switch (mood == null ? "" : mood.toLowerCase(Locale.ROOT)) {
+            case "great" -> 9;
+            case "good" -> 7;
+            case "okay" -> 5;
+            case "stressed" -> 4;
+            case "tired" -> 3;
+            default -> 5;
+        };
+    }
+
+    private double inferSleepFromMood(String mood) {
+        return switch (mood == null ? "" : mood.toLowerCase(Locale.ROOT)) {
+            case "great" -> 8.0;
+            case "good" -> 7.5;
+            case "okay" -> 7.0;
+            case "stressed" -> 6.0;
+            case "tired" -> 5.5;
+            default -> 7.0;
+        };
+    }
+
+    private String buildMoodAnalysisNote(
+            GroqMoodService.MoodDetectionResult result,
+            String sourceLabel,
+            int sampleCount
+    ) {
+        return "Mood camera (" + sourceLabel + ") detected mood: "
+                + capitalize(result.mood())
+                + " | confidence: " + Math.round(result.confidence() * 100) + "%"
+                + " | samples: " + sampleCount
+                + " | reason: " + result.reason();
+    }
+
+    private void syncCameraMoodLabelFromSession() {
+        if (cameraMoodResultLabel == null) {
+            return;
+        }
+        String mood = UserSession.getInstance().getLastDetectedMood();
+        if (mood == null || mood.isBlank()) {
+            cameraMoodResultLabel.setText("No mood detected yet.");
+            return;
+        }
+        double confidence = UserSession.getInstance().getLastDetectedMoodConfidence();
+        cameraMoodResultLabel.setText(
+                "Last detected mood: " + capitalize(mood) + " (" + Math.round(confidence * 100) + "%)"
+        );
+    }
+
+    private void tryDetectMoodFromFaceIdSnapshot() {
+        UserSession session = UserSession.getInstance();
+        if (!session.isFaceIdLogin()) {
+            return;
+        }
+        String faceSnapshot = session.consumeFaceIdSnapshotDataUrl();
+        if (faceSnapshot == null || faceSnapshot.isBlank()) {
+            return;
+        }
+        Label statusLabel = new Label();
+        Label resultLabel = new Label();
+        detectMoodFromImageData(
+                List.of(faceSnapshot),
+                statusLabel,
+                resultLabel,
+                null,
+                null,
+                null,
+                null,
+                "Face ID",
+                null
+        );
     }
 
     private void openYogaTool(CopingSession session) {
@@ -1125,10 +1856,14 @@ public class WellbeingController implements Initializable {
         AtomicBoolean voiceRunning = new AtomicBoolean(false);
         Thread[] voiceThread = new Thread[1];
         AtomicReference<String> selectedVoiceLanguage = new AtomicReference<>("auto");
+        AtomicReference<String> autoDetectedVoiceLanguage = new AtomicReference<>("");
         selectedVoiceLanguage.set(mapJournalLanguageSelection(languageBox.getValue()));
-        languageBox.valueProperty().addListener((obs, oldValue, newValue) ->
-                selectedVoiceLanguage.set(mapJournalLanguageSelection(newValue))
-        );
+        languageBox.valueProperty().addListener((obs, oldValue, newValue) -> {
+            selectedVoiceLanguage.set(mapJournalLanguageSelection(newValue));
+            if (!"Auto (AI detect)".equals(newValue)) {
+                autoDetectedVoiceLanguage.set("");
+            }
+        });
 
         Runnable[] reload = new Runnable[1];
         reload[0] = () -> {
@@ -1220,20 +1955,18 @@ public class WellbeingController implements Initializable {
                 return;
             }
             boolean canUseApi = speechToTextService.isConfigured();
-            boolean canUseWindowsLocal = windowsSpeechRecognitionService.isSupported();
-            if (!canUseApi && !canUseWindowsLocal) {
-                statusLabel.setText("Voice input unavailable on this device.");
+            if (!canUseApi) {
+                statusLabel.setText("Voice input unavailable: configure OPENAI_API_KEY.");
                 return;
             }
             voiceRunning.set(true);
             journalAutoCandidateCode = "";
             journalAutoCandidateHits = 0;
+            autoDetectedVoiceLanguage.set("");
             startVoiceBtn.setDisable(true);
             stopVoiceBtn.setDisable(false);
             voiceStatusLabel.setText("Voice: listening...");
-            statusLabel.setText(canUseApi
-                    ? "Voice input started (AI transcription)."
-                    : "Voice input started (local Windows recognition).");
+            statusLabel.setText("Voice input started (AI transcription: " + speechToTextService.getConfiguredProviderLabel() + ").");
 
             voiceThread[0] = new Thread(() -> runJournalVoiceLoop(
                     voiceRunning,
@@ -1244,7 +1977,8 @@ public class WellbeingController implements Initializable {
                     stopVoiceBtn,
                     selectedVoiceLanguage,
                     usedVoiceForEntry,
-                    languageBox
+                    languageBox,
+                    autoDetectedVoiceLanguage
             ), "journal-voice-loop");
             voiceThread[0].setDaemon(true);
             voiceThread[0].start();
@@ -1263,7 +1997,7 @@ public class WellbeingController implements Initializable {
             try {
                 String languageCode = mapJournalLanguageSelection(languageBox.getValue());
                 if ("auto".equalsIgnoreCase(languageCode)) {
-                    languageCode = null;
+                    languageCode = normalizeLanguageCode(autoDetectedVoiceLanguage.get());
                 }
 
                 if (editingId[0] > 0) {
@@ -1373,18 +2107,24 @@ public class WellbeingController implements Initializable {
             Button stopVoiceBtn,
             AtomicReference<String> languageCodeRef,
             boolean[] usedVoiceForEntry,
-            ComboBox<String> languageBox
+            ComboBox<String> languageBox,
+            AtomicReference<String> autoDetectedLanguageRef
     ) {
         if (!speechToTextService.isConfigured()) {
-            runJournalLocalWindowsVoiceLoop(
-                    running, input, statusLabel, voiceStatusLabel, startVoiceBtn, stopVoiceBtn, languageCodeRef, usedVoiceForEntry, languageBox
-            );
+            Platform.runLater(() -> {
+                statusLabel.setText("Voice input unavailable: configure OPENAI_API_KEY.");
+                voiceStatusLabel.setText("Voice: unavailable");
+                startVoiceBtn.setDisable(false);
+                stopVoiceBtn.setDisable(true);
+            });
+            running.set(false);
             return;
         }
 
         AudioFormat format = new AudioFormat(16000f, 16, 1, true, false);
         DataLine.Info info = new DataLine.Info(TargetDataLine.class, format);
         TargetDataLine line = null;
+        int transcriptionFailureStreak = 0;
 
         try {
             if (!AudioSystem.isLineSupported(info)) {
@@ -1403,24 +2143,51 @@ public class WellbeingController implements Initializable {
             line.start();
 
             while (running.get()) {
-                byte[] wavChunk = captureWavChunk(line, format, 1900, running);
+                byte[] wavChunk = captureWavChunk(line, format, 3200, running);
                 if (!running.get()) {
                     break;
                 }
                 if (wavChunk.length < 3000) {
                     continue;
                 }
-
-                String transcript = speechToTextService.transcribeWav(wavChunk, languageCodeRef.get());
-                if (transcript == null || transcript.isBlank()) {
+                if (isLikelySilentWav(wavChunk)) {
+                    Platform.runLater(() -> voiceStatusLabel.setText("Voice: listening..."));
                     continue;
                 }
 
-                String clean = transcript.trim();
+                String selectedLanguageCode = languageCodeRef.get();
+                String sttLanguage = "auto".equalsIgnoreCase(selectedLanguageCode) ? null : selectedLanguageCode;
+                SpeechToTextService.TranscriptionResult result = speechToTextService.transcribeWavDetailed(wavChunk, sttLanguage);
+                if (result == null || result.text() == null || result.text().isBlank()) {
+                    transcriptionFailureStreak++;
+                    String detail = speechToTextService.getLastError();
+                    if (transcriptionFailureStreak >= 3) {
+                        Platform.runLater(() -> statusLabel.setText(
+                                detail == null || detail.isBlank()
+                                        ? "Voice captured but no text detected."
+                                        : "Transcription issue: " + detail
+                        ));
+                    }
+                    continue;
+                }
+                transcriptionFailureStreak = 0;
+
+                String clean = result.text().trim();
+                if (!isMeaningfulSpeechText(clean)) {
+                    continue;
+                }
+                String detectedLanguageCode = result.languageCode();
                 Platform.runLater(() -> {
                     appendTranscriptToInput(input, clean);
                     usedVoiceForEntry[0] = true;
-                    updateJournalAutoLanguage(languageBox, languageCodeRef, clean, input.getText(), statusLabel);
+                    updateJournalAutoLanguage(
+                            languageBox,
+                            clean,
+                            input.getText(),
+                            statusLabel,
+                            detectedLanguageCode,
+                            autoDetectedLanguageRef
+                    );
                     voiceStatusLabel.setText("Voice: writing...");
                 });
             }
@@ -1450,79 +2217,21 @@ public class WellbeingController implements Initializable {
         }
     }
 
-    private void runJournalLocalWindowsVoiceLoop(
-            AtomicBoolean running,
-            TextArea input,
-            Label statusLabel,
-            Label voiceStatusLabel,
-            Button startVoiceBtn,
-            Button stopVoiceBtn,
-            AtomicReference<String> languageCodeRef,
-            boolean[] usedVoiceForEntry,
-            ComboBox<String> languageBox
-    ) {
-        try {
-            while (running.get()) {
-                String transcript = windowsSpeechRecognitionService.recognizeOnce(languageCodeRef.get());
-                if (!running.get()) {
-                    break;
-                }
-                if (transcript == null || transcript.isBlank()) {
-                    try {
-                        Thread.sleep(220);
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        break;
-                    }
-                    continue;
-                }
-
-                String clean = transcript.trim();
-                Platform.runLater(() -> {
-                    appendTranscriptToInput(input, clean);
-                    usedVoiceForEntry[0] = true;
-                    updateJournalAutoLanguage(languageBox, languageCodeRef, clean, input.getText(), statusLabel);
-                    voiceStatusLabel.setText("Voice: writing...");
-                });
-            }
-        } catch (RuntimeException e) {
-            Platform.runLater(() -> {
-                statusLabel.setText("Voice input error.");
-                voiceStatusLabel.setText("Voice: error");
-            });
-        } finally {
-            running.set(false);
-            Platform.runLater(() -> {
-                startVoiceBtn.setDisable(false);
-                stopVoiceBtn.setDisable(true);
-                if (!"Voice: error".equals(voiceStatusLabel.getText())) {
-                    voiceStatusLabel.setText("Voice: idle");
-                }
-            });
-        }
-    }
-
     private byte[] captureWavChunk(TargetDataLine line, AudioFormat format, int millis, AtomicBoolean running) {
         ByteArrayOutputStream pcm = new ByteArrayOutputStream();
         byte[] buffer = new byte[4096];
-        long endTime = System.currentTimeMillis() + millis;
+        int frameSize = Math.max(1, format.getFrameSize());
+        int targetBytes = Math.max(frameSize * 32, (int) ((format.getSampleRate() * frameSize * millis) / 1000.0));
+        int totalRead = 0;
 
-        while (running.get() && System.currentTimeMillis() < endTime) {
-            int available = line.available();
-            if (available <= 0) {
-                try {
-                    Thread.sleep(20);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    break;
-                }
-                continue;
-            }
-
-            int toRead = Math.min(buffer.length, available);
+        while (running.get() && totalRead < targetBytes) {
+            int toRead = Math.min(buffer.length, targetBytes - totalRead);
             int read = line.read(buffer, 0, toRead);
             if (read > 0) {
                 pcm.write(buffer, 0, read);
+                totalRead += read;
+            } else if (read < 0) {
+                break;
             }
         }
 
@@ -1542,7 +2251,7 @@ public class WellbeingController implements Initializable {
     }
 
     private void appendTranscriptToInput(TextArea input, String transcript) {
-        if (transcript == null || transcript.isBlank()) {
+        if (!isMeaningfulSpeechText(transcript)) {
             return;
         }
         String existing = input.getText() == null ? "" : input.getText().trim();
@@ -1557,14 +2266,52 @@ public class WellbeingController implements Initializable {
         input.positionCaret(input.getText().length());
     }
 
+    private boolean isMeaningfulSpeechText(String text) {
+        if (text == null) {
+            return false;
+        }
+        String clean = text.trim();
+        if (clean.isBlank() || clean.length() < 2) {
+            return false;
+        }
+        return clean.chars().anyMatch(Character::isLetterOrDigit);
+    }
+
+    private boolean isLikelySilentWav(byte[] wavChunk) {
+        if (wavChunk == null || wavChunk.length < 46) {
+            return true;
+        }
+        int start = wavChunk.length > 44 ? 44 : 0;
+        long sumAbs = 0L;
+        int sampleCount = 0;
+        int peak = 0;
+
+        for (int i = start; i + 1 < wavChunk.length; i += 2) {
+            int sample = (short) (((wavChunk[i + 1] & 0xFF) << 8) | (wavChunk[i] & 0xFF));
+            int abs = Math.abs(sample);
+            sumAbs += abs;
+            sampleCount++;
+            if (abs > peak) {
+                peak = abs;
+            }
+        }
+
+        if (sampleCount == 0) {
+            return true;
+        }
+        double avg = sumAbs / (double) sampleCount;
+        return avg < VOICE_SILENCE_AVG_THRESHOLD && peak < VOICE_SILENCE_PEAK_THRESHOLD;
+    }
+
     private void updateJournalAutoLanguage(
             ComboBox<String> languageBox,
-            AtomicReference<String> languageCodeRef,
             String transcript,
             String fullInputText,
-            Label statusLabel
+            Label statusLabel,
+            String detectedLanguageCode,
+            AtomicReference<String> autoDetectedLanguageRef
     ) {
-        if (languageBox == null || languageCodeRef == null || transcript == null || transcript.isBlank()) {
+        if (languageBox == null || transcript == null || transcript.isBlank()) {
             return;
         }
         String selection = languageBox.getValue();
@@ -1573,8 +2320,14 @@ public class WellbeingController implements Initializable {
             return;
         }
 
-        String code = detectJournalSpeechLanguageCode(transcript, fullInputText);
-        String current = languageCodeRef.get() == null ? "en-US" : languageCodeRef.get();
+        String code = normalizeLanguageCode(detectedLanguageCode);
+        if (code == null) {
+            code = detectJournalSpeechLanguageCode(transcript, fullInputText);
+        }
+        String current = normalizeLanguageCode(autoDetectedLanguageRef == null ? null : autoDetectedLanguageRef.get());
+        if (current == null) {
+            current = "en-US";
+        }
         if (code == null || code.isBlank()) {
             statusLabel.setText("Voice segment captured.");
             return;
@@ -1593,11 +2346,84 @@ public class WellbeingController implements Initializable {
             return;
         }
 
-        languageCodeRef.set(code);
+        if (autoDetectedLanguageRef != null) {
+            autoDetectedLanguageRef.set(code);
+        }
         statusLabel.setText("Voice segment captured. Auto-detected: " + languageLabelFromCode(code) + " (" + code + ")");
     }
 
     private String detectJournalSpeechLanguageCode(String transcript, String fullInputText) {
+        String segment = normalizeLanguageHeuristicsText(transcript);
+        String full = normalizeLanguageHeuristicsText(limitText(fullInputText, 800));
+        String merged = (full + " " + segment).trim();
+        if (merged.isBlank()) {
+            return "en-US";
+        }
+
+        if (merged.matches(".*[\\u0600-\\u06FF].*")) {
+            int tnArabic = scoreText(
+                    merged,
+                    "\u0628\u0631\u0634\u0629", // barsha
+                    "\u0634\u0646\u0648\u0629", // chnowa
+                    "\u062a\u0648\u0629", // tawa
+                    "\u064a\u0627\u0633\u0631", // yesser
+                    "\u0628\u0631\u0627\u0628\u064a", // brabi
+                    "\u0641\u0645\u0627", // famma
+                    "\u0644\u0627\u0628\u0627\u0633", // labes
+                    "\u0646\u062d\u0628", // nheb
+                    "\u062a\u0648\u0646\u0633" // tounes
+            );
+            return tnArabic >= 1 ? "ar-TN" : "ar-SA";
+        }
+
+        int tnLatin = scoreText(
+                merged,
+                "barsha", "barcha", "brcha",
+                "3lech", "alech",
+                "chnowa", "chnoua", "shnowa",
+                "kifech", "kifach",
+                "brabi", "rabi",
+                "yesser", "yaser",
+                "tawa", "taw",
+                "behi", "behy",
+                "mouch", "moch",
+                "famma", "famech",
+                "nheb", "n7eb",
+                "labes", "lebes",
+                "sa7a", "saha",
+                "ya3ni", "3andi", "3andek", "3andou",
+                "ma3ndich", "mandich",
+                "tounes", "tunis", "sfax", "sousse", "nabeul", "bizerte", "gabes", "djerba"
+        );
+        if (tnLatin >= 2) {
+            return "ar-TN";
+        }
+
+        int fr = scoreText(merged, "bonjour", "merci", "je ", "suis", "avec", "pour", "pas", "oui", "francais", "ca", "salut");
+        int en = scoreText(merged, "hello", "thanks", "i ", "am", "with", "for", "not", "yes", "english", "please");
+        if (tnLatin >= fr + 1 && tnLatin >= en + 1) {
+            return "ar-TN";
+        }
+        if (fr >= en + 1) {
+            return "fr-FR";
+        }
+
+        return "en-US";
+    }
+
+    private String normalizeLanguageHeuristicsText(String text) {
+        if (text == null || text.isBlank()) {
+            return "";
+        }
+        return text
+                .toLowerCase(Locale.ROOT)
+                .replace('’', '\'')
+                .replaceAll("[^\\p{IsAlphabetic}\\p{IsDigit}\\u0600-\\u06FF\\s']", " ")
+                .replaceAll("\\s+", " ")
+                .trim();
+    }
+
+    private String detectJournalSpeechLanguageCodeLegacy(String transcript, String fullInputText) {
         String segment = transcript == null ? "" : transcript.trim().toLowerCase(Locale.ROOT);
         String full = fullInputText == null ? "" : limitText(fullInputText, 600).toLowerCase(Locale.ROOT);
         String merged = (full + " " + segment).trim();
@@ -1622,6 +2448,26 @@ public class WellbeingController implements Initializable {
         }
 
         return "en-US";
+    }
+
+    private String normalizeLanguageCode(String code) {
+        if (code == null || code.isBlank()) {
+            return null;
+        }
+        String normalized = code.trim().toLowerCase(Locale.ROOT).replace('_', '-');
+        if (normalized.startsWith("fr")) {
+            return "fr-FR";
+        }
+        if (normalized.startsWith("ar-tn")) {
+            return "ar-TN";
+        }
+        if (normalized.startsWith("ar")) {
+            return "ar-SA";
+        }
+        if (normalized.startsWith("en")) {
+            return "en-US";
+        }
+        return null;
     }
 
     private int scoreText(String text, String... tokens) {
@@ -1659,7 +2505,7 @@ public class WellbeingController implements Initializable {
         );
         Label focusLabel = new Label("FOCUS SESSION");
         focusLabel.setStyle("-fx-text-fill: #A78BFA; -fx-font-size: 11px; -fx-font-weight: 700; -fx-letter-spacing: 1px;");
-        Label titleLabel = new Label("AI Chat Coach");
+        Label titleLabel = new Label("AI Chat Assistant");
         titleLabel.setStyle("-fx-text-fill: #e2e8f0; -fx-font-size: 38px; -fx-font-weight: 800;");
         Label subtitle = new Label("Motivation · Guidance · Support · Any Language");
         subtitle.setStyle("-fx-text-fill: #94A3B8; -fx-font-size: 13px;");
@@ -1671,7 +2517,7 @@ public class WellbeingController implements Initializable {
         VBox messagesBox = new VBox(12);
         messagesBox.setPadding(new Insets(14));
         messagesBox.setStyle("-fx-background-color: #111827;");
-        messagesBox.getChildren().add(chatBubble("assistant", "Hello! I am here to help. What do you need right now?"));
+        messagesBox.getChildren().add(chatBubble("assistant", "Hello! I can help with general questions, studies, or wellbeing. What do you need right now?"));
 
         ScrollPane messagesPane = new ScrollPane(messagesBox);
         messagesPane.setFitToWidth(true);
@@ -1706,10 +2552,10 @@ public class WellbeingController implements Initializable {
         HBox configRow = new HBox(10, modeBox, styleBox, levelBox, languageBox);
 
         HBox chipsRow = new HBox(8,
-                createChatChip("I feel stressed"),
-                createChatChip("Motivation boost"),
-                createChatChip("Focus tips"),
-                createChatChip("Help me relax")
+                createChatChip("Explain this concept"),
+                createChatChip("Help me write an email"),
+                createChatChip("Build a study plan"),
+                createChatChip("I feel stressed")
         );
 
         TextArea input = new TextArea();
@@ -1735,6 +2581,10 @@ public class WellbeingController implements Initializable {
         clearBtn.getStyleClass().add("btn-secondary");
         Button closeBtn = new Button("Back");
         closeBtn.getStyleClass().add("btn-secondary");
+        StackPane aiLoadingOverlay = createAiLoadingOverlay(
+                "AI is thinking...",
+                "This usually takes a few seconds while AI prepares your answer."
+        );
 
         Runnable sendAction = () -> {
             String text = input.getText() == null ? "" : input.getText().trim();
@@ -1748,6 +2598,9 @@ public class WellbeingController implements Initializable {
             input.clear();
             statusLabel.setText("AI is typing...");
             sendBtn.setDisable(true);
+            clearBtn.setDisable(true);
+            input.setDisable(true);
+            setAiLoadingVisible(aiLoadingOverlay, true);
 
             String selectedLanguageCode = switch (languageBox.getValue() == null ? "Auto" : languageBox.getValue()) {
                 case "Francais" -> "fr-FR";
@@ -1781,6 +2634,9 @@ public class WellbeingController implements Initializable {
                 statusLabel.setText(result != null && "ai".equals(result.source()) ? "Answered by AI" : "Fallback response");
                 completed[0] = true;
                 sendBtn.setDisable(false);
+                clearBtn.setDisable(false);
+                input.setDisable(false);
+                setAiLoadingVisible(aiLoadingOverlay, false);
                 Platform.runLater(() -> {
                     messagesPane.layout();
                     messagesPane.setVvalue(1.0);
@@ -1790,6 +2646,9 @@ public class WellbeingController implements Initializable {
                 messagesBox.getChildren().add(chatBubble("assistant", "Sorry, I could not generate a reply right now. Please try again."));
                 statusLabel.setText("Error while generating response.");
                 sendBtn.setDisable(false);
+                clearBtn.setDisable(false);
+                input.setDisable(false);
+                setAiLoadingVisible(aiLoadingOverlay, false);
             });
             Thread worker = new Thread(task, "wellbeing-ai-chat");
             worker.setDaemon(true);
@@ -1806,7 +2665,7 @@ public class WellbeingController implements Initializable {
 
         clearBtn.setOnAction(e -> {
             chatHistory.clear();
-            messagesBox.getChildren().setAll(chatBubble("assistant", "Hello! I am here to help. What do you need right now?"));
+            messagesBox.getChildren().setAll(chatBubble("assistant", "Hello! I can help with general questions, studies, or wellbeing. What do you need right now?"));
             statusLabel.setText("Ready");
         });
 
@@ -1834,7 +2693,8 @@ public class WellbeingController implements Initializable {
                         "-fx-border-radius: 16;"
         );
 
-        root.getChildren().addAll(header, chatCard);
+        StackPane chatCardStack = new StackPane(chatCard, aiLoadingOverlay);
+        root.getChildren().addAll(header, chatCardStack);
 
         LocalDateTime openedAt = LocalDateTime.now();
         Runnable closer = () -> closeSession(session, openedAt, completed[0]);
@@ -1847,7 +2707,7 @@ public class WellbeingController implements Initializable {
                 activeInlineToolCloser = null;
             }
         });
-        showInlineTool("AI Chat Coach", root, closer);
+        showInlineTool("AI Chat Assistant", root, closer);
     }
 
     private Button createChatChip(String text) {
@@ -1894,6 +2754,44 @@ public class WellbeingController implements Initializable {
         HBox row = new HBox(block);
         row.setAlignment("user".equals(role) ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
         return row;
+    }
+
+    private StackPane createAiLoadingOverlay(String title, String subtitle) {
+        StackPane overlay = new StackPane();
+        overlay.getStyleClass().add("ai-loading-overlay");
+        overlay.setVisible(false);
+        overlay.setManaged(false);
+        overlay.setPickOnBounds(true);
+
+        VBox card = new VBox(12);
+        card.setAlignment(Pos.CENTER);
+        card.getStyleClass().add("ai-loading-card");
+
+        Label titleLabel = new Label(title);
+        titleLabel.getStyleClass().add("ai-loading-title");
+
+        Label subtitleLabel = new Label(subtitle);
+        subtitleLabel.getStyleClass().add("ai-loading-subtitle");
+        subtitleLabel.setWrapText(true);
+        subtitleLabel.setMaxWidth(320);
+
+        ProgressBar loadingBar = new ProgressBar(ProgressBar.INDETERMINATE_PROGRESS);
+        loadingBar.getStyleClass().add("ai-loading-bar");
+        loadingBar.setMaxWidth(Double.MAX_VALUE);
+        loadingBar.setPrefWidth(280);
+
+        card.getChildren().addAll(titleLabel, subtitleLabel, loadingBar);
+        overlay.getChildren().add(card);
+        return overlay;
+    }
+
+    private void setAiLoadingVisible(StackPane overlay, boolean visible) {
+        if (overlay == null) {
+            return;
+        }
+        overlay.setVisible(visible);
+        overlay.setManaged(visible);
+        overlay.setMouseTransparent(!visible);
     }
 
     private void openNatureSoundsTool(CopingSession session) {
@@ -2798,6 +3696,7 @@ public class WellbeingController implements Initializable {
 
     @FXML
     private void handleQuizPrevious() {
+        hideGlobalMessage();
         if (currentQuizIndex > 0) {
             currentQuizIndex--;
             renderCurrentQuizQuestion();
@@ -2810,6 +3709,7 @@ public class WellbeingController implements Initializable {
             showError("Please select an answer before continuing.");
             return;
         }
+        hideGlobalMessage();
         if (currentQuizIndex < quizQuestions.size() - 1) {
             currentQuizIndex++;
             renderCurrentQuizQuestion();
@@ -2826,6 +3726,7 @@ public class WellbeingController implements Initializable {
             showError("Please answer all questions before submitting.");
             return;
         }
+        hideGlobalMessage();
 
         int totalScore = quizAnswers.values().stream().mapToInt(Integer::intValue).sum();
         int answeredCount = Math.max(1, quizAnswers.size());
@@ -2888,6 +3789,14 @@ public class WellbeingController implements Initializable {
     private void handleLoadAiSuggestions() {
         if (currentQuizResult == null) {
             return;
+        }
+        StackPane suggestionsLoadingOverlay = createAiLoadingOverlay(
+                "Analyzing your results...",
+                "Generating personalized AI suggestions for your current wellbeing status."
+        );
+        setAiLoadingVisible(suggestionsLoadingOverlay, true);
+        if (quizAiSuggestionsBox != null) {
+            quizAiSuggestionsBox.getChildren().setAll(suggestionsLoadingOverlay);
         }
         if (quizLoadAiSuggestionsButton != null) {
             quizLoadAiSuggestionsButton.setDisable(true);
@@ -3010,6 +3919,7 @@ public class WellbeingController implements Initializable {
     }
 
     private void startQuiz(QuizMode mode) {
+        hideGlobalMessage();
         currentQuizMode = mode == null ? QuizMode.SIMPLE : mode;
         quizQuestions.clear();
         quizAnswers.clear();
@@ -3108,6 +4018,7 @@ public class WellbeingController implements Initializable {
         if (quizQuestions.isEmpty()) {
             return;
         }
+        hideGlobalMessage();
         QuestionStress question = quizQuestions.get(currentQuizIndex);
 
         quizCurrentQuestionLabel.setText(String.valueOf(currentQuizIndex + 1));
@@ -3162,6 +4073,7 @@ public class WellbeingController implements Initializable {
             if (newToggle != null && newToggle.getUserData() instanceof Integer answerValue) {
                 quizAnswers.put(question.getId(), answerValue);
                 updateQuizProgress();
+                hideGlobalMessage();
             }
             refreshOptionSelectionStyle.run();
         });
@@ -3655,6 +4567,7 @@ public class WellbeingController implements Initializable {
         if (globalMessageLabel == null) {
             return;
         }
+        stopGlobalMessageTimer();
         globalMessageLabel.setText(message == null ? "" : message);
         globalMessageLabel.setStyle(
                 "-fx-background-color: " + (error ? "#dc2626" : "#16a34a") + ";" +
@@ -3664,155 +4577,124 @@ public class WellbeingController implements Initializable {
         );
         globalMessageLabel.setVisible(true);
         globalMessageLabel.setManaged(true);
+        globalMessageTimer = new Timeline(new KeyFrame(javafx.util.Duration.seconds(GLOBAL_MESSAGE_HIDE_SECONDS), event -> hideGlobalMessage()));
+        globalMessageTimer.setCycleCount(1);
+        globalMessageTimer.play();
     }
 
     private void hideGlobalMessage() {
         if (globalMessageLabel == null) {
             return;
         }
+        stopGlobalMessageTimer();
+        globalMessageLabel.setText("");
         globalMessageLabel.setVisible(false);
         globalMessageLabel.setManaged(false);
     }
 
+    private void stopGlobalMessageTimer() {
+        if (globalMessageTimer != null) {
+            globalMessageTimer.stop();
+            globalMessageTimer = null;
+        }
+    }
+
     private void showOverviewMode() {
         handleCloseInlineTool();
-        statsSection.setVisible(true);
-        statsSection.setManaged(true);
-        overviewSection.setVisible(true);
-        overviewSection.setManaged(true);
-        historySection.setVisible(false);
-        historySection.setManaged(false);
-        toolsSection.setVisible(false);
-        toolsSection.setManaged(false);
-        formSection.setVisible(false);
-        formSection.setManaged(false);
-        quizModeSection.setVisible(false);
-        quizModeSection.setManaged(false);
-        quizSection.setVisible(false);
-        quizSection.setManaged(false);
-        quizResultsSection.setVisible(false);
-        quizResultsSection.setManaged(false);
+        hideGlobalMessage();
+        setNodeVisibility(statsSection, true);
+        setNodeVisibility(overviewSection, true);
+        setNodeVisibility(historySection, false);
+        setNodeVisibility(toolsSection, false);
+        setNodeVisibility(formSection, false);
+        setNodeVisibility(quizModeSection, false);
+        setNodeVisibility(quizSection, false);
+        setNodeVisibility(quizResultsSection, false);
     }
 
     private void showCopingToolsMode() {
-        statsSection.setVisible(false);
-        statsSection.setManaged(false);
-        overviewSection.setVisible(false);
-        overviewSection.setManaged(false);
-        historySection.setVisible(false);
-        historySection.setManaged(false);
-        formSection.setVisible(false);
-        formSection.setManaged(false);
-        quizModeSection.setVisible(false);
-        quizModeSection.setManaged(false);
-        quizSection.setVisible(false);
-        quizSection.setManaged(false);
-        quizResultsSection.setVisible(false);
-        quizResultsSection.setManaged(false);
-        toolsSection.setVisible(true);
-        toolsSection.setManaged(true);
+        hideGlobalMessage();
+        setNodeVisibility(statsSection, false);
+        setNodeVisibility(overviewSection, false);
+        setNodeVisibility(historySection, false);
+        setNodeVisibility(formSection, false);
+        setNodeVisibility(quizModeSection, false);
+        setNodeVisibility(quizSection, false);
+        setNodeVisibility(quizResultsSection, false);
+        setNodeVisibility(toolsSection, true);
     }
 
     private void showCheckinMode() {
         handleCloseInlineTool();
-        statsSection.setVisible(false);
-        statsSection.setManaged(false);
-        overviewSection.setVisible(false);
-        overviewSection.setManaged(false);
-        historySection.setVisible(false);
-        historySection.setManaged(false);
-        toolsSection.setVisible(false);
-        toolsSection.setManaged(false);
-        formSection.setVisible(true);
-        formSection.setManaged(true);
-        quizModeSection.setVisible(false);
-        quizModeSection.setManaged(false);
-        quizSection.setVisible(false);
-        quizSection.setManaged(false);
-        quizResultsSection.setVisible(false);
-        quizResultsSection.setManaged(false);
+        hideGlobalMessage();
+        setNodeVisibility(statsSection, false);
+        setNodeVisibility(overviewSection, false);
+        setNodeVisibility(historySection, false);
+        setNodeVisibility(toolsSection, false);
+        setNodeVisibility(formSection, true);
+        setNodeVisibility(quizModeSection, false);
+        setNodeVisibility(quizSection, false);
+        setNodeVisibility(quizResultsSection, false);
     }
 
     private void showHistoryMode() {
         handleCloseInlineTool();
-        statsSection.setVisible(false);
-        statsSection.setManaged(false);
-        overviewSection.setVisible(false);
-        overviewSection.setManaged(false);
-        toolsSection.setVisible(false);
-        toolsSection.setManaged(false);
-        formSection.setVisible(false);
-        formSection.setManaged(false);
-        historySection.setVisible(true);
-        historySection.setManaged(true);
-        quizModeSection.setVisible(false);
-        quizModeSection.setManaged(false);
-        quizSection.setVisible(false);
-        quizSection.setManaged(false);
-        quizResultsSection.setVisible(false);
-        quizResultsSection.setManaged(false);
+        hideGlobalMessage();
+        setNodeVisibility(statsSection, false);
+        setNodeVisibility(overviewSection, false);
+        setNodeVisibility(toolsSection, false);
+        setNodeVisibility(formSection, false);
+        setNodeVisibility(historySection, true);
+        setNodeVisibility(quizModeSection, false);
+        setNodeVisibility(quizSection, false);
+        setNodeVisibility(quizResultsSection, false);
     }
 
     private void showQuizMode() {
         handleCloseInlineTool();
-        statsSection.setVisible(false);
-        statsSection.setManaged(false);
-        overviewSection.setVisible(false);
-        overviewSection.setManaged(false);
-        historySection.setVisible(false);
-        historySection.setManaged(false);
-        toolsSection.setVisible(false);
-        toolsSection.setManaged(false);
-        formSection.setVisible(false);
-        formSection.setManaged(false);
-        quizModeSection.setVisible(false);
-        quizModeSection.setManaged(false);
-        quizResultsSection.setVisible(false);
-        quizResultsSection.setManaged(false);
-        quizSection.setVisible(true);
-        quizSection.setManaged(true);
+        hideGlobalMessage();
+        setNodeVisibility(statsSection, false);
+        setNodeVisibility(overviewSection, false);
+        setNodeVisibility(historySection, false);
+        setNodeVisibility(toolsSection, false);
+        setNodeVisibility(formSection, false);
+        setNodeVisibility(quizModeSection, false);
+        setNodeVisibility(quizResultsSection, false);
+        setNodeVisibility(quizSection, true);
     }
 
     private void showQuizResultsMode() {
         handleCloseInlineTool();
-        statsSection.setVisible(false);
-        statsSection.setManaged(false);
-        overviewSection.setVisible(false);
-        overviewSection.setManaged(false);
-        historySection.setVisible(false);
-        historySection.setManaged(false);
-        toolsSection.setVisible(false);
-        toolsSection.setManaged(false);
-        formSection.setVisible(false);
-        formSection.setManaged(false);
-        quizModeSection.setVisible(false);
-        quizModeSection.setManaged(false);
-        quizSection.setVisible(false);
-        quizSection.setManaged(false);
-        quizResultsSection.setVisible(true);
-        quizResultsSection.setManaged(true);
+        hideGlobalMessage();
+        setNodeVisibility(statsSection, false);
+        setNodeVisibility(overviewSection, false);
+        setNodeVisibility(historySection, false);
+        setNodeVisibility(toolsSection, false);
+        setNodeVisibility(formSection, false);
+        setNodeVisibility(quizModeSection, false);
+        setNodeVisibility(quizSection, false);
+        setNodeVisibility(quizResultsSection, true);
     }
 
     private void showQuizModePickerInline() {
         handleCloseInlineTool();
-        statsSection.setVisible(false);
-        statsSection.setManaged(false);
-        overviewSection.setVisible(false);
-        overviewSection.setManaged(false);
-        historySection.setVisible(false);
-        historySection.setManaged(false);
-        toolsSection.setVisible(false);
-        toolsSection.setManaged(false);
-        formSection.setVisible(false);
-        formSection.setManaged(false);
-        quizSection.setVisible(false);
-        quizSection.setManaged(false);
-        quizResultsSection.setVisible(false);
-        quizResultsSection.setManaged(false);
-        if (quizModeSection != null) {
-            quizModeSection.setVisible(true);
-            quizModeSection.setManaged(true);
+        hideGlobalMessage();
+        setNodeVisibility(statsSection, false);
+        setNodeVisibility(overviewSection, false);
+        setNodeVisibility(historySection, false);
+        setNodeVisibility(toolsSection, false);
+        setNodeVisibility(formSection, false);
+        setNodeVisibility(quizSection, false);
+        setNodeVisibility(quizResultsSection, false);
+        setNodeVisibility(quizModeSection, true);
+    }
+
+    private void setNodeVisibility(Node node, boolean visible) {
+        if (node == null) {
+            return;
         }
+        node.setVisible(visible);
+        node.setManaged(visible);
     }
 
     private void updateStatsLabels(List<WellBeing> items, Label total, Label stress, Label energy, Label sleep) {

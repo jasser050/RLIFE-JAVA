@@ -21,6 +21,11 @@ public class App extends Application {
     private static Stage primaryStage;
     private static boolean darkTheme = true;
 
+    public enum Theme {
+        DARK,
+        LIGHT
+    }
+
     @Override
     public void start(Stage stage) throws IOException {
         primaryStage = stage;
@@ -56,6 +61,10 @@ public class App extends Application {
 
     public static boolean isDarkTheme() {
         return darkTheme;
+    }
+
+    public static Theme getCurrentTheme() {
+        return darkTheme ? Theme.DARK : Theme.LIGHT;
     }
 
     private static void applyTheme() {

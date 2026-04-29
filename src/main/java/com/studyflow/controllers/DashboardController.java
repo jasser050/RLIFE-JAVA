@@ -454,14 +454,7 @@ public class DashboardController implements Initializable {
     }
 
     private void navigateTo(String fxmlPath) {
-        try {
-            FXMLLoader loader = new FXMLLoader(App.class.getResource(fxmlPath));
-            Parent content = loader.load();
-            StackPane contentArea = (StackPane) welcomeLabel.getScene().lookup("#contentArea");
-            if (contentArea != null) contentArea.getChildren().setAll(content);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        MainController.loadContentInMainArea(fxmlPath);
     }
 
     // Schedule

@@ -21,7 +21,7 @@ public class AIFlashcardService {
 
     private static final String API_URL = "https://openrouter.ai/api/v1/chat/completions";
     // Move this to an env variable or config file in production.
-    private static final String API_KEY = "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";
+    private static final String API_KEY = "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";
     private static final String[] MODEL_CANDIDATES = {
             "openrouter/free",
             "mistralai/mistral-7b-instruct:free",
