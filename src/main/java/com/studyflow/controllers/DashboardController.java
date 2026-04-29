@@ -2,10 +2,13 @@ package com.studyflow.controllers;
 
 import com.studyflow.App;
 import com.studyflow.models.EvaluationMatiere;
+import com.studyflow.models.Pet;
 import com.studyflow.models.Matiere;
 import com.studyflow.models.User;
 import com.studyflow.services.EvaluationMatiereService;
 import com.studyflow.services.MatiereService;
+import com.studyflow.services.PetService;
+import com.studyflow.utils.PetUiSupport;
 import com.studyflow.utils.UserSession;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -16,8 +19,10 @@ import javafx.scene.Parent;
 import javafx.scene.chart.AreaChart;
 import javafx.scene.chart.BarChart;
 import javafx.scene.chart.XYChart;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
@@ -52,6 +57,22 @@ public class DashboardController implements Initializable {
     @FXML private VBox tasksList;
     @FXML private VBox activityList;
     @FXML private VBox courseProgressList;
+    @FXML private VBox petHeroCard;
+    @FXML private VBox petEmptyCard;
+    @FXML private ImageView petHeroImageView;
+    @FXML private Label petHeroSubLabel;
+    @FXML private Label petHeroNameLabel;
+    @FXML private Label petHeroRarityBadge;
+    @FXML private Label petHeroMetaLabel;
+    @FXML private Label petHeroLevelLabel;
+    @FXML private Label petHeroCoinsLabel;
+    @FXML private Label petHeroTypeLabel;
+    @FXML private Label petHeroMoodLabel;
+    @FXML private Label petHeroHungerLabel;
+    @FXML private ProgressBar petHeroHungerBar;
+    @FXML private Button petManageButton;
+    @FXML private Button petMetaverseButton;
+    @FXML private Button petCreateButton;
 
     @FXML private VBox quickCardDecks;
     @FXML private VBox quickCardAssignment;
@@ -60,10 +81,17 @@ public class DashboardController implements Initializable {
 
     private final EvaluationMatiereService evalService = new EvaluationMatiereService();
     private final MatiereService           matService  = new MatiereService();
+    private PetService petService;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+        try {
+            petService = new PetService();
+        } catch (RuntimeException ignored) {
+            petService = null;
+        }
         setupWelcomeMessage();
+        setupPetHero();
         setupStats();
         setupCourseProgress();
         setupStudyTimeChart();
@@ -74,9 +102,7 @@ public class DashboardController implements Initializable {
         setupQuickActions();
     }
 
-    // ══════════════════════════════════════════════════════════════════
-    //  WELCOME
-    // ══════════════════════════════════════════════════════════════════
+    // Welcome
     private void setupWelcomeMessage() {
         int hour = LocalTime.now().getHour();
         String greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
@@ -85,9 +111,54 @@ public class DashboardController implements Initializable {
         welcomeLabel.setText(greeting + ", " + userName);
     }
 
-    // ══════════════════════════════════════════════════════════════════
-    //  STATS — real data from EvaluationMatiere
-    // ══════════════════════════════════════════════════════════════════
+    private void setupPetHero() {
+        if (petManageButton != null) {
+            petManageButton.setOnAction(event -> navigateTo("views/Notes.fxml"));
+        }
+        if (petMetaverseButton != null) {
+            petMetaverseButton.setOnAction(event -> navigateTo("views/PetMetaverse.fxml"));
+        }
+        if (petCreateButton != null) {
+            petCreateButton.setOnAction(event -> navigateTo("views/Notes.fxml"));
+        }
+
+        User currentUser = UserSession.getInstance().getCurrentUser();
+        Pet pet = null;
+        if (currentUser != null && petService != null && petService.isDatabaseAvailable()) {
+            try {
+                pet = petService.findByUserId(currentUser.getId()).map(petService::syncPetState).orElse(null);
+            } catch (RuntimeException ignored) {
+                pet = null;
+            }
+        }
+
+        boolean hasPet = pet != null;
+        if (petHeroCard != null) {
+            petHeroCard.setVisible(hasPet);
+            petHeroCard.setManaged(hasPet);
+        }
+        if (petEmptyCard != null) {
+            petEmptyCard.setVisible(!hasPet);
+            petEmptyCard.setManaged(!hasPet);
+        }
+        if (!hasPet || currentUser == null) {
+            return;
+        }
+
+        petHeroImageView.setImage(PetUiSupport.loadPetImage(pet.getType()));
+        petHeroNameLabel.setText(pet.getName());
+        petHeroRarityBadge.setText(pet.getRarity());
+        petHeroMetaLabel.setText("Level " + pet.getLevel() + " - " + pet.getMood() + " - " + pet.getEvolutionStage());
+        petHeroSubLabel.setText("Same companion flow as the web dashboard, with direct access to care and the metaverse.");
+        petHeroLevelLabel.setText("Lv. " + pet.getLevel());
+        petHeroCoinsLabel.setText(String.valueOf(currentUser.getCoins()));
+        petHeroTypeLabel.setText(capitalize(pet.getType()));
+        petHeroMoodLabel.setText(PetUiSupport.moodFromHunger(pet.getHunger()));
+        petHeroHungerLabel.setText(pet.getHunger() + "/100");
+        petHeroHungerBar.setProgress(Math.max(0, Math.min(1, (100 - pet.getHunger()) / 100d)));
+    }
+
+    // Stats using evaluation data
     private void setupStats() {
         User currentUser = UserSession.getInstance().getCurrentUser();
         if (currentUser == null) {
@@ -112,7 +183,6 @@ public class DashboardController implements Initializable {
             long totalMin = evals.stream().mapToLong(EvaluationMatiere::getDureeEvaluation).sum();
             studyHoursLabel.setText(String.valueOf(totalMin / 60));
 
-            // Cards reviewed ≈ assessments * 4
             cardsReviewedLabel.setText(String.valueOf(evals.size() * 4));
 
             // Streak
@@ -140,9 +210,7 @@ public class DashboardController implements Initializable {
         return streak;
     }
 
-    // ══════════════════════════════════════════════════════════════════
-    //  COURSE PROGRESS — real subjects + averages
-    // ══════════════════════════════════════════════════════════════════
+    // Course progress from subject averages
     private void setupCourseProgress() {
         if (courseProgressList == null) return;
         courseProgressList.getChildren().clear();
@@ -154,7 +222,7 @@ public class DashboardController implements Initializable {
             List<EvaluationMatiere> evals = evalService.findByUser(currentUser.getId());
 
             if (evals.isEmpty()) {
-                Label empty = new Label("No assessments yet — add one in My Assessments.");
+                Label empty = new Label("No assessments yet - add one in My Assessments.");
                 empty.setStyle("-fx-text-fill:#64748B;-fx-font-size:13px;");
                 courseProgressList.getChildren().add(empty);
                 return;
@@ -233,7 +301,7 @@ public class DashboardController implements Initializable {
         nameLbl.setStyle("-fx-text-fill:#F8FAFC;-fx-font-size:13px;-fx-font-weight:700;");
         nameLbl.setWrapText(true);
 
-        Label subLbl = new Label(count + " assessment" + (count > 1 ? "s" : "") + "  •  Best: " + String.format("%.1f", best) + "/20");
+        Label subLbl = new Label(count + " assessment" + (count > 1 ? "s" : "") + "  |  Best: " + String.format("%.1f", best) + "/20");
         subLbl.setStyle("-fx-text-fill:#64748B;-fx-font-size:11px;");
 
         info.getChildren().addAll(nameLbl, subLbl);
@@ -277,9 +345,7 @@ public class DashboardController implements Initializable {
         return row;
     }
 
-    // ══════════════════════════════════════════════════════════════════
-    //  CHARTS
-    // ══════════════════════════════════════════════════════════════════
+    // Charts
     private void setupStudyTimeChart() {
         User currentUser = UserSession.getInstance().getCurrentUser();
         XYChart.Series<String, Number> series = new XYChart.Series<>();
@@ -329,7 +395,7 @@ public class DashboardController implements Initializable {
         User currentUser = UserSession.getInstance().getCurrentUser();
 
         XYChart.Series<String, Number> passedSeries = new XYChart.Series<>();
-        passedSeries.setName("Passed (≥10)");
+        passedSeries.setName("Passed (>=10)");
 
         XYChart.Series<String, Number> failedSeries = new XYChart.Series<>();
         failedSeries.setName("Failed (<10)");
@@ -373,9 +439,7 @@ public class DashboardController implements Initializable {
         weeklyProgressChart.setAnimated(true);
     }
 
-    // ══════════════════════════════════════════════════════════════════
-    //  QUICK ACTIONS
-    // ══════════════════════════════════════════════════════════════════
+    // Quick actions
     private void setupQuickActions() {
         if (quickCardAssignment != null)
             quickCardAssignment.setOnMouseClicked(e -> navigateTo("views/Courses.fxml"));
@@ -400,9 +464,7 @@ public class DashboardController implements Initializable {
         }
     }
 
-    // ══════════════════════════════════════════════════════════════════
-    //  SCHEDULE
-    // ══════════════════════════════════════════════════════════════════
+    // Schedule
     private void setupScheduleList() {
         scheduleList.getChildren().clear();
         addScheduleItem("Data Structures Lecture", "09:00 AM", "Room 301", "primary");
@@ -438,7 +500,7 @@ public class DashboardController implements Initializable {
         Label timeLabel = new Label(time);
         timeLabel.setStyle("-fx-text-fill:#94A3B8;-fx-font-size:12px;");
 
-        Label separator = new Label("·");
+        Label separator = new Label("|");
         separator.setStyle("-fx-text-fill: #475569;");
 
         FontIcon locationIcon = new FontIcon("fth-map-pin");
@@ -462,9 +524,7 @@ public class DashboardController implements Initializable {
         scheduleList.getChildren().add(item);
     }
 
-    // ══════════════════════════════════════════════════════════════════
-    //  TASKS
-    // ══════════════════════════════════════════════════════════════════
+    // Tasks
     private void setupTasksList() {
         tasksList.getChildren().clear();
 
@@ -487,7 +547,7 @@ public class DashboardController implements Initializable {
                             }
                             String priority = e.getPrioriteE() != null ? e.getPrioriteE().toLowerCase() : "medium";
                             String date = e.getDateEvaluation().format(DateTimeFormatter.ofPattern("MMM dd"));
-                            addTaskItem(name + " — " + String.format("%.1f/%.0f", e.getScoreEval(), e.getNoteMaximaleEval()),
+                            addTaskItem(name + " - " + String.format("%.1f/%.0f", e.getScoreEval(), e.getNoteMaximaleEval()),
                                     "Score: " + String.format("%.1f", e.getScoreEval()), priority, date);
                         });
                 if (!evals.isEmpty()) return;
@@ -552,9 +612,7 @@ public class DashboardController implements Initializable {
         tasksList.getChildren().add(item);
     }
 
-    // ══════════════════════════════════════════════════════════════════
-    //  ACTIVITY
-    // ══════════════════════════════════════════════════════════════════
+    // Activity
     private void setupActivityList() {
         activityList.getChildren().clear();
 
@@ -577,7 +635,7 @@ public class DashboardController implements Initializable {
                                 boolean passed = e.getScoreEval() >= 10;
                                 String iconLiteral = passed ? "fth-check-circle" : "fth-alert-circle";
                                 String color      = passed ? "success" : "danger";
-                                String msg = "Assessment in " + name + " — " +
+                                String msg = "Assessment in " + name + " - " +
                                         String.format("%.1f/%.0f", e.getScoreEval(), e.getNoteMaximaleEval());
                                 String time = e.getDateEvaluation().format(DateTimeFormatter.ofPattern("MMM dd"));
                                 addActivityItem(iconLiteral, color, msg, time);
@@ -626,9 +684,7 @@ public class DashboardController implements Initializable {
         activityList.getChildren().add(item);
     }
 
-    // ══════════════════════════════════════════════════════════════════
-    //  HELPERS
-    // ══════════════════════════════════════════════════════════════════
+    // Helpers
     private String getColorHex(String color) {
         return switch (color) {
             case "primary" -> "#A78BFA";
@@ -638,5 +694,12 @@ public class DashboardController implements Initializable {
             case "accent"  -> "#FB923C";
             default        -> "#94A3B8";
         };
+    }
+
+    private String capitalize(String value) {
+        if (value == null || value.isBlank()) {
+            return "";
+        }
+        return Character.toUpperCase(value.charAt(0)) + value.substring(1).toLowerCase();
     }
 }

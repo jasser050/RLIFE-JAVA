@@ -375,84 +375,94 @@ public class ProfileController implements Initializable {
     // ============================================
 
     private void loadAvatar3D(String avatarKey) {
-        String path = "/com/studyflow/avatars/" + avatarKey + ".glb";
-        if (GlbLoader.class.getResourceAsStream(path) == null) return;
+        String avatarPath = "/com/studyflow/avatars/" + avatarKey + ".glb";
+        if (GlbLoader.class.getResourceAsStream(avatarPath) == null) return;
 
         Thread loader = new Thread(() -> {
             try {
-                Group loaded = GlbLoader.loadFromResource(path);
-                javafx.application.Platform.runLater(() -> {
-                    double sceneSize = 134;
-                    Group modelGroup = new Group();
-                    Group world = new Group();
-                    world.getChildren().add(modelGroup);
-
-                    AmbientLight ambient = new AmbientLight(Color.color(0.5, 0.47, 0.55));
-                    PointLight key = new PointLight(Color.color(0.9, 0.85, 0.95));
-                    key.setTranslateX(3); key.setTranslateY(-4); key.setTranslateZ(5);
-                    PointLight fill = new PointLight(Color.color(0.4, 0.38, 0.65));
-                    fill.setTranslateX(-3); fill.setTranslateY(2); fill.setTranslateZ(-3);
-                    world.getChildren().addAll(ambient, key, fill);
-
-                    PerspectiveCamera camera = new PerspectiveCamera(true);
-                    camera.setFieldOfView(38);
-                    camera.setNearClip(0.01);
-                    camera.setFarClip(200);
-                    camera.setTranslateZ(-3.2);
-
-                    SubScene sub = new SubScene(world, sceneSize, sceneSize, true, SceneAntialiasing.BALANCED);
-                    sub.setCamera(camera);
-                    sub.setFill(Color.TRANSPARENT);
-
-                    modelGroup.getChildren().add(loaded);
-                    Bounds b = loaded.getBoundsInLocal();
-                    if (!b.isEmpty() && b.getWidth() > 1e-6) {
-                        double cx = (b.getMinX() + b.getMaxX()) / 2.0;
-                        double cy = (b.getMinY() + b.getMaxY()) / 2.0;
-                        double cz = (b.getMinZ() + b.getMaxZ()) / 2.0;
-                        double maxDim = Math.max(b.getWidth(), Math.max(b.getHeight(), b.getDepth()));
-                        double fit = 1.8 / maxDim;
-                        loaded.getTransforms().clear();
-                        loaded.getTransforms().add(new Scale(fit, fit, fit));
-                        loaded.getTransforms().add(new Translate(-cx, -cy, -cz));
-                    }
-
-                    Rotate rot = new Rotate(0, Rotate.Y_AXIS);
-                    modelGroup.getTransforms().add(rot);
-                    if (avatarRotator != null) avatarRotator.stop();
-                    avatarRotator = new AnimationTimer() {
-                        private long last = 0;
-                        @Override public void handle(long now) {
-                            if (last != 0) rot.setAngle(rot.getAngle() + (now - last) * 1e-9 * 35.0);
-                            last = now;
-                        }
-                    };
-                    avatarRotator.start();
-
-                    avatarInitials.setVisible(false);
-                    avatarInitials.setManaged(false);
-                    avatarContainer.getChildren().clear();
-                    StackPane innerBg = new StackPane();
-                    innerBg.getStyleClass().add("profile-avatar-inner");
-                    innerBg.getChildren().add(sub);
-                    avatarContainer.getChildren().add(innerBg);
-
-                    sub.setOpacity(0);
-                    sub.setScaleX(0.7);
-                    sub.setScaleY(0.7);
-                    FadeTransition fade = new FadeTransition(Duration.millis(600), sub);
-                    fade.setFromValue(0); fade.setToValue(1);
-                    ScaleTransition scale = new ScaleTransition(Duration.millis(600), sub);
-                    scale.setFromX(0.7); scale.setFromY(0.7);
-                    scale.setToX(1.0); scale.setToY(1.0);
-                    fade.play(); scale.play();
-                });
+                Group avatarModel = GlbLoader.loadFromResource(avatarPath);
+                javafx.application.Platform.runLater(() -> renderProfileAvatarScene(avatarModel));
             } catch (Exception e) {
                 System.err.println("Profile avatar load failed: " + e.getMessage());
             }
         }, "profile-avatar-loader");
         loader.setDaemon(true);
         loader.start();
+    }
+
+    private void renderProfileAvatarScene(Group avatarModel) {
+        double sceneSize = 134;
+        Group modelGroup = new Group();
+        Group world = new Group();
+        world.getChildren().add(modelGroup);
+
+        AmbientLight ambient = new AmbientLight(Color.color(0.5, 0.47, 0.55));
+        PointLight key = new PointLight(Color.color(0.9, 0.85, 0.95));
+        key.setTranslateX(3); key.setTranslateY(-4); key.setTranslateZ(5);
+        PointLight fill = new PointLight(Color.color(0.4, 0.38, 0.65));
+        fill.setTranslateX(-3); fill.setTranslateY(2); fill.setTranslateZ(-3);
+        world.getChildren().addAll(ambient, key, fill);
+
+        PerspectiveCamera camera = new PerspectiveCamera(true);
+        camera.setFieldOfView(38);
+        camera.setNearClip(0.01);
+        camera.setFarClip(200);
+        camera.setTranslateZ(-3.2);
+
+        SubScene sub = new SubScene(world, sceneSize, sceneSize, true, SceneAntialiasing.BALANCED);
+        sub.setCamera(camera);
+        sub.setFill(Color.TRANSPARENT);
+
+        Group avatarHolder = new Group();
+        avatarHolder.getChildren().add(avatarModel);
+        fitModelToTarget(avatarModel, 1.8);
+        modelGroup.getChildren().add(avatarHolder);
+
+        Rotate rot = new Rotate(0, Rotate.Y_AXIS);
+        modelGroup.getTransforms().add(rot);
+        if (avatarRotator != null) avatarRotator.stop();
+        avatarRotator = new AnimationTimer() {
+            private long last = 0;
+            @Override public void handle(long now) {
+                if (last != 0) rot.setAngle(rot.getAngle() + (now - last) * 1e-9 * 35.0);
+                last = now;
+            }
+        };
+        avatarRotator.start();
+
+        avatarInitials.setVisible(false);
+        avatarInitials.setManaged(false);
+        avatarContainer.getChildren().clear();
+        StackPane innerBg = new StackPane();
+        innerBg.getStyleClass().add("profile-avatar-inner");
+        innerBg.getChildren().add(sub);
+        avatarContainer.getChildren().add(innerBg);
+
+        sub.setOpacity(0);
+        sub.setScaleX(0.7);
+        sub.setScaleY(0.7);
+        FadeTransition fade = new FadeTransition(Duration.millis(600), sub);
+        fade.setFromValue(0); fade.setToValue(1);
+        ScaleTransition scale = new ScaleTransition(Duration.millis(600), sub);
+        scale.setFromX(0.7); scale.setFromY(0.7);
+        scale.setToX(1.0); scale.setToY(1.0);
+        fade.play();
+        scale.play();
+    }
+
+    private void fitModelToTarget(Group loaded, double targetSize) {
+        Bounds b = loaded.getBoundsInLocal();
+        if (b.isEmpty() || b.getWidth() <= 1e-6) {
+            return;
+        }
+        double cx = (b.getMinX() + b.getMaxX()) / 2.0;
+        double cy = (b.getMinY() + b.getMaxY()) / 2.0;
+        double cz = (b.getMinZ() + b.getMaxZ()) / 2.0;
+        double maxDim = Math.max(b.getWidth(), Math.max(b.getHeight(), b.getDepth()));
+        double fit = targetSize / maxDim;
+        loaded.getTransforms().clear();
+        loaded.getTransforms().add(new Scale(fit, fit, fit));
+        loaded.getTransforms().add(new Translate(-cx, -cy, -cz));
     }
 
     // ============================================
@@ -527,6 +537,7 @@ public class ProfileController implements Initializable {
         // Save avatar if changed
         if (selectedAvatar != null && !selectedAvatar.isEmpty()) {
             currentUser.setProfilePic(selectedAvatar);
+            currentAvatar = selectedAvatar;
         }
 
         serviceUser.update(currentUser);
@@ -552,6 +563,9 @@ public class ProfileController implements Initializable {
         
         // Reset selected avatar after saving
         selectedAvatar = null;
+        if (currentAvatar != null && !currentAvatar.isEmpty() && currentAvatar.contains("avatar")) {
+            loadAvatar3D(currentAvatar);
+        }
     }
 
     @FXML
@@ -739,6 +753,7 @@ public class ProfileController implements Initializable {
 
     private void onProfileAvatarSelected(String avatarKey) {
         selectedAvatar = avatarKey;
+        currentAvatar = avatarKey;
         
         // Update UI to show selected
         for (AvatarCard c : avatarCards) {
