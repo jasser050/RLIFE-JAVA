@@ -250,6 +250,33 @@
           AnchorPane.rightAnchor="0.0"
           AnchorPane.bottomAnchor="0.0"
           AnchorPane.leftAnchor="0.0">
+        <StackPane fx:id="spotifyFloatingButton" styleClass="spotify-float-btn"
+                   layoutX="335" layoutY="16"
+                   onMousePressed="#onSpotifyWidgetPressed"
+                   onMouseDragged="#onSpotifyWidgetDragged"
+                   onMouseReleased="#onSpotifyWidgetReleased"
+                   onMouseClicked="#openSpotifyPlayer"
+                   pickOnBounds="true">
+            <Label text="&#9835;" styleClass="spotify-float-icon"/>
+        </StackPane>
+
+        <VBox fx:id="spotifyPanel" styleClass="spotify-panel" spacing="10"
+              visible="false" managed="false" layoutX="335" layoutY="82">
+            <HBox alignment="CENTER_LEFT" spacing="8">
+                <Label text="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;" styleClass="spotify-panel-dots"/>
+                <Label text="Spotify" styleClass="spotify-panel-title"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Button text="&#215;" styleClass="spotify-panel-close-btn" onAction="#hideSpotifyPanel"/>
+            </HBox>
+            <HBox spacing="8">
+                <Button fx:id="spotifyPresetNatureBtn" text="Nature" styleClass="spotify-chip" onAction="#selectSpotifyNature"/>
+                <Button fx:id="spotifyPresetQuranBtn" text="Quran" styleClass="spotify-chip" onAction="#selectSpotifyQuran"/>
+                <Button fx:id="spotifyPresetRelaxBtn" text="Relax" styleClass="spotify-chip" onAction="#selectSpotifyRelax"/>
+                <Button fx:id="spotifyPresetMotivationBtn" text="Motivation" styleClass="spotify-chip" onAction="#selectSpotifyMotivation"/>
+            </HBox>
+            <Label text="Listening via Spotify &#8226; Drag to move" styleClass="spotify-panel-foot"/>
+        </VBox>
+
         <VBox fx:id="globalQuoteCard" styleClass="global-quote-card" spacing="6"
               visible="false" managed="false" layoutX="16" layoutY="16">
             <HBox alignment="CENTER_LEFT" spacing="8">
