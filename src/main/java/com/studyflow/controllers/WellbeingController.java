@@ -80,8 +80,10 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.image.BufferedImage;
+import java.net.URI;
 import java.net.URL;
 import java.time.LocalDateTime;
 import java.time.Duration;
@@ -221,6 +223,9 @@ public class WellbeingController implements Initializable {
     private static final String PREF_QUOTE_DISMISSED_UNTIL = "global.quote.dismissed.until";
     private static final String PREF_QUOTE_POS_X = "global.quote.position.x";
     private static final String PREF_QUOTE_POS_Y = "global.quote.position.y";
+    private static final String PREF_SPOTIFY_VISIBLE = "global.spotify.visible";
+    private static final String PREF_SPOTIFY_EXPANDED = "global.spotify.expanded";
+    private static final String PREF_SPOTIFY_PRESET = "global.spotify.preset";
     private static final int MOOD_EMOJI_SIZE = 56;
     private static final int MOOD_EMOJI_FALLBACK_FONT_SIZE = 50;
     private static final int MOOD_CAMERA_SAMPLE_COUNT = 3;
@@ -750,7 +755,13 @@ public class WellbeingController implements Initializable {
             case "gratitude_journal" -> openJournalTool(session);
             case "yoga_coach" -> openYogaTool(session);
             case "ai_chat_coach" -> openAiChatTool(session);
-            case "nature_sounds" -> openNatureSoundsSpotifyTool(session);
+            case "nature_sounds" -> {
+                preferences.putBoolean(PREF_SPOTIFY_VISIBLE, true);
+                preferences.putBoolean(PREF_SPOTIFY_EXPANDED, true);
+                preferences.put(PREF_SPOTIFY_PRESET, "nature");
+                showGlobalMessage("Spotify widget opened.", false);
+                closeSession(session, LocalDateTime.now(), true);
+            }
             case "mood_camera" -> openMoodCameraTool(session);
             default -> openBreathingTool(session);
         }
@@ -2788,6 +2799,12 @@ public class WellbeingController implements Initializable {
     }
 
     private void openNatureSoundsTool(CopingSession session) {
+        // Route legacy nature-sounds panel to the Spotify widget implementation.
+        if (preferences != null) {
+            openNatureSoundsSpotifyTool(session);
+            return;
+        }
+
         VBox root = new VBox(14);
         root.setStyle("-fx-background-color: linear-gradient(to bottom right, #040b19, #07122a, #0a1633);");
 
@@ -3288,7 +3305,14 @@ public class WellbeingController implements Initializable {
                 "-fx-font-weight: 700;" +
                 "-fx-background-radius: 8;"
         );
-        customUrlRow.getChildren().addAll(customUrlField, loadCustomBtn);
+        Button openExternalBtn = new Button("Open in Spotify");
+        openExternalBtn.setStyle(
+                "-fx-background-color: #16a34a;" +
+                "-fx-text-fill: #dcfce7;" +
+                "-fx-font-weight: 700;" +
+                "-fx-background-radius: 8;"
+        );
+        customUrlRow.getChildren().addAll(customUrlField, loadCustomBtn, openExternalBtn);
 
         Label loadingLabel = new Label("Loading Spotify...");
         loadingLabel.setStyle("-fx-text-fill: #94a3b8; -fx-font-size: 12px;");
@@ -3338,6 +3362,7 @@ public class WellbeingController implements Initializable {
 
         final String[] currentPreset = {"nature"};
         final String[] currentSize = {"sm"};
+        final String[] currentSourceUrl = {spotifyPlaylists.get("nature")};
         final double[] dragAnchor = {0, 0};
         final double[] dragTranslate = {0, 0};
 
@@ -3385,6 +3410,7 @@ public class WellbeingController implements Initializable {
             String key = spotifyPlaylists.containsKey(preset) ? preset : "nature";
             currentPreset[0] = key;
             String src = (forcedUrl != null && !forcedUrl.isBlank()) ? forcedUrl.trim() : spotifyPlaylists.get(key);
+            currentSourceUrl[0] = src;
             label.setText(spotifyLabels.getOrDefault(key, "Nature Sounds"));
             loadingLabel.setVisible(true);
             loadingLabel.setManaged(true);
@@ -3417,6 +3443,7 @@ public class WellbeingController implements Initializable {
 
         loadCustomBtn.setOnAction(e -> loadSpotify.accept(currentPreset[0], customUrlField.getText()));
         customUrlField.setOnAction(e -> loadSpotify.accept(currentPreset[0], customUrlField.getText()));
+        openExternalBtn.setOnAction(e -> openSpotifyExternally(currentSourceUrl[0]));
 
         widget.setOnMousePressed(e -> {
             dragAnchor[0] = e.getSceneX();
@@ -3450,7 +3477,6 @@ public class WellbeingController implements Initializable {
         });
         collapseBtn.setOnAction(e -> hidePanel.run());
 
-        Stage stage = createToolStage("Nature Sounds", root, 1040, 700);
         LocalDateTime openedAt = LocalDateTime.now();
         AtomicBoolean sessionClosed = new AtomicBoolean(false);
         AtomicBoolean loadedAnyPlaylist = new AtomicBoolean(false);
@@ -3461,11 +3487,7 @@ public class WellbeingController implements Initializable {
             }
             closeSession(session, openedAt, completed);
         };
-        closeBtn.setOnAction(e -> {
-            closeAndSave.accept(loadedAnyPlaylist.get());
-            stage.close();
-        });
-        stage.setOnCloseRequest(e -> closeAndSave.accept(loadedAnyPlaylist.get()));
+        closeBtn.setOnAction(e -> handleCloseInlineTool());
 
         loadSpotify.accept("nature", "");
         loadedAnyPlaylist.set(true);
@@ -3473,7 +3495,29 @@ public class WellbeingController implements Initializable {
         refreshSizeStyles.run();
         applySize.run();
         showPanel.run();
-        stage.show();
+        showInlineTool("Nature Sounds", root, () -> closeAndSave.accept(loadedAnyPlaylist.get()));
+    }
+
+    private void openSpotifyExternally(String spotifyUrl) {
+        if (spotifyUrl == null || spotifyUrl.isBlank()) {
+            showGlobalMessage("No Spotify URL selected.", true);
+            return;
+        }
+        if (!Desktop.isDesktopSupported() || !Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+            showGlobalMessage("Cannot open browser on this system.", true);
+            return;
+        }
+        try {
+            String externalUrl = spotifyUrl.trim().replace("://open.spotify.com/embed/", "://open.spotify.com/");
+            int queryStart = externalUrl.indexOf('?');
+            if (queryStart >= 0) {
+                externalUrl = externalUrl.substring(0, queryStart);
+            }
+            Desktop.getDesktop().browse(URI.create(externalUrl));
+            showGlobalMessage("Opened Spotify externally.", false);
+        } catch (Exception ex) {
+            showGlobalMessage("Failed to open Spotify URL.", true);
+        }
     }
 
     private void closeSession(CopingSession session, LocalDateTime openedAt, boolean completed) {
