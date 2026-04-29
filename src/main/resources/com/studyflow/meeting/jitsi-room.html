@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RLIFE Project Meeting</title>
+  <style>
+    html, body, #meet {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      background: #0f172a;
+      overflow: hidden;
+      font-family: "Segoe UI", sans-serif;
+    }
+    .status {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #e2e8f0;
+      background: #0f172a;
+      z-index: 2;
+    }
+  </style>
+</head>
+<body>
+<div id="status" class="status">Loading Jitsi meeting...</div>
+<div id="meet"></div>
+
+<script src="https://meet.jit.si/external_api.js"></script>
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const roomName = params.get('room') || 'rlife-project-room';
+  const displayName = params.get('name') || 'RLIFE User';
+  const subject = params.get('subject') || 'RLIFE Project Meeting';
+  const status = document.getElementById('status');
+
+  function hideStatus() {
+    if (status) {
+      status.style.display = 'none';
+    }
+  }
+
+  if (typeof JitsiMeetExternalAPI === 'undefined') {
+    if (status) {
+      status.textContent = 'Jitsi failed to load. Check your internet connection.';
+    }
+  } else {
+    const api = new JitsiMeetExternalAPI('meet.jit.si', {
+      roomName,
+      parentNode: document.querySelector('#meet'),
+      width: '100%',
+      height: '100%',
+      userInfo: {
+        displayName
+      },
+      configOverwrite: {
+        disableDeepLinking: true,
+        prejoinConfig: {
+          enabled: false
+        },
+        startWithAudioMuted: false,
+        startWithVideoMuted: false,
+        subject
+      },
+      interfaceConfigOverwrite: {
+        MOBILE_APP_PROMO: false
+      }
+    });
+
+    api.addListener('videoConferenceJoined', hideStatus);
+    api.addListener('readyToClose', () => {
+      if (status) {
+        status.textContent = 'Meeting closed.';
+        status.style.display = 'flex';
+      }
+    });
+
+    window.meetApi = api;
+  }
+</script>
+</body>
+</html>
