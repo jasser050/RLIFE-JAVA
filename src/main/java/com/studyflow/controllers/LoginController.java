@@ -41,7 +41,7 @@ import java.util.Map;
 import java.util.ResourceBundle;
 
 public class LoginController implements Initializable {
-    private static final boolean CAPTCHA_ENABLED = false;
+    private static final boolean CAPTCHA_ENABLED = true;
     private static final String RECAPTCHA_SECRET = firstNonBlank(
             System.getenv("RECAPTCHA_SECRET_KEY"),
             System.getProperty("recaptcha.secret.key")
