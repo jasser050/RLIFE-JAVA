@@ -100,6 +100,7 @@ public class LoginController implements Initializable {
             admin.setLastName("");
             admin.setUsername("admin");
             UserSession.getInstance().setCurrentUser(admin);
+            UserSession.getInstance().saveSession();
             try {
                 App.setRoot("views/AdminLayout");
             } catch (IOException e) {
@@ -162,7 +163,7 @@ public class LoginController implements Initializable {
     private void verifyCaptchaAndLogin(String token, User user) {
         Thread thread = new Thread(() -> {
             try {
-                String secretKey = "";
+                String secretKey = "6Ld66scsAAAAAOUGu2Y6jJH27DA_nNLZB0kFsFWL";
                 String verifyBody = "secret=" + URLEncoder.encode(secretKey, StandardCharsets.UTF_8)
                         + "&response=" + URLEncoder.encode(token, StandardCharsets.UTF_8);
 
@@ -181,6 +182,7 @@ public class LoginController implements Initializable {
                 Platform.runLater(() -> {
                     if (success) {
                         UserSession.getInstance().setCurrentUser(user);
+                        UserSession.getInstance().saveSession();
                         try {
                             App.setRoot("views/MainLayout");
                         } catch (IOException e) {
@@ -308,6 +310,7 @@ public class LoginController implements Initializable {
                             status.setStyle("-fx-text-fill: #34D399; -fx-font-size: 14px; -fx-font-weight: bold;");
                             dialog.close();
                             UserSession.getInstance().setCurrentUser(foundUser);
+                            UserSession.getInstance().saveSession();
                             try {
                                 App.setRoot("views/MainLayout");
                             } catch (IOException ex) {
@@ -448,6 +451,7 @@ public class LoginController implements Initializable {
                     }
 
                     UserSession.getInstance().setCurrentUser(user);
+                    UserSession.getInstance().saveSession();
                     try {
                         App.setRoot("views/MainLayout");
                     } catch (IOException e) {
