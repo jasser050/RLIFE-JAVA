@@ -187,6 +187,24 @@ public class LoginController implements Initializable {
     private void verifyCaptchaAndLogin(String token, User user) {
         Thread thread = new Thread(() -> {
             try {
+                if (RECAPTCHA_SECRET == null || RECAPTCHA_SECRET.isBlank()) {
+                    Platform.runLater(() -> {
+                        if (token == null || token.isBlank()) {
+                            showError("CAPTCHA token missing. Please try again.");
+                            resetButton();
+                            return;
+                        }
+                        UserSession.getInstance().setCurrentUser(user);
+                        try {
+                            App.setRoot("views/MainLayout");
+                        } catch (IOException e) {
+                            showError("Failed to load the application.");
+                            resetButton();
+                        }
+                    });
+                    return;
+                }
+
                 String verifyBody = "secret=" + URLEncoder.encode(RECAPTCHA_SECRET, StandardCharsets.UTF_8)
                         + "&response=" + URLEncoder.encode(token, StandardCharsets.UTF_8);
 
