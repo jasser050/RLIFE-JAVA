@@ -1680,7 +1680,7 @@
 }
 
 /* ============================================
-   AUTH PAGES (Login + Register) — Redesigned
+   AUTH PAGES (Login + Register) â€” Redesigned
    ============================================ */
 
 .auth-root {
@@ -1849,7 +1849,7 @@
 }
 
 /* ============================================
-   PROFILE PAGE — Beautiful Redesign
+   PROFILE PAGE â€” Beautiful Redesign
    ============================================ */
 
 .profile-container { -fx-background-color: #020617; }
@@ -2131,7 +2131,7 @@
 }
 
 /* ============================================
-   LANDING — Layout panels & mock window
+   LANDING â€” Layout panels & mock window
    ============================================ */
 
 .landing-left {
@@ -2247,7 +2247,7 @@
 }
 
 /* ============================================
-   LANDING — Scroll & Mock Window Elements
+   LANDING â€” Scroll & Mock Window Elements
    ============================================ */
 
 .landing-scroll {
@@ -2312,7 +2312,7 @@
 }
 
 /* ============================================
-   LANDING — Features Section
+   LANDING â€” Features Section
    ============================================ */
 
 .landing-features-section {
@@ -2367,7 +2367,7 @@
 }
 
 /* ============================================
-   LANDING — Social Proof Section
+   LANDING â€” Social Proof Section
    ============================================ */
 
 .landing-proof-section {
@@ -2444,7 +2444,7 @@
 }
 
 /* ============================================
-   LANDING — Bottom CTA Section
+   LANDING â€” Bottom CTA Section
    ============================================ */
 
 .landing-bottom-cta {
@@ -4038,7 +4038,7 @@
     -fx-alignment: CENTER;
 }
 
-/* Step circle — default (inactive) */
+/* Step circle â€” default (inactive) */
 .wizard-step-circle {
     -fx-pref-width: 36;  -fx-pref-height: 36;
     -fx-min-width: 36;   -fx-min-height: 36;
@@ -4068,7 +4068,7 @@
     -fx-text-fill: white;
 }
 
-/* Completed step — green with tick */
+/* Completed step â€” green with tick */
 .wizard-step-circle.wizard-step-done {
     -fx-background-color: linear-gradient(to bottom right, #22C55E, #16A34A);
     -fx-border-color: transparent;
@@ -4143,11 +4143,11 @@
 }
 
 /* ============================================
-   PROFILE HERO — CLEAN FINAL OVERRIDES
+   PROFILE HERO â€” CLEAN FINAL OVERRIDES
    These rules are last in the file so they win.
    ============================================ */
 
-/* Avatar ring — indigo?purple?pink, NO green at all */
+/* Avatar ring â€” indigo?purple?pink, NO green at all */
 .profile-avatar-ring {
     -fx-background-color: linear-gradient(to bottom right, #6366F1, #8B5CF6, #EC4899);
     -fx-background-radius: 100;
@@ -4180,14 +4180,14 @@
     -fx-min-width: 7;  -fx-min-height: 7;
 }
 
-/* Purple bottom-left glow — replaces the blue/green orb */
+/* Purple bottom-left glow â€” replaces the blue/green orb */
 .profile-glow-orb-purple {
     -fx-background-color: radial-gradient(center 50% 50%, radius 50%, rgba(109,40,217,0.3) 0%, transparent 100%);
     -fx-pref-width: 180; -fx-pref-height: 180;
     -fx-min-width: 180;  -fx-min-height: 180;
 }
 
-/* -- Final definitive avatar ring — bigger for 3D avatar -- */
+/* -- Final definitive avatar ring â€” bigger for 3D avatar -- */
 .profile-avatar-ring {
     -fx-background-color: linear-gradient(to bottom right, #6366F1, #8B5CF6, #EC4899);
     -fx-background-radius: 100;
@@ -5372,3 +5372,489 @@
 .pet-message-error {
     -fx-text-fill: #FCA5A5;
 }
+
+/* Wellbeing branch design overrides */
+.wellbeing-page .wellbeing-tools-page {
+    -fx-background-color: linear-gradient(to right, rgba(8, 19, 49, 0.98), rgba(22, 20, 48, 0.96));
+    -fx-background-radius: 16;
+    -fx-border-color: rgba(30, 64, 175, 0.4);
+    -fx-border-width: 1;
+    -fx-border-radius: 16;
+    -fx-padding: 16 20 10 20;
+}
+.wellbeing-page .tools-main-title {
+    -fx-text-fill: #EAF2FF;
+    -fx-font-size: 34px;
+    -fx-font-weight: 800;
+}
+.wellbeing-page .tools-main-subtitle {
+    -fx-text-fill: #9CA7BE;
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+}
+.wellbeing-page .wellbeing-input-card {
+    -fx-background-color: linear-gradient(to bottom right, rgba(15, 23, 42, 0.92), rgba(17, 24, 39, 0.88));
+    -fx-border-color: rgba(71, 85, 105, 0.7);
+    -fx-border-width: 1;
+    -fx-border-radius: 16;
+    -fx-background-radius: 16;
+    -fx-padding: 16;
+}
+.wellbeing-page .wellbeing-choice-card,
+.wellbeing-page .wellbeing-sleep-card {
+    -fx-background-color: #111827;
+    -fx-border-color: #334155;
+    -fx-border-width: 1;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+    -fx-text-fill: #E2E8F0;
+    -fx-font-size: 13px;
+    -fx-font-weight: 700;
+    -fx-padding: 10 12;
+}
+.wellbeing-page .wellbeing-choice-card:hover,
+.wellbeing-page .wellbeing-sleep-card:hover {
+    -fx-background-color: #1E293B;
+    -fx-border-color: #475569;
+}
+.wellbeing-page .wellbeing-choice-card.selected {
+    -fx-background-color: linear-gradient(to right, rgba(59, 130, 246, 0.34), rgba(14, 165, 233, 0.30));
+    -fx-border-color: #60A5FA;
+    -fx-text-fill: #F8FAFC;
+}
+.wellbeing-page .wellbeing-sleep-card.selected {
+    -fx-background-color: linear-gradient(to right, rgba(99, 102, 241, 0.35), rgba(139, 92, 246, 0.32));
+    -fx-border-color: #818CF8;
+    -fx-text-fill: #F8FAFC;
+}
+.wellbeing-page .wellbeing-notes-area {
+    -fx-background-color: #0F172A;
+    -fx-border-color: #334155;
+    -fx-border-width: 1;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+    -fx-text-fill: #E2E8F0;
+    -fx-prompt-text-fill: #64748B;
+    -fx-padding: 12;
+}
+.wellbeing-page .wellbeing-notes-area:focused {
+    -fx-background-color: #0B1324;
+    -fx-border-color: #818CF8;
+}
+.wellbeing-page .wellbeing-notes-area .content {
+    -fx-background-color: transparent;
+}
+.wellbeing-page .wellbeing-quote-controls {
+    -fx-background-color: rgba(15, 23, 42, 0.55);
+    -fx-background-radius: 12;
+    -fx-padding: 10 12;
+}
+.wellbeing-page .wellbeing-quote-controls .check-box .text {
+    -fx-fill: #CBD5E1;
+}
+.wellbeing-page .tools-control-bar {
+    -fx-background-color: rgba(9, 18, 44, 0.9);
+    -fx-border-color: rgba(30, 64, 175, 0.55);
+    -fx-border-width: 1;
+    -fx-border-radius: 12;
+}
+.wellbeing-page .tools-control-hint {
+    -fx-text-fill: #95A3BE;
+    -fx-font-size: 12px;
+}
+.wellbeing-page .tools-reset-btn {
+    -fx-background-color: #1E2D48;
+    -fx-text-fill: #E2E8F0;
+}
+.wellbeing-page .tools-highlight-banner {
+    -fx-background-color: linear-gradient(to right, rgba(99, 102, 241, 0.9), rgba(38, 180, 193, 0.95));
+    -fx-background-radius: 14;
+    -fx-padding: 18 20;
+}
+.wellbeing-page .tools-highlight-title {
+    -fx-text-fill: #F8FAFC;
+    -fx-font-size: 34px;
+    -fx-font-weight: 800;
+}
+.wellbeing-page .tools-highlight-subtitle {
+    -fx-text-fill: #D9EAF6;
+    -fx-font-size: 13px;
+    -fx-font-weight: 700;
+}
+.wellbeing-page .tools-highlight-btn {
+    -fx-background-color: rgba(248, 250, 252, 0.95);
+    -fx-text-fill: #4F46E5;
+    -fx-font-weight: 800;
+    -fx-background-radius: 16;
+}
+.wellbeing-page .wellbeing-tools-preview-shell,
+.wellbeing-page .card,
+.wellbeing-page #formSection,
+.wellbeing-page #historySection .card,
+.wellbeing-page #quizSection,
+.wellbeing-page #quizResultsSection,
+.wellbeing-page #quizModeSection,
+.wellbeing-page #inlineToolSection {
+    -fx-background-color: linear-gradient(to right, rgba(8, 19, 49, 0.96), rgba(22, 20, 48, 0.92));
+    -fx-border-color: rgba(30, 64, 175, 0.42);
+    -fx-border-width: 1;
+    -fx-border-radius: 16;
+    -fx-background-radius: 16;
+}
+.wellbeing-page .card-header,
+.wellbeing-page #quizSection .card-header,
+.wellbeing-page #quizResultsSection .card-header {
+    -fx-background-color: rgba(7, 17, 43, 0.92);
+    -fx-border-color: rgba(20, 184, 166, 0.45);
+    -fx-border-width: 0 0 1 0;
+}
+.wellbeing-page .card-title,
+.wellbeing-page .text-heading,
+.wellbeing-page .text-subheading,
+.wellbeing-page .text-body {
+    -fx-text-fill: #EAF2FF;
+}
+.wellbeing-page .text-small,
+.wellbeing-page .text-muted,
+.wellbeing-page .wellbeing-kpi-label {
+    -fx-text-fill: #9CA7BE;
+}
+.wellbeing-page .wellbeing-tool-preview-card,
+.wellbeing-page .wellbeing-tool-card {
+    -fx-background-color: rgba(8, 19, 49, 0.84);
+    -fx-border-color: rgba(20, 184, 166, 0.55);
+    -fx-border-width: 1;
+    -fx-border-radius: 14;
+    -fx-background-radius: 14;
+    -fx-padding: 14 16;
+}
+.wellbeing-page .wellbeing-tool-icon,
+.wellbeing-page .wellbeing-header-icon {
+    -fx-pref-width: 48;
+    -fx-pref-height: 48;
+    -fx-min-width: 48;
+    -fx-min-height: 48;
+    -fx-alignment: center;
+    -fx-background-radius: 14;
+    -fx-background-color: rgba(99, 102, 241, 0.18);
+}
+.wellbeing-page .wellbeing-tool-icon .ikonli-font-icon,
+.wellbeing-page .wellbeing-header-icon .ikonli-font-icon {
+    -fx-icon-color: #A5B4FC;
+}
+.wellbeing-page .tools-card-title,
+.wellbeing-page .tools-tips-title,
+.wellbeing-page .tools-tip-title,
+.wellbeing-page .wellbeing-day-label,
+.wellbeing-page .wellbeing-day-mood {
+    -fx-text-fill: #EAF2FF;
+    -fx-font-weight: 800;
+}
+.wellbeing-page .tools-card-desc,
+.wellbeing-page .tools-tip-desc {
+    -fx-text-fill: #CFD8EA;
+    -fx-font-size: 12px;
+    -fx-font-weight: 600;
+}
+.wellbeing-page .tools-start-btn {
+    -fx-background-color: linear-gradient(to right, #06B6D4, #0891B2);
+    -fx-text-fill: #EAFBFF;
+    -fx-font-weight: 800;
+    -fx-background-radius: 14;
+    -fx-padding: 8 22;
+}
+.wellbeing-page .wellbeing-day-box {
+    -fx-background-color: rgba(15, 23, 42, 0.55);
+    -fx-background-radius: 14;
+    -fx-border-color: rgba(71, 85, 105, 0.45);
+    -fx-border-radius: 14;
+}
+.global-quote-card {
+    -fx-min-width: 310;
+    -fx-pref-width: 310;
+    -fx-max-width: 310;
+    -fx-min-height: 155;
+    -fx-pref-height: 155;
+    -fx-max-height: 155;
+    -fx-padding: 8 10 8 10;
+    -fx-background-color: linear-gradient(to bottom right, rgba(5, 14, 34, 0.98), rgba(8, 22, 51, 0.95));
+    -fx-border-color: rgba(56, 189, 248, 0.55);
+    -fx-border-width: 1;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+}
+.global-quote-top {
+    -fx-text-fill: #7DD3FC;
+    -fx-font-size: 10px;
+    -fx-font-weight: 700;
+}
+.global-quote-mark {
+    -fx-text-fill: #38BDF8;
+    -fx-font-size: 18px;
+}
+.global-quote-text {
+    -fx-text-fill: #E6F3FF;
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+}
+.global-quote-meta {
+    -fx-text-fill: #67E8F9;
+    -fx-font-size: 10px;
+    -fx-font-weight: 700;
+}
+.global-quote-close-btn {
+    -fx-background-color: transparent;
+    -fx-text-fill: #94A3B8;
+    -fx-padding: 2 6;
+    -fx-font-size: 12px;
+}
+.global-quote-close-btn:hover {
+    -fx-background-color: rgba(148, 163, 184, 0.14);
+    -fx-background-radius: 8;
+    -fx-text-fill: #E2E8F0;
+}
+
+/* Planning branch design overrides */
+.planning-root {
+    -fx-background-color: #020617;
+}
+.planning-top-zone {
+    -fx-background-color: transparent;
+    -fx-padding: 0 0 2 0;
+}
+.planning-board-layout {
+    -fx-alignment: TOP_LEFT;
+}
+.planning-main-card {
+    -fx-min-width: 760;
+}
+.planning-side-column {
+    -fx-padding: 0;
+}
+.planning-week-header-grid {
+    -fx-background-color: linear-gradient(to bottom, #1A2437, #141F32);
+    -fx-background-radius: 14;
+    -fx-padding: 4;
+}
+.planning-weekday-label {
+    -fx-alignment: center;
+    -fx-max-width: infinity;
+    -fx-padding: 10 0;
+    -fx-text-fill: #94A3B8;
+    -fx-font-weight: 700;
+    -fx-font-size: 12px;
+}
+.planning-calendar-grid {
+    -fx-background-color: transparent;
+    -fx-padding: 4;
+}
+.planning-calendar-scroll {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 0 8 8 8;
+    -fx-border-color: transparent;
+}
+.planning-calendar-scroll > .viewport,
+.planning-side-scroll > .viewport,
+.chat-scroll > .viewport {
+    -fx-background-color: transparent;
+}
+.planning-upcoming-toolbar {
+    -fx-padding: 6 20 12 20;
+}
+.planning-upcoming-filter-frame {
+    -fx-background-color: linear-gradient(to bottom, #111C31, #0F182B);
+    -fx-border-color: #334155;
+    -fx-border-width: 1;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+    -fx-padding: 12;
+}
+.planning-upcoming-search,
+.planning-upcoming-combo,
+.planning-match-combo,
+.planning-assistant-input,
+.planning-date-picker,
+.planning-color-picker {
+    -fx-background-color: #111C31;
+    -fx-border-color: #334155;
+    -fx-border-width: 1;
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
+    -fx-text-fill: #F1F5F9;
+    -fx-prompt-text-fill: #64748B;
+}
+.planning-upcoming-search,
+.planning-assistant-input {
+    -fx-padding: 9 12;
+    -fx-min-height: 40;
+}
+.planning-upcoming-search:focused,
+.planning-upcoming-combo:focused,
+.planning-match-combo:focused,
+.planning-assistant-input:focused,
+.planning-date-picker:focused,
+.planning-color-picker:focused {
+    -fx-border-color: #8B5CF6;
+    -fx-effect: dropshadow(gaussian, rgba(139,92,246,0.20), 10, 0, 0, 0);
+}
+.planning-upcoming-combo > .arrow-button,
+.planning-match-combo > .arrow-button,
+.planning-color-picker > .arrow-button,
+.planning-date-picker > .arrow-button {
+    -fx-background-color: #1A2437;
+    -fx-background-radius: 0 10 10 0;
+}
+.planning-upcoming-combo .list-cell,
+.planning-match-combo .list-cell,
+.planning-color-picker > .color-picker-label,
+.planning-date-picker > .text-field {
+    -fx-text-fill: #E2E8F0;
+}
+.planning-match-card {
+    -fx-background-color: linear-gradient(to bottom right, rgba(15, 23, 42, 0.98), rgba(25, 35, 56, 0.95));
+    -fx-border-color: rgba(245, 158, 11, 0.36);
+}
+.planning-match-body,
+.planning-assistant-body {
+    -fx-padding: 14 20 18 20;
+}
+.planning-match-details-box {
+    -fx-background-color: rgba(15, 23, 42, 0.74);
+    -fx-border-color: rgba(71, 85, 105, 0.6);
+    -fx-border-width: 1;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+    -fx-padding: 10 12;
+}
+.planning-match-summary,
+.planning-match-calendar-entry-title,
+.planning-upcoming-item-title,
+.planning-calendar-entry-title {
+    -fx-text-fill: #F8FAFC;
+}
+.planning-match-detail,
+.planning-upcoming-item-time,
+.planning-calendar-entry-time,
+.planning-calendar-more {
+    -fx-text-fill: #94A3B8;
+}
+.planning-assistant-card {
+    -fx-background-color: linear-gradient(to bottom right, rgba(15, 23, 42, 0.98), rgba(21, 33, 58, 0.95));
+    -fx-border-color: rgba(124, 58, 237, 0.35);
+    -fx-effect: dropshadow(gaussian, rgba(76, 29, 149, 0.22), 16, 0, 0, 3);
+}
+.planning-ai-calendar-entry-card {
+    -fx-border-color: rgba(167, 139, 250, 0.72);
+    -fx-background-color: linear-gradient(to right, rgba(76, 29, 149, 0.26), rgba(30, 41, 59, 0.95));
+}
+.planning-ai-calendar-entry-title {
+    -fx-text-fill: #DDD6FE;
+}
+.planning-ai-upcoming-item-card {
+    -fx-border-color: rgba(139, 92, 246, 0.68);
+    -fx-background-color: linear-gradient(to right, rgba(76, 29, 149, 0.2), rgba(15, 23, 42, 0.95));
+}
+.planning-ai-badge {
+    -fx-background-color: linear-gradient(to right, #8B5CF6, #7C3AED);
+    -fx-text-fill: white;
+    -fx-font-size: 10px;
+    -fx-font-weight: 800;
+    -fx-padding: 3 8;
+    -fx-background-radius: 999;
+    -fx-border-radius: 999;
+    -fx-border-color: rgba(196, 181, 253, 0.6);
+    -fx-border-width: 1;
+}
+.planning-calendar-cell {
+    -fx-background-color: linear-gradient(to bottom, #0F172A, #0C1629);
+    -fx-border-color: rgba(71,85,105,0.65);
+    -fx-border-width: 1;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+    -fx-padding: 9;
+    -fx-spacing: 6;
+    -fx-effect: dropshadow(gaussian, rgba(2,6,23,0.38), 10, 0, 0, 2);
+}
+.planning-calendar-cell-hover {
+    -fx-background-color: linear-gradient(to bottom, #13213A, #0F1C33);
+    -fx-border-color: rgba(139,92,246,0.5);
+    -fx-effect: dropshadow(gaussian, rgba(139,92,246,0.2), 14, 0, 0, 0);
+}
+.planning-calendar-cell-outside {
+    -fx-background-color: linear-gradient(to bottom, #0B1324, #0A1120);
+    -fx-border-color: rgba(51,65,85,0.4);
+    -fx-opacity: 0.8;
+}
+.planning-calendar-cell-today {
+    -fx-border-color: #8B5CF6;
+    -fx-border-width: 1.2;
+    -fx-effect: dropshadow(gaussian, rgba(139,92,246,0.28), 15, 0, 0, 0);
+}
+.planning-calendar-day-label {
+    -fx-text-fill: #E2E8F0;
+    -fx-font-size: 12px;
+    -fx-font-weight: 700;
+    -fx-padding: 0 0 4 0;
+}
+.planning-calendar-day-label-outside {
+    -fx-text-fill: #64748B;
+}
+.planning-calendar-day-label-today {
+    -fx-background-color: linear-gradient(to bottom right, #8B5CF6, #6D28D9);
+    -fx-text-fill: #FFFFFF;
+    -fx-background-radius: 100;
+    -fx-padding: 3 9;
+}
+.planning-calendar-entry-card,
+.planning-upcoming-item-card {
+    -fx-background-color: rgba(15, 23, 42, 0.95);
+    -fx-border-color: rgba(71, 85, 105, 0.65);
+    -fx-border-width: 1;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+}
+.planning-calendar-entry-card {
+    -fx-padding: 4 6;
+    -fx-cursor: hand;
+}
+.planning-calendar-entry-card:hover {
+    -fx-border-color: rgba(139, 92, 246, 0.55);
+    -fx-background-color: rgba(17, 28, 49, 0.96);
+}
+.planning-match-calendar-entry-card {
+    -fx-background-color: linear-gradient(to right, rgba(30, 64, 175, 0.22), rgba(245, 158, 11, 0.2));
+    -fx-border-color: rgba(245, 158, 11, 0.62);
+    -fx-border-width: 1.3;
+    -fx-padding: 6 7;
+}
+.planning-match-badge {
+    -fx-background-color: rgba(245, 158, 11, 0.2);
+    -fx-border-color: rgba(245, 158, 11, 0.6);
+    -fx-border-width: 1;
+    -fx-border-radius: 999;
+    -fx-background-radius: 999;
+    -fx-text-fill: #FDE68A;
+    -fx-font-size: 8.5px;
+    -fx-font-weight: 700;
+    -fx-padding: 1 7;
+}
+.planning-live-clock-card {
+    -fx-background-color: linear-gradient(to right, rgba(79, 70, 229, 0.28), rgba(30, 64, 175, 0.24));
+    -fx-border-color: rgba(129, 140, 248, 0.45);
+    -fx-border-width: 1;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+    -fx-padding: 7 12;
+}
+.planning-live-clock-time {
+    -fx-text-fill: #E0E7FF;
+    -fx-font-size: 14px;
+    -fx-font-weight: 900;
+}
+.planning-live-clock-date {
+    -fx-text-fill: #93C5FD;
+    -fx-font-size: 10px;
+    -fx-font-weight: 700;
+}
+/* End planning branch design overrides */

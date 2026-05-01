@@ -9,7 +9,7 @@ import com.studyflow.services.ServicePlanning;
 import com.studyflow.services.ServiceSeance;
 import com.studyflow.services.AIPlanningService;
 import com.studyflow.services.FootballDataService;
-import com.studyflow.services.PlanningPdfExportService;
+import com.studyflow.services.PlanningPdfApiService;
 import com.studyflow.services.PlanningEmailNotificationService;
 import com.studyflow.services.SpeechToTextService;
 import com.studyflow.services.SmartPlanService;
@@ -281,7 +281,7 @@ public class PlanningController implements Initializable {
     private final ServiceSeance serviceSeance = new ServiceSeance();
     private final ServiceTypeSeance serviceTypeSeance = new ServiceTypeSeance();
     private final PlanningEmailNotificationService planningEmailNotificationService = new PlanningEmailNotificationService();
-    private final PlanningPdfExportService planningPdfExportService = new PlanningPdfExportService();
+    private final PlanningPdfApiService planningPdfExportService = new PlanningPdfApiService();
     private final AIPlanningService claudePlanningService = new AIPlanningService();
     private final FootballDataService footballDataService = new FootballDataService();
     private final SmartPlanService smartPlanService = new SmartPlanService();
@@ -885,7 +885,8 @@ public class PlanningController implements Initializable {
         }
 
         try {
-            planningPdfExportService.export(selected.toPath(), currentUser, entries, apiKey);
+            System.setProperty("apdf.io.api.key", apiKey);
+            planningPdfExportService.exportPlanningPdf(entries, selected.toPath());
             showInfo("Planning PDF exported successfully via API.");
         } catch (Exception exception) {
             showErrorOn(pageMessageLabel, "PDF export failed: " + exception.getMessage());

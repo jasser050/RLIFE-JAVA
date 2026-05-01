@@ -394,7 +394,7 @@ public class ProjectsController implements Initializable {
             showFeedback("Select a project before uploading files.", true);
             return;
         }
-        if (!selectedProject.canCurrentUserUseGit() && !selectedProject.isOwnedByCurrentUser()) {
+        if (!canCurrentUserUseProjectWorkspace(selectedProject)) {
             showFeedback("You need project access before uploading files.", true);
             return;
         }
@@ -1635,6 +1635,20 @@ public class ProjectsController implements Initializable {
 
     private String defaultText(String value) {
         return value == null ? "" : value.trim();
+    }
+
+    private boolean canCurrentUserUseProjectWorkspace(Project project) {
+        User currentUser = getCurrentUser();
+        if (project == null || currentUser == null) {
+            return false;
+        }
+        if (project.isOwnedByCurrentUser()) {
+            return true;
+        }
+        if ("editor".equalsIgnoreCase(project.getSharedRole())) {
+            return true;
+        }
+        return projectService.userHasProjectAccess(project.getId(), currentUser.getId());
     }
 
     private String preferredUserIdentifier(User user) {

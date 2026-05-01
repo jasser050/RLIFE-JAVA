@@ -2092,3 +2092,321 @@
 .pet-message-error {
     -fx-text-fill: #B91C1C;
 }
+
+/* Wellbeing branch design overrides */
+.wellbeing-page .wellbeing-tools-page {
+    -fx-background-color: linear-gradient(to right, #F8FBFF, #F6F5FF);
+    -fx-background-radius: 16;
+    -fx-border-color: rgba(99, 102, 241, 0.18);
+    -fx-border-width: 1;
+    -fx-border-radius: 16;
+    -fx-padding: 16 20 10 20;
+}
+.wellbeing-page .tools-main-title {
+    -fx-text-fill: #0F172A;
+    -fx-font-size: 34px;
+    -fx-font-weight: 800;
+}
+.wellbeing-page .tools-main-subtitle,
+.wellbeing-page .text-small,
+.wellbeing-page .text-muted,
+.wellbeing-page .wellbeing-kpi-label {
+    -fx-text-fill: #64748B;
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+}
+.wellbeing-page .wellbeing-input-card,
+.wellbeing-page .wellbeing-tools-preview-shell,
+.wellbeing-page .card,
+.wellbeing-page #formSection,
+.wellbeing-page #historySection .card,
+.wellbeing-page #quizSection,
+.wellbeing-page #quizResultsSection,
+.wellbeing-page #quizModeSection,
+.wellbeing-page #inlineToolSection {
+    -fx-background-color: linear-gradient(to bottom right, #FFFFFF, #F8FAFC);
+    -fx-border-color: #E2E8F0;
+    -fx-border-width: 1;
+    -fx-border-radius: 16;
+    -fx-background-radius: 16;
+}
+.wellbeing-page .card-header,
+.wellbeing-page #quizSection .card-header,
+.wellbeing-page #quizResultsSection .card-header {
+    -fx-background-color: rgba(248, 250, 252, 0.98);
+    -fx-border-color: rgba(148, 163, 184, 0.22);
+    -fx-border-width: 0 0 1 0;
+}
+.wellbeing-page .card-title,
+.wellbeing-page .text-heading,
+.wellbeing-page .text-subheading,
+.wellbeing-page .text-body,
+.wellbeing-page .tools-card-title,
+.wellbeing-page .tools-tips-title,
+.wellbeing-page .tools-tip-title,
+.wellbeing-page .wellbeing-day-label,
+.wellbeing-page .wellbeing-day-mood {
+    -fx-text-fill: #0F172A;
+    -fx-font-weight: 800;
+}
+.wellbeing-page .wellbeing-choice-card,
+.wellbeing-page .wellbeing-sleep-card,
+.wellbeing-page .wellbeing-tool-preview-card,
+.wellbeing-page .wellbeing-tool-card,
+.wellbeing-page .wellbeing-day-box {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #E2E8F0;
+    -fx-border-width: 1;
+    -fx-border-radius: 14;
+    -fx-background-radius: 14;
+}
+.wellbeing-page .wellbeing-choice-card:hover,
+.wellbeing-page .wellbeing-sleep-card:hover {
+    -fx-background-color: #F8FAFC;
+    -fx-border-color: #CBD5E1;
+}
+.wellbeing-page .wellbeing-choice-card.selected {
+    -fx-background-color: linear-gradient(to right, rgba(59, 130, 246, 0.12), rgba(14, 165, 233, 0.12));
+    -fx-border-color: #60A5FA;
+    -fx-text-fill: #0F172A;
+}
+.wellbeing-page .wellbeing-sleep-card.selected {
+    -fx-background-color: linear-gradient(to right, rgba(99, 102, 241, 0.12), rgba(139, 92, 246, 0.12));
+    -fx-border-color: #818CF8;
+    -fx-text-fill: #0F172A;
+}
+.wellbeing-page .wellbeing-notes-area {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #CBD5E1;
+    -fx-border-width: 1;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+    -fx-text-fill: #0F172A;
+    -fx-prompt-text-fill: #94A3B8;
+    -fx-padding: 12;
+}
+.wellbeing-page .wellbeing-notes-area:focused {
+    -fx-border-color: #818CF8;
+}
+.wellbeing-page .wellbeing-notes-area .content {
+    -fx-background-color: transparent;
+}
+.wellbeing-page .wellbeing-quote-controls {
+    -fx-background-color: rgba(241, 245, 249, 0.95);
+    -fx-background-radius: 12;
+    -fx-padding: 10 12;
+}
+.wellbeing-page .wellbeing-quote-controls .check-box .text {
+    -fx-fill: #334155;
+}
+.wellbeing-page .tools-control-bar {
+    -fx-background-color: rgba(248, 250, 252, 0.98);
+    -fx-border-color: rgba(148, 163, 184, 0.28);
+    -fx-border-width: 1;
+    -fx-border-radius: 12;
+}
+.wellbeing-page .tools-control-hint {
+    -fx-text-fill: #64748B;
+    -fx-font-size: 12px;
+}
+.wellbeing-page .tools-reset-btn {
+    -fx-background-color: #E2E8F0;
+    -fx-text-fill: #0F172A;
+}
+.wellbeing-page .tools-highlight-banner {
+    -fx-background-color: linear-gradient(to right, #6366F1, #22C1D6);
+    -fx-background-radius: 14;
+    -fx-padding: 18 20;
+}
+.wellbeing-page .tools-highlight-title,
+.wellbeing-page .tools-highlight-subtitle {
+    -fx-text-fill: #FFFFFF;
+}
+.wellbeing-page .tools-highlight-title {
+    -fx-font-size: 34px;
+    -fx-font-weight: 800;
+}
+.wellbeing-page .tools-highlight-subtitle {
+    -fx-font-size: 13px;
+    -fx-font-weight: 700;
+}
+.wellbeing-page .tools-highlight-btn {
+    -fx-background-color: rgba(255, 255, 255, 0.96);
+    -fx-text-fill: #4F46E5;
+    -fx-font-weight: 800;
+    -fx-background-radius: 16;
+}
+.wellbeing-page .wellbeing-tool-icon,
+.wellbeing-page .wellbeing-header-icon {
+    -fx-pref-width: 48;
+    -fx-pref-height: 48;
+    -fx-min-width: 48;
+    -fx-min-height: 48;
+    -fx-alignment: center;
+    -fx-background-radius: 14;
+    -fx-background-color: rgba(99, 102, 241, 0.12);
+}
+.wellbeing-page .wellbeing-tool-icon .ikonli-font-icon,
+.wellbeing-page .wellbeing-header-icon .ikonli-font-icon {
+    -fx-icon-color: #6366F1;
+}
+.wellbeing-page .tools-card-desc,
+.wellbeing-page .tools-tip-desc {
+    -fx-text-fill: #475569;
+    -fx-font-size: 12px;
+    -fx-font-weight: 600;
+}
+.wellbeing-page .tools-start-btn {
+    -fx-background-color: linear-gradient(to right, #06B6D4, #0891B2);
+    -fx-text-fill: #F8FAFC;
+    -fx-font-weight: 800;
+    -fx-background-radius: 14;
+    -fx-padding: 8 22;
+}
+.global-quote-card {
+    -fx-min-width: 310;
+    -fx-pref-width: 310;
+    -fx-max-width: 310;
+    -fx-min-height: 155;
+    -fx-pref-height: 155;
+    -fx-max-height: 155;
+    -fx-padding: 8 10 8 10;
+    -fx-background-color: linear-gradient(to bottom right, #FFFFFF, #F8FAFC);
+    -fx-border-color: rgba(56, 189, 248, 0.35);
+    -fx-border-width: 1;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+}
+.global-quote-top {
+    -fx-text-fill: #0284C7;
+    -fx-font-size: 10px;
+    -fx-font-weight: 700;
+}
+.global-quote-mark {
+    -fx-text-fill: #0EA5E9;
+    -fx-font-size: 18px;
+}
+.global-quote-text {
+    -fx-text-fill: #0F172A;
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+}
+.global-quote-meta {
+    -fx-text-fill: #0891B2;
+    -fx-font-size: 10px;
+    -fx-font-weight: 700;
+}
+.global-quote-close-btn {
+    -fx-background-color: transparent;
+    -fx-text-fill: #64748B;
+    -fx-padding: 2 6;
+    -fx-font-size: 12px;
+}
+.global-quote-close-btn:hover {
+    -fx-background-color: rgba(148, 163, 184, 0.14);
+    -fx-background-radius: 8;
+    -fx-text-fill: #0F172A;
+}
+
+/* Planning branch design overrides for light theme */
+.planning-root {
+    -fx-background-color: #020617;
+}
+.planning-root .card,
+.planning-root .stat-card,
+.planning-root .planning-main-card,
+.planning-root .planning-match-card,
+.planning-root .planning-assistant-card,
+.planning-root .planning-upcoming-item-card,
+.planning-root .planning-calendar-entry-card,
+.planning-root .planning-live-clock-card {
+    -fx-background-color: #0F172A;
+    -fx-border-color: #334155;
+}
+.planning-root .card-header {
+    -fx-border-color: rgba(71, 85, 105, 0.65);
+}
+.planning-root .card-title,
+.planning-root .text-heading,
+.planning-root .planning-match-summary,
+.planning-root .planning-calendar-day-label,
+.planning-root .planning-calendar-entry-title,
+.planning-root .planning-upcoming-item-title {
+    -fx-text-fill: #F8FAFC;
+}
+.planning-root .text-muted,
+.planning-root .text-small,
+.planning-root .planning-match-detail,
+.planning-root .planning-upcoming-item-time,
+.planning-root .planning-calendar-entry-time,
+.planning-root .planning-calendar-more,
+.planning-root .planning-weekday-label {
+    -fx-text-fill: #94A3B8;
+}
+.planning-root .planning-top-zone {
+    -fx-padding: 0 0 2 0;
+}
+.planning-root .planning-week-header-grid {
+    -fx-background-color: linear-gradient(to bottom, #1A2437, #141F32);
+    -fx-background-radius: 14;
+    -fx-padding: 4;
+}
+.planning-root .planning-calendar-cell {
+    -fx-background-color: linear-gradient(to bottom, #0F172A, #0C1629);
+    -fx-border-color: rgba(71,85,105,0.65);
+    -fx-border-width: 1;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+}
+.planning-root .planning-calendar-cell-today {
+    -fx-border-color: #8B5CF6;
+}
+.planning-root .planning-calendar-day-label-outside {
+    -fx-text-fill: #64748B;
+}
+.planning-root .planning-calendar-day-label-today {
+    -fx-background-color: linear-gradient(to bottom right, #8B5CF6, #6D28D9);
+    -fx-text-fill: #FFFFFF;
+    -fx-background-radius: 100;
+}
+.planning-root .planning-upcoming-filter-frame,
+.planning-root .planning-match-details-box,
+.planning-root .chat-input-bar {
+    -fx-background-color: #111C31;
+    -fx-border-color: #334155;
+}
+.planning-root .planning-upcoming-search,
+.planning-root .planning-upcoming-combo,
+.planning-root .planning-match-combo,
+.planning-root .chat-input,
+.planning-root .planning-date-picker,
+.planning-root .planning-color-picker {
+    -fx-background-color: #111C31;
+    -fx-border-color: #334155;
+    -fx-text-fill: #F1F5F9;
+    -fx-prompt-text-fill: #64748B;
+}
+.planning-root .btn-secondary {
+    -fx-background-color: #111C31;
+    -fx-border-color: #334155;
+    -fx-text-fill: #E2E8F0;
+}
+.planning-root .btn-secondary .ikonli-font-icon {
+    -fx-icon-color: #E2E8F0;
+}
+.planning-root .assistant-status-chip,
+.planning-root .planning-ai-badge {
+    -fx-background-color: linear-gradient(to right, #8B5CF6, #7C3AED);
+    -fx-text-fill: #FFFFFF;
+}
+.planning-root .planning-live-clock-card {
+    -fx-background-color: linear-gradient(to right, rgba(79, 70, 229, 0.28), rgba(30, 64, 175, 0.24));
+    -fx-border-color: rgba(129, 140, 248, 0.45);
+}
+.planning-root .planning-live-clock-time {
+    -fx-text-fill: #E0E7FF;
+}
+.planning-root .planning-live-clock-date {
+    -fx-text-fill: #93C5FD;
+}
+/* End planning branch design overrides for light theme */

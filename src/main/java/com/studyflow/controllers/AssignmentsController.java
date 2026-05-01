@@ -332,7 +332,7 @@ public class AssignmentsController implements Initializable {
         Project project = updateAssignmentProjectCombo.getValue();
         String previousStatus = normalizedStatus(selectedAssignment.getStatus());
         LocalDate previousEndDate = selectedAssignment.getEndDate();
-        selectedAssignment.setCurrentUserId(getCurrentUser().getId());
+        selectedAssignment.setUserId(getCurrentUser().getId());
         selectedAssignment.setProjectId(project.getId());
         selectedAssignment.setProjectTitle(project.getTitle());
         selectedAssignment.setTitle(updateAssignmentTitleField.getText().trim());
@@ -400,7 +400,7 @@ public class AssignmentsController implements Initializable {
             showFeedback("Select an assignment before uploading files.", true);
             return;
         }
-        if (!selectedAssignment.canCurrentUserEdit()) {
+        if (!canCurrentUserEditAssignment(selectedAssignment)) {
             showFeedback("You do not have permission to attach files to this assignment.", true);
             return;
         }
@@ -865,6 +865,12 @@ public class AssignmentsController implements Initializable {
         titleLabel.getStyleClass().add("item-title");
         titleLabel.setWrapText(true);
 
+        Label projectLabel = new Label(safeText(assignment.getProjectTitle()));
+        projectLabel.getStyleClass().add("item-meta");
+        projectLabel.setWrapText(true);
+        projectLabel.setManaged(!projectLabel.getText().isEmpty());
+        projectLabel.setVisible(!projectLabel.getText().isEmpty());
+
         Label descriptionLabel = new Label(defaultText(assignment.getDescription()));
         descriptionLabel.getStyleClass().add("item-desc");
         descriptionLabel.setWrapText(true);
@@ -901,7 +907,10 @@ public class AssignmentsController implements Initializable {
             event.consume();
         });
 
-        card.getChildren().addAll(tagsRow, titleLabel);
+        if (!projectLabel.getText().isEmpty()) {
+            card.getChildren().add(projectLabel);
+        }
+        card.getChildren().add(titleLabel);
         if (!descriptionLabel.getText().isEmpty()) {
             card.getChildren().add(descriptionLabel);
         }
@@ -1114,7 +1123,7 @@ public class AssignmentsController implements Initializable {
                     : "Upload docs, screenshots, deliverables, and review assets.");
         }
         if (uploadAssignmentAttachmentButton != null) {
-            uploadAssignmentAttachmentButton.setDisable(assignment == null || !assignment.canCurrentUserEdit());
+            uploadAssignmentAttachmentButton.setDisable(assignment == null || !canCurrentUserEditAssignment(assignment));
         }
 
         if (assignment == null) {
@@ -2091,6 +2100,15 @@ public class AssignmentsController implements Initializable {
 
     private String defaultText(String value) {
         return value == null ? "" : value.trim();
+    }
+
+    private boolean canCurrentUserEditAssignment(Assignment assignment) {
+        User currentUser = getCurrentUser();
+        if (assignment == null || currentUser == null) {
+            return false;
+        }
+        return assignment.isOwnedByCurrentUser()
+                || assignmentService.userHasAssignmentAccess(assignment.getId(), currentUser.getId());
     }
 
     private void applyPlanningEstimate(Assignment assignment) {

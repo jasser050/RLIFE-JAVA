@@ -20,8 +20,10 @@ import java.util.List;
 public class AIFlashcardService {
 
     private static final String API_URL = "https://openrouter.ai/api/v1/chat/completions";
-    // Move this to an env variable or config file in production.
-    private static final String API_KEY = "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";
+    private static final String API_KEY = firstNonBlank(
+            System.getenv("OPENROUTER_API_KEY"),
+            System.getProperty("openrouter.api.key")
+    );
     private static final String[] MODEL_CANDIDATES = {
             "openrouter/free",
             "mistralai/mistral-7b-instruct:free",
@@ -203,5 +205,14 @@ public class AIFlashcardService {
             return "null";
         }
         return s.length() <= max ? s : s.substring(0, max) + "...";
+    }
+
+    private static String firstNonBlank(String... values) {
+        for (String value : values) {
+            if (value != null && !value.isBlank()) {
+                return value.trim();
+            }
+        }
+        return "";
     }
 }

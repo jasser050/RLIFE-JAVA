@@ -6,7 +6,6 @@
 <?import javafx.scene.control.ProgressBar?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.TextField?>
-<?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.FlowPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Priority?>
@@ -112,7 +111,7 @@
                         </HBox>
                         <VBox styleClass="card-body" spacing="16" alignment="TOP_CENTER">
                             <StackPane styleClass="pet-hero-image-shell" prefWidth="240" maxWidth="240" prefHeight="240" maxHeight="240">
-                                <ImageView fx:id="petImageView" fitWidth="224" fitHeight="224" preserveRatio="true"/>
+                                <StackPane fx:id="petPreviewPane" prefWidth="224" maxWidth="224" prefHeight="224" maxHeight="224"/>
                             </StackPane>
                             <VBox spacing="6" maxWidth="260">
                                 <HBox alignment="CENTER_LEFT" spacing="8">

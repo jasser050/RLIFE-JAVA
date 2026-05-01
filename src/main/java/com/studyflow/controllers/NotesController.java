@@ -4,13 +4,13 @@ import com.studyflow.models.Pet;
 import com.studyflow.models.PetEvent;
 import com.studyflow.models.User;
 import com.studyflow.services.PetService;
+import com.studyflow.utils.PetPreviewSupport;
 import com.studyflow.utils.PetUiSupport;
 import com.studyflow.utils.UserSession;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
@@ -23,8 +23,6 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
-import javafx.scene.paint.Color;
-import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.net.URL;
 import java.time.format.DateTimeFormatter;
@@ -51,7 +49,7 @@ public class NotesController implements Initializable {
     @FXML private TextField petNameField;
     @FXML private Label selectedPetTypeLabel;
     @FXML private Label selectedPetHintLabel;
-    @FXML private ImageView petImageView;
+    @FXML private StackPane petPreviewPane;
     @FXML private Label petDisplayNameLabel;
     @FXML private Label petMetaLabel;
     @FXML private Label petPersonalityLabel;
@@ -275,7 +273,7 @@ public class NotesController implements Initializable {
         energyBar.setProgress(currentPet.getEnergy() / 100d);
         healthBar.setProgress(currentPet.getHealth() / 100d);
         xpBar.setProgress(Math.min(1d, currentPet.getXp() / (double) currentPet.getXpToNextLevel()));
-        petImageView.setImage(loadPetImage(currentPet.getType()));
+        renderPetPreview(petPreviewPane, currentPet.getType(), 224, 224);
         selectedPetType = currentPet.getType();
         updateSelectedPetSummary();
         highlightCards(changeCards, selectedPetType);
@@ -428,6 +426,13 @@ public class NotesController implements Initializable {
 
     private Image loadPetImage(String type) {
         return PetUiSupport.loadPetImage(type);
+    }
+
+    private void renderPetPreview(StackPane host, String type, double width, double height) {
+        if (host == null) {
+            return;
+        }
+        host.getChildren().setAll(PetPreviewSupport.createPreview(type, width, height));
     }
 
     @FXML
