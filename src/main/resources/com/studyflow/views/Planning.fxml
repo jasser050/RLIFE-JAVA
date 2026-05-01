@@ -6,7 +6,9 @@
 <?import javafx.scene.layout.*?>
 <?import org.kordamp.ikonli.javafx.*?>
 
-<VBox fillWidth="true" spacing="24" styleClass="planning-root" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.studyflow.controllers.PlanningController">
+<StackPane xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.studyflow.controllers.PlanningController">
+
+<VBox fillWidth="true" spacing="24" styleClass="planning-root">
 
     <padding>
         <Insets bottom="24" left="0" right="0" top="0" />
@@ -128,6 +130,19 @@
                         <GridPane fx:id="calendarGrid" hgap="4" styleClass="planning-calendar-grid" vgap="8" />
                     </content>
                 </ScrollPane>
+
+                <!-- Mascot insights under calendar -->
+                <VBox spacing="10" styleClass="card" VBox.vgrow="NEVER">
+                    <HBox alignment="CENTER_LEFT" spacing="10" styleClass="card-header">
+                        <Label styleClass="card-title" text="Mascot Insights" />
+                    </HBox>
+                    <VBox fx:id="mascotDetailsBox" spacing="6" styleClass="card-body">
+                        <Label fx:id="mascotNameLabel" styleClass="card-title" text="Baby Planner" />
+                        <Label fx:id="mascotMoodLabel" styleClass="text-small" text="Mood: No feedback yet" />
+                        <Label fx:id="mascotStreakLabel" styleClass="text-small" text="Streak: 0 day(s)" />
+                        <Label fx:id="mascotMessageLabel" styleClass="text-small" text="Start with one focused session." wrapText="true" />
+                    </VBox>
+                </VBox>
             </VBox>
 
             <VBox maxWidth="430" minWidth="340" prefWidth="390" spacing="20" styleClass="planning-side-column">
@@ -540,3 +555,27 @@
         </VBox>
     </HBox>
 </VBox>
+
+    <!-- Floating mascot overlay -->
+    <VBox fx:id="mascotOverlayCard"
+          alignment="TOP_CENTER"
+          maxWidth="96"
+          minWidth="80"
+          prefWidth="88"
+          spacing="6"
+          style="-fx-background-color: -color-surface;
+                 -fx-background-radius: 999;
+                 -fx-border-color: -color-border;
+                 -fx-border-radius: 999;
+                 -fx-padding: 8 8 8 8;">
+        <StackPane.alignment>BOTTOM_RIGHT</StackPane.alignment>
+        <StackPane.margin>
+            <Insets bottom="16" right="16" />
+        </StackPane.margin>
+        <HBox alignment="CENTER_RIGHT" spacing="6">
+            <Button fx:id="mascotToggleButton" onAction="#handleToggleMascot" styleClass="btn-secondary" text="-" />
+        </HBox>
+        <Label fx:id="mascotEmojiLabel" style="-fx-font-family: 'Segoe UI Emoji'; -fx-font-size: 44px;" text="🐣" />
+    </VBox>
+
+</StackPane>

@@ -21,6 +21,7 @@ import javafx.animation.KeyFrame;
 import javafx.animation.PauseTransition;
 import javafx.animation.ScaleTransition;
 import javafx.animation.Timeline;
+import javafx.animation.TranslateTransition;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.collections.FXCollections;
@@ -39,14 +40,12 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.Control;
 import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.DatePicker;
-import javafx.scene.control.Dialog;
 import javafx.scene.control.DateCell;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.OverrunStyle;
 import javafx.scene.control.ScrollPane;
-import javafx.scene.control.TextArea;
 import javafx.scene.control.TextInputDialog;
 import javafx.scene.control.TextField;
 import javafx.scene.control.Tooltip;
@@ -273,6 +272,14 @@ public class PlanningController implements Initializable {
     @FXML private Label matchHomeTeamLabel;
     @FXML private Label matchAwayTeamLabel;
     @FXML private Button matchPrefillButton;
+    @FXML private Label mascotEmojiLabel;
+    @FXML private Label mascotNameLabel;
+    @FXML private Label mascotMoodLabel;
+    @FXML private Label mascotStreakLabel;
+    @FXML private Label mascotMessageLabel;
+    @FXML private VBox mascotDetailsBox;
+    @FXML private VBox mascotOverlayCard;
+    @FXML private Button mascotToggleButton;
     @FXML private ScrollPane chatScrollPane;
     @FXML private VBox chatBox;
     @FXML private TextField assistantInputField;
@@ -283,7 +290,7 @@ public class PlanningController implements Initializable {
     private final ServiceSeance serviceSeance = new ServiceSeance();
     private final ServiceTypeSeance serviceTypeSeance = new ServiceTypeSeance();
     private final PlanningEmailNotificationService planningEmailNotificationService = new PlanningEmailNotificationService();
-    private final PlanningPdfApiService planningPdfExportService = new PlanningPdfApiService();
+    private final PlanningPdfApiService planningPdfApiService = new PlanningPdfApiService();
     private final AIPlanningService claudePlanningService = new AIPlanningService();
     private final FootballDataService footballDataService = new FootballDataService();
     private final SmartPlanService smartPlanService = new SmartPlanService();
@@ -320,6 +327,7 @@ public class PlanningController implements Initializable {
     private FootballDataService.NextMatch selectedNextMatch;
     private Timeline liveClockTimeline;
     private boolean smartPlanUsedFallback;
+    private boolean mascotMinimized = false;
     private List<SmartPlanService.SmartPlanTask> smartPlanPendingTasks = new ArrayList<>();
     private final List<ManualSmartBid> smartPlanManualBids = new ArrayList<>();
     private final ObservableList<SmartPlanPreviewItem> smartPlanPreviewItems = FXCollections.observableArrayList();
@@ -340,6 +348,7 @@ public class PlanningController implements Initializable {
         configureMatchPlannerControls();
         configureAssistantControls();
         configureLiveClock();
+        configureMascotOverlay();
         loadSessions();
         refreshPlanningData();
         resetForm();
@@ -374,6 +383,18 @@ public class PlanningController implements Initializable {
         liveClockTimeline = new Timeline(new KeyFrame(Duration.seconds(1), event -> refreshClock.run()));
         liveClockTimeline.setCycleCount(Animation.INDEFINITE);
         liveClockTimeline.play();
+    }
+
+    private void configureMascotOverlay() {
+        if (mascotOverlayCard == null) {
+            return;
+        }
+        TranslateTransition floatAnimation = new TranslateTransition(Duration.seconds(2.4), mascotOverlayCard);
+        floatAnimation.setFromY(0);
+        floatAnimation.setToY(-4);
+        floatAnimation.setAutoReverse(true);
+        floatAnimation.setCycleCount(Animation.INDEFINITE);
+        floatAnimation.play();
     }
 
     // ── Force explicit day-number colors to keep DatePicker readable in both themes ──
@@ -851,20 +872,21 @@ public class PlanningController implements Initializable {
 
     @FXML
     private void handleExportPlanningPdf() {
+        User currentUser = UserSession.getInstance().getCurrentUser();
+        if (currentUser == null) {
+            showErrorOn(pageMessageLabel, "No logged-in user found.");
+            return;
+        }
+
         List<Planning> entries = allPlanningEntries == null ? List.of() : new ArrayList<>(allPlanningEntries);
         if (entries.isEmpty()) {
             showInfo("No planning entries available to export.");
             return;
         }
-        ExportPdfOptions options = showPlanningPdfOptionsDialog(entries);
-        if (options == null) {
-            showInfo("PDF export cancelled.");
-            return;
-        }
 
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Export Planning to PDF");
-        fileChooser.setInitialFileName("planning-" + options.month().toString() + ".pdf");
+        fileChooser.setInitialFileName("planning-export-" + LocalDate.now() + ".pdf");
         fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("PDF Document", "*.pdf"));
 
         Window owner = planningBoardView == null || planningBoardView.getScene() == null
@@ -876,148 +898,25 @@ public class PlanningController implements Initializable {
             return;
         }
 
-        showInfo("Export in progress...");
-        CompletableFuture.runAsync(() -> {
-            try {
-                planningPdfExportService.exportPlanningPdf(
-                        entries,
-                        selected.toPath(),
-                        options.month(),
-                        options.feedbackEmoji(),
-                        options.feedbackText(),
-                        true
-                );
-                Platform.runLater(() -> showInfo("Planning PDF exported successfully."));
-            } catch (Exception exception) {
-                Platform.runLater(() -> showErrorOn(pageMessageLabel, "PDF export failed: " + exception.getMessage()));
-            }
-        });
+        try {
+            planningPdfApiService.exportPlanningPdf(entries, selected.toPath(), currentYearMonth, "🙂", "", true);
+            showInfo("Planning PDF exported successfully via API.");
+        } catch (Exception exception) {
+            showErrorOn(pageMessageLabel, "PDF export failed: " + exception.getMessage());
+        }
     }
 
-    private ExportPdfOptions showPlanningPdfOptionsDialog(List<Planning> entries) {
-        YearMonth currentMonth = YearMonth.now();
-        List<YearMonth> availableMonths = new ArrayList<>();
-        for (int month = 1; month <= currentMonth.getMonthValue(); month++) {
-            availableMonths.add(YearMonth.of(currentMonth.getYear(), month));
+    @FXML
+    private void handleToggleMascot() {
+        mascotMinimized = !mascotMinimized;
+        if (mascotOverlayCard != null) {
+            mascotOverlayCard.setPrefWidth(mascotMinimized ? 64 : 88);
+            mascotOverlayCard.setMinWidth(mascotMinimized ? 64 : 80);
+            mascotOverlayCard.setMaxWidth(mascotMinimized ? 64 : 96);
         }
-
-        if (availableMonths.isEmpty()) {
-            return null;
+        if (mascotToggleButton != null) {
+            mascotToggleButton.setText(mascotMinimized ? "+" : "-");
         }
-
-        Dialog<ExportPdfOptions> dialog = new Dialog<>();
-        dialog.setTitle("Planning PDF Options");
-        dialog.setHeaderText("Choose month and student feedback section");
-        dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
-
-        Label monthLabel = new Label("Month to export");
-        ComboBox<YearMonth> monthComboBox = new ComboBox<>();
-        monthComboBox.setItems(FXCollections.observableArrayList(availableMonths));
-        monthComboBox.setValue(availableMonths.get(availableMonths.size() - 1));
-        DateTimeFormatter monthTextFormatter = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ENGLISH);
-        monthComboBox.setConverter(new StringConverter<>() {
-            @Override
-            public String toString(YearMonth object) {
-                return object == null ? "" : object.format(monthTextFormatter);
-            }
-
-            @Override
-            public YearMonth fromString(String string) {
-                return null;
-            }
-        });
-
-        Label emojiLabel = new Label("Feedback emoji");
-        ComboBox<String> emojiComboBox = new ComboBox<>();
-        emojiComboBox.setItems(FXCollections.observableArrayList(
-                "☹️  Very Bad",
-                "😐  Neutral",
-                "🙂  Good",
-                "😄  Excellent",
-                "⭐  Outstanding"
-        ));
-        emojiComboBox.setValue("🙂  Good");
-        emojiComboBox.setButtonCell(new ListCell<>() {
-            @Override
-            protected void updateItem(String item, boolean empty) {
-                super.updateItem(item, empty);
-                setText(empty || item == null ? null : item);
-                setStyle("-fx-font-size: 14px;");
-            }
-        });
-        emojiComboBox.setCellFactory(list -> new ListCell<>() {
-            @Override
-            protected void updateItem(String item, boolean empty) {
-                super.updateItem(item, empty);
-                setText(empty || item == null ? null : item);
-                setStyle("-fx-font-size: 14px;");
-            }
-        });
-
-        Label commentLabel = new Label("Student comment (optional)");
-        TextArea commentArea = new TextArea();
-        commentArea.setPromptText("Write feedback for this month...");
-        commentArea.setPrefRowCount(4);
-        monthComboBox.getStyleClass().add("form-combo");
-        emojiComboBox.getStyleClass().add("form-combo");
-        commentArea.getStyleClass().add("form-textarea");
-
-        VBox content = new VBox(10, monthLabel, monthComboBox, emojiLabel, emojiComboBox, commentLabel, commentArea);
-        content.setPadding(new Insets(8, 0, 0, 0));
-        dialog.getDialogPane().setContent(content);
-
-        boolean lightTheme = isLightThemeActive();
-        String paneStyle = lightTheme
-                ? "-fx-background-color:#F8FAFC;"
-                : "-fx-background-color:#0F172A;";
-        String labelStyle = lightTheme
-                ? "-fx-text-fill:#0F172A;-fx-font-weight:700;"
-                : "-fx-text-fill:#E2E8F0;-fx-font-weight:700;";
-        String contentStyle = lightTheme
-                ? "-fx-background-color:#F8FAFC;"
-                : "-fx-background-color:#0F172A;";
-        String comboStyle = lightTheme
-                ? "-fx-background-color:#FFFFFF;-fx-border-color:#CBD5E1;-fx-text-fill:#0F172A;"
-                : "-fx-background-color:#1E293B;-fx-border-color:#334155;-fx-text-fill:#E2E8F0;";
-        String textAreaStyle = lightTheme
-                ? "-fx-control-inner-background:#FFFFFF;-fx-text-fill:#0F172A;-fx-prompt-text-fill:#64748B;-fx-border-color:#CBD5E1;"
-                : "-fx-control-inner-background:#1E293B;-fx-text-fill:#E2E8F0;-fx-prompt-text-fill:#94A3B8;-fx-border-color:#334155;";
-        dialog.getDialogPane().setStyle(paneStyle);
-        content.setStyle(contentStyle);
-        monthLabel.setStyle(labelStyle);
-        emojiLabel.setStyle(labelStyle);
-        commentLabel.setStyle(labelStyle);
-        monthComboBox.setStyle(comboStyle);
-        emojiComboBox.setStyle(comboStyle);
-        commentArea.setStyle(textAreaStyle);
-        dialog.setOnShown(event -> {
-            Window ownerWindow = planningBoardView == null || planningBoardView.getScene() == null
-                    ? null
-                    : planningBoardView.getScene().getWindow();
-            if (ownerWindow != null && ownerWindow.getScene() != null && dialog.getDialogPane().getScene() != null) {
-                dialog.getDialogPane().getScene().getStylesheets().setAll(ownerWindow.getScene().getStylesheets());
-            }
-        });
-
-        dialog.setResultConverter(buttonType -> {
-            if (buttonType != ButtonType.OK) {
-                return null;
-            }
-            YearMonth month = monthComboBox.getValue();
-            if (month == null) {
-                return null;
-            }
-            String emojiValue = emojiComboBox.getValue() == null ? "🙂  Good" : emojiComboBox.getValue().trim();
-            String emoji = emojiValue.split("\\s+")[0];
-            String feedbackText = commentArea.getText() == null ? "" : commentArea.getText().trim();
-            return new ExportPdfOptions(month, emoji, feedbackText);
-        });
-
-        Optional<ExportPdfOptions> result = dialog.showAndWait();
-        return result.orElse(null);
-    }
-
-    private record ExportPdfOptions(YearMonth month, String feedbackEmoji, String feedbackText) {
     }
 
     @FXML
@@ -3774,6 +3673,40 @@ public class PlanningController implements Initializable {
             planningStreakTrendLabel.setText("Best " + bestStreak + " days");
             planningStreakTrendLabel.getStyleClass().setAll("kpi-trend-chip", "neutral");
         }
+        updateMascotPanel(streak, feedbackCurrent);
+    }
+
+    private void updateMascotPanel(int streak, double feedbackAverage) {
+        if (mascotEmojiLabel == null) {
+            return;
+        }
+        String emoji;
+        String name;
+        String message;
+        if (streak >= 7) {
+            emoji = "🐥";
+            name = "Shining Planner";
+            message = "Excellent consistency this week.";
+        } else if (streak >= 3) {
+            emoji = "🐤";
+            name = "Growing Planner";
+            message = "Good rhythm, keep going.";
+        } else {
+            emoji = "🐣";
+            name = "Baby Planner";
+            message = "Start with one focused session.";
+        }
+
+        String mood = feedbackAverage >= 4.0 ? "Mood: Great 🙂"
+                : feedbackAverage >= 3.0 ? "Mood: Good 😊"
+                : feedbackAverage > 0 ? "Mood: Needs focus 😐"
+                : "Mood: No feedback yet";
+
+        mascotEmojiLabel.setText(emoji);
+        if (mascotNameLabel != null) mascotNameLabel.setText(name);
+        if (mascotMoodLabel != null) mascotMoodLabel.setText(mood);
+        if (mascotStreakLabel != null) mascotStreakLabel.setText("Streak: " + streak + " day(s)");
+        if (mascotMessageLabel != null) mascotMessageLabel.setText(message);
     }
 
     private double computePlannedHoursBetween(LocalDate startInclusive, LocalDate endInclusive) {
