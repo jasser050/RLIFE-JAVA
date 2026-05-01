@@ -9,6 +9,7 @@ import com.studyflow.services.ServicePlanning;
 import com.studyflow.services.ServiceSeance;
 import com.studyflow.services.AIPlanningService;
 import com.studyflow.services.FootballDataService;
+import com.studyflow.services.PlanningPdfApiService;
 import com.studyflow.services.PlanningEmailNotificationService;
 import com.studyflow.services.SpeechToTextService;
 import com.studyflow.services.SmartPlanService;
@@ -38,12 +39,14 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.Control;
 import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.DatePicker;
+import javafx.scene.control.Dialog;
 import javafx.scene.control.DateCell;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.OverrunStyle;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.TextArea;
 import javafx.scene.control.TextInputDialog;
 import javafx.scene.control.TextField;
 import javafx.scene.control.Tooltip;
@@ -66,6 +69,8 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
+import javafx.stage.FileChooser;
+import javafx.stage.Window;
 import javafx.util.Duration;
 import javafx.util.StringConverter;
 import org.kordamp.ikonli.javafx.FontIcon;
@@ -172,8 +177,10 @@ public class PlanningController implements Initializable {
     private static final String ASSISTANT_MODE_CHAT = "Chat mode";
     private static final String ASSISTANT_MODE_TERMINAL = "Terminal mode";
     private static final String ANTHROPIC_API_KEY_ENV = "ANTHROPIC_API_KEY";
+    private static final String PDFSHIFT_API_KEY_ENV = "PDFSHIFT_API_KEY";
     private static final String GROQ_API_KEY_ENV = "GROQ_API_KEY";
     private static final String XAI_API_KEY_ENV = "XAI_API_KEY";
+    private static final String PDFSHIFT_API_KEY_PREF = "pdfshift.api.key";
     private static final String GROQ_API_KEY_PREF = "groq.api.key";
     private static final String XAI_API_KEY_PREF = "xai.api.key";
     private static final Pattern ASSISTANT_TIME_PATTERN = Pattern.compile("(?<!\\d)([01]?\\d|2[0-3])(?:[:h]([0-5]\\d))?(?!\\d)");
@@ -276,6 +283,7 @@ public class PlanningController implements Initializable {
     private final ServiceSeance serviceSeance = new ServiceSeance();
     private final ServiceTypeSeance serviceTypeSeance = new ServiceTypeSeance();
     private final PlanningEmailNotificationService planningEmailNotificationService = new PlanningEmailNotificationService();
+    private final PlanningPdfApiService planningPdfExportService = new PlanningPdfApiService();
     private final AIPlanningService claudePlanningService = new AIPlanningService();
     private final FootballDataService footballDataService = new FootballDataService();
     private final SmartPlanService smartPlanService = new SmartPlanService();
@@ -839,6 +847,177 @@ public class PlanningController implements Initializable {
         } catch (IOException exception) {
             showErrorOn(pageMessageLabel, "Unable to open sessions view: " + exception.getMessage());
         }
+    }
+
+    @FXML
+    private void handleExportPlanningPdf() {
+        List<Planning> entries = allPlanningEntries == null ? List.of() : new ArrayList<>(allPlanningEntries);
+        if (entries.isEmpty()) {
+            showInfo("No planning entries available to export.");
+            return;
+        }
+        ExportPdfOptions options = showPlanningPdfOptionsDialog(entries);
+        if (options == null) {
+            showInfo("PDF export cancelled.");
+            return;
+        }
+
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Export Planning to PDF");
+        fileChooser.setInitialFileName("planning-" + options.month().toString() + ".pdf");
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("PDF Document", "*.pdf"));
+
+        Window owner = planningBoardView == null || planningBoardView.getScene() == null
+                ? null
+                : planningBoardView.getScene().getWindow();
+        java.io.File selected = fileChooser.showSaveDialog(owner);
+        if (selected == null) {
+            showInfo("PDF export cancelled.");
+            return;
+        }
+
+        showInfo("Export in progress...");
+        CompletableFuture.runAsync(() -> {
+            try {
+                planningPdfExportService.exportPlanningPdf(
+                        entries,
+                        selected.toPath(),
+                        options.month(),
+                        options.feedbackEmoji(),
+                        options.feedbackText(),
+                        true
+                );
+                Platform.runLater(() -> showInfo("Planning PDF exported successfully."));
+            } catch (Exception exception) {
+                Platform.runLater(() -> showErrorOn(pageMessageLabel, "PDF export failed: " + exception.getMessage()));
+            }
+        });
+    }
+
+    private ExportPdfOptions showPlanningPdfOptionsDialog(List<Planning> entries) {
+        YearMonth currentMonth = YearMonth.now();
+        List<YearMonth> availableMonths = new ArrayList<>();
+        for (int month = 1; month <= currentMonth.getMonthValue(); month++) {
+            availableMonths.add(YearMonth.of(currentMonth.getYear(), month));
+        }
+
+        if (availableMonths.isEmpty()) {
+            return null;
+        }
+
+        Dialog<ExportPdfOptions> dialog = new Dialog<>();
+        dialog.setTitle("Planning PDF Options");
+        dialog.setHeaderText("Choose month and student feedback section");
+        dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+
+        Label monthLabel = new Label("Month to export");
+        ComboBox<YearMonth> monthComboBox = new ComboBox<>();
+        monthComboBox.setItems(FXCollections.observableArrayList(availableMonths));
+        monthComboBox.setValue(availableMonths.get(availableMonths.size() - 1));
+        DateTimeFormatter monthTextFormatter = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ENGLISH);
+        monthComboBox.setConverter(new StringConverter<>() {
+            @Override
+            public String toString(YearMonth object) {
+                return object == null ? "" : object.format(monthTextFormatter);
+            }
+
+            @Override
+            public YearMonth fromString(String string) {
+                return null;
+            }
+        });
+
+        Label emojiLabel = new Label("Feedback emoji");
+        ComboBox<String> emojiComboBox = new ComboBox<>();
+        emojiComboBox.setItems(FXCollections.observableArrayList(
+                "☹️  Very Bad",
+                "😐  Neutral",
+                "🙂  Good",
+                "😄  Excellent",
+                "⭐  Outstanding"
+        ));
+        emojiComboBox.setValue("🙂  Good");
+        emojiComboBox.setButtonCell(new ListCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? null : item);
+                setStyle("-fx-font-size: 14px;");
+            }
+        });
+        emojiComboBox.setCellFactory(list -> new ListCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? null : item);
+                setStyle("-fx-font-size: 14px;");
+            }
+        });
+
+        Label commentLabel = new Label("Student comment (optional)");
+        TextArea commentArea = new TextArea();
+        commentArea.setPromptText("Write feedback for this month...");
+        commentArea.setPrefRowCount(4);
+        monthComboBox.getStyleClass().add("form-combo");
+        emojiComboBox.getStyleClass().add("form-combo");
+        commentArea.getStyleClass().add("form-textarea");
+
+        VBox content = new VBox(10, monthLabel, monthComboBox, emojiLabel, emojiComboBox, commentLabel, commentArea);
+        content.setPadding(new Insets(8, 0, 0, 0));
+        dialog.getDialogPane().setContent(content);
+
+        boolean lightTheme = isLightThemeActive();
+        String paneStyle = lightTheme
+                ? "-fx-background-color:#F8FAFC;"
+                : "-fx-background-color:#0F172A;";
+        String labelStyle = lightTheme
+                ? "-fx-text-fill:#0F172A;-fx-font-weight:700;"
+                : "-fx-text-fill:#E2E8F0;-fx-font-weight:700;";
+        String contentStyle = lightTheme
+                ? "-fx-background-color:#F8FAFC;"
+                : "-fx-background-color:#0F172A;";
+        String comboStyle = lightTheme
+                ? "-fx-background-color:#FFFFFF;-fx-border-color:#CBD5E1;-fx-text-fill:#0F172A;"
+                : "-fx-background-color:#1E293B;-fx-border-color:#334155;-fx-text-fill:#E2E8F0;";
+        String textAreaStyle = lightTheme
+                ? "-fx-control-inner-background:#FFFFFF;-fx-text-fill:#0F172A;-fx-prompt-text-fill:#64748B;-fx-border-color:#CBD5E1;"
+                : "-fx-control-inner-background:#1E293B;-fx-text-fill:#E2E8F0;-fx-prompt-text-fill:#94A3B8;-fx-border-color:#334155;";
+        dialog.getDialogPane().setStyle(paneStyle);
+        content.setStyle(contentStyle);
+        monthLabel.setStyle(labelStyle);
+        emojiLabel.setStyle(labelStyle);
+        commentLabel.setStyle(labelStyle);
+        monthComboBox.setStyle(comboStyle);
+        emojiComboBox.setStyle(comboStyle);
+        commentArea.setStyle(textAreaStyle);
+        dialog.setOnShown(event -> {
+            Window ownerWindow = planningBoardView == null || planningBoardView.getScene() == null
+                    ? null
+                    : planningBoardView.getScene().getWindow();
+            if (ownerWindow != null && ownerWindow.getScene() != null && dialog.getDialogPane().getScene() != null) {
+                dialog.getDialogPane().getScene().getStylesheets().setAll(ownerWindow.getScene().getStylesheets());
+            }
+        });
+
+        dialog.setResultConverter(buttonType -> {
+            if (buttonType != ButtonType.OK) {
+                return null;
+            }
+            YearMonth month = monthComboBox.getValue();
+            if (month == null) {
+                return null;
+            }
+            String emojiValue = emojiComboBox.getValue() == null ? "🙂  Good" : emojiComboBox.getValue().trim();
+            String emoji = emojiValue.split("\\s+")[0];
+            String feedbackText = commentArea.getText() == null ? "" : commentArea.getText().trim();
+            return new ExportPdfOptions(month, emoji, feedbackText);
+        });
+
+        Optional<ExportPdfOptions> result = dialog.showAndWait();
+        return result.orElse(null);
+    }
+
+    private record ExportPdfOptions(YearMonth month, String feedbackEmoji, String feedbackText) {
     }
 
     @FXML
@@ -2165,6 +2344,43 @@ public class PlanningController implements Initializable {
         planningPreferences.put(GROQ_API_KEY_PREF, key);
         System.setProperty(GROQ_API_KEY_ENV, key);
         addMessage("Groq API key saved locally for future voice commands.", false);
+        return key;
+    }
+
+    private String resolvePdfApiKey() {
+        String apiKey = System.getenv(PDFSHIFT_API_KEY_ENV);
+        if (apiKey == null || apiKey.isBlank()) {
+            apiKey = System.getProperty(PDFSHIFT_API_KEY_ENV);
+        }
+        if (apiKey == null || apiKey.isBlank()) {
+            apiKey = planningPreferences.get(PDFSHIFT_API_KEY_PREF, null);
+        }
+        if (apiKey == null) {
+            return null;
+        }
+        String trimmed = apiKey.trim();
+        return trimmed.isBlank() ? null : trimmed;
+    }
+
+    private String promptForPdfApiKey() {
+        TextInputDialog dialog = new TextInputDialog();
+        dialog.setTitle("PDF API Key");
+        dialog.setHeaderText("PDF export requires a PDFShift API key.");
+        dialog.setContentText("PDFSHIFT_API_KEY:");
+
+        Optional<String> result = dialog.showAndWait();
+        if (result.isEmpty()) {
+            return null;
+        }
+
+        String key = result.get() == null ? "" : result.get().trim();
+        if (key.isBlank()) {
+            return null;
+        }
+
+        planningPreferences.put(PDFSHIFT_API_KEY_PREF, key);
+        System.setProperty(PDFSHIFT_API_KEY_ENV, key);
+        showInfo("PDF API key saved locally for future exports.");
         return key;
     }
 
