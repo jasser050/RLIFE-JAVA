@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pet Preview</title>
+  <style>
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: transparent;
+    }
+
+    #app {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      border-radius: 16px;
+      background: radial-gradient(circle at 50% 30%, rgba(78, 109, 191, 0.28), rgba(54, 45, 106, 0.12) 62%, rgba(0, 0, 0, 0) 100%);
+    }
+
+    #fallback {
+      position: absolute;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      color: #F8FAFC;
+      font: 600 14px system-ui, sans-serif;
+      background: linear-gradient(135deg, rgba(36, 50, 90, 0.88), rgba(58, 41, 103, 0.88));
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div id="fallback">3D preview unavailable</div>
+  </div>
+
+  <script src="__THREE_URL__"></script>
+  <script src="__GLTFLOADER_URL__"></script>
+  <script>
+    (function () {
+      var container = document.getElementById('app');
+      var fallback = document.getElementById('fallback');
+      var type = '__PET_TYPE__';
+      var modelUrl = '__MODEL_URL__';
+
+      function showFallback(message) {
+        fallback.textContent = message || '3D preview unavailable';
+        fallback.style.display = 'flex';
+      }
+
+      if (typeof THREE === 'undefined' || !THREE.GLTFLoader || type !== 'cat') {
+        showFallback('3D runtime unavailable');
+        return;
+      }
+
+      var width = Math.max(container.clientWidth, 224);
+      var height = Math.max(container.clientHeight, 224);
+      var renderer;
+
+      try {
+        renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: 'high-performance' });
+      } catch (error) {
+        showFallback('WebGL unavailable');
+        return;
+      }
+
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+      renderer.setSize(width, height, false);
+      renderer.outputEncoding = THREE.sRGBEncoding;
+      renderer.setClearColor(0x000000, 0);
+      container.appendChild(renderer.domElement);
+
+      var scene = new THREE.Scene();
+      var camera = new THREE.PerspectiveCamera(34, width / height, 0.01, 100);
+      camera.position.set(0, 0.1, 4.4);
+
+      scene.add(new THREE.AmbientLight(0xffffff, 1.25));
+
+      var key = new THREE.DirectionalLight(0xfff2da, 1.7);
+      key.position.set(2.8, 4.8, 4.5);
+      scene.add(key);
+
+      var fill = new THREE.DirectionalLight(0xa5b4fc, 0.85);
+      fill.position.set(-3.2, 1.6, 2.6);
+      scene.add(fill);
+
+      var rim = new THREE.PointLight(0xf9a8d4, 0.7, 18);
+      rim.position.set(0, 2.8, -3.2);
+      scene.add(rim);
+
+      var floor = new THREE.Mesh(
+        new THREE.CircleGeometry(1.45, 48),
+        new THREE.ShadowMaterial({ opacity: 0.14 })
+      );
+      floor.rotation.x = -Math.PI / 2;
+      floor.position.y = -1.08;
+      scene.add(floor);
+
+      var loader = new THREE.GLTFLoader();
+      loader.load(
+        modelUrl,
+        function (gltf) {
+          var model = gltf.scene;
+          var box = new THREE.Box3().setFromObject(model);
+          var center = box.getCenter(new THREE.Vector3());
+          var size = box.getSize(new THREE.Vector3());
+          var maxDim = Math.max(size.x, size.y, size.z) || 1;
+          var scale = 2.45 / maxDim;
+
+          model.scale.setScalar(scale);
+
+          box = new THREE.Box3().setFromObject(model);
+          center = box.getCenter(new THREE.Vector3());
+          size = box.getSize(new THREE.Vector3());
+
+          model.position.x -= center.x;
+          model.position.y -= center.y;
+          model.position.z -= center.z;
+          model.position.y -= size.y * 0.18;
+          model.rotation.y = -0.12;
+
+          scene.add(model);
+
+          function frame() {
+            requestAnimationFrame(frame);
+            model.rotation.y += 0.01;
+            renderer.render(scene, camera);
+          }
+
+          frame();
+        },
+        undefined,
+        function (error) {
+          showFallback('Failed to load cat model');
+          if (window.console && console.error) {
+            console.error(error);
+          }
+        }
+      );
+
+      window.addEventListener('resize', function () {
+        width = Math.max(container.clientWidth, 224);
+        height = Math.max(container.clientHeight, 224);
+        camera.aspect = width / height;
+        camera.updateProjectionMatrix();
+        renderer.setSize(width, height, false);
+      });
+    })();
+  </script>
+</body>
+</html>

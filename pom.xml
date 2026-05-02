@@ -166,7 +166,9 @@
                     <mainClass>com.studyflow/com.studyflow.App</mainClass>
                     <executable>${javafx.executable}</executable>
                     <options>
-                        <option>-Xmx512m</option>
+                        <option>-Xms512m</option>
+                        <option>-Xmx2048m</option>
+                        <option>-XX:+UseG1GC</option>
                         <option>-Dfile.encoding=UTF-8</option>
                         <option>-Dprism.forceGPU=true</option>
                         <option>-Dprism.vsync=false</option>

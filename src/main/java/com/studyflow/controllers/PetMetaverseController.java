@@ -4,6 +4,7 @@ import com.studyflow.LocalServer;
 import com.studyflow.models.Pet;
 import com.studyflow.models.User;
 import com.studyflow.services.PetService;
+import com.studyflow.utils.PetPreviewSupport;
 import com.studyflow.utils.PetUiSupport;
 import com.studyflow.utils.UserSession;
 import javafx.fxml.FXML;
@@ -64,7 +65,7 @@ public class PetMetaverseController implements Initializable {
             metaverseSubtitleLabel.setText("Adopt a companion first to enter the garden.");
             metaverseStatusLabel.setText("No active companion");
             metaverseStatsLabel.setText("Your metaverse map unlocks after adoption.");
-            metaversePetImageView.setImage(PetUiSupport.loadPetImage("cat"));
+            PetPreviewSupport.showPetPreview(metaversePetImageView, "cat");
             loadMap("[]");
             return;
         }
@@ -72,8 +73,9 @@ public class PetMetaverseController implements Initializable {
         String owner = user == null ? "You" : displayName(user);
         String rarity = pet.getRarity() == null ? "Common" : pet.getRarity();
         String mood = pet.getMood();
+        String renderType = PetUiSupport.previewType(pet.getType());
         String payload = "[{\"userId\":" + pet.getUserId()
-                + ",\"type\":\"" + escapeJson(PetUiSupport.normalizeType(pet.getType())) + "\""
+                + ",\"type\":\"" + escapeJson(renderType) + "\""
                 + ",\"name\":\"" + escapeJson(pet.getName()) + "\""
                 + ",\"owner\":\"" + escapeJson(owner) + "\""
                 + ",\"level\":" + pet.getLevel()
@@ -87,7 +89,7 @@ public class PetMetaverseController implements Initializable {
         metaverseSubtitleLabel.setText("A live PetVerse garden view using your current companion data.");
         metaverseStatusLabel.setText(rarity + " | " + PetUiSupport.moodFromHunger(pet.getHunger()));
         metaverseStatsLabel.setText("Level " + pet.getLevel() + " | " + pet.getHunger() + "/100 hunger | " + pet.getEvolutionStage());
-        metaversePetImageView.setImage(PetUiSupport.loadPetImage(pet.getType()));
+        PetPreviewSupport.showPetPreview(metaversePetImageView, renderType);
         loadMap(payload);
     }
 

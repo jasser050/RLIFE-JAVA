@@ -16,7 +16,7 @@
 
 <ScrollPane xmlns="http://javafx.com/javafx/21"
             xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="com.studyflow.controllers.NotesController"
+            fx:controller="com.studyflow.controllers.MyPetController"
             fitToWidth="true"
             hbarPolicy="NEVER"
             styleClass="landing-scroll">
@@ -111,7 +111,7 @@
                             <Label text="Companion" styleClass="card-title"/>
                         </HBox>
                         <VBox styleClass="card-body" spacing="16" alignment="TOP_CENTER">
-                            <StackPane styleClass="pet-hero-image-shell" prefWidth="240" maxWidth="240" prefHeight="240" maxHeight="240">
+                            <StackPane styleClass="pet-hero-image-shell" minWidth="240" prefWidth="240" maxWidth="240" minHeight="240" prefHeight="240" maxHeight="240">
                                 <ImageView fx:id="petImageView" fitWidth="224" fitHeight="224" preserveRatio="true"/>
                             </StackPane>
                             <VBox spacing="6" maxWidth="260">
