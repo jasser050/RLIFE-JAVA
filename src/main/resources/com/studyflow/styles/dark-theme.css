@@ -1252,6 +1252,93 @@
     -fx-background-color: #020617;
 }
 
+/* -- Hero with starfield -- */
+.landing-hero {
+    -fx-background-color: #020617;
+    -fx-min-height: 620;
+}
+
+/* -- Glassmorphism cards (hero right side) -- */
+.landing-glass-card {
+    -fx-background-color: rgba(15,23,42,0.75);
+    -fx-background-radius: 16;
+    -fx-border-color: rgba(139,92,246,0.18);
+    -fx-border-radius: 16;
+    -fx-border-width: 1;
+    -fx-effect: dropshadow(gaussian, rgba(139,92,246,0.12), 20, 0, 0, 4);
+}
+.landing-glass-card:hover {
+    -fx-background-color: rgba(15,23,42,0.85);
+    -fx-border-color: rgba(139,92,246,0.35);
+    -fx-effect: dropshadow(gaussian, rgba(139,92,246,0.22), 28, 0, 0, 4);
+}
+.landing-glass-card-sm {
+    -fx-background-color: rgba(15,23,42,0.70);
+    -fx-background-radius: 14;
+    -fx-border-color: rgba(100,116,139,0.15);
+    -fx-border-radius: 14;
+    -fx-border-width: 1;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.25), 12, 0, 0, 3);
+}
+.landing-glass-card-sm:hover {
+    -fx-background-color: rgba(15,23,42,0.85);
+    -fx-border-color: rgba(139,92,246,0.25);
+}
+.landing-glass-icon {
+    -fx-pref-width: 38; -fx-pref-height: 38;
+    -fx-min-width: 38;  -fx-min-height: 38;
+    -fx-max-width: 38;  -fx-max-height: 38;
+    -fx-background-radius: 10;
+}
+.landing-glass-icon-purple { -fx-background-color: rgba(139,92,246,0.12); }
+.landing-glass-icon-blue   { -fx-background-color: rgba(96,165,250,0.12); }
+.landing-glass-icon-green  { -fx-background-color: rgba(52,211,153,0.12); }
+.landing-glass-icon-pink   { -fx-background-color: rgba(244,114,182,0.12); }
+.landing-glass-title {
+    -fx-font-size: 13px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #E2E8F0;
+}
+.landing-glass-title-sm {
+    -fx-font-size: 12px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #CBD5E1;
+}
+.landing-glass-sub {
+    -fx-font-size: 11px;
+    -fx-text-fill: #64748B;
+}
+.landing-mini-stat {
+    -fx-background-color: rgba(30,41,59,0.5);
+    -fx-background-radius: 10;
+    -fx-padding: 10 8;
+}
+.landing-mini-bar-bg {
+    -fx-background-color: rgba(30,41,59,0.6);
+    -fx-background-radius: 3;
+    -fx-pref-height: 4;
+    -fx-min-height: 4;
+    -fx-max-height: 4;
+}
+.landing-mini-bar-blue {
+    -fx-background-color: #60A5FA;
+    -fx-background-radius: 3;
+    -fx-pref-height: 4;
+    -fx-min-height: 4;
+    -fx-max-height: 4;
+    -fx-max-width: 75%;
+    -fx-pref-width: 75%;
+}
+.landing-mini-bar-green {
+    -fx-background-color: #34D399;
+    -fx-background-radius: 3;
+    -fx-pref-height: 4;
+    -fx-min-height: 4;
+    -fx-max-height: 4;
+    -fx-max-width: 85%;
+    -fx-pref-width: 85%;
+}
+
 /* -- Navbar -- */
 .landing-navbar {
     -fx-background-color: rgba(2,6,23,0.97);

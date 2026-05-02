@@ -41,11 +41,6 @@ import java.util.Map;
 import java.util.ResourceBundle;
 
 public class LoginController implements Initializable {
-    private static final boolean CAPTCHA_ENABLED = true;
-    private static final String RECAPTCHA_SECRET = firstNonBlank(
-            System.getenv("RECAPTCHA_SECRET_KEY"),
-            System.getProperty("recaptcha.secret.key")
-    );
     private static final String GOOGLE_CLIENT_SECRET = firstNonBlank(
             System.getenv("GOOGLE_CLIENT_SECRET"),
             System.getProperty("google.client.secret")
@@ -140,112 +135,14 @@ public class LoginController implements Initializable {
             // Comment this block out to enforce strict password check
         }
 
-        if (CAPTCHA_ENABLED) {
-            showCaptchaDialog(user);
-            return;
-        }
-
         UserSession.getInstance().setCurrentUser(user);
+        UserSession.getInstance().saveSession();
         try {
             App.setRoot("views/MainLayout");
         } catch (IOException e) {
             showError("Failed to load the application.");
             resetButton();
         }
-    }
-
-    private void showCaptchaDialog(User user) {
-        Dialog<Void> dialog = new Dialog<>();
-        dialog.setTitle("CAPTCHA Verification");
-        dialog.setHeaderText(null);
-
-        WebView captchaWebView = new WebView();
-        captchaWebView.setPrefSize(460, 560);
-        WebEngine engine = captchaWebView.getEngine();
-
-        // Listen for captcha completion via title change
-        engine.titleProperty().addListener((obs, oldTitle, newTitle) -> {
-            if (newTitle != null && newTitle.startsWith("CAPTCHA_OK:")) {
-                String token = newTitle.substring("CAPTCHA_OK:".length());
-                dialog.close();
-                verifyCaptchaAndLogin(token, user);
-            }
-        });
-
-        // Load via LocalServer (http://localhost) so reCAPTCHA accepts the domain
-        engine.load("http://localhost:" + LocalServer.getPort() + "/views/captcha.html");
-
-        DialogPane pane = dialog.getDialogPane();
-        pane.setContent(captchaWebView);
-        pane.setStyle("-fx-background-color: #0F172A;");
-        pane.getButtonTypes().add(ButtonType.CANCEL);
-        pane.setPrefSize(480, 580);
-
-        dialog.setOnCloseRequest(e -> resetButton());
-        dialog.showAndWait();
-    }
-
-    private void verifyCaptchaAndLogin(String token, User user) {
-        Thread thread = new Thread(() -> {
-            try {
-                if (RECAPTCHA_SECRET == null || RECAPTCHA_SECRET.isBlank()) {
-                    Platform.runLater(() -> {
-                        if (token == null || token.isBlank()) {
-                            showError("CAPTCHA token missing. Please try again.");
-                            resetButton();
-                            return;
-                        }
-                        UserSession.getInstance().setCurrentUser(user);
-                        UserSession.getInstance().saveSession();
-                        try {
-                            App.setRoot("views/MainLayout");
-                        } catch (IOException e) {
-                            showError("Failed to load the application.");
-                            resetButton();
-                        }
-                    });
-                    return;
-                }
-
-                String verifyBody = "secret=" + URLEncoder.encode(RECAPTCHA_SECRET, StandardCharsets.UTF_8)
-                        + "&response=" + URLEncoder.encode(token, StandardCharsets.UTF_8);
-
-                HttpClient httpClient = HttpClient.newHttpClient();
-                HttpRequest request = HttpRequest.newBuilder()
-                        .uri(URI.create("https://www.google.com/recaptcha/api/siteverify"))
-                        .header("Content-Type", "application/x-www-form-urlencoded")
-                        .POST(HttpRequest.BodyPublishers.ofString(verifyBody))
-                        .build();
-
-                HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-                String json = response.body();
-
-                boolean success = json.contains("\"success\": true") || json.contains("\"success\":true");
-
-                Platform.runLater(() -> {
-                    if (success) {
-                        UserSession.getInstance().setCurrentUser(user);
-                        UserSession.getInstance().saveSession();
-                        try {
-                            App.setRoot("views/MainLayout");
-                        } catch (IOException e) {
-                            showError("Failed to load the application.");
-                            resetButton();
-                        }
-                    } else {
-                        showError("CAPTCHA verification failed. Please try again.");
-                        resetButton();
-                    }
-                });
-            } catch (Exception e) {
-                Platform.runLater(() -> {
-                    showError("CAPTCHA verification error: " + e.getMessage());
-                    resetButton();
-                });
-            }
-        });
-        thread.setDaemon(true);
-        thread.start();
     }
 
     @FXML
