@@ -21,7 +21,6 @@ public class FootballDataService {
     private static final String API_BASE = "https://api.football-data.org/v4";
     private static final String API_KEY_ENV = "FOOTBALL_DATA_API_KEY";
     private static final String API_KEY_PROPERTY = "football.data.api.key";
-    private static final String FALLBACK_API_KEY = "99ae936a515249fd8f3e6af0e2c8c004";
 
     private final HttpClient httpClient = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(10))
@@ -158,7 +157,7 @@ public class FootballDataService {
             return fromEnv;
         }
 
-        return sanitize(FALLBACK_API_KEY);
+        return "";
     }
 
     private String sanitize(String value) {

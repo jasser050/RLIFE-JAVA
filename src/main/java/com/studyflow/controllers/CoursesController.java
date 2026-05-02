@@ -9,6 +9,7 @@ import com.studyflow.utils.UserSession;
 import com.studyflow.services.AIQuizService;
 import com.studyflow.services.AntiFraudEngine;
 import com.studyflow.services.FraudEvent;
+import com.studyflow.services.VoiceAssistantService;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
@@ -54,6 +55,15 @@ public class CoursesController implements Initializable {
     @FXML private ComboBox<String> sortCombo;
     @FXML private Button           btnHeaderAction;
     @FXML private FontIcon         btnHeaderIcon;
+    @FXML private Button           btnVoiceAssistant;
+
+    // ── Voice Assistant UI ─────────────────────────────────────
+    @FXML private VBox              voiceBar;
+    @FXML private Label             voiceStatusLabel;
+    @FXML private Label             voiceTranscriptionLabel;
+    @FXML private Label             voiceResponseLabel;
+    @FXML private ProgressIndicator voiceProgress;
+    @FXML private Button            btnVoiceCancel;
 
     // ── Vues ───────────────────────────────────────────────────
     @FXML private VBox     listView;
@@ -123,19 +133,20 @@ public class CoursesController implements Initializable {
     // ════════════════════════════════════════════════════════════
     //  SERVICES
     // ════════════════════════════════════════════════════════════
-    private final EvaluationMatiereService evalService = new EvaluationMatiereService();
-    private final MatiereService           matService  = new MatiereService();
+    private final EvaluationMatiereService evalService  = new EvaluationMatiereService();
+    private final MatiereService           matService   = new MatiereService();
+    private final VoiceAssistantService    voiceService = new VoiceAssistantService();
 
     // ════════════════════════════════════════════════════════════
-    //  ANTI-FRAUD ENGINE ← NOUVEAU
+    //  ANTI-FRAUD ENGINE
     // ════════════════════════════════════════════════════════════
     private final AntiFraudEngine antiFraud = new AntiFraudEngine();
 
     // Labels anti-fraude créés dynamiquement dans la barre de quiz
-    private Label     lblFraudScore;
-    private Label     lblFraudWarning;
-    private HBox      fraudStatusBar;
-    private boolean   antiFraudAttached = false;
+    private Label   lblFraudScore;
+    private Label   lblFraudWarning;
+    private HBox    fraudStatusBar;
+    private boolean antiFraudAttached = false;
 
     // ════════════════════════════════════════════════════════════
     //  STATE
@@ -144,17 +155,20 @@ public class CoursesController implements Initializable {
     private EvaluationMatiere editTarget  = null;
     private String selectedPriorite       = null;
 
-    private List<QuizQuestion> quizQuestions     = new ArrayList<>();
-    private int  quizCurrentIndex  = 0;
-    private int  quizScore         = 0;
-    private int  quizAnsweredCount = 0;
-    private String quizSelectedOpt = null;
+    private List<QuizQuestion> quizQuestions    = new ArrayList<>();
+    private int     quizCurrentIndex  = 0;
+    private int     quizScore         = 0;
+    private int     quizAnsweredCount = 0;
+    private String  quizSelectedOpt   = null;
     private Timeline quizTimer;
-    private int  quizSecondsElapsed = 0;
+    private int     quizSecondsElapsed = 0;
 
     private static final String[] COLORS = {"primary","success","accent","warning","danger"};
     private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-    private static final PseudoClass SELECTED  = PseudoClass.getPseudoClass("selected");
+    private static final PseudoClass SELECTED   = PseudoClass.getPseudoClass("selected");
+
+    // Voice recording state
+    private boolean isRecordingVoice = false;
 
     // ════════════════════════════════════════════════════════════
     //  QUIZ MODEL
@@ -164,9 +178,9 @@ public class CoursesController implements Initializable {
         List<String> options;
         QuizQuestion(String q, List<String> opts, String correct,
                      String diff, String cat, String expl) {
-            question      = q;   options     = opts;
-            correctAnswer = correct; difficulty = diff;
-            category      = cat; explanation = expl;
+            question      = q;       options       = opts;
+            correctAnswer = correct; difficulty    = diff;
+            category      = cat;     explanation   = expl;
         }
     }
 
@@ -222,7 +236,7 @@ public class CoursesController implements Initializable {
             cmbQuizSection.setItems(FXCollections.observableArrayList(secs));
         } catch (Exception e) { e.printStackTrace(); }
 
-        // ── Configurer les callbacks anti-fraude ─────────────────
+        setupVoiceAssistant();
         setupAntiFraud();
 
         showView("list");
@@ -230,37 +244,178 @@ public class CoursesController implements Initializable {
     }
 
     // ════════════════════════════════════════════════════════════
+    //  VOICE ASSISTANT SETUP  (fixed — matches VoiceAssistantService API)
+    // ════════════════════════════════════════════════════════════
+    private void setupVoiceAssistant() {
+        if (!voiceService.hasApiKey()) {
+            btnVoiceAssistant.setDisable(true);
+            btnVoiceAssistant.setStyle("-fx-background-color:#3B0764;-fx-text-fill:#64748B;");
+            btnVoiceAssistant.setText("🔑 Missing API Key");
+            Platform.runLater(() -> {
+                voiceStatusLabel.setText("⚠ OPENROUTER_API_KEY not set in environment");
+                voiceBar.setVisible(true);
+                voiceBar.setManaged(true);
+            });
+            return;
+        }
+
+        // ── Transcription callback ─────────────────────────────
+        voiceService.onTranscription = text -> Platform.runLater(() -> {
+            voiceTranscriptionLabel.setText("🎤 You said: " + text);
+            voiceStatusLabel.setText("✍️ Transcribed: "
+                    + (text.length() > 40 ? text.substring(0, 40) + "…" : text));
+        });
+
+        // ── AI response callback (was wrongly named onAIResponse in old code) ──
+        voiceService.onAIResponse = response -> Platform.runLater(() -> {
+            voiceResponseLabel.setText("🤖 Assistant: " + response);
+            voiceStatusLabel.setText("💬 Assistant responded");
+        });
+
+        // ── Status callback ────────────────────────────────────
+        voiceService.onStatus = status -> Platform.runLater(() -> {
+            voiceStatusLabel.setText(status);
+            boolean idle = status.contains("Ready") || status.contains("ready")
+                    || status.contains("Prêt")  || status.contains("prêt")
+                    || status.contains("click");
+            voiceProgress.setVisible(!idle);
+        });
+
+        // ── Error callback ─────────────────────────────────────
+        voiceService.onError = error -> Platform.runLater(() -> {
+            voiceStatusLabel.setText("❌ Error: " + error);
+            voiceTranscriptionLabel.setText("");
+            voiceResponseLabel.setText("");
+            voiceProgress.setVisible(false);
+            btnVoiceAssistant.setDisable(false);
+            btnVoiceAssistant.setText("🎤  Voice");
+            btnVoiceAssistant.setStyle("");
+            isRecordingVoice = false;
+        });
+
+        // ── TTS start / done callbacks ─────────────────────────
+        voiceService.onAudioStart = () -> Platform.runLater(() -> {
+            voiceStatusLabel.setText("🔊 Speaking…");
+            voiceProgress.setVisible(true);
+        });
+
+        voiceService.onAudioDone = () -> Platform.runLater(() -> {
+            voiceStatusLabel.setText("🎤 Ready — click mic to ask");
+            btnVoiceAssistant.setDisable(false);
+            btnVoiceAssistant.setText("🎤  Voice");
+            btnVoiceAssistant.setStyle("");
+            voiceProgress.setVisible(false);
+            isRecordingVoice = false;
+        });
+    }
+
+    @FXML
+    private void handleVoiceAssistant() {
+        if (!voiceService.hasApiKey()) {
+            showVoiceError("OPENROUTER_API_KEY not configured in environment variables");
+            return;
+        }
+        if (isRecordingVoice) stopVoiceRecording();
+        else                  startVoiceRecording();
+    }
+
+    private void startVoiceRecording() {
+        try {
+            voiceService.startRecording();
+            isRecordingVoice = true;
+            btnVoiceAssistant.setText("⏹️  Stop");
+            btnVoiceAssistant.setStyle("-fx-background-color:#EF4444;-fx-text-fill:white;");
+            showVoiceBar(true);
+            voiceStatusLabel.setText("🎙️ Recording… click Stop when done");
+            voiceTranscriptionLabel.setText("");
+            voiceResponseLabel.setText("");
+            voiceProgress.setVisible(true);
+
+            // Auto-stop after 30 seconds
+            new Thread(() -> {
+                try { Thread.sleep(30_000); }
+                catch (InterruptedException ignored) {}
+                if (isRecordingVoice) Platform.runLater(this::stopVoiceRecording);
+            }).start();
+
+        } catch (Exception e) {
+            showVoiceError("Microphone error: " + e.getMessage());
+            isRecordingVoice = false;
+            btnVoiceAssistant.setText("🎤  Voice");
+            btnVoiceAssistant.setStyle("");
+        }
+    }
+
+    private void stopVoiceRecording() {
+        if (!isRecordingVoice) return;
+        isRecordingVoice = false;
+        btnVoiceAssistant.setDisable(true);
+        btnVoiceAssistant.setText("⏳ Processing…");
+        voiceStatusLabel.setText("⏳ Processing your request…");
+        voiceProgress.setVisible(true);
+        voiceService.stopAndProcess();
+    }
+
+    @FXML
+    private void handleCancelVoice() {
+        if (isRecordingVoice) {
+            voiceService.cancel();   // ✅ cancel() now exists in service
+            isRecordingVoice = false;
+        }
+        showVoiceBar(false);
+        btnVoiceAssistant.setDisable(false);
+        btnVoiceAssistant.setText("🎤  Voice");
+        btnVoiceAssistant.setStyle("");
+        voiceStatusLabel.setText("🎤 Voice assistant ready");
+    }
+
+    private void showVoiceBar(boolean show) {
+        voiceBar.setVisible(show);
+        voiceBar.setManaged(show);
+    }
+
+    private void showVoiceError(String message) {
+        Platform.runLater(() -> {
+            voiceStatusLabel.setText("❌ " + message);
+            voiceTranscriptionLabel.setText("");
+            voiceResponseLabel.setText("");
+            voiceBar.setVisible(true);
+            voiceBar.setManaged(true);
+            voiceProgress.setVisible(false);
+            btnVoiceAssistant.setDisable(false);
+            btnVoiceAssistant.setText("🎤  Voice");
+            btnVoiceAssistant.setStyle("");
+            isRecordingVoice = false;
+        });
+    }
+
+    // ════════════════════════════════════════════════════════════
     //  ANTI-FRAUD : SETUP DES CALLBACKS
     // ════════════════════════════════════════════════════════════
-
     private void setupAntiFraud() {
 
-        // Fraude détectée → mise à jour UI
         antiFraud.setOnFraudDetected(event -> Platform.runLater(() -> {
-            if (fraudStatusBar != null) fraudStatusBar.setVisible(true);
+            if (fraudStatusBar  != null) fraudStatusBar.setVisible(true);
             if (lblFraudWarning != null) {
                 lblFraudWarning.setText(event.getType().label + ": " + event.getDetails());
                 lblFraudWarning.setStyle("-fx-text-fill:" + event.getSeverityColor() + ";-fx-font-size:12px;");
             }
         }));
 
-        // Score mis à jour → afficher dans la barre
         antiFraud.setOnFraudScoreUpdated(score -> Platform.runLater(() -> {
             if (lblFraudScore == null) return;
             lblFraudScore.setText("⚠ " + score + "/" + AntiFraudEngine.THRESHOLD_TERMINATE);
             String col = score >= AntiFraudEngine.THRESHOLD_PENALTY ? "#EF4444"
-                    : score >= AntiFraudEngine.THRESHOLD_WARNING ? "#F59E0B"
+                    : score >= AntiFraudEngine.THRESHOLD_WARNING  ? "#F59E0B"
                     : "#34D399";
             lblFraudScore.setStyle("-fx-text-fill:" + col + ";-fx-font-size:12px;-fx-font-weight:700;");
         }));
 
-        // Pénalité → décrémenter le score du quiz
         antiFraud.setOnPenalty(penaltyCount -> Platform.runLater(() -> {
             quizScore = Math.max(0, quizScore - 1);
-            System.out.println("[FRAUD] Pénalité #" + penaltyCount + " — score quiz → " + quizScore);
+            System.out.println("[FRAUD] Penalty #" + penaltyCount + " — quiz score → " + quizScore);
         }));
 
-        // Avertissement → afficher dans la barre
         antiFraud.setOnWarning(msg -> Platform.runLater(() -> {
             if (lblFraudWarning != null) {
                 lblFraudWarning.setText("⚠ " + msg);
@@ -268,17 +423,12 @@ public class CoursesController implements Initializable {
             }
         }));
 
-        // Fin forcée → terminer le quiz immédiatement
         antiFraud.setOnTerminate(() -> Platform.runLater(() -> {
             stopQuizTimer();
             finishQuiz();
         }));
     }
 
-    /**
-     * Attache l'engine à la fenêtre + bloque les actions système.
-     * Appelé une seule fois quand la scène est prête.
-     */
     private void attachAntiFraudOnce() {
         if (antiFraudAttached) return;
         antiFraudAttached = true;
@@ -291,9 +441,6 @@ public class CoursesController implements Initializable {
         });
     }
 
-    /**
-     * Construit la barre de statut anti-fraude (affichée pendant le quiz).
-     */
     private HBox buildFraudBar() {
         HBox bar = new HBox(12);
         bar.setAlignment(Pos.CENTER_LEFT);
@@ -309,7 +456,7 @@ public class CoursesController implements Initializable {
         Label icon = new Label("🔒");
         icon.setStyle("-fx-font-size:13px;");
 
-        lblFraudWarning = new Label("Mode examen sécurisé actif");
+        lblFraudWarning = new Label("Secure exam mode active");
         lblFraudWarning.setStyle("-fx-text-fill:#94A3B8;-fx-font-size:12px;");
         HBox.setHgrow(lblFraudWarning, Priority.ALWAYS);
 
@@ -321,7 +468,6 @@ public class CoursesController implements Initializable {
         fraudBar.setPrefHeight(6);
         fraudBar.setStyle("-fx-accent:#EF4444;-fx-background-color:#1E293B;");
 
-        // Mettre à jour la barre à chaque changement de score
         antiFraud.setOnFraudScoreUpdated(score -> Platform.runLater(() -> {
             double prog = (double) score / AntiFraudEngine.THRESHOLD_TERMINATE;
             fraudBar.setProgress(Math.min(1.0, prog));
@@ -329,7 +475,7 @@ public class CoursesController implements Initializable {
             if (lblFraudScore != null) {
                 lblFraudScore.setText("⚠ " + score + "/" + AntiFraudEngine.THRESHOLD_TERMINATE);
                 String col = score >= AntiFraudEngine.THRESHOLD_PENALTY ? "#EF4444"
-                        : score >= AntiFraudEngine.THRESHOLD_WARNING ? "#F59E0B"
+                        : score >= AntiFraudEngine.THRESHOLD_WARNING  ? "#F59E0B"
                         : "#34D399";
                 lblFraudScore.setStyle("-fx-text-fill:" + col + ";-fx-font-size:12px;-fx-font-weight:700;");
             }
@@ -355,10 +501,10 @@ public class CoursesController implements Initializable {
         quizMainView.setVisible(isQuiz); quizMainView.setManaged(isQuiz);
 
         boolean showCards = isList || isStats;
-        statCards.setVisible(showCards);  statCards.setManaged(showCards);
+        statCards.setVisible(showCards); statCards.setManaged(showCards);
         if (smartQuizCard != null) { smartQuizCard.setVisible(isList); smartQuizCard.setManaged(isList); }
-        sortCombo.setVisible(isList);    sortCombo.setManaged(isList);
-        searchField.setVisible(isList);  searchField.setManaged(isList);
+        sortCombo.setVisible(isList);   sortCombo.setManaged(isList);
+        searchField.setVisible(isList); searchField.setManaged(isList);
 
         if (isList) {
             btnHeaderAction.setText("New Assessment");
@@ -381,7 +527,7 @@ public class CoursesController implements Initializable {
             pageTitle.setText("Smart Quiz");
             pageSubtitle.setText("Test your knowledge — Secure exam mode");
             showQuizSubView("setup");
-            attachAntiFraudOnce(); // ← attacher l'engine ici
+            attachAntiFraudOnce();
         }
     }
 
@@ -431,100 +577,6 @@ public class CoursesController implements Initializable {
     }
 
     // ════════════════════════════════════════════════════════════
-    //  BUILD CARD
-    // ════════════════════════════════════════════════════════════
-    private VBox buildCard(EvaluationMatiere ev, String color) {
-        VBox card = new VBox(0);
-        card.getStyleClass().add("card");
-        card.setPrefWidth(380); card.setMaxWidth(380);
-        card.setStyle(
-                "-fx-background-color:#0F172A;-fx-border-color:#1E293B;-fx-border-width:1.5;" +
-                        "-fx-border-radius:16;-fx-background-radius:16;-fx-cursor:hand;" +
-                        "-fx-effect:dropshadow(gaussian,rgba(0,0,0,0.4),12,0,0,4);"
-        );
-
-        Region bar = new Region();
-        bar.setPrefHeight(4);
-        bar.setStyle("-fx-background-color:" + getGradient(color) + ";-fx-background-radius:16 16 0 0;");
-
-        VBox content = new VBox(14);
-        content.setPadding(new Insets(18,20,18,20));
-
-        HBox header = new HBox(12);
-        header.setAlignment(Pos.CENTER_LEFT);
-
-        StackPane iconBox = new StackPane();
-        iconBox.setPrefSize(46,46); iconBox.setMinSize(46,46); iconBox.setMaxSize(46,46);
-        iconBox.setStyle("-fx-background-color:" + getIconBg(color) + ";-fx-background-radius:12;");
-        FontIcon icon = new FontIcon("fth-clipboard");
-        icon.setIconSize(20); icon.setIconColor(Color.web(getHex(color)));
-        iconBox.getChildren().add(icon);
-
-        Region sp = new Region(); HBox.setHgrow(sp, Priority.ALWAYS);
-
-        Label badge = new Label(String.format("%.1f / %.0f", ev.getScoreEval(), ev.getNoteMaximaleEval()));
-        badge.setStyle(
-                "-fx-background-color:" + getHex(color) + ";-fx-text-fill:white;" +
-                        "-fx-font-size:13px;-fx-font-weight:700;-fx-padding:5 12;-fx-background-radius:20;"
-        );
-        header.getChildren().addAll(iconBox, sp, badge);
-
-        Label nom = new Label(getNomMatiere(ev.getMatiereId()));
-        nom.setStyle("-fx-text-fill:#F8FAFC;-fx-font-size:17px;-fx-font-weight:700;");
-        nom.setWrapText(true);
-
-        HBox dateRow = new HBox(6); dateRow.setAlignment(Pos.CENTER_LEFT);
-        FontIcon cal = new FontIcon("fth-calendar"); cal.setIconSize(12); cal.setIconColor(Color.web("#94A3B8"));
-        Label dateL = new Label(ev.getDateEvaluation() != null ? ev.getDateEvaluation().format(FMT) : "—");
-        dateL.setStyle("-fx-text-fill:#94A3B8;-fx-font-size:12px;");
-        dateRow.getChildren().addAll(cal, dateL);
-
-        HBox chips = new HBox(10); chips.setAlignment(Pos.CENTER_LEFT);
-        chips.getChildren().addAll(
-                buildChip("fth-clock", ev.getDureeEvaluation() + " min", "#94A3B8"),
-                buildChip("fth-alert-circle", ev.getPrioriteE() != null ? ev.getPrioriteE() : "—", getPrioColor(ev.getPrioriteE()))
-        );
-
-        double progress = ev.getNoteMaximaleEval() > 0 ? ev.getScoreEval() / ev.getNoteMaximaleEval() : 0;
-        VBox progSection = new VBox(6);
-        HBox ph = new HBox(); ph.setAlignment(Pos.CENTER_LEFT);
-        Label pl = new Label("Score"); pl.setStyle("-fx-text-fill:#64748B;-fx-font-size:12px;");
-        Region ps = new Region(); HBox.setHgrow(ps, Priority.ALWAYS);
-        Label pv = new Label((int)(progress*100) + "%");
-        pv.setStyle("-fx-text-fill:" + getHex(color) + ";-fx-font-size:13px;-fx-font-weight:700;");
-        ph.getChildren().addAll(pl, ps, pv);
-        ProgressBar pb = new ProgressBar(progress); pb.setMaxWidth(Double.MAX_VALUE);
-        pb.setStyle("-fx-accent:" + getHex(color) + ";-fx-background-color:#1E293B;-fx-background-radius:4;-fx-border-radius:4;");
-        progSection.getChildren().addAll(ph, pb);
-
-        Region div = new Region(); div.setPrefHeight(1); div.setStyle("-fx-background-color:#1E293B;");
-
-        HBox actions = new HBox(8); actions.setAlignment(Pos.CENTER_RIGHT);
-        Button btnEdit = new Button("✏  Edit");
-        btnEdit.setStyle(
-                "-fx-background-color:transparent;-fx-text-fill:" + getHex(color) + ";" +
-                        "-fx-border-color:" + getHex(color) + ";-fx-border-width:1.5;" +
-                        "-fx-border-radius:8;-fx-background-radius:8;" +
-                        "-fx-font-size:12px;-fx-font-weight:600;-fx-padding:6 16;-fx-cursor:hand;"
-        );
-        btnEdit.setOnAction(e -> startEdit(ev));
-
-        Button btnDel = new Button("🗑  Delete");
-        btnDel.setStyle(
-                "-fx-background-color:transparent;-fx-text-fill:#FB7185;" +
-                        "-fx-border-color:#FB7185;-fx-border-width:1.5;" +
-                        "-fx-border-radius:8;-fx-background-radius:8;" +
-                        "-fx-font-size:12px;-fx-font-weight:600;-fx-padding:6 16;-fx-cursor:hand;"
-        );
-        btnDel.setOnAction(e -> deleteItem(ev));
-        actions.getChildren().addAll(btnEdit, btnDel);
-
-        content.getChildren().addAll(header, nom, dateRow, chips, progSection, div, actions);
-        card.getChildren().addAll(bar, content);
-        return card;
-    }
-
-    // ════════════════════════════════════════════════════════════
     //  FORM HANDLERS
     // ════════════════════════════════════════════════════════════
     @FXML private void handleShowForm() {
@@ -555,7 +607,7 @@ public class CoursesController implements Initializable {
         try {
             if (fldNoteMax.getText().isBlank()) throw new NumberFormatException();
             noteMax = Double.parseDouble(fldNoteMax.getText().trim());
-            if (noteMax <= 0) { errNoteMax.setText("⚠ Must be > 0."); ok = false; }
+            if (noteMax <= 0)  { errNoteMax.setText("⚠ Must be > 0.");   ok = false; }
             else if (noteMax > 20) { errNoteMax.setText("⚠ Max is 20."); ok = false; }
         } catch (NumberFormatException ex) { errNoteMax.setText("⚠ Enter a valid number."); ok = false; }
 
@@ -590,7 +642,7 @@ public class CoursesController implements Initializable {
             e.setMatiereId(cmbMatiere.getValue().getId());
             e.setUserId(u.getId());
             if (editTarget == null) evalService.create(e, cmbMatiere.getValue().getId());
-            else evalService.update(e);
+            else                    evalService.update(e);
             clearForm(); showView("list"); loadData();
         } catch (Exception ex) { showGlobalError("Database error: " + ex.getMessage()); }
     }
@@ -621,7 +673,8 @@ public class CoursesController implements Initializable {
     }
 
     private void deleteItem(EvaluationMatiere ev) {
-        Alert a = new Alert(Alert.AlertType.CONFIRMATION, "Delete this assessment?", ButtonType.YES, ButtonType.CANCEL);
+        Alert a = new Alert(Alert.AlertType.CONFIRMATION,
+                "Delete this assessment?", ButtonType.YES, ButtonType.CANCEL);
         a.setTitle("Confirm deletion");
         a.showAndWait().ifPresent(r -> {
             if (r == ButtonType.YES) {
@@ -637,7 +690,7 @@ public class CoursesController implements Initializable {
     @FXML private void handleHeaderAction() {
         if (formPanel.isVisible() || statsView.isVisible() || quizMainView.isVisible()) {
             stopQuizTimer();
-            antiFraud.stopMonitoring(); // ← stopper la surveillance si on quitte
+            antiFraud.stopMonitoring();
             showView("list");
         } else {
             handleShowForm();
@@ -647,7 +700,8 @@ public class CoursesController implements Initializable {
     @FXML public void handleShowQuiz()  { showView("quiz"); }
     @FXML public void handleShowStats() {
         if (allEvals.isEmpty()) {
-            new Alert(Alert.AlertType.INFORMATION, "No assessments yet.", ButtonType.OK).showAndWait();
+            new Alert(Alert.AlertType.INFORMATION,
+                    "No assessments yet.", ButtonType.OK).showAndWait();
             return;
         }
         populateStats(); showView("stats");
@@ -661,7 +715,8 @@ public class CoursesController implements Initializable {
         if (sec == null) return;
         try {
             List<Matiere> filtered = matService.findAll().stream()
-                    .filter(m -> sec.equals(m.getSectionMatiere())).collect(Collectors.toList());
+                    .filter(m -> sec.equals(m.getSectionMatiere()))
+                    .collect(Collectors.toList());
             cmbQuizMatiere.setItems(FXCollections.observableArrayList(filtered));
             cmbQuizMatiere.setPromptText("Choose a subject…");
             cmbQuizMatiere.getSelectionModel().clearSelection();
@@ -669,13 +724,17 @@ public class CoursesController implements Initializable {
     }
 
     // ════════════════════════════════════════════════════════════
-    //  QUIZ — GÉNÉRATION AI (OpenRouter)
+    //  QUIZ — AI GENERATION
     // ════════════════════════════════════════════════════════════
     @FXML private void handleGenerateAIQuiz() {
         lblQuizSetupError.setText("");
-        if (cmbQuizSection.getValue() == null) { lblQuizSetupError.setText("⚠ Please select a section."); return; }
+        if (cmbQuizSection.getValue() == null) {
+            lblQuizSetupError.setText("⚠ Please select a section."); return;
+        }
         Matiere mat = cmbQuizMatiere.getValue();
-        if (mat == null) { lblQuizSetupError.setText("⚠ Please select a subject."); return; }
+        if (mat == null) {
+            lblQuizSetupError.setText("⚠ Please select a subject."); return;
+        }
 
         String matiere    = mat.getNomMatiere();
         String section    = cmbQuizSection.getValue();
@@ -691,7 +750,6 @@ public class CoursesController implements Initializable {
                 AIQuizService service = new AIQuizService();
                 List<AIQuizService.ParsedQuestion> parsed =
                         service.generateQuizQuestions(matiere, section, level, count);
-
                 Platform.runLater(() -> {
                     showQuizLoading(false);
                     if (parsed.isEmpty()) {
@@ -700,7 +758,7 @@ public class CoursesController implements Initializable {
                     }
                     quizQuestions.clear();
                     for (AIQuizService.ParsedQuestion pq : parsed) {
-                        boolean add = quizQuestions.add(new QuizQuestion(
+                        quizQuestions.add(new QuizQuestion(
                                 pq.question, pq.options, pq.correct,
                                 pq.difficulty, pq.category, pq.explanation));
                     }
@@ -712,9 +770,9 @@ public class CoursesController implements Initializable {
                 Platform.runLater(() -> {
                     showQuizLoading(false);
                     String msg = e.getMessage() != null ? e.getMessage() : "Unknown error";
-                    if (msg.contains("401")) lblQuizSetupError.setText("⚠ Invalid API key.");
+                    if      (msg.contains("401")) lblQuizSetupError.setText("⚠ Invalid API key.");
                     else if (msg.contains("429")) lblQuizSetupError.setText("⚠ Rate limit. Retry later.");
-                    else lblQuizSetupError.setText("⚠ AI error: " + msg);
+                    else                          lblQuizSetupError.setText("⚠ AI error: " + msg);
                     showQuizSubView("setup");
                 });
             }
@@ -741,19 +799,16 @@ public class CoursesController implements Initializable {
     }
 
     // ════════════════════════════════════════════════════════════
-    //  QUIZ SESSION — DÉMARRAGE + ANTI-FRAUD ACTIF
+    //  QUIZ SESSION START
     // ════════════════════════════════════════════════════════════
     private void startQuizSession() {
-        // Injecter la barre anti-fraude dans la vue in-progress si pas encore fait
         if (fraudStatusBar == null) {
             HBox bar = buildFraudBar();
             quizInProgressView.getChildren().add(0, bar);
         }
 
-        // Démarrer la surveillance anti-fraude
         antiFraud.startMonitoring();
 
-        // Mettre en fullscreen (mode examen sécurisé)
         Platform.runLater(() -> {
             if (courseGrid.getScene() != null
                     && courseGrid.getScene().getWindow() instanceof Stage stage) {
@@ -767,7 +822,7 @@ public class CoursesController implements Initializable {
     }
 
     // ════════════════════════════════════════════════════════════
-    //  QUIZ TIMER GLOBAL
+    //  QUIZ TIMER
     // ════════════════════════════════════════════════════════════
     private void startQuizTimer() {
         stopQuizTimer();
@@ -786,7 +841,7 @@ public class CoursesController implements Initializable {
     }
 
     // ════════════════════════════════════════════════════════════
-    //  AFFICHER UNE QUESTION
+    //  SHOW QUESTION
     // ════════════════════════════════════════════════════════════
     private void showQuizQuestion() {
         if (quizCurrentIndex >= quizQuestions.size()) { finishQuiz(); return; }
@@ -808,7 +863,7 @@ public class CoursesController implements Initializable {
         String[] letters = {"A","B","C","D"};
         for (int i = 0; i < q.options.size(); i++) {
             String opt    = q.options.get(i);
-            String letter = i < letters.length ? letters[i] : String.valueOf(i+1);
+            String letter = i < letters.length ? letters[i] : String.valueOf(i + 1);
             Button btn = new Button(letter + ".  " + opt);
             btn.setMaxWidth(Double.MAX_VALUE);
             btn.setUserData(opt);
@@ -817,7 +872,6 @@ public class CoursesController implements Initializable {
             quizVboxOptions.getChildren().add(btn);
         }
 
-        // Notifier l'engine du changement de question (détection réponse rapide)
         antiFraud.onQuestionChanged(quizCurrentIndex);
     }
 
@@ -840,13 +894,12 @@ public class CoursesController implements Initializable {
     }
 
     // ════════════════════════════════════════════════════════════
-    //  FIN DU QUIZ — RÉSULTATS + RAPPORT ANTI-FRAUDE
+    //  FINISH QUIZ
     // ════════════════════════════════════════════════════════════
     private void finishQuiz() {
         stopQuizTimer();
-        antiFraud.stopMonitoring(); // ← stopper la surveillance
+        antiFraud.stopMonitoring();
 
-        // Appliquer les pénalités au score brut
         double rawScore      = quizScore;
         double adjustedScore = antiFraud.applyPenaltiesToScore(rawScore);
         int    displayScore  = (int) adjustedScore;
@@ -872,18 +925,15 @@ public class CoursesController implements Initializable {
             lblQuizFinalLevel.setStyle("-fx-text-fill:#FB7185;-fx-font-size:20px;-fx-font-weight:700;");
         }
 
-        // ── Résultats détaillés ────────────────────────────────
         quizVboxDetailedResults.getChildren().clear();
 
-        // Afficher le résumé anti-fraude si incidents
         if (antiFraud.getFraudScore() > 0) {
-            VBox fraudSummary = buildFraudSummaryCard();
-            quizVboxDetailedResults.getChildren().add(fraudSummary);
+            quizVboxDetailedResults.getChildren().add(buildFraudSummaryCard());
         }
 
         for (int i = 0; i < quizQuestions.size(); i++) {
             QuizQuestion q = quizQuestions.get(i);
-            boolean ok = q.correctAnswer.equals(q.userAnswer);
+            boolean ok    = q.correctAnswer.equals(q.userAnswer);
             String accentColor = ok ? "#34D399" : "#FB7185";
             String bgColor     = ok ? "#064E3B" : "#4C0519";
             String borderColor = ok ? "#34D399" : "#FB7185";
@@ -895,7 +945,7 @@ public class CoursesController implements Initializable {
             );
 
             HBox qHeader = new HBox(10); qHeader.setAlignment(Pos.TOP_LEFT);
-            Label numBadge = new Label(String.valueOf(i+1));
+            Label numBadge = new Label(String.valueOf(i + 1));
             numBadge.setStyle(
                     "-fx-background-color:" + accentColor + ";-fx-text-fill:#0F172A;" +
                             "-fx-font-size:11px;-fx-font-weight:800;" +
@@ -952,7 +1002,6 @@ public class CoursesController implements Initializable {
 
         showQuizSubView("results");
 
-        // Quitter le fullscreen en fin de quiz
         Platform.runLater(() -> {
             if (courseGrid.getScene() != null
                     && courseGrid.getScene().getWindow() instanceof Stage stage) {
@@ -961,9 +1010,6 @@ public class CoursesController implements Initializable {
         });
     }
 
-    /**
-     * Construit la carte de résumé anti-fraude affichée dans les résultats.
-     */
     private VBox buildFraudSummaryCard() {
         VBox card = new VBox(10);
         card.setStyle(
@@ -1015,7 +1061,7 @@ public class CoursesController implements Initializable {
     }
 
     // ════════════════════════════════════════════════════════════
-    //  STYLES OPTIONS
+    //  OPTION STYLES
     // ════════════════════════════════════════════════════════════
     private String styleOptionDefault() {
         return "-fx-background-color:#0F172A;-fx-border-color:#334155;-fx-border-width:1.5;" +
@@ -1030,7 +1076,7 @@ public class CoursesController implements Initializable {
     }
 
     // ════════════════════════════════════════════════════════════
-    //  PRIORITY HANDLERS
+    //  PRIORITY
     // ════════════════════════════════════════════════════════════
     @FXML private void selectPrioHaute()   { setPriorite("High"); }
     @FXML private void selectPrioMoyenne() { setPriorite("Medium"); }
@@ -1045,22 +1091,26 @@ public class CoursesController implements Initializable {
         }
         try {
             List<Matiere> filtered = matService.findAll().stream()
-                    .filter(m -> sec.equals(m.getSectionMatiere())).collect(Collectors.toList());
+                    .filter(m -> sec.equals(m.getSectionMatiere()))
+                    .collect(Collectors.toList());
             cmbMatiere.setItems(FXCollections.observableArrayList(filtered));
-            cmbMatiere.setPromptText(filtered.isEmpty() ? "No subjects for this section" : "Choose a subject…");
-        } catch (Exception e) { e.printStackTrace(); errSection.setText("⚠ Error loading subjects."); }
+            cmbMatiere.setPromptText(filtered.isEmpty()
+                    ? "No subjects for this section" : "Choose a subject…");
+        } catch (Exception e) {
+            e.printStackTrace(); errSection.setText("⚠ Error loading subjects.");
+        }
     }
 
     private void setPriorite(String val) {
         selectedPriorite = val; cmbPriorite.setValue(val); errPriorite.setText("");
-        String baseHaute   = "-fx-background-color:#1E293B;-fx-text-fill:#FB7185;-fx-border-color:#FB7185;-fx-border-width:1.5;-fx-border-radius:10;-fx-background-radius:10;-fx-padding:10 20;-fx-font-size:13px;-fx-cursor:hand;";
-        String baseMoyenne = "-fx-background-color:#1E293B;-fx-text-fill:#FBBF24;-fx-border-color:#FBBF24;-fx-border-width:1.5;-fx-border-radius:10;-fx-background-radius:10;-fx-padding:10 20;-fx-font-size:13px;-fx-cursor:hand;";
-        String baseBasse   = "-fx-background-color:#1E293B;-fx-text-fill:#34D399;-fx-border-color:#34D399;-fx-border-width:1.5;-fx-border-radius:10;-fx-background-radius:10;-fx-padding:10 20;-fx-font-size:13px;-fx-cursor:hand;";
-        btnPrioHaute.setStyle(baseHaute); btnPrioMoyenne.setStyle(baseMoyenne); btnPrioBasse.setStyle(baseBasse);
+        String bH = "-fx-background-color:#1E293B;-fx-text-fill:#FB7185;-fx-border-color:#FB7185;-fx-border-width:1.5;-fx-border-radius:10;-fx-background-radius:10;-fx-padding:10 20;-fx-font-size:13px;-fx-cursor:hand;";
+        String bM = "-fx-background-color:#1E293B;-fx-text-fill:#FBBF24;-fx-border-color:#FBBF24;-fx-border-width:1.5;-fx-border-radius:10;-fx-background-radius:10;-fx-padding:10 20;-fx-font-size:13px;-fx-cursor:hand;";
+        String bL = "-fx-background-color:#1E293B;-fx-text-fill:#34D399;-fx-border-color:#34D399;-fx-border-width:1.5;-fx-border-radius:10;-fx-background-radius:10;-fx-padding:10 20;-fx-font-size:13px;-fx-cursor:hand;";
+        btnPrioHaute.setStyle(bH); btnPrioMoyenne.setStyle(bM); btnPrioBasse.setStyle(bL);
         switch (val) {
-            case "High"   -> btnPrioHaute.setStyle("-fx-background-color:#F43F5E;-fx-text-fill:white;-fx-border-color:#F43F5E;-fx-border-width:1.5;-fx-border-radius:10;-fx-background-radius:10;-fx-padding:10 20;-fx-font-size:13px;-fx-cursor:hand;-fx-font-weight:700;");
+            case "High"   -> btnPrioHaute  .setStyle("-fx-background-color:#F43F5E;-fx-text-fill:white;-fx-border-color:#F43F5E;-fx-border-width:1.5;-fx-border-radius:10;-fx-background-radius:10;-fx-padding:10 20;-fx-font-size:13px;-fx-cursor:hand;-fx-font-weight:700;");
             case "Medium" -> btnPrioMoyenne.setStyle("-fx-background-color:#F59E0B;-fx-text-fill:white;-fx-border-color:#F59E0B;-fx-border-width:1.5;-fx-border-radius:10;-fx-background-radius:10;-fx-padding:10 20;-fx-font-size:13px;-fx-cursor:hand;-fx-font-weight:700;");
-            case "Low"    -> btnPrioBasse.setStyle("-fx-background-color:#10B981;-fx-text-fill:white;-fx-border-color:#10B981;-fx-border-width:1.5;-fx-border-radius:10;-fx-background-radius:10;-fx-padding:10 20;-fx-font-size:13px;-fx-cursor:hand;-fx-font-weight:700;");
+            case "Low"    -> btnPrioBasse  .setStyle("-fx-background-color:#10B981;-fx-text-fill:white;-fx-border-color:#10B981;-fx-border-width:1.5;-fx-border-radius:10;-fx-background-radius:10;-fx-padding:10 20;-fx-font-size:13px;-fx-cursor:hand;-fx-font-weight:700;");
         }
     }
 
@@ -1098,7 +1148,12 @@ public class CoursesController implements Initializable {
 
     private int prioOrder(String p) {
         if (p == null) return 99;
-        return switch (p) { case "High","Haute" -> 0; case "Medium","Moyenne" -> 1; case "Low","Basse" -> 2; default -> 99; };
+        return switch (p) {
+            case "High","Haute"     -> 0;
+            case "Medium","Moyenne" -> 1;
+            case "Low","Basse"      -> 2;
+            default -> 99;
+        };
     }
 
     // ════════════════════════════════════════════════════════════
@@ -1113,7 +1168,7 @@ public class CoursesController implements Initializable {
         HBox row2 = new HBox(16);
         VBox subjectCard  = buildSubjectBarsCard();
         VBox priorityCard = buildPriorityRingsCard();
-        HBox.setHgrow(subjectCard, Priority.ALWAYS);
+        HBox.setHgrow(subjectCard,  Priority.ALWAYS);
         HBox.setHgrow(priorityCard, Priority.ALWAYS);
         row2.getChildren().addAll(subjectCard, priorityCard);
         statsView.getChildren().add(row2);
@@ -1122,7 +1177,7 @@ public class CoursesController implements Initializable {
         VBox lineCard = buildLineChartCard();
         VBox barCard  = buildBarChartCard();
         HBox.setHgrow(lineCard, Priority.ALWAYS);
-        HBox.setHgrow(barCard, Priority.ALWAYS);
+        HBox.setHgrow(barCard,  Priority.ALWAYS);
         row3.getChildren().addAll(lineCard, barCard);
         statsView.getChildren().add(row3);
 
@@ -1140,7 +1195,8 @@ public class CoursesController implements Initializable {
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM");
         allEvals.stream().filter(e -> e.getDateEvaluation() != null)
                 .sorted(Comparator.comparing(EvaluationMatiere::getDateEvaluation))
-                .forEach(e -> series.getData().add(new XYChart.Data<>(e.getDateEvaluation().format(fmt), e.getScoreEval())));
+                .forEach(e -> series.getData().add(
+                        new XYChart.Data<>(e.getDateEvaluation().format(fmt), e.getScoreEval())));
         chart.getData().add(series);
         card.getChildren().add(chart); return card;
     }
@@ -1154,10 +1210,11 @@ public class CoursesController implements Initializable {
         chart.setStyle("-fx-background-color:transparent;-fx-plot-background-color:#0F172A;");
         XYChart.Series<String,Number> series = new XYChart.Series<>();
         Map<Integer,Double> avg = allEvals.stream().collect(
-                Collectors.groupingBy(EvaluationMatiere::getMatiereId, Collectors.averagingDouble(EvaluationMatiere::getScoreEval)));
+                Collectors.groupingBy(EvaluationMatiere::getMatiereId,
+                        Collectors.averagingDouble(EvaluationMatiere::getScoreEval)));
         avg.entrySet().stream().sorted(Map.Entry.<Integer,Double>comparingByValue().reversed()).forEach(en -> {
             String name = getNomMatiere(en.getKey());
-            if (name.length() > 10) name = name.substring(0,9) + "…";
+            if (name.length() > 10) name = name.substring(0, 9) + "…";
             series.getData().add(new XYChart.Data<>(name, en.getValue()));
         });
         chart.getData().add(series); card.getChildren().add(chart); return card;
@@ -1169,17 +1226,18 @@ public class CoursesController implements Initializable {
         long   totalMin = allEvals.stream().mapToLong(EvaluationMatiere::getDureeEvaluation).sum();
         long   above14  = allEvals.stream().filter(e -> e.getScoreEval() >= 14).count();
         Map<Integer,Double> avgBySub = allEvals.stream().collect(
-                Collectors.groupingBy(EvaluationMatiere::getMatiereId, Collectors.averagingDouble(EvaluationMatiere::getScoreEval)));
+                Collectors.groupingBy(EvaluationMatiere::getMatiereId,
+                        Collectors.averagingDouble(EvaluationMatiere::getScoreEval)));
         String best  = avgBySub.entrySet().stream().max(Map.Entry.comparingByValue()).map(e -> getNomMatiere(e.getKey())).orElse("—");
         String worst = avgBySub.entrySet().stream().min(Map.Entry.comparingByValue()).map(e -> getNomMatiere(e.getKey())).orElse("—");
-        double bestA  = avgBySub.values().stream().mapToDouble(d->d).max().orElse(0);
-        double worstA = avgBySub.values().stream().mapToDouble(d->d).min().orElse(0);
+        double bestA  = avgBySub.values().stream().mapToDouble(d -> d).max().orElse(0);
+        double worstA = avgBySub.values().stream().mapToDouble(d -> d).min().orElse(0);
         row.getChildren().addAll(
-                buildKpi("Total", String.valueOf(allEvals.size()), "assessments", true, "#A78BFA"),
-                buildKpi("Average", String.format("%.1f/20", avg), avg >= 10 ? "Passing" : "Below passing", avg >= 10, "#34D399"),
-                buildKpi("Best subject", best, String.format("avg %.1f", bestA), true, "#38BDF8"),
-                buildKpi("Weakest", worst, String.format("avg %.1f — focus here", worstA), false, "#FB7185"),
-                buildKpi("Study time", totalMin >= 60 ? String.format("%.1fh",totalMin/60.0) : totalMin+"min", above14+" ≥14/20", true, "#FBBF24")
+                buildKpi("Total",        String.valueOf(allEvals.size()),                   "assessments",                  true,  "#A78BFA"),
+                buildKpi("Average",      String.format("%.1f/20", avg),                    avg >= 10 ? "Passing" : "Below passing", avg >= 10, "#34D399"),
+                buildKpi("Best subject", best,                                              String.format("avg %.1f", bestA),  true,  "#38BDF8"),
+                buildKpi("Weakest",      worst,                                             String.format("avg %.1f — focus here", worstA), false, "#FB7185"),
+                buildKpi("Study time",   totalMin >= 60 ? String.format("%.1fh",totalMin/60.0) : totalMin+"min", above14+" ≥14/20", true, "#FBBF24")
         );
         row.getChildren().forEach(n -> HBox.setHgrow(n, Priority.ALWAYS));
         return row;
@@ -1200,19 +1258,23 @@ public class CoursesController implements Initializable {
         VBox card = cardBox("Score by subject (avg / 20)");
         VBox body = new VBox(10);
         Map<Integer,Double> avg = allEvals.stream().collect(
-                Collectors.groupingBy(EvaluationMatiere::getMatiereId, Collectors.averagingDouble(EvaluationMatiere::getScoreEval)));
+                Collectors.groupingBy(EvaluationMatiere::getMatiereId,
+                        Collectors.averagingDouble(EvaluationMatiere::getScoreEval)));
         avg.entrySet().stream().sorted(Map.Entry.<Integer,Double>comparingByValue().reversed()).forEach(en -> {
-            double a = en.getValue(); double pct = (a/20.0)*100;
+            double a = en.getValue(); double pct = (a / 20.0) * 100;
             String col = a >= 14 ? "#10B981" : a >= 10 ? "#F59E0B" : "#F43F5E";
-            String nm  = getNomMatiere(en.getKey()); if (nm.length() > 12) nm = nm.substring(0,11)+"…";
+            String nm  = getNomMatiere(en.getKey()); if (nm.length() > 12) nm = nm.substring(0,11) + "…";
             HBox row = new HBox(10); row.setAlignment(Pos.CENTER_LEFT);
             Label nl = new Label(nm); nl.setMinWidth(90); nl.setStyle("-fx-text-fill:#94A3B8;-fx-font-size:12px;");
-            StackPane track = new StackPane(); track.setMaxHeight(8); track.setPrefHeight(8); HBox.setHgrow(track, Priority.ALWAYS);
-            Region bg = new Region(); bg.setPrefHeight(8); bg.setMaxWidth(Double.MAX_VALUE); bg.setStyle("-fx-background-color:#1E293B;-fx-background-radius:4;");
+            StackPane track = new StackPane(); track.setMaxHeight(8); track.setPrefHeight(8);
+            HBox.setHgrow(track, Priority.ALWAYS);
+            Region bg   = new Region(); bg.setPrefHeight(8);   bg.setMaxWidth(Double.MAX_VALUE); bg.setStyle("-fx-background-color:#1E293B;-fx-background-radius:4;");
             Region fill = new Region(); fill.setPrefHeight(8); fill.setStyle("-fx-background-color:"+col+";-fx-background-radius:4;");
-            track.setMaxWidth(Double.MAX_VALUE); bg.prefWidthProperty().bind(track.widthProperty());
-            fill.prefWidthProperty().bind(track.widthProperty().multiply(pct/100.0));
-            StackPane.setAlignment(fill, Pos.CENTER_LEFT); track.getChildren().addAll(bg, fill);
+            track.setMaxWidth(Double.MAX_VALUE);
+            bg.prefWidthProperty().bind(track.widthProperty());
+            fill.prefWidthProperty().bind(track.widthProperty().multiply(pct / 100.0));
+            StackPane.setAlignment(fill, Pos.CENTER_LEFT);
+            track.getChildren().addAll(bg, fill);
             Label vl = new Label(String.format("%.1f", a)); vl.setMinWidth(32);
             vl.setStyle("-fx-text-fill:"+col+";-fx-font-size:12px;-fx-font-weight:700;");
             row.getChildren().addAll(nl, track, vl); body.getChildren().add(row);
@@ -1224,7 +1286,8 @@ public class CoursesController implements Initializable {
     private VBox buildPriorityRingsCard() {
         VBox card = cardBox("Score by priority");
         Map<String,Double> avg = allEvals.stream().filter(e -> e.getPrioriteE() != null)
-                .collect(Collectors.groupingBy(EvaluationMatiere::getPrioriteE, Collectors.averagingDouble(EvaluationMatiere::getScoreEval)));
+                .collect(Collectors.groupingBy(EvaluationMatiere::getPrioriteE,
+                        Collectors.averagingDouble(EvaluationMatiere::getScoreEval)));
         HBox row = new HBox(24); row.setAlignment(Pos.CENTER); row.setPadding(new Insets(12,0,0,0));
         row.getChildren().addAll(
                 buildRing("HIGH",   avg.getOrDefault("High",   avg.getOrDefault("Haute",   0.0)), "#E24B4A"),
@@ -1236,8 +1299,8 @@ public class CoursesController implements Initializable {
 
     private VBox buildRing(String label, double avg, String color) {
         VBox box = new VBox(8); box.setAlignment(Pos.CENTER);
-        StackPane stack = new StackPane(); stack.setPrefSize(90,90);
-        ProgressIndicator ring = new ProgressIndicator(avg/20.0); ring.setPrefSize(80,80);
+        StackPane stack = new StackPane(); stack.setPrefSize(90, 90);
+        ProgressIndicator ring = new ProgressIndicator(avg / 20.0); ring.setPrefSize(80, 80);
         ring.setStyle("-fx-accent:" + color + ";");
         Label val = new Label(String.format("%.1f", avg));
         val.setStyle("-fx-text-fill:#F8FAFC;-fx-font-size:14px;-fx-font-weight:700;");
@@ -1248,18 +1311,18 @@ public class CoursesController implements Initializable {
 
     private VBox buildInsightsCard() {
         VBox card = cardBox("Smart insights");
-        FlowPane flow = new FlowPane(10,10);
-        double avg = allEvals.stream().mapToDouble(EvaluationMatiere::getScoreEval).average().orElse(0);
-        long above14 = allEvals.stream().filter(e -> e.getScoreEval() >= 14).count();
-        long below10 = allEvals.stream().filter(e -> e.getScoreEval() < 10).count();
-        long totalMin = allEvals.stream().mapToLong(EvaluationMatiere::getDureeEvaluation).sum();
-        if (avg >= 16) addBadge(flow,"⭐  Excellent avg ≥ 16","#10B981","#0D2C1F");
+        FlowPane flow = new FlowPane(10, 10);
+        double avg      = allEvals.stream().mapToDouble(EvaluationMatiere::getScoreEval).average().orElse(0);
+        long   above14  = allEvals.stream().filter(e -> e.getScoreEval() >= 14).count();
+        long   below10  = allEvals.stream().filter(e -> e.getScoreEval() < 10).count();
+        long   totalMin = allEvals.stream().mapToLong(EvaluationMatiere::getDureeEvaluation).sum();
+        if      (avg >= 16) addBadge(flow,"⭐  Excellent avg ≥ 16","#10B981","#0D2C1F");
         else if (avg >= 14) addBadge(flow,"✅  Good avg ≥ 14","#34D399","#0D2C1F");
         else if (avg >= 10) addBadge(flow,"🟡  Average 10–14","#F59E0B","#2C1E00");
-        else addBadge(flow,"🔴  Below avg — keep going!","#F43F5E","#2D0A0A");
-        if (above14 > 0) addBadge(flow, above14+" assessment(s) ≥ 14","#A78BFA","#1E1B4B");
-        if (below10 > 0) addBadge(flow, below10+" to revise (< 10)","#FB7185","#2D0A0A");
-        if (totalMin >= 60) addBadge(flow, String.format("⏱  %.1fh studied",totalMin/60.0),"#38BDF8","#0C2233");
+        else                addBadge(flow,"🔴  Below avg — keep going!","#F43F5E","#2D0A0A");
+        if (above14  > 0)  addBadge(flow, above14+" assessment(s) ≥ 14","#A78BFA","#1E1B4B");
+        if (below10  > 0)  addBadge(flow, below10+" to revise (< 10)","#FB7185","#2D0A0A");
+        if (totalMin >= 60) addBadge(flow, String.format("⏱  %.1fh studied", totalMin/60.0),"#38BDF8","#0C2233");
         card.getChildren().add(flow); return card;
     }
 
@@ -1268,11 +1331,13 @@ public class CoursesController implements Initializable {
     // ════════════════════════════════════════════════════════════
     @FXML private void handleExportPdf() {
         if (allEvals.isEmpty()) {
-            new Alert(Alert.AlertType.INFORMATION, "Add at least one assessment first.", ButtonType.OK).showAndWait(); return;
+            new Alert(Alert.AlertType.INFORMATION,
+                    "Add at least one assessment first.", ButtonType.OK).showAndWait(); return;
         }
         FileChooser fc = new FileChooser();
         fc.setTitle("Save PDF Report");
-        fc.setInitialFileName("StudyFlow_" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")) + ".pdf");
+        fc.setInitialFileName("StudyFlow_"
+                + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")) + ".pdf");
         fc.getExtensionFilters().add(new FileChooser.ExtensionFilter("PDF Files","*.pdf"));
         Stage stage = (Stage) courseGrid.getScene().getWindow();
         java.io.File file = fc.showSaveDialog(stage);
@@ -1284,7 +1349,8 @@ public class CoursesController implements Initializable {
             ok.setContentText(file.getAbsolutePath()); ok.showAndWait();
         } catch (Exception ex) {
             ex.printStackTrace();
-            new Alert(Alert.AlertType.ERROR, "Export failed: " + ex.getMessage(), ButtonType.OK).showAndWait();
+            new Alert(Alert.AlertType.ERROR,
+                    "Export failed: " + ex.getMessage(), ButtonType.OK).showAndWait();
         }
     }
 
@@ -1295,10 +1361,10 @@ public class CoursesController implements Initializable {
         editTarget = null; selectedPriorite = null;
         cmbMatiere.setValue(null); fldScore.clear(); fldNoteMax.clear(); fldDuree.clear();
         dpDate.setValue(null); cmbPriorite.setValue(null);
-        String baseH = "-fx-background-color:#1E293B;-fx-text-fill:#FB7185;-fx-border-color:#FB7185;-fx-border-width:1.5;-fx-border-radius:10;-fx-background-radius:10;-fx-padding:10 20;-fx-font-size:13px;-fx-cursor:hand;";
-        String baseM = "-fx-background-color:#1E293B;-fx-text-fill:#FBBF24;-fx-border-color:#FBBF24;-fx-border-width:1.5;-fx-border-radius:10;-fx-background-radius:10;-fx-padding:10 20;-fx-font-size:13px;-fx-cursor:hand;";
-        String baseL = "-fx-background-color:#1E293B;-fx-text-fill:#34D399;-fx-border-color:#34D399;-fx-border-width:1.5;-fx-border-radius:10;-fx-background-radius:10;-fx-padding:10 20;-fx-font-size:13px;-fx-cursor:hand;";
-        btnPrioHaute.setStyle(baseH); btnPrioMoyenne.setStyle(baseM); btnPrioBasse.setStyle(baseL);
+        String bH = "-fx-background-color:#1E293B;-fx-text-fill:#FB7185;-fx-border-color:#FB7185;-fx-border-width:1.5;-fx-border-radius:10;-fx-background-radius:10;-fx-padding:10 20;-fx-font-size:13px;-fx-cursor:hand;";
+        String bM = "-fx-background-color:#1E293B;-fx-text-fill:#FBBF24;-fx-border-color:#FBBF24;-fx-border-width:1.5;-fx-border-radius:10;-fx-background-radius:10;-fx-padding:10 20;-fx-font-size:13px;-fx-cursor:hand;";
+        String bL = "-fx-background-color:#1E293B;-fx-text-fill:#34D399;-fx-border-color:#34D399;-fx-border-width:1.5;-fx-border-radius:10;-fx-background-radius:10;-fx-padding:10 20;-fx-font-size:13px;-fx-cursor:hand;";
+        btnPrioHaute.setStyle(bH); btnPrioMoyenne.setStyle(bM); btnPrioBasse.setStyle(bL);
         cmbSection.setValue(null); errSection.setText("");
         cmbMatiere.setItems(FXCollections.observableArrayList());
         cmbMatiere.setPromptText("Select a section first…");
@@ -1311,7 +1377,9 @@ public class CoursesController implements Initializable {
         errDuree.setText(""); errPriorite.setText(""); errDate.setText(""); errSection.setText("");
     }
 
-    private void showGlobalError(String msg) { formError.setText("⚠ " + msg); formError.setVisible(true); }
+    private void showGlobalError(String msg) {
+        formError.setText("⚠ " + msg); formError.setVisible(true);
+    }
 
     private String getNomMatiere(int id) {
         try { Matiere m = matService.findById(id); return m != null ? m.getNomMatiere() : "Subject #" + id; }
@@ -1341,7 +1409,12 @@ public class CoursesController implements Initializable {
 
     private String getPrioColor(String p) {
         if (p == null) return "#94A3B8";
-        return switch (p) { case "High","Haute" -> "#FB7185"; case "Medium","Moyenne" -> "#FBBF24"; case "Low","Basse" -> "#34D399"; default -> "#94A3B8"; };
+        return switch (p) {
+            case "High","Haute"     -> "#FB7185";
+            case "Medium","Moyenne" -> "#FBBF24";
+            case "Low","Basse"      -> "#34D399";
+            default -> "#94A3B8";
+        };
     }
 
     private String getGradient(String c) {
@@ -1369,5 +1442,96 @@ public class CoursesController implements Initializable {
             case "warning" -> "#F59E0B"; case "accent"  -> "#F97316";
             case "danger"  -> "#F43F5E"; default        -> "#64748B";
         };
+    }
+
+    private VBox buildCard(EvaluationMatiere ev, String color) {
+        VBox card = new VBox(0);
+        card.getStyleClass().add("card");
+        card.setPrefWidth(380); card.setMaxWidth(380);
+        card.setStyle(
+                "-fx-background-color:#0F172A;-fx-border-color:#1E293B;-fx-border-width:1.5;" +
+                        "-fx-border-radius:16;-fx-background-radius:16;-fx-cursor:hand;" +
+                        "-fx-effect:dropshadow(gaussian,rgba(0,0,0,0.4),12,0,0,4);"
+        );
+
+        Region bar = new Region(); bar.setPrefHeight(4);
+        bar.setStyle("-fx-background-color:" + getGradient(color) + ";-fx-background-radius:16 16 0 0;");
+
+        VBox content = new VBox(14); content.setPadding(new Insets(18,20,18,20));
+
+        HBox header = new HBox(12); header.setAlignment(Pos.CENTER_LEFT);
+        StackPane iconBox = new StackPane();
+        iconBox.setPrefSize(46,46); iconBox.setMinSize(46,46); iconBox.setMaxSize(46,46);
+        iconBox.setStyle("-fx-background-color:" + getIconBg(color) + ";-fx-background-radius:12;");
+        FontIcon icon = new FontIcon("fth-clipboard");
+        icon.setIconSize(20); icon.setIconColor(Color.web(getHex(color)));
+        iconBox.getChildren().add(icon);
+
+        Region sp = new Region(); HBox.setHgrow(sp, Priority.ALWAYS);
+
+        Label badge = new Label(String.format("%.1f / %.0f", ev.getScoreEval(), ev.getNoteMaximaleEval()));
+        badge.setStyle(
+                "-fx-background-color:" + getHex(color) + ";-fx-text-fill:white;" +
+                        "-fx-font-size:13px;-fx-font-weight:700;-fx-padding:5 12;-fx-background-radius:20;"
+        );
+        header.getChildren().addAll(iconBox, sp, badge);
+
+        Label nom = new Label(getNomMatiere(ev.getMatiereId()));
+        nom.setStyle("-fx-text-fill:#F8FAFC;-fx-font-size:17px;-fx-font-weight:700;");
+        nom.setWrapText(true);
+
+        HBox dateRow = new HBox(6); dateRow.setAlignment(Pos.CENTER_LEFT);
+        FontIcon cal = new FontIcon("fth-calendar"); cal.setIconSize(12); cal.setIconColor(Color.web("#94A3B8"));
+        Label dateL = new Label(ev.getDateEvaluation() != null ? ev.getDateEvaluation().format(FMT) : "—");
+        dateL.setStyle("-fx-text-fill:#94A3B8;-fx-font-size:12px;");
+        dateRow.getChildren().addAll(cal, dateL);
+
+        HBox chips = new HBox(10); chips.setAlignment(Pos.CENTER_LEFT);
+        chips.getChildren().addAll(
+                buildChip("fth-clock", ev.getDureeEvaluation() + " min", "#94A3B8"),
+                buildChip("fth-alert-circle", ev.getPrioriteE() != null ? ev.getPrioriteE() : "—",
+                        getPrioColor(ev.getPrioriteE()))
+        );
+
+        double progress = ev.getNoteMaximaleEval() > 0
+                ? ev.getScoreEval() / ev.getNoteMaximaleEval() : 0;
+        VBox progSection = new VBox(6);
+        HBox ph = new HBox(); ph.setAlignment(Pos.CENTER_LEFT);
+        Label pl = new Label("Score"); pl.setStyle("-fx-text-fill:#64748B;-fx-font-size:12px;");
+        Region ps = new Region(); HBox.setHgrow(ps, Priority.ALWAYS);
+        Label pv = new Label((int)(progress*100) + "%");
+        pv.setStyle("-fx-text-fill:" + getHex(color) + ";-fx-font-size:13px;-fx-font-weight:700;");
+        ph.getChildren().addAll(pl, ps, pv);
+        ProgressBar pb = new ProgressBar(progress); pb.setMaxWidth(Double.MAX_VALUE);
+        pb.setStyle("-fx-accent:" + getHex(color) + ";-fx-background-color:#1E293B;" +
+                "-fx-background-radius:4;-fx-border-radius:4;");
+        progSection.getChildren().addAll(ph, pb);
+
+        Region div = new Region(); div.setPrefHeight(1);
+        div.setStyle("-fx-background-color:#1E293B;");
+
+        HBox actions = new HBox(8); actions.setAlignment(Pos.CENTER_RIGHT);
+        Button btnEdit = new Button("✏  Edit");
+        btnEdit.setStyle(
+                "-fx-background-color:transparent;-fx-text-fill:" + getHex(color) + ";" +
+                        "-fx-border-color:" + getHex(color) + ";-fx-border-width:1.5;" +
+                        "-fx-border-radius:8;-fx-background-radius:8;" +
+                        "-fx-font-size:12px;-fx-font-weight:600;-fx-padding:6 16;-fx-cursor:hand;"
+        );
+        btnEdit.setOnAction(e -> startEdit(ev));
+
+        Button btnDel = new Button("🗑  Delete");
+        btnDel.setStyle(
+                "-fx-background-color:transparent;-fx-text-fill:#FB7185;" +
+                        "-fx-border-color:#FB7185;-fx-border-width:1.5;" +
+                        "-fx-border-radius:8;-fx-background-radius:8;" +
+                        "-fx-font-size:12px;-fx-font-weight:600;-fx-padding:6 16;-fx-cursor:hand;"
+        );
+        btnDel.setOnAction(e -> deleteItem(ev));
+        actions.getChildren().addAll(btnEdit, btnDel);
+
+        content.getChildren().addAll(header, nom, dateRow, chips, progSection, div, actions);
+        card.getChildren().addAll(bar, content);
+        return card;
     }
 }

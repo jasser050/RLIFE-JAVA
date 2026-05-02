@@ -4,14 +4,16 @@ import com.studyflow.LocalServer;
 import com.studyflow.models.Pet;
 import com.studyflow.models.User;
 import com.studyflow.services.PetService;
+import com.studyflow.utils.PetPreviewSupport;
 import com.studyflow.utils.PetUiSupport;
 import com.studyflow.utils.UserSession;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Label;
-import javafx.scene.image.ImageView;
+import javafx.scene.layout.StackPane;
 import javafx.scene.web.WebEngine;
 import javafx.scene.web.WebView;
+import javafx.concurrent.Worker;
 
 import java.net.URL;
 import java.net.URLEncoder;
@@ -23,10 +25,11 @@ public class PetMetaverseController implements Initializable {
     @FXML private Label metaverseSubtitleLabel;
     @FXML private Label metaverseStatusLabel;
     @FXML private Label metaverseStatsLabel;
-    @FXML private ImageView metaversePetImageView;
+    @FXML private StackPane metaversePetPreviewPane;
     @FXML private WebView metaverseWebView;
 
     private PetService petService;
+    private boolean metaverseLoadHookInstalled;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -64,7 +67,7 @@ public class PetMetaverseController implements Initializable {
             metaverseSubtitleLabel.setText("Adopt a companion first to enter the garden.");
             metaverseStatusLabel.setText("No active companion");
             metaverseStatsLabel.setText("Your metaverse map unlocks after adoption.");
-            metaversePetImageView.setImage(PetUiSupport.loadPetImage("cat"));
+            renderPetPreview("cat");
             loadMap("[]");
             return;
         }
@@ -87,15 +90,68 @@ public class PetMetaverseController implements Initializable {
         metaverseSubtitleLabel.setText("A live PetVerse garden view using your current companion data.");
         metaverseStatusLabel.setText(rarity + " | " + PetUiSupport.moodFromHunger(pet.getHunger()));
         metaverseStatsLabel.setText("Level " + pet.getLevel() + " | " + pet.getHunger() + "/100 hunger | " + pet.getEvolutionStage());
-        metaversePetImageView.setImage(PetUiSupport.loadPetImage(pet.getType()));
+        renderPetPreview(pet.getType());
         loadMap(payload);
+    }
+
+    private void renderPetPreview(String type) {
+        if (metaversePetPreviewPane == null) {
+            return;
+        }
+        metaversePetPreviewPane.getChildren().setAll(PetPreviewSupport.createPreview(type, 212, 212));
     }
 
     private void loadMap(String payload) {
         WebEngine engine = metaverseWebView.getEngine();
         engine.setJavaScriptEnabled(true);
-        String url = LocalServer.url("/metaverse/petverse_map.html") + "?pets=" + URLEncoder.encode(payload, StandardCharsets.UTF_8);
+        installMetaverseLoadHook(engine);
+
+        String encodedPayload = URLEncoder.encode(payload, StandardCharsets.UTF_8);
+        String baseUrl = LocalServer.url("/metaverse/petverse_map.html");
+        String url = baseUrl + "?pets=" + encodedPayload;
         engine.load(url);
+    }
+
+    private void installMetaverseLoadHook(WebEngine engine) {
+        if (metaverseLoadHookInstalled) {
+            return;
+        }
+        metaverseLoadHookInstalled = true;
+
+        engine.getLoadWorker().stateProperty().addListener((obs, oldState, newState) -> {
+            if (newState != Worker.State.SUCCEEDED) {
+                return;
+            }
+
+            String bootstrapScript = """
+                    (function () {
+                      if (window.__petverseJavaFxBootstrapInstalled) return;
+                      window.__petverseJavaFxBootstrapInstalled = true;
+
+                      function forceStart() {
+                        var loading = document.getElementById('loading');
+                        if (loading) {
+                          loading.style.display = 'none';
+                          if (typeof loading.remove === 'function') loading.remove();
+                        }
+
+                        if (typeof window.animate === 'function' && !window.__petverseAnimateStarted) {
+                          window.__petverseAnimateStarted = true;
+                          try { window.animate(); } catch (e) {}
+                        }
+                      }
+
+                      window.setTimeout(forceStart, 2500);
+                      window.setTimeout(forceStart, 5000);
+                    })();
+                    """;
+
+            try {
+                engine.executeScript(bootstrapScript);
+            } catch (Exception ignored) {
+                // Ignore JS bootstrap errors; the page may already be running.
+            }
+        });
     }
 
     private String displayName(User user) {

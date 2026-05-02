@@ -69,6 +69,16 @@
                             <FontIcon iconLiteral="fth-send" iconSize="15"/>
                         </graphic>
                     </Button>
+                    <Button fx:id="showAssignmentActivityPanelButton" text="Activity" onAction="#handleShowAssignmentActivityPanel" styleClass="panel-switch-button">
+                        <graphic>
+                            <FontIcon iconLiteral="fth-activity" iconSize="15"/>
+                        </graphic>
+                    </Button>
+                    <Button fx:id="showAssignmentFilesPanelButton" text="Files" onAction="#handleShowAssignmentFilesPanel" styleClass="panel-switch-button">
+                        <graphic>
+                            <FontIcon iconLiteral="fth-paperclip" iconSize="15"/>
+                        </graphic>
+                    </Button>
                     <Button fx:id="showGitPanelButton" text="Git" onAction="#handleShowGitPanel" styleClass="panel-switch-button">
                         <graphic>
                             <FontIcon iconLiteral="fth-git-branch" iconSize="15"/>
@@ -224,7 +234,32 @@
                     <TextField fx:id="shareAssignmentEmailField" styleClass="form-input" promptText="username, email, phone, or student id"/>
                 </VBox>
 
+                <VBox spacing="8">
+                    <Label text="Shared With" styleClass="form-label"/>
+                    <VBox fx:id="sharedAssignmentUsersList" spacing="8"/>
+                </VBox>
+
                 <Button fx:id="shareAssignmentButton" text="Share Assignment" onAction="#handleShareAssignment" styleClass="btn-primary" maxWidth="Infinity"/>
+            </VBox>
+
+            <VBox fx:id="activityPanel" styleClass="card, form-shell, action-panel-card" spacing="14" visible="false" managed="false">
+                <Label text="Assignment Activity" styleClass="card-title"/>
+                <Label text="Track updates, reviews, deadline changes, shares, and file uploads for the selected assignment." styleClass="text-muted" wrapText="true"/>
+
+                <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS" styleClass="transparent-scroll">
+                    <VBox fx:id="assignmentActivityList" spacing="10" style="-fx-padding: 0 4 0 0;"/>
+                </ScrollPane>
+            </VBox>
+
+            <VBox fx:id="filesPanel" styleClass="card, form-shell, action-panel-card" spacing="14" visible="false" managed="false">
+                <Label text="Assignment Files" styleClass="card-title"/>
+                <Label fx:id="assignmentFilesHintLabel" text="Upload docs, screenshots, deliverables, and review assets." styleClass="text-muted" wrapText="true"/>
+
+                <Button fx:id="uploadAssignmentAttachmentButton" text="Upload File" onAction="#handleUploadAssignmentAttachment" styleClass="btn-primary" maxWidth="Infinity"/>
+
+                <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS" styleClass="transparent-scroll">
+                    <VBox fx:id="assignmentAttachmentList" spacing="10" style="-fx-padding: 0 4 0 0;"/>
+                </ScrollPane>
             </VBox>
 
             <VBox fx:id="gitPanel" styleClass="card, form-shell, action-panel-card" spacing="14" visible="false" managed="false">

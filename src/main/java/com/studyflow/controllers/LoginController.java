@@ -41,6 +41,15 @@ import java.util.Map;
 import java.util.ResourceBundle;
 
 public class LoginController implements Initializable {
+    private static final boolean CAPTCHA_ENABLED = true;
+    private static final String RECAPTCHA_SECRET = firstNonBlank(
+            System.getenv("RECAPTCHA_SECRET_KEY"),
+            System.getProperty("recaptcha.secret.key")
+    );
+    private static final String GOOGLE_CLIENT_SECRET = firstNonBlank(
+            System.getenv("GOOGLE_CLIENT_SECRET"),
+            System.getProperty("google.client.secret")
+    );
 
     @FXML private TextField emailField;
     @FXML private PasswordField passwordField;
@@ -130,8 +139,18 @@ public class LoginController implements Initializable {
             // Comment this block out to enforce strict password check
         }
 
-        // Show CAPTCHA before completing login
-        showCaptchaDialog(user);
+        if (CAPTCHA_ENABLED) {
+            showCaptchaDialog(user);
+            return;
+        }
+
+        UserSession.getInstance().setCurrentUser(user);
+        try {
+            App.setRoot("views/MainLayout");
+        } catch (IOException e) {
+            showError("Failed to load the application.");
+            resetButton();
+        }
     }
 
     private void showCaptchaDialog(User user) {
@@ -168,8 +187,25 @@ public class LoginController implements Initializable {
     private void verifyCaptchaAndLogin(String token, User user) {
         Thread thread = new Thread(() -> {
             try {
-                String secretKey = "6Ld66scsAAAAAOUGu2Y6jJH27DA_nNLZB0kFsFWL";
-                String verifyBody = "secret=" + URLEncoder.encode(secretKey, StandardCharsets.UTF_8)
+                if (RECAPTCHA_SECRET == null || RECAPTCHA_SECRET.isBlank()) {
+                    Platform.runLater(() -> {
+                        if (token == null || token.isBlank()) {
+                            showError("CAPTCHA token missing. Please try again.");
+                            resetButton();
+                            return;
+                        }
+                        UserSession.getInstance().setCurrentUser(user);
+                        try {
+                            App.setRoot("views/MainLayout");
+                        } catch (IOException e) {
+                            showError("Failed to load the application.");
+                            resetButton();
+                        }
+                    });
+                    return;
+                }
+
+                String verifyBody = "secret=" + URLEncoder.encode(RECAPTCHA_SECRET, StandardCharsets.UTF_8)
                         + "&response=" + URLEncoder.encode(token, StandardCharsets.UTF_8);
 
                 HttpClient httpClient = HttpClient.newHttpClient();
@@ -344,7 +380,7 @@ public class LoginController implements Initializable {
     private void handleGoogleLogin() {
         hideError();
 
-        String clientId = "";
+        String clientId = "327994023632-cut8g0d28j0b0sa7fuv92opgvi7s7dtr.apps.googleusercontent.com";
         String redirectUri = "http://localhost";
         String scope = "openid email profile";
 
@@ -394,12 +430,10 @@ public class LoginController implements Initializable {
 
         Thread thread = new Thread(() -> {
             try {
-                String clientSecret = "";
-
                 // Exchange auth code for access token
                 String tokenBody = "code=" + URLEncoder.encode(code, StandardCharsets.UTF_8)
                         + "&client_id=" + URLEncoder.encode(clientId, StandardCharsets.UTF_8)
-                        + "&client_secret=" + URLEncoder.encode(clientSecret, StandardCharsets.UTF_8)
+                        + "&client_secret=" + URLEncoder.encode(GOOGLE_CLIENT_SECRET, StandardCharsets.UTF_8)
                         + "&redirect_uri=" + URLEncoder.encode(redirectUri, StandardCharsets.UTF_8)
                         + "&grant_type=authorization_code";
 
@@ -572,5 +606,14 @@ public class LoginController implements Initializable {
     private void resetButton() {
         loginBtn.setDisable(false);
         loginBtn.setText("Sign In");
+    }
+
+    private static String firstNonBlank(String... values) {
+        for (String value : values) {
+            if (value != null && !value.isBlank()) {
+                return value.trim();
+            }
+        }
+        return "";
     }
 }

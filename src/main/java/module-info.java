@@ -16,6 +16,9 @@ module com.studyflow {
     requires jdk.httpserver;
     requires jdk.jsobject;
     requires webcam.capture;
+    requires com.google.gson;
+    requires org.apache.poi.poi;
+    requires org.apache.poi.ooxml;
 
     requires mysql.connector.j;
 
@@ -50,6 +53,7 @@ module com.studyflow {
     opens com.studyflow.controllers to javafx.fxml;
     opens com.studyflow.controllers.admin to javafx.fxml;
     opens com.studyflow.models to javafx.fxml;
+    opens com.studyflow.pets to javafx.fxml;
     opens com.studyflow.utils to javafx.fxml;
     opens com.studyflow.services to javafx.fxml;
 
@@ -57,6 +61,7 @@ module com.studyflow {
     exports com.studyflow.controllers;
     exports com.studyflow.controllers.admin;
     exports com.studyflow.models;
+    exports com.studyflow.pets;
     exports com.studyflow.utils;
     exports com.studyflow.interfaces;
     exports com.studyflow.services;

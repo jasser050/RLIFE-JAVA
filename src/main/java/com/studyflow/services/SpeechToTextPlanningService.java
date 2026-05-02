@@ -29,7 +29,7 @@ public class SpeechToTextPlanningService {
     public TranscriptionResult transcribe(String apiKey, Path audioFile, String language) {
         String resolvedApiKey = resolveApiKey(apiKey);
         if (resolvedApiKey == null || resolvedApiKey.isBlank()) {
-            return TranscriptionResult.error("Missing GROQ_API_KEY environment variable.");
+            return TranscriptionResult.error("Speech API key is not configured.");
         }
         if (audioFile == null || !Files.exists(audioFile)) {
             return TranscriptionResult.error("Audio file not found.");

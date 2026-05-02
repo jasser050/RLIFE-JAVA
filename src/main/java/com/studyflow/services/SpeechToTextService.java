@@ -7,6 +7,8 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -23,6 +25,30 @@ public class SpeechToTextService {
             Pattern.compile("\"language\"\\s*:\\s*\"([a-zA-Z\\-_]+)\"");
 
     public record TranscriptionResult(String text, String languageCode) {}
+
+    public static final class TranscriptionCompatResult {
+        private final boolean success;
+        private final String text;
+        private final String error;
+
+        public TranscriptionCompatResult(boolean success, String text, String error) {
+            this.success = success;
+            this.text = text;
+            this.error = error;
+        }
+
+        public boolean isSuccess() {
+            return success;
+        }
+
+        public String getText() {
+            return text;
+        }
+
+        public String getError() {
+            return error;
+        }
+    }
 
     private final HttpClient client;
     private final String openAiApiKey;
@@ -61,6 +87,22 @@ public class SpeechToTextService {
     public String transcribeWav(byte[] wavData, String languageCode) {
         TranscriptionResult result = transcribeWavDetailed(wavData, languageCode);
         return result == null ? null : result.text();
+    }
+
+    public TranscriptionCompatResult transcribe(String apiKeyIgnored, Path audioFile, String languageCode) {
+        if (audioFile == null || !Files.exists(audioFile)) {
+            return new TranscriptionCompatResult(false, null, "Audio file not found.");
+        }
+        try {
+            byte[] wavData = Files.readAllBytes(audioFile);
+            TranscriptionResult result = transcribeWavDetailed(wavData, languageCode);
+            if (result == null || !isNonBlank(result.text())) {
+                return new TranscriptionCompatResult(false, null, getLastError());
+            }
+            return new TranscriptionCompatResult(true, result.text(), null);
+        } catch (IOException e) {
+            return new TranscriptionCompatResult(false, null, "Failed to read audio file: " + e.getMessage());
+        }
     }
 
     public TranscriptionResult transcribeWavDetailed(byte[] wavData, String languageCode) {

@@ -757,7 +757,7 @@ public class WellbeingController implements Initializable {
             case "gratitude_journal" -> openJournalTool(session);
             case "yoga_coach" -> openYogaTool(session);
             case "ai_chat_coach" -> openAiChatTool(session);
-            case "nature_sounds" -> openNatureSoundsSpotifyTool(session);
+            case "nature_sounds" -> openNatureSoundsTool(session);
             case "mood_camera" -> openMoodCameraTool(session);
             default -> openBreathingTool(session);
         }
@@ -4804,16 +4804,39 @@ public class WellbeingController implements Initializable {
         iconBox.setPrefSize(40, 40);
         iconBox.setStyle("-fx-background-color: " + getColorWithAlpha(mood.color()) + "; -fx-background-radius: 100;");
 
-        FontIcon icon = new FontIcon(mood.icon());
-        icon.setIconSize(20);
-        icon.setIconColor(Color.web(getColorHex(mood.color())));
-        iconBox.getChildren().add(icon);
+        Node moodGraphic = buildMoodDayGraphic(mood);
+        if (moodGraphic != null) {
+            iconBox.getChildren().add(moodGraphic);
+        }
 
         Label moodText = new Label(mood.mood());
         moodText.getStyleClass().add("wellbeing-day-mood");
 
         box.getChildren().addAll(dayText, iconBox, moodText);
         return box;
+    }
+
+    private Node buildMoodDayGraphic(MoodEntry mood) {
+        String moodKey = mood == null || mood.mood() == null
+                ? "okay"
+                : mood.mood().trim().toLowerCase(Locale.ROOT);
+
+        ImageView emojiImage = EmojiUtils.loadMoodEmojiImage(moodKey, 26);
+        if (emojiImage != null) {
+            return emojiImage;
+        }
+
+        String iconLiteral = mood == null ? null : mood.icon();
+        if (iconLiteral != null && iconLiteral.startsWith("fth-")) {
+            FontIcon icon = new FontIcon(iconLiteral);
+            icon.setIconSize(20);
+            icon.setIconColor(Color.web(getColorHex(mood.color())));
+            return icon;
+        }
+
+        Label fallbackEmoji = new Label(EmojiUtils.getMoodEmojiUnicode(moodKey));
+        fallbackEmoji.setStyle("-fx-font-size: 18px; -fx-font-family: 'Segoe UI Emoji';");
+        return fallbackEmoji;
     }
 
     private void loadHabits() {

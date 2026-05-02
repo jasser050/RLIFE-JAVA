@@ -1020,6 +1020,123 @@
     -fx-border-radius: 16;
 }
 
+.ai-workspace-hero-card {
+    -fx-padding: 22;
+    -fx-background-color: linear-gradient(to bottom right, #F8FBFF, #EEF5FF);
+    -fx-border-color: rgba(148, 163, 184, 0.38);
+    -fx-border-width: 1;
+    -fx-border-radius: 24;
+    -fx-background-radius: 24;
+}
+
+.ai-workspace-kicker {
+    -fx-font-size: 10px;
+    -fx-font-weight: 800;
+    -fx-letter-spacing: 0.8px;
+}
+
+.ai-workspace-hero-title {
+    -fx-font-size: 30px;
+    -fx-font-weight: 900;
+    -fx-text-fill: #10223A;
+}
+
+.ai-workspace-hero-meta {
+    -fx-text-fill: #587089;
+    -fx-font-size: 13px;
+}
+
+.ai-workspace-stat-row {
+    -fx-alignment: top-right;
+}
+
+.ai-workspace-stat-card {
+    -fx-min-width: 112;
+    -fx-pref-width: 112;
+}
+
+.ai-workspace-score-card {
+    -fx-effect: dropshadow(gaussian, rgba(14, 165, 233, 0.14), 16, 0.16, 0, 6);
+}
+
+.ai-workspace-toolbar {
+    -fx-padding: 4 0 0 0;
+}
+
+.ai-workspace-shell {
+    -fx-background-color: linear-gradient(to bottom, #FFFFFF, #F7FAFE);
+    -fx-border-color: rgba(203, 213, 225, 0.95);
+    -fx-border-width: 1;
+    -fx-border-radius: 22;
+    -fx-background-radius: 22;
+    -fx-padding: 20;
+}
+
+.ai-workspace-health-shell {
+    -fx-padding: 20;
+}
+
+.ai-workspace-health-badge {
+    -fx-font-weight: 800;
+}
+
+.ai-workspace-health-card,
+.ai-workspace-summary-card,
+.ai-workspace-report-card {
+    -fx-background-color: #F8FBFF;
+    -fx-border-color: rgba(203, 213, 225, 0.95);
+    -fx-border-width: 1;
+    -fx-border-radius: 18;
+    -fx-background-radius: 18;
+    -fx-padding: 16;
+}
+
+.ai-workspace-score-row {
+    -fx-padding: 4 0;
+}
+
+.ai-workspace-score-bar {
+    -fx-pref-height: 9;
+    -fx-background-insets: 0;
+}
+
+.ai-workspace-score-bar > .track {
+    -fx-background-color: #DCE7F4;
+    -fx-background-radius: 999;
+    -fx-background-insets: 0;
+}
+
+.ai-workspace-score-bar > .bar {
+    -fx-background-radius: 999;
+    -fx-background-insets: 0;
+}
+
+.ai-workspace-score-bar.success > .bar {
+    -fx-background-color: linear-gradient(to right, #10B981, #34D399);
+}
+
+.ai-workspace-score-bar.warning > .bar {
+    -fx-background-color: linear-gradient(to right, #F59E0B, #FBBF24);
+}
+
+.ai-workspace-score-bar.danger > .bar {
+    -fx-background-color: linear-gradient(to right, #F97316, #FB7185);
+}
+
+.ai-workspace-summary-text {
+    -fx-line-spacing: 2px;
+    -fx-text-fill: #355069;
+}
+
+.ai-workspace-map-shell,
+.ai-workspace-report-shell {
+    -fx-padding: 20;
+}
+
+.ai-workspace-recommendations {
+    -fx-padding: 2 0 0 0;
+}
+
 .project-assignment-meta {
     -fx-text-fill: #5F728A;
 }
@@ -1835,113 +1952,461 @@
     -fx-font-size: 14px;
 }
 
-/* Wellbeing page: force light surface overrides over imported dark theme */
-.wellbeing-page,
-.wellbeing-page .wellbeing-tools-page {
-    -fx-background-color: #F3F6FB;
+.pet-selection-summary,
+.pet-hero-image-shell {
+    -fx-background-color: linear-gradient(to right, rgba(59, 130, 246, 0.10), rgba(168, 85, 247, 0.10));
+    -fx-background-radius: 18;
+    -fx-border-color: rgba(125, 211, 252, 0.35);
+    -fx-border-radius: 18;
 }
 
+.pet-selection-summary {
+    -fx-padding: 14 18;
+}
+
+.pet-selected-title,
+.pet-display-name {
+    -fx-text-fill: #0F172A;
+    -fx-font-size: 22px;
+    -fx-font-weight: 800;
+}
+
+.pet-selected-subtitle,
+.pet-event-desc,
+.pet-empty-desc,
+.pet-achievement-desc {
+    -fx-text-fill: #64748B;
+    -fx-font-size: 13px;
+}
+
+.pet-choice-card {
+    -fx-background-color: #FFFFFF;
+    -fx-background-radius: 18;
+    -fx-border-color: #E2E8F0;
+    -fx-border-radius: 18;
+    -fx-cursor: hand;
+}
+
+.pet-choice-card.selected {
+    -fx-border-color: #8B5CF6;
+    -fx-effect: dropshadow(gaussian, rgba(139, 92, 246, 0.18), 18, 0.14, 0, 6);
+}
+
+.pet-choice-image {
+    -fx-background-color: linear-gradient(to bottom right, #ECFEFF, #EDE9FE);
+    -fx-background-radius: 16;
+    -fx-padding: 10;
+}
+
+.pet-choice-title,
+.pet-achievement-title,
+.pet-event-title,
+.pet-empty-title {
+    -fx-text-fill: #0F172A;
+    -fx-font-size: 15px;
+    -fx-font-weight: 700;
+}
+
+.pet-choice-desc,
+.pet-event-time,
+.pet-achievement-state {
+    -fx-text-fill: #64748B;
+    -fx-font-size: 12px;
+}
+
+.pet-rarity-badge,
+.pet-chip-value {
+    -fx-background-color: rgba(168, 85, 247, 0.14);
+    -fx-text-fill: #7C3AED;
+    -fx-padding: 4 10;
+    -fx-background-radius: 999;
+    -fx-font-size: 12px;
+    -fx-font-weight: 700;
+}
+
+.pet-chip-label,
+.pet-stat-title {
+    -fx-text-fill: #475569;
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+}
+
+.pet-stat-value {
+    -fx-text-fill: #0F172A;
+    -fx-font-size: 13px;
+    -fx-font-weight: 700;
+}
+
+.pet-progress-hunger,
+.pet-progress-happiness,
+.pet-progress-energy,
+.pet-progress-health,
+.pet-progress-xp {
+    -fx-pref-height: 9;
+}
+
+.pet-progress-hunger > .track,
+.pet-progress-happiness > .track,
+.pet-progress-energy > .track,
+.pet-progress-health > .track,
+.pet-progress-xp > .track {
+    -fx-background-color: #E2E8F0;
+    -fx-background-radius: 999;
+}
+
+.pet-progress-hunger > .bar { -fx-background-color: linear-gradient(to right, #F59E0B, #EF4444); -fx-background-radius: 999; }
+.pet-progress-happiness > .bar { -fx-background-color: linear-gradient(to right, #EC4899, #8B5CF6); -fx-background-radius: 999; }
+.pet-progress-energy > .bar { -fx-background-color: linear-gradient(to right, #22C55E, #06B6D4); -fx-background-radius: 999; }
+.pet-progress-health > .bar { -fx-background-color: linear-gradient(to right, #10B981, #14B8A6); -fx-background-radius: 999; }
+.pet-progress-xp > .bar { -fx-background-color: linear-gradient(to right, #6366F1, #A855F7); -fx-background-radius: 999; }
+
+.pet-event-item,
+.pet-empty-card {
+    -fx-background-color: #F8FAFC;
+    -fx-background-radius: 14;
+    -fx-padding: 12;
+}
+
+.pet-achievement-card {
+    -fx-background-radius: 14;
+    -fx-padding: 14;
+    -fx-pref-width: 160;
+}
+
+.pet-achievement-card.unlocked {
+    -fx-background-color: linear-gradient(to bottom right, rgba(99, 102, 241, 0.12), rgba(16, 185, 129, 0.10));
+    -fx-border-color: rgba(99, 102, 241, 0.25);
+    -fx-border-radius: 14;
+}
+
+.pet-achievement-card.locked {
+    -fx-background-color: #F8FAFC;
+    -fx-border-color: #E2E8F0;
+    -fx-border-radius: 14;
+}
+
+.pet-message-success {
+    -fx-text-fill: #047857;
+}
+
+.pet-message-error {
+    -fx-text-fill: #B91C1C;
+}
+
+/* Wellbeing branch design overrides */
+.wellbeing-page .wellbeing-tools-page {
+    -fx-background-color: linear-gradient(to right, #F8FBFF, #F6F5FF);
+    -fx-background-radius: 16;
+    -fx-border-color: rgba(99, 102, 241, 0.18);
+    -fx-border-width: 1;
+    -fx-border-radius: 16;
+    -fx-padding: 16 20 10 20;
+}
+.wellbeing-page .tools-main-title {
+    -fx-text-fill: #0F172A;
+    -fx-font-size: 34px;
+    -fx-font-weight: 800;
+}
+.wellbeing-page .tools-main-subtitle,
+.wellbeing-page .text-small,
+.wellbeing-page .text-muted,
+.wellbeing-page .wellbeing-kpi-label {
+    -fx-text-fill: #64748B;
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+}
+.wellbeing-page .wellbeing-input-card,
+.wellbeing-page .wellbeing-tools-preview-shell,
 .wellbeing-page .card,
-.wellbeing-page .wellbeing-kpi-card,
 .wellbeing-page #formSection,
 .wellbeing-page #historySection .card,
 .wellbeing-page #quizSection,
 .wellbeing-page #quizResultsSection,
 .wellbeing-page #quizModeSection,
-.wellbeing-page #inlineToolSection,
-.wellbeing-page .wellbeing-tools-preview-shell,
-.wellbeing-page .wellbeing-tool-preview-card,
-.wellbeing-page .wellbeing-tool-card,
-.wellbeing-page .tools-tips-shell,
-.wellbeing-page .wellbeing-input-card {
-    -fx-background-color: #FFFFFF;
-    -fx-border-color: #D7E0EE;
+.wellbeing-page #inlineToolSection {
+    -fx-background-color: linear-gradient(to bottom right, #FFFFFF, #F8FAFC);
+    -fx-border-color: #E2E8F0;
     -fx-border-width: 1;
+    -fx-border-radius: 16;
+    -fx-background-radius: 16;
 }
-
 .wellbeing-page .card-header,
 .wellbeing-page #quizSection .card-header,
-.wellbeing-page #quizResultsSection .card-header,
-.wellbeing-page .wellbeing-panel-header,
-.wellbeing-page .tools-control-bar {
-    -fx-background-color: #F8FBFF;
-    -fx-border-color: #E2E8F0;
+.wellbeing-page #quizResultsSection .card-header {
+    -fx-background-color: rgba(248, 250, 252, 0.98);
+    -fx-border-color: rgba(148, 163, 184, 0.22);
+    -fx-border-width: 0 0 1 0;
 }
-
 .wellbeing-page .card-title,
 .wellbeing-page .text-heading,
 .wellbeing-page .text-subheading,
 .wellbeing-page .text-body,
-.wellbeing-page .wellbeing-kpi-value,
-.wellbeing-page .tools-main-title,
-.wellbeing-page .tools-highlight-title,
-.wellbeing-page .tools-tip-title,
+.wellbeing-page .tools-card-title,
 .wellbeing-page .tools-tips-title,
-.wellbeing-page .tools-card-title {
-    -fx-text-fill: #122033;
+.wellbeing-page .tools-tip-title,
+.wellbeing-page .wellbeing-day-label,
+.wellbeing-page .wellbeing-day-mood {
+    -fx-text-fill: #0F172A;
+    -fx-font-weight: 800;
 }
-
-.wellbeing-page .text-small,
-.wellbeing-page .text-muted,
-.wellbeing-page .wellbeing-kpi-label,
-.wellbeing-page .tools-main-subtitle,
-.wellbeing-page .tools-highlight-subtitle,
-.wellbeing-page .tools-tip-desc,
-.wellbeing-page .tools-card-desc,
-.wellbeing-page .tools-control-hint {
-    -fx-text-fill: #5F728A;
+.wellbeing-page .wellbeing-choice-card,
+.wellbeing-page .wellbeing-sleep-card,
+.wellbeing-page .wellbeing-tool-preview-card,
+.wellbeing-page .wellbeing-tool-card,
+.wellbeing-page .wellbeing-day-box {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #E2E8F0;
+    -fx-border-width: 1;
+    -fx-border-radius: 14;
+    -fx-background-radius: 14;
 }
-
-.wellbeing-page .wellbeing-inner-scroll,
-.wellbeing-page .wellbeing-inner-scroll > .viewport,
-.wellbeing-page .wellbeing-inner-scroll .content {
+.wellbeing-page .wellbeing-choice-card:hover,
+.wellbeing-page .wellbeing-sleep-card:hover {
+    -fx-background-color: #F8FAFC;
+    -fx-border-color: #CBD5E1;
+}
+.wellbeing-page .wellbeing-choice-card.selected {
+    -fx-background-color: linear-gradient(to right, rgba(59, 130, 246, 0.12), rgba(14, 165, 233, 0.12));
+    -fx-border-color: #60A5FA;
+    -fx-text-fill: #0F172A;
+}
+.wellbeing-page .wellbeing-sleep-card.selected {
+    -fx-background-color: linear-gradient(to right, rgba(99, 102, 241, 0.12), rgba(139, 92, 246, 0.12));
+    -fx-border-color: #818CF8;
+    -fx-text-fill: #0F172A;
+}
+.wellbeing-page .wellbeing-notes-area {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #CBD5E1;
+    -fx-border-width: 1;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+    -fx-text-fill: #0F172A;
+    -fx-prompt-text-fill: #94A3B8;
+    -fx-padding: 12;
+}
+.wellbeing-page .wellbeing-notes-area:focused {
+    -fx-border-color: #818CF8;
+}
+.wellbeing-page .wellbeing-notes-area .content {
     -fx-background-color: transparent;
 }
-
-.wellbeing-page .wellbeing-quote-card,
 .wellbeing-page .wellbeing-quote-controls {
-    -fx-background-color: #FFFFFF;
-    -fx-border-color: #D7E0EE;
+    -fx-background-color: rgba(241, 245, 249, 0.95);
+    -fx-background-radius: 12;
+    -fx-padding: 10 12;
 }
-
-.wellbeing-page .wellbeing-quote-text {
-    -fx-text-fill: #122033;
-}
-
-.wellbeing-page .wellbeing-quote-meta {
-    -fx-text-fill: #2563EB;
-}
-
-.wellbeing-page .wellbeing-quote-mark {
-    -fx-text-fill: #6366F1;
-}
-
-.wellbeing-page .wellbeing-quote-shell .check-box .text,
 .wellbeing-page .wellbeing-quote-controls .check-box .text {
     -fx-fill: #334155;
 }
-
+.wellbeing-page .tools-control-bar {
+    -fx-background-color: rgba(248, 250, 252, 0.98);
+    -fx-border-color: rgba(148, 163, 184, 0.28);
+    -fx-border-width: 1;
+    -fx-border-radius: 12;
+}
+.wellbeing-page .tools-control-hint {
+    -fx-text-fill: #64748B;
+    -fx-font-size: 12px;
+}
+.wellbeing-page .tools-reset-btn {
+    -fx-background-color: #E2E8F0;
+    -fx-text-fill: #0F172A;
+}
+.wellbeing-page .tools-highlight-banner {
+    -fx-background-color: linear-gradient(to right, #6366F1, #22C1D6);
+    -fx-background-radius: 14;
+    -fx-padding: 18 20;
+}
+.wellbeing-page .tools-highlight-title,
+.wellbeing-page .tools-highlight-subtitle {
+    -fx-text-fill: #FFFFFF;
+}
+.wellbeing-page .tools-highlight-title {
+    -fx-font-size: 34px;
+    -fx-font-weight: 800;
+}
+.wellbeing-page .tools-highlight-subtitle {
+    -fx-font-size: 13px;
+    -fx-font-weight: 700;
+}
+.wellbeing-page .tools-highlight-btn {
+    -fx-background-color: rgba(255, 255, 255, 0.96);
+    -fx-text-fill: #4F46E5;
+    -fx-font-weight: 800;
+    -fx-background-radius: 16;
+}
+.wellbeing-page .wellbeing-tool-icon,
+.wellbeing-page .wellbeing-header-icon {
+    -fx-pref-width: 48;
+    -fx-pref-height: 48;
+    -fx-min-width: 48;
+    -fx-min-height: 48;
+    -fx-alignment: center;
+    -fx-background-radius: 14;
+    -fx-background-color: rgba(99, 102, 241, 0.12);
+}
+.wellbeing-page .wellbeing-tool-icon .ikonli-font-icon,
+.wellbeing-page .wellbeing-header-icon .ikonli-font-icon {
+    -fx-icon-color: #6366F1;
+}
+.wellbeing-page .tools-card-desc,
+.wellbeing-page .tools-tip-desc {
+    -fx-text-fill: #475569;
+    -fx-font-size: 12px;
+    -fx-font-weight: 600;
+}
+.wellbeing-page .tools-start-btn {
+    -fx-background-color: linear-gradient(to right, #06B6D4, #0891B2);
+    -fx-text-fill: #F8FAFC;
+    -fx-font-weight: 800;
+    -fx-background-radius: 14;
+    -fx-padding: 8 22;
+}
 .global-quote-card {
-    -fx-background-color: linear-gradient(to bottom right, #FFFFFF, #F8FBFF);
-    -fx-border-color: #CBD5E1;
+    -fx-min-width: 310;
+    -fx-pref-width: 310;
+    -fx-max-width: 310;
+    -fx-min-height: 155;
+    -fx-pref-height: 155;
+    -fx-max-height: 155;
+    -fx-padding: 8 10 8 10;
+    -fx-background-color: linear-gradient(to bottom right, #FFFFFF, #F8FAFC);
+    -fx-border-color: rgba(56, 189, 248, 0.35);
+    -fx-border-width: 1;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
 }
-
 .global-quote-top {
-    -fx-text-fill: #2563EB;
+    -fx-text-fill: #0284C7;
+    -fx-font-size: 10px;
+    -fx-font-weight: 700;
 }
-
 .global-quote-mark {
-    -fx-text-fill: #3B82F6;
+    -fx-text-fill: #0EA5E9;
+    -fx-font-size: 18px;
 }
-
 .global-quote-text {
+    -fx-text-fill: #0F172A;
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+}
+.global-quote-meta {
+    -fx-text-fill: #0891B2;
+    -fx-font-size: 10px;
+    -fx-font-weight: 700;
+}
+.global-quote-close-btn {
+    -fx-background-color: transparent;
+    -fx-text-fill: #64748B;
+    -fx-padding: 2 6;
+    -fx-font-size: 12px;
+}
+.global-quote-close-btn:hover {
+    -fx-background-color: rgba(148, 163, 184, 0.14);
+    -fx-background-radius: 8;
     -fx-text-fill: #0F172A;
 }
 
-.global-quote-meta {
-    -fx-text-fill: #475569;
+/* Planning branch design overrides for light theme */
+.planning-root {
+    -fx-background-color: #020617;
 }
-
-.global-quote-close-btn {
+.planning-root .card,
+.planning-root .stat-card,
+.planning-root .planning-main-card,
+.planning-root .planning-match-card,
+.planning-root .planning-assistant-card,
+.planning-root .planning-upcoming-item-card,
+.planning-root .planning-calendar-entry-card,
+.planning-root .planning-live-clock-card {
+    -fx-background-color: #0F172A;
+    -fx-border-color: #334155;
+}
+.planning-root .card-header {
+    -fx-border-color: rgba(71, 85, 105, 0.65);
+}
+.planning-root .card-title,
+.planning-root .text-heading,
+.planning-root .planning-match-summary,
+.planning-root .planning-calendar-day-label,
+.planning-root .planning-calendar-entry-title,
+.planning-root .planning-upcoming-item-title {
+    -fx-text-fill: #F8FAFC;
+}
+.planning-root .text-muted,
+.planning-root .text-small,
+.planning-root .planning-match-detail,
+.planning-root .planning-upcoming-item-time,
+.planning-root .planning-calendar-entry-time,
+.planning-root .planning-calendar-more,
+.planning-root .planning-weekday-label {
+    -fx-text-fill: #94A3B8;
+}
+.planning-root .planning-top-zone {
+    -fx-padding: 0 0 2 0;
+}
+.planning-root .planning-week-header-grid {
+    -fx-background-color: linear-gradient(to bottom, #1A2437, #141F32);
+    -fx-background-radius: 14;
+    -fx-padding: 4;
+}
+.planning-root .planning-calendar-cell {
+    -fx-background-color: linear-gradient(to bottom, #0F172A, #0C1629);
+    -fx-border-color: rgba(71,85,105,0.65);
+    -fx-border-width: 1;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+}
+.planning-root .planning-calendar-cell-today {
+    -fx-border-color: #8B5CF6;
+}
+.planning-root .planning-calendar-day-label-outside {
     -fx-text-fill: #64748B;
 }
+.planning-root .planning-calendar-day-label-today {
+    -fx-background-color: linear-gradient(to bottom right, #8B5CF6, #6D28D9);
+    -fx-text-fill: #FFFFFF;
+    -fx-background-radius: 100;
+}
+.planning-root .planning-upcoming-filter-frame,
+.planning-root .planning-match-details-box,
+.planning-root .chat-input-bar {
+    -fx-background-color: #111C31;
+    -fx-border-color: #334155;
+}
+.planning-root .planning-upcoming-search,
+.planning-root .planning-upcoming-combo,
+.planning-root .planning-match-combo,
+.planning-root .chat-input,
+.planning-root .planning-date-picker,
+.planning-root .planning-color-picker {
+    -fx-background-color: #111C31;
+    -fx-border-color: #334155;
+    -fx-text-fill: #F1F5F9;
+    -fx-prompt-text-fill: #64748B;
+}
+.planning-root .btn-secondary {
+    -fx-background-color: #111C31;
+    -fx-border-color: #334155;
+    -fx-text-fill: #E2E8F0;
+}
+.planning-root .btn-secondary .ikonli-font-icon {
+    -fx-icon-color: #E2E8F0;
+}
+.planning-root .assistant-status-chip,
+.planning-root .planning-ai-badge {
+    -fx-background-color: linear-gradient(to right, #8B5CF6, #7C3AED);
+    -fx-text-fill: #FFFFFF;
+}
+.planning-root .planning-live-clock-card {
+    -fx-background-color: linear-gradient(to right, rgba(79, 70, 229, 0.28), rgba(30, 64, 175, 0.24));
+    -fx-border-color: rgba(129, 140, 248, 0.45);
+}
+.planning-root .planning-live-clock-time {
+    -fx-text-fill: #E0E7FF;
+}
+.planning-root .planning-live-clock-date {
+    -fx-text-fill: #93C5FD;
+}
+/* End planning branch design overrides for light theme */
