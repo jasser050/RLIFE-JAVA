@@ -34,6 +34,7 @@ public class App extends Application {
         primaryStage = stage;
         LocalServer.start();
 
+
         // Check for saved session — auto-login if token exists
         String startView = "views/Landing";
         String savedEmail = UserSession.getInstance().loadSession();

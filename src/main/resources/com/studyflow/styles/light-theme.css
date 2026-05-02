@@ -2410,3 +2410,162 @@
     -fx-text-fill: #93C5FD;
 }
 /* End planning branch design overrides for light theme */
+
+/* ── Color Blind Mode Buttons (Light) ─────────── */
+.cb-mode-btn {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #E2E8F0;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 14;
+    -fx-background-radius: 14;
+    -fx-padding: 14 8;
+    -fx-cursor: hand;
+    -fx-content-display: graphic-only;
+}
+.cb-mode-btn:hover {
+    -fx-background-color: #F8FAFC;
+    -fx-border-color: #CBD5E1;
+}
+.cb-mode-btn.cb-active {
+    -fx-background-color: rgba(139, 92, 246, 0.08);
+    -fx-border-color: #8B5CF6;
+}
+.cb-icon-box {
+    -fx-background-radius: 10;
+    -fx-pref-width: 36;
+    -fx-pref-height: 36;
+    -fx-min-width: 36;
+    -fx-min-height: 36;
+    -fx-alignment: center;
+}
+.cb-mode-label {
+    -fx-font-size: 11px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #64748B;
+}
+.cb-mode-btn.cb-active .cb-mode-label {
+    -fx-text-fill: #1E293B;
+}
+
+/* ── Cursor Shape Buttons (Light) ─────────────── */
+.cursor-btn {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #E2E8F0;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+    -fx-cursor: hand;
+    -fx-content-display: graphic-only;
+    -fx-padding: 0;
+}
+.cursor-btn:hover {
+    -fx-background-color: #F8FAFC;
+    -fx-border-color: #CBD5E1;
+}
+.cursor-btn.cursor-active {
+    -fx-background-color: rgba(139, 92, 246, 0.08);
+    -fx-border-color: #8B5CF6;
+    -fx-effect: dropshadow(gaussian, rgba(139, 92, 246, 0.2), 8, 0, 0, 0);
+}
+
+/* ── Gender Cards (Light) ───────────────────────── */
+.gender-card {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #E2E8F0;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 14;
+    -fx-background-radius: 14;
+    -fx-padding: 12 20;
+    -fx-cursor: hand;
+    -fx-content-display: graphic-only;
+}
+.gender-card:hover {
+    -fx-background-color: #F8FAFC;
+    -fx-border-color: #CBD5E1;
+}
+.gender-card:selected {
+    -fx-background-color: rgba(139, 92, 246, 0.08);
+    -fx-border-color: #8B5CF6;
+    -fx-effect: dropshadow(gaussian, rgba(139, 92, 246, 0.18), 12, 0, 0, 0);
+}
+.gender-icon-box {
+    -fx-background-radius: 10;
+    -fx-pref-width: 40;
+    -fx-pref-height: 40;
+    -fx-min-width: 40;
+    -fx-min-height: 40;
+    -fx-alignment: center;
+}
+.gender-male-icon {
+    -fx-background-color: linear-gradient(to bottom right, #3B82F6, #2563EB);
+}
+.gender-female-icon {
+    -fx-background-color: linear-gradient(to bottom right, #EC4899, #DB2777);
+}
+.gender-card:selected .gender-male-icon {
+    -fx-effect: dropshadow(gaussian, rgba(59, 130, 246, 0.35), 10, 0, 0, 0);
+}
+.gender-card:selected .gender-female-icon {
+    -fx-effect: dropshadow(gaussian, rgba(236, 72, 153, 0.35), 10, 0, 0, 0);
+}
+.gender-card-title {
+    -fx-font-size: 14px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #1E293B;
+}
+.gender-card-sub {
+    -fx-font-size: 11px;
+    -fx-font-weight: 500;
+    -fx-text-fill: #94A3B8;
+}
+.gender-card:selected .gender-card-title {
+    -fx-text-fill: #0F172A;
+}
+.gender-card:selected .gender-card-sub {
+    -fx-text-fill: #64748B;
+}
+
+/* ── Bio Section (Light) ───────────────────────── */
+.bio-container {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #E2E8F0;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 14;
+    -fx-background-radius: 14;
+    -fx-padding: 4;
+}
+.bio-textarea {
+    -fx-background-color: transparent;
+    -fx-text-fill: #1E293B;
+    -fx-prompt-text-fill: #94A3B8;
+    -fx-font-size: 13px;
+    -fx-padding: 12;
+    -fx-border-width: 0;
+    -fx-background-radius: 12;
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+.bio-textarea .content {
+    -fx-background-color: transparent;
+}
+.bio-textarea:focused {
+    -fx-border-width: 0;
+}
+.bio-container:focused-within {
+    -fx-border-color: #8B5CF6;
+    -fx-effect: dropshadow(gaussian, rgba(139, 92, 246, 0.15), 10, 0, 0, 0);
+}
+.bio-textarea .scroll-pane {
+    -fx-background-color: transparent;
+}
+.bio-textarea .scroll-pane .viewport {
+    -fx-background-color: transparent;
+}
+.bio-char-count {
+    -fx-font-size: 11px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #94A3B8;
+    -fx-background-color: rgba(148, 163, 184, 0.1);
+    -fx-background-radius: 8;
+    -fx-padding: 3 10;
+}

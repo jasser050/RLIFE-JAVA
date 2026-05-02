@@ -193,26 +193,26 @@
                         <HBox spacing="14">
                             <ToggleButton fx:id="genderMaleBtn" styleClass="gender-card" maxWidth="Infinity" HBox.hgrow="ALWAYS">
                                 <graphic>
-                                    <HBox alignment="CENTER_LEFT" spacing="10">
+                                    <HBox alignment="CENTER" spacing="12" style="-fx-padding: 6 0;">
                                         <StackPane styleClass="gender-icon-box, gender-male-icon">
-                                            <FontIcon iconLiteral="fth-user" iconSize="16" iconColor="white"/>
+                                            <FontIcon iconLiteral="fth-user" iconSize="18" iconColor="white"/>
                                         </StackPane>
-                                        <VBox spacing="2">
+                                        <VBox spacing="2" alignment="CENTER_LEFT">
                                             <Label text="Male" styleClass="gender-card-title"/>
-                                            <Label text="He/Him" styleClass="gender-card-sub"/>
+                                            <Label text="He / Him" styleClass="gender-card-sub"/>
                                         </VBox>
                                     </HBox>
                                 </graphic>
                             </ToggleButton>
                             <ToggleButton fx:id="genderFemaleBtn" styleClass="gender-card" maxWidth="Infinity" HBox.hgrow="ALWAYS">
                                 <graphic>
-                                    <HBox alignment="CENTER_LEFT" spacing="10">
+                                    <HBox alignment="CENTER" spacing="12" style="-fx-padding: 6 0;">
                                         <StackPane styleClass="gender-icon-box, gender-female-icon">
-                                            <FontIcon iconLiteral="fth-user" iconSize="16" iconColor="white"/>
+                                            <FontIcon iconLiteral="fth-heart" iconSize="18" iconColor="white"/>
                                         </StackPane>
-                                        <VBox spacing="2">
+                                        <VBox spacing="2" alignment="CENTER_LEFT">
                                             <Label text="Female" styleClass="gender-card-title"/>
-                                            <Label text="She/Her" styleClass="gender-card-sub"/>
+                                            <Label text="She / Her" styleClass="gender-card-sub"/>
                                         </VBox>
                                     </HBox>
                                 </graphic>
@@ -221,14 +221,15 @@
                     </VBox>
 
                     <VBox spacing="8">
-                        <Label text="Bio" styleClass="auth-field-label"/>
-                        <StackPane>
-                            <TextArea fx:id="bioField" styleClass="bio-textarea" promptText="Share something about yourself — your interests, goals, what you're studying..."
-                                      prefRowCount="4" wrapText="true"/>
-                        </StackPane>
-                        <HBox alignment="CENTER_RIGHT">
+                        <HBox alignment="CENTER_LEFT" spacing="8">
+                            <Label text="Bio" styleClass="auth-field-label"/>
+                            <Region HBox.hgrow="ALWAYS"/>
                             <Label fx:id="bioCharCount" text="0 / 280" styleClass="bio-char-count"/>
                         </HBox>
+                        <VBox styleClass="bio-container">
+                            <TextArea fx:id="bioField" styleClass="bio-textarea" promptText="Share something about yourself — your interests, goals, what you're studying..."
+                                      prefRowCount="4" wrapText="true"/>
+                        </VBox>
                     </VBox>
                 </VBox>
             </VBox>
@@ -302,43 +303,6 @@
                 </HBox>
                 <VBox styleClass="card-body" spacing="28">
 
-                    <!-- Theme Selection -->
-                    <VBox spacing="12">
-                        <Label text="Theme Mode" styleClass="auth-field-label"/>
-                        <HBox spacing="12" alignment="CENTER_LEFT">
-                            <Button fx:id="themeLightBtn" styleClass="theme-btn" onAction="#setThemeLight" maxWidth="Infinity" HBox.hgrow="ALWAYS">
-                                <graphic>
-                                    <VBox alignment="CENTER" spacing="6">
-                                        <StackPane styleClass="theme-icon-circle">
-                                            <FontIcon iconLiteral="fth-sun" iconSize="20"/>
-                                        </StackPane>
-                                        <Label text="Light" styleClass="theme-btn-label"/>
-                                    </VBox>
-                                </graphic>
-                            </Button>
-                            <Button fx:id="themeDarkBtn" styleClass="theme-btn active" onAction="#setThemeDark" maxWidth="Infinity" HBox.hgrow="ALWAYS">
-                                <graphic>
-                                    <VBox alignment="CENTER" spacing="6">
-                                        <StackPane styleClass="theme-icon-circle">
-                                            <FontIcon iconLiteral="fth-moon" iconSize="20"/>
-                                        </StackPane>
-                                        <Label text="Dark" styleClass="theme-btn-label"/>
-                                    </VBox>
-                                </graphic>
-                            </Button>
-                            <Button fx:id="themeAutoBtn" styleClass="theme-btn" onAction="#setThemeAuto" maxWidth="Infinity" HBox.hgrow="ALWAYS">
-                                <graphic>
-                                    <VBox alignment="CENTER" spacing="6">
-                                        <StackPane styleClass="theme-icon-circle">
-                                            <FontIcon iconLiteral="fth-monitor" iconSize="20"/>
-                                        </StackPane>
-                                        <Label text="System" styleClass="theme-btn-label"/>
-                                    </VBox>
-                                </graphic>
-                            </Button>
-                        </HBox>
-                    </VBox>
-
                     <!-- Font Size -->
                     <VBox spacing="14">
                         <HBox alignment="CENTER_LEFT">
@@ -355,7 +319,7 @@
                             <Region HBox.hgrow="ALWAYS"/>
                             <Label text="Aa" styleClass="font-size-tick-label" style="-fx-font-size: 12px;"/>
                             <Region HBox.hgrow="ALWAYS"/>
-                            <Label text="Aa" styleClass="font-size-tick-label" style="-fx-font-size: 14px; -fx-text-fill: #8B5CF6; -fx-font-weight: bold;"/>
+                            <Label text="Aa" styleClass="font-size-tick-label, font-size-tick-active" style="-fx-font-size: 14px;"/>
                             <Region HBox.hgrow="ALWAYS"/>
                             <Label text="Aa" styleClass="font-size-tick-label" style="-fx-font-size: 16px;"/>
                             <Region HBox.hgrow="ALWAYS"/>
@@ -462,6 +426,134 @@
                         </HBox>
                     </VBox>
 
+                    <!-- UI Scale / Zoom -->
+                    <VBox spacing="14">
+                        <HBox alignment="CENTER_LEFT">
+                            <Label text="UI Scale" styleClass="auth-field-label"/>
+                            <Region HBox.hgrow="ALWAYS"/>
+                            <Label fx:id="uiScaleLabel" text="100%" styleClass="font-size-preview"/>
+                        </HBox>
+                        <Slider fx:id="uiScaleSlider" min="1" max="5" value="3"
+                                blockIncrement="1" majorTickUnit="1" minorTickCount="0"
+                                snapToTicks="true" showTickMarks="false"
+                                styleClass="font-size-slider"/>
+                        <HBox spacing="0" alignment="CENTER">
+                            <Label text="80%" styleClass="font-size-tick-label" style="-fx-font-size: 10px;"/>
+                            <Region HBox.hgrow="ALWAYS"/>
+                            <Label text="90%" styleClass="font-size-tick-label" style="-fx-font-size: 11px;"/>
+                            <Region HBox.hgrow="ALWAYS"/>
+                            <Label text="100%" styleClass="font-size-tick-label, font-size-tick-active" style="-fx-font-size: 12px;"/>
+                            <Region HBox.hgrow="ALWAYS"/>
+                            <Label text="110%" styleClass="font-size-tick-label" style="-fx-font-size: 13px;"/>
+                            <Region HBox.hgrow="ALWAYS"/>
+                            <Label text="120%" styleClass="font-size-tick-label" style="-fx-font-size: 14px;"/>
+                        </HBox>
+                    </VBox>
+
+                    <!-- Color Blind Mode -->
+                    <VBox spacing="14">
+                        <HBox alignment="CENTER_LEFT">
+                            <Label text="Color Vision" styleClass="auth-field-label"/>
+                            <Region HBox.hgrow="ALWAYS"/>
+                            <Label text="Adjust colors for color blindness" styleClass="toggle-subtitle"/>
+                        </HBox>
+                        <HBox spacing="10">
+                            <Button fx:id="cbNoneBtn" styleClass="cb-mode-btn" onAction="#setCbNone"
+                                    maxWidth="Infinity" HBox.hgrow="ALWAYS">
+                                <graphic>
+                                    <VBox alignment="CENTER" spacing="6">
+                                        <StackPane styleClass="cb-icon-box" style="-fx-background-color: linear-gradient(to bottom right, #3B82F6, #10B981, #EF4444);">
+                                            <FontIcon iconLiteral="fth-eye" iconSize="16" iconColor="white"/>
+                                        </StackPane>
+                                        <Label text="Normal" styleClass="cb-mode-label"/>
+                                    </VBox>
+                                </graphic>
+                            </Button>
+                            <Button fx:id="cbDeutBtn" styleClass="cb-mode-btn" onAction="#setCbDeuteranopia"
+                                    maxWidth="Infinity" HBox.hgrow="ALWAYS">
+                                <graphic>
+                                    <VBox alignment="CENTER" spacing="6">
+                                        <StackPane styleClass="cb-icon-box" style="-fx-background-color: linear-gradient(to bottom right, #2563EB, #F59E0B);">
+                                            <FontIcon iconLiteral="fth-eye" iconSize="16" iconColor="white"/>
+                                        </StackPane>
+                                        <Label text="Deuter." styleClass="cb-mode-label"/>
+                                    </VBox>
+                                </graphic>
+                            </Button>
+                            <Button fx:id="cbProtBtn" styleClass="cb-mode-btn" onAction="#setCbProtanopia"
+                                    maxWidth="Infinity" HBox.hgrow="ALWAYS">
+                                <graphic>
+                                    <VBox alignment="CENTER" spacing="6">
+                                        <StackPane styleClass="cb-icon-box" style="-fx-background-color: linear-gradient(to bottom right, #0EA5E9, #EAB308);">
+                                            <FontIcon iconLiteral="fth-eye" iconSize="16" iconColor="white"/>
+                                        </StackPane>
+                                        <Label text="Protan." styleClass="cb-mode-label"/>
+                                    </VBox>
+                                </graphic>
+                            </Button>
+                            <Button fx:id="cbTritBtn" styleClass="cb-mode-btn" onAction="#setCbTritanopia"
+                                    maxWidth="Infinity" HBox.hgrow="ALWAYS">
+                                <graphic>
+                                    <VBox alignment="CENTER" spacing="6">
+                                        <StackPane styleClass="cb-icon-box" style="-fx-background-color: linear-gradient(to bottom right, #EC4899, #10B981);">
+                                            <FontIcon iconLiteral="fth-eye" iconSize="16" iconColor="white"/>
+                                        </StackPane>
+                                        <Label text="Tritan." styleClass="cb-mode-label"/>
+                                    </VBox>
+                                </graphic>
+                            </Button>
+                        </HBox>
+                    </VBox>
+
+                    <!-- Custom Cursor Shapes -->
+                    <VBox spacing="14">
+                        <HBox alignment="CENTER_LEFT">
+                            <Label text="Cursor Shape" styleClass="auth-field-label"/>
+                            <Region HBox.hgrow="ALWAYS"/>
+                            <Label text="Pick your pointer style" styleClass="toggle-subtitle"/>
+                        </HBox>
+                        <HBox spacing="10">
+                            <Button fx:id="cursorDefault" styleClass="cursor-btn" onAction="#setCursorDefault"
+                                    minWidth="48" minHeight="48" maxWidth="48" maxHeight="48">
+                                <graphic><FontIcon iconLiteral="fth-mouse-pointer" iconSize="20" iconColor="#E2E8F0"/></graphic>
+                            </Button>
+                            <Button fx:id="cursorPen" styleClass="cursor-btn" onAction="#setCursorPen"
+                                    minWidth="48" minHeight="48" maxWidth="48" maxHeight="48">
+                                <graphic><FontIcon iconLiteral="fth-edit-3" iconSize="20" iconColor="#E2E8F0"/></graphic>
+                            </Button>
+                            <Button fx:id="cursorStar" styleClass="cursor-btn" onAction="#setCursorStar"
+                                    minWidth="48" minHeight="48" maxWidth="48" maxHeight="48">
+                                <graphic><FontIcon iconLiteral="fth-star" iconSize="20" iconColor="#FBBF24"/></graphic>
+                            </Button>
+                            <Button fx:id="cursorCrosshair" styleClass="cursor-btn" onAction="#setCursorCrosshair"
+                                    minWidth="48" minHeight="48" maxWidth="48" maxHeight="48">
+                                <graphic><FontIcon iconLiteral="fth-crosshair" iconSize="20" iconColor="#E2E8F0"/></graphic>
+                            </Button>
+                            <Button fx:id="cursorHeart" styleClass="cursor-btn" onAction="#setCursorHeart"
+                                    minWidth="48" minHeight="48" maxWidth="48" maxHeight="48">
+                                <graphic><FontIcon iconLiteral="fth-heart" iconSize="20" iconColor="#EC4899"/></graphic>
+                            </Button>
+                            <Button fx:id="cursorDiamond" styleClass="cursor-btn" onAction="#setCursorDiamond"
+                                    minWidth="48" minHeight="48" maxWidth="48" maxHeight="48">
+                                <graphic><FontIcon iconLiteral="fth-octagon" iconSize="20" iconColor="#06B6D4"/></graphic>
+                            </Button>
+                            <Button fx:id="cursorCircle" styleClass="cursor-btn" onAction="#setCursorCircle"
+                                    minWidth="48" minHeight="48" maxWidth="48" maxHeight="48">
+                                <graphic><FontIcon iconLiteral="fth-circle" iconSize="20" iconColor="#8B5CF6"/></graphic>
+                            </Button>
+                            <Button fx:id="cursorArrowFancy" styleClass="cursor-btn" onAction="#setCursorArrowFancy"
+                                    minWidth="48" minHeight="48" maxWidth="48" maxHeight="48">
+                                <graphic><FontIcon iconLiteral="fth-navigation" iconSize="20" iconColor="#E2E8F0"/></graphic>
+                            </Button>
+                            <Button fx:id="cursorPanda" styleClass="cursor-btn" onAction="#setCursorPanda"
+                                    minWidth="48" minHeight="48" maxWidth="48" maxHeight="48">
+                                <graphic><ImageView fitWidth="28" fitHeight="28" preserveRatio="true" smooth="true">
+                                    <image><Image url="@../images/panda-cursor.png"/></image>
+                                </ImageView></graphic>
+                            </Button>
+                        </HBox>
+                    </VBox>
+
                     <!-- Toggles — as cards -->
                     <HBox spacing="14">
                         <VBox styleClass="toggle-card" HBox.hgrow="ALWAYS" spacing="14">
@@ -493,7 +585,6 @@
                             </HBox>
                         </VBox>
                     </HBox>
-
                 </VBox>
             </VBox>
 
