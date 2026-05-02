@@ -7,10 +7,12 @@ import com.studyflow.services.PetService;
 import com.studyflow.utils.PetPreviewSupport;
 import com.studyflow.utils.PetUiSupport;
 import com.studyflow.utils.UserSession;
+import com.studyflow.pets.CatGlbPreview;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
@@ -18,6 +20,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.FlowPane;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
@@ -369,18 +372,16 @@ public class NotesController implements Initializable {
     private void buildPetSelection(FlowPane host, List<PetCardRefs> refs, boolean adoptionMode) {
         host.getChildren().clear();
         refs.clear();
+        double previewSize = adoptionMode ? 120 : 96;
         for (PetTypeDef def : PET_TYPES.values()) {
             VBox card = new VBox(12);
             card.getStyleClass().add("pet-choice-card");
             card.setPrefWidth(adoptionMode ? 180 : 152);
             card.setPadding(new Insets(14));
 
-            ImageView imageView = new ImageView(loadPetImage(def.key));
-            imageView.setFitWidth(adoptionMode ? 120 : 96);
-            imageView.setFitHeight(adoptionMode ? 120 : 96);
-            imageView.setPreserveRatio(true);
+            Node preview = PetPreviewSupport.createPreview(def.key, previewSize, previewSize);
 
-            StackPane imageShell = new StackPane(imageView);
+            StackPane imageShell = new StackPane(preview);
             imageShell.getStyleClass().add("pet-choice-image");
             imageShell.setPrefHeight(adoptionMode ? 140 : 112);
 

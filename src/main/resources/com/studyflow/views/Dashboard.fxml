@@ -50,7 +50,7 @@
         </HBox>
         <HBox styleClass="card-body" spacing="20" alignment="CENTER_LEFT">
             <StackPane styleClass="pet-hero-image-shell" prefWidth="240" maxWidth="240" prefHeight="240" maxHeight="240">
-                <ImageView fx:id="petHeroImageView" fitWidth="224" fitHeight="224" preserveRatio="true"/>
+                <StackPane fx:id="petHeroContainer"/>
             </StackPane>
             <VBox spacing="14" HBox.hgrow="ALWAYS">
                 <HBox alignment="CENTER_LEFT" spacing="8">

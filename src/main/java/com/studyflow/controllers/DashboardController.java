@@ -10,6 +10,8 @@ import com.studyflow.services.MatiereService;
 import com.studyflow.services.PetService;
 import com.studyflow.utils.PetUiSupport;
 import com.studyflow.utils.UserSession;
+import com.studyflow.utils.PetPreviewSupport;
+import com.studyflow.pets.CatGlbPreview;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
@@ -22,7 +24,8 @@ import javafx.scene.chart.XYChart;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
-import javafx.scene.image.ImageView;
+import javafx.scene.layout.StackPane;
+import javafx.scene.Node;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
@@ -59,7 +62,7 @@ public class DashboardController implements Initializable {
     @FXML private VBox courseProgressList;
     @FXML private VBox petHeroCard;
     @FXML private VBox petEmptyCard;
-    @FXML private ImageView petHeroImageView;
+    @FXML private StackPane petHeroContainer;
     @FXML private Label petHeroSubLabel;
     @FXML private Label petHeroNameLabel;
     @FXML private Label petHeroRarityBadge;
@@ -145,7 +148,7 @@ public class DashboardController implements Initializable {
             return;
         }
 
-        petHeroImageView.setImage(PetUiSupport.loadPetImage(pet.getType()));
+        renderPetHero3D(pet.getType());
         petHeroNameLabel.setText(pet.getName());
         petHeroRarityBadge.setText(pet.getRarity());
         petHeroMetaLabel.setText("Level " + pet.getLevel() + " - " + pet.getMood() + " - " + pet.getEvolutionStage());
@@ -156,6 +159,11 @@ public class DashboardController implements Initializable {
         petHeroMoodLabel.setText(PetUiSupport.moodFromHunger(pet.getHunger()));
         petHeroHungerLabel.setText(pet.getHunger() + "/100");
         petHeroHungerBar.setProgress(Math.max(0, Math.min(1, (100 - pet.getHunger()) / 100d)));
+    }
+
+    private void renderPetHero3D(String type) {
+        if (petHeroContainer == null) return;
+        petHeroContainer.getChildren().setAll(PetPreviewSupport.createPreview(type, 224, 224));
     }
 
     // Stats using evaluation data

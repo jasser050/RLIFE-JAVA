@@ -1,16 +1,11 @@
 package com.studyflow.pets;
 
 import com.studyflow.utils.GlbLoader;
+import javafx.animation.AnimationTimer;
 import javafx.application.Platform;
 import javafx.geometry.Bounds;
 import javafx.geometry.Pos;
-import javafx.scene.AmbientLight;
-import javafx.scene.Group;
-import javafx.scene.Node;
-import javafx.scene.PerspectiveCamera;
-import javafx.scene.PointLight;
-import javafx.scene.SceneAntialiasing;
-import javafx.scene.SubScene;
+import javafx.scene.*;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.scene.transform.Rotate;
@@ -18,13 +13,10 @@ import javafx.scene.transform.Scale;
 import javafx.scene.transform.Translate;
 
 public final class CatGlbPreview {
+
     private static final String CAT_RESOURCE = "/com/studyflow/pets/cat.glb";
-    private static final double DEFAULT_ROTATE_X = -8;
-    private static final double DEFAULT_ROTATE_Y = 18;
-    private static final double BASE_MODEL_ROTATE_X = 90;
-    private static final double BASE_MODEL_ROTATE_Y = 180;
-    private static final double MODEL_OFFSET_Y = 0.18;
-    private static final double FIT_SIZE = 2.15;
+    private static final double FIT_SCALE = 1.8;
+    private static final double SCENE_DEPTH = 3.2;
 
     private CatGlbPreview() {
     }
@@ -36,37 +28,22 @@ public final class CatGlbPreview {
         container.setMinSize(width, height);
         container.setMaxSize(width, height);
 
-        Group modelRoot = new Group();
-        modelRoot.setTranslateY(MODEL_OFFSET_Y);
-        Rotate rotateX = new Rotate(DEFAULT_ROTATE_X, Rotate.X_AXIS);
-        Rotate rotateY = new Rotate(DEFAULT_ROTATE_Y, Rotate.Y_AXIS);
-        modelRoot.getTransforms().addAll(rotateX, rotateY);
+        Group modelGroup = new Group();
+        Group world = new Group();
+        world.getChildren().add(modelGroup);
 
-        AmbientLight ambient = new AmbientLight(Color.rgb(70, 68, 74));
-
-        PointLight keyLight = new PointLight(Color.rgb(255, 244, 220));
-        keyLight.setTranslateX(-260);
-        keyLight.setTranslateY(-220);
-        keyLight.setTranslateZ(-420);
-
-        PointLight fillLight = new PointLight(Color.rgb(162, 180, 220, 0.70));
-        fillLight.setTranslateX(250);
-        fillLight.setTranslateY(-90);
-        fillLight.setTranslateZ(-190);
-
-        PointLight rimLight = new PointLight(Color.rgb(214, 188, 146, 0.55));
-        rimLight.setTranslateX(0);
-        rimLight.setTranslateY(180);
-        rimLight.setTranslateZ(300);
-
-        Group world = new Group(ambient, keyLight, fillLight, rimLight, modelRoot);
+        AmbientLight ambient = new AmbientLight(Color.color(0.5, 0.47, 0.55));
+        PointLight key = new PointLight(Color.color(0.9, 0.85, 0.95));
+        key.setTranslateX(3); key.setTranslateY(-4); key.setTranslateZ(5);
+        PointLight fill = new PointLight(Color.color(0.4, 0.38, 0.65));
+        fill.setTranslateX(-3); fill.setTranslateY(2); fill.setTranslateZ(-3);
+        world.getChildren().addAll(ambient, key, fill);
 
         PerspectiveCamera camera = new PerspectiveCamera(true);
-        camera.setTranslateZ(-6.4);
-        camera.setTranslateY(-0.10);
+        camera.setFieldOfView(40);
         camera.setNearClip(0.01);
-        camera.setFarClip(500);
-        camera.setFieldOfView(30);
+        camera.setFarClip(200);
+        camera.setTranslateZ(-SCENE_DEPTH);
 
         SubScene subScene = new SubScene(world, width, height, true, SceneAntialiasing.BALANCED);
         subScene.setFill(Color.TRANSPARENT);
@@ -76,44 +53,22 @@ public final class CatGlbPreview {
         subScene.setManaged(false);
 
         container.getChildren().add(subScene);
-        installMouseRotation(subScene, rotateX, rotateY);
-        loadModelAsync(modelRoot, container, width, height);
+
+        loadModelAsync(modelGroup, container, width, height);
         return container;
     }
 
-    private static void installMouseRotation(SubScene subScene, Rotate rotateX, Rotate rotateY) {
-        final double[] last = new double[2];
-
-        subScene.setOnMousePressed(event -> {
-            last[0] = event.getSceneX();
-            last[1] = event.getSceneY();
-        });
-
-        subScene.setOnMouseDragged(event -> {
-            double dx = event.getSceneX() - last[0];
-            double dy = event.getSceneY() - last[1];
-            rotateY.setAngle(rotateY.getAngle() + dx * 0.40);
-            rotateX.setAngle(rotateX.getAngle() + dy * 0.30);
-            last[0] = event.getSceneX();
-            last[1] = event.getSceneY();
-        });
-
-        subScene.setOnMouseClicked(event -> {
-            if (event.getClickCount() == 2) {
-                rotateX.setAngle(DEFAULT_ROTATE_X);
-                rotateY.setAngle(DEFAULT_ROTATE_Y);
-            }
-        });
-    }
-
-    private static void loadModelAsync(Group modelRoot, StackPane container, double width, double height) {
+    private static void loadModelAsync(Group modelGroup, StackPane container, double width, double height) {
         Thread loader = new Thread(() -> {
             try {
                 Group loaded = GlbLoader.loadFromResource(CAT_RESOURCE);
-                Platform.runLater(() -> fitModel(loaded, modelRoot));
+                Platform.runLater(() -> {
+                    fitModel(loaded, modelGroup);
+                    startRotation(modelGroup);
+                });
             } catch (Exception ex) {
                 Platform.runLater(() -> {
-                    modelRoot.getChildren().clear();
+                    modelGroup.getChildren().clear();
                     CatPetScene fallback = new CatPetScene(width, height);
                     container.getChildren().setAll(fallback.getSubScene());
                 });
@@ -123,28 +78,39 @@ public final class CatGlbPreview {
         loader.start();
     }
 
-    private static void fitModel(Group loaded, Group modelRoot) {
-        modelRoot.getChildren().setAll(loaded);
+    private static void fitModel(Group loaded, Group modelGroup) {
+        if (loaded.getChildren().isEmpty()) return;
 
-        Bounds bounds = loaded.getBoundsInLocal();
-        if (bounds.isEmpty()) {
-            return;
-        }
+        modelGroup.getChildren().add(loaded);
 
-        double centerX = (bounds.getMinX() + bounds.getMaxX()) / 2.0;
-        double centerY = (bounds.getMinY() + bounds.getMaxY()) / 2.0;
-        double centerZ = (bounds.getMinZ() + bounds.getMaxZ()) / 2.0;
-        double maxDim = Math.max(bounds.getWidth(), Math.max(bounds.getHeight(), bounds.getDepth()));
-        if (maxDim <= 1e-6) {
-            return;
-        }
+        Bounds b = loaded.getBoundsInLocal();
+        if (b.isEmpty() || b.getWidth() < 1e-6) return;
 
-        double fitScale = FIT_SIZE / maxDim;
-        loaded.getTransforms().setAll(
-                new Translate(-centerX, -centerY, -centerZ),
-                new Rotate(BASE_MODEL_ROTATE_X, Rotate.X_AXIS),
-                new Rotate(BASE_MODEL_ROTATE_Y, Rotate.Y_AXIS),
-                new Scale(fitScale, fitScale, fitScale)
-        );
+        double cx = (b.getMinX() + b.getMaxX()) / 2.0;
+        double cy = (b.getMinY() + b.getMaxY()) / 2.0;
+        double cz = (b.getMinZ() + b.getMaxZ()) / 2.0;
+        double maxDim = Math.max(b.getWidth(), Math.max(b.getHeight(), b.getDepth()));
+        double fit = FIT_SCALE / maxDim;
+
+        loaded.getTransforms().clear();
+        loaded.getTransforms().add(new Rotate(-90, Rotate.X_AXIS));
+        loaded.getTransforms().add(new Scale(fit, fit, fit));
+        loaded.getTransforms().add(new Translate(-cx, -cy, -cz));
+    }
+
+    private static void startRotation(Group modelGroup) {
+        Rotate rot = new Rotate(0, Rotate.Y_AXIS);
+        modelGroup.getTransforms().add(rot);
+
+        AnimationTimer rotator = new AnimationTimer() {
+            private long last = 0;
+            @Override public void handle(long now) {
+                if (last != 0) {
+                    rot.setAngle(rot.getAngle() + (now - last) * 1e-9 * 55.0);
+                }
+                last = now;
+            }
+        };
+        rotator.start();
     }
 }
