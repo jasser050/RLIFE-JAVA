@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>StudyFlow City</title>
+  <style>
+    html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#06111f;color:#eef6ff;font-family:Segoe UI,Arial,sans-serif}
+    #game{position:relative;width:100vw;height:100vh;background:radial-gradient(circle at 50% 28%,#174267 0,#071426 48%,#030913 100%)}
+    #world{display:block;width:100%;height:100%}
+    .panel{position:absolute;background:rgba(3,12,24,.88);border:1px solid #214766;border-radius:10px;box-shadow:0 16px 46px rgba(0,0,0,.38)}
+    .title{font-size:18px;font-weight:900;letter-spacing:2px;margin:0;color:#f8fbff}.small{font-size:12px;color:#9dc3e8;line-height:1.45}
+    #intro{left:26px;top:20px;padding:14px 16px;width:430px}
+    #stats{right:26px;top:20px;padding:14px 16px;width:210px}.stat{display:flex;justify-content:space-between;font-size:13px;margin:6px 0}.value{font-weight:900;color:#b9ecff}
+    #legend{left:26px;bottom:22px;padding:13px 15px;width:245px}.legend-row{display:flex;align-items:center;gap:8px;margin-top:7px;color:#b7cce3;font-size:12px}.sw{width:13px;height:13px;border-radius:3px}
+    #minimap{right:26px;bottom:22px;width:190px;height:132px;padding:10px}.mini{position:absolute;width:8px;height:8px;background:#38bdf8;border:1px solid white;border-radius:50%;transform:translate(-50%,-50%)}.mini.player{background:#22c55e;width:10px;height:10px}
+    #prompt{position:absolute;left:50%;bottom:26px;transform:translateX(-50%);display:none;padding:10px 17px;border-radius:999px;background:#eef6ff;color:#071426;font-weight:900;font-size:13px;box-shadow:0 12px 36px rgba(0,0,0,.45)}
+    #toast{position:absolute;top:96px;left:50%;transform:translateX(-50%);display:none;padding:10px 15px;border-radius:8px;background:#06342f;border:1px solid #14b8a6;color:#a7f3d0;font-size:13px;font-weight:800}
+    #quiz{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(2,6,23,.72)}
+    .modal{width:560px;max-width:92vw;background:#09172a;border:1px solid #315071;border-radius:12px;padding:18px;box-shadow:0 30px 90px rgba(0,0,0,.6)}
+    .modal h2{margin:0 0 6px;font-size:20px}.modal p{margin:0 0 14px;color:#9fb8d3;font-size:13px}.question{margin:13px 0;font-size:16px;font-weight:900}
+    .answers{display:grid;gap:9px}.answers button,.close{border:1px solid #34516e;background:#13243a;color:#edf7ff;border-radius:8px;padding:11px 12px;text-align:left;font-weight:800;cursor:pointer}
+    .answers button:hover,.close:hover{background:#12314d;border-color:#38bdf8}.close{width:100%;margin-top:14px;text-align:center}
+  </style>
+</head>
+<body>
+<div id="game">
+  <canvas id="world"></canvas>
+  <div id="intro" class="panel">
+    <h1 class="title">STUDYFLOW CITY</h1>
+    <div class="small">Move with WASD or arrow keys. Walk to a subject building and press E. Each building is a subject museum with English quizzes.</div>
+  </div>
+  <div id="stats" class="panel">
+    <div class="stat"><span>Academic points</span><span class="value" id="academicPts">0</span></div>
+    <div class="stat"><span>Quiz bonus</span><span class="value" id="bonusPts">0</span></div>
+    <div class="stat"><span>Buildings</span><span class="value" id="buildingCount">0</span></div>
+  </div>
+  <div id="legend" class="panel">
+    <h1 class="title" style="font-size:16px">LEGEND</h1>
+    <div class="legend-row"><span class="sw" style="background:#38bdf8"></span>Roads connect subject districts</div>
+    <div class="legend-row"><span class="sw" style="background:#f59e0b"></span>Higher towers mean stronger evaluations</div>
+    <div class="legend-row"><span class="sw" style="background:#22c55e"></span>Green marker is the player</div>
+    <div class="legend-row"><span class="sw" style="background:#a78bfa"></span>Press E inside a building zone</div>
+  </div>
+  <div id="minimap" class="panel"></div>
+  <div id="prompt"></div>
+  <div id="toast"></div>
+  <div id="quiz">
+    <div class="modal">
+      <h2 id="quizTitle">Subject Museum</h2>
+      <p>Answer correctly in English to earn +25 city bonus points.</p>
+      <div id="question" class="question"></div>
+      <div id="answers" class="answers"></div>
+      <button class="close" onclick="closeQuiz()">Leave building</button>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  var fallback = {cityName:"My City",totalPoints:0,subjects:[
+    {name:"Mathematics",points:140,building:"Academy",emoji:"MATH"},
+    {name:"Physics",points:90,building:"Lab",emoji:"PHYS"},
+    {name:"English",points:70,building:"Library",emoji:"ENG"},
+    {name:"History",points:45,building:"Archive",emoji:"HIST"},
+    {name:"Computer Science",points:210,building:"Tech Tower",emoji:"CS"}
+  ]};
+
+  function safeJson(){
+    try{
+      var q = window.location.search || "";
+      var match = q.match(/[?&]data=([^&]+)/);
+      if(!match) return fallback;
+      var raw = match[1].replace(/\+/g,"%20");
+      var decoded = decodeURIComponent(raw);
+      var parsed = JSON.parse(decoded);
+      if(!parsed.subjects || !parsed.subjects.length) parsed.subjects = fallback.subjects;
+      return parsed;
+    }catch(e){ return fallback; }
+  }
+
+  function safeGetBonus(){
+    try{return parseInt(window.localStorage.getItem("studyflowCityBonus") || "0",10) || 0;}catch(e){return 0;}
+  }
+  function safeSetBonus(v){
+    try{window.localStorage.setItem("studyflowCityBonus", String(v));}catch(e){}
+  }
+
+  var data = safeJson();
+  var subjects = data.subjects && data.subjects.length ? data.subjects.slice(0,12) : fallback.subjects;
+  var canvas = document.getElementById("world");
+  var ctx = canvas.getContext("2d");
+  var minimap = document.getElementById("minimap");
+  var prompt = document.getElementById("prompt");
+  var toast = document.getElementById("toast");
+  var W = 0, H = 0, DPR = 1, keys = {}, near = null, tick = 0;
+  var bonusPts = safeGetBonus();
+  var player = {x:0,y:0,r:13,speed:3.2};
+
+  document.getElementById("academicPts").innerHTML = String(data.totalPoints || 0);
+  document.getElementById("bonusPts").innerHTML = String(bonusPts);
+  document.getElementById("buildingCount").innerHTML = String(subjects.length);
+
+  function resize(){
+    DPR = window.devicePixelRatio || 1;
+    W = window.innerWidth; H = window.innerHeight;
+    canvas.width = Math.max(1, Math.floor(W * DPR));
+    canvas.height = Math.max(1, Math.floor(H * DPR));
+    canvas.style.width = W + "px"; canvas.style.height = H + "px";
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+    layout();
+  }
+
+  function layout(){
+    var cx = W/2, cy = H/2 + 28;
+    var rx = Math.min(430, W * 0.34), ry = Math.min(265, H * 0.31);
+    for(var i=0;i<subjects.length;i++){
+      var a = -Math.PI/2 + (Math.PI*2*i/subjects.length);
+      var s = subjects[i];
+      s.x = cx + Math.cos(a) * rx;
+      s.y = cy + Math.sin(a) * ry;
+      s.level = Math.max(1, Math.min(6, Math.floor((s.points || 0) / 110) + 1));
+      s.zone = 62;
+    }
+    if(!player.ready){player.x = cx; player.y = cy; player.ready = true;}
+  }
+
+  function poly(points, fill, stroke){
+    ctx.beginPath(); ctx.moveTo(points[0][0], points[0][1]);
+    for(var i=1;i<points.length;i++) ctx.lineTo(points[i][0], points[i][1]);
+    ctx.closePath(); ctx.fillStyle = fill; ctx.fill();
+    if(stroke){ctx.strokeStyle = stroke; ctx.stroke();}
+  }
+  function isoTile(x,y,w,h,fill,stroke){
+    poly([[x,y-h/2],[x+w,y],[x,y+h/2],[x-w,y]], fill, stroke || "rgba(179,218,255,.18)");
+  }
+  function drawPrism(x,y,w,d,h,front,right,top){
+    var halfW=w/2, halfD=d/2;
+    var A=[x,y-halfD], B=[x+halfW,y], C=[x,y+halfD], D=[x-halfW,y];
+    var A2=[A[0],A[1]-h], B2=[B[0],B[1]-h], C2=[C[0],C[1]-h], D2=[D[0],D[1]-h];
+    poly([D,C,C2,D2], front, "rgba(255,255,255,.18)");
+    poly([B,C,C2,B2], right, "rgba(255,255,255,.16)");
+    poly([A,B,C,D], top, "rgba(255,255,255,.22)");
+    poly([A2,B2,C2,D2], top, "rgba(255,255,255,.25)");
+  }
+
+  function drawBackground(){
+    var cx=W/2, cy=H/2+28;
+    ctx.clearRect(0,0,W,H);
+    var grd = ctx.createRadialGradient(cx,cy,20,cx,cy,Math.max(W,H)*0.65);
+    grd.addColorStop(0,"#16456d"); grd.addColorStop(0.55,"#092238"); grd.addColorStop(1,"#030913");
+    ctx.fillStyle=grd; ctx.fillRect(0,0,W,H);
+    for(var i=0;i<20;i++){
+      ctx.strokeStyle = i%2 ? "rgba(56,189,248,.05)" : "rgba(125,211,252,.04)";
+      ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(cx - 900 + i*90, cy - 520); ctx.lineTo(cx + 900 + i*90, cy + 520); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx + 900 - i*90, cy - 520); ctx.lineTo(cx - 900 - i*90, cy + 520); ctx.stroke();
+    }
+    isoTile(cx,cy,Math.min(520,W*.43),Math.min(340,H*.46),"#0d3048","#23688c");
+    isoTile(cx,cy,Math.min(410,W*.34),Math.min(260,H*.36),"#123d59","#2a7ca4");
+  }
+
+  function drawRoads(){
+    var cx=W/2, cy=H/2+28;
+    ctx.lineCap="round"; ctx.lineJoin="round";
+    for(var i=0;i<subjects.length;i++){
+      var s=subjects[i];
+      ctx.strokeStyle="rgba(56,189,248,.22)"; ctx.lineWidth=18;
+      ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(s.x,s.y); ctx.stroke();
+      ctx.strokeStyle="rgba(186,230,253,.55)"; ctx.lineWidth=4;
+      ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(s.x,s.y); ctx.stroke();
+    }
+    ctx.strokeStyle="rgba(56,189,248,.28)"; ctx.lineWidth=16; ctx.beginPath();
+    for(var j=0;j<subjects.length;j++){
+      var p=subjects[j]; if(j===0)ctx.moveTo(p.x,p.y); else ctx.lineTo(p.x,p.y);
+    }
+    ctx.closePath(); ctx.stroke();
+  }
+
+  function drawDistrict(s){
+    isoTile(s.x,s.y+28,76,48,"rgba(15,58,82,.92)","#38bdf8");
+    var h = 28 + s.level * 13;
+    var strong = (s.points || 0) >= 250;
+    var front = strong ? "#8a4f13" : "#155a7a";
+    var right = strong ? "#6f3f10" : "#0d3f61";
+    var top = strong ? "#f59e0b" : "#38bdf8";
+    drawPrism(s.x,s.y+18,58,44,h,front,right,top);
+    if(s.level>=4) drawPrism(s.x+28,s.y+8,26,24,h*.75,"#4c1d95","#35145f","#a78bfa");
+    ctx.fillStyle="rgba(255,255,255,.75)";
+    for(var i=0;i<3;i++){ctx.fillRect(s.x-18+i*14,s.y-h+34,7,9);}
+    ctx.fillStyle="#f8fbff"; ctx.font="900 12px Segoe UI"; ctx.textAlign="center";
+    ctx.fillText(s.building || "Museum", s.x, s.y - h - 10);
+    ctx.fillStyle="#bdd7f0"; ctx.font="800 11px Segoe UI";
+    var label = String(s.name || "Subject");
+    if(label.length>22) label = label.substring(0,20) + "...";
+    ctx.fillText(label, s.x, s.y + 72);
+    ctx.fillStyle="#fbbf24"; ctx.font="900 11px Segoe UI";
+    ctx.fillText((s.points || 0) + " pts", s.x, s.y + 88);
+    if(near === s){
+      ctx.strokeStyle="#f8fafc"; ctx.lineWidth=3; isoTile(s.x,s.y+28,88,58,"rgba(255,255,255,.05)","#f8fafc");
+    }
+  }
+
+  function drawCentralHub(){
+    var cx=W/2, cy=H/2+28;
+    isoTile(cx,cy+24,100,66,"#0f3552","#7dd3fc");
+    drawPrism(cx,cy+12,66,52,70,"#283a72","#1b2a56","#22d3ee");
+    ctx.fillStyle="#ecfeff"; ctx.font="900 13px Segoe UI"; ctx.textAlign="center";
+    ctx.fillText("HUB CENTRAL",cx,cy-78);
+    ctx.strokeStyle="rgba(34,211,238,.65)"; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.arc(cx,cy-28,18+Math.sin(tick/20)*4,0,Math.PI*2); ctx.stroke();
+  }
+
+  function drawPlayer(){
+    ctx.save();
+    ctx.translate(player.x,player.y);
+    ctx.fillStyle="rgba(0,0,0,.35)"; ctx.beginPath(); ctx.ellipse(0,13,18,7,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle="#22c55e"; ctx.beginPath(); ctx.arc(0,0,13,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle="#ecfeff"; ctx.beginPath(); ctx.arc(0,-5,5,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle="#16a34a"; ctx.fillRect(-7,8,5,13); ctx.fillRect(2,8,5,13);
+    ctx.restore();
+  }
+
+  function update(){
+    tick++;
+    var dx=0, dy=0;
+    if(keys[37]||keys[65]) dx--; if(keys[39]||keys[68]) dx++;
+    if(keys[38]||keys[87]) dy--; if(keys[40]||keys[83]) dy++;
+    if(dx||dy){var len=Math.sqrt(dx*dx+dy*dy); player.x += dx/len*player.speed; player.y += dy/len*player.speed;}
+    player.x=Math.max(35,Math.min(W-35,player.x)); player.y=Math.max(95,Math.min(H-35,player.y));
+    near=null; var best=9999;
+    for(var i=0;i<subjects.length;i++){
+      var s=subjects[i], dist=Math.sqrt(Math.pow(player.x-s.x,2)+Math.pow(player.y-s.y,2));
+      if(dist<s.zone && dist<best){near=s; best=dist;}
+    }
+    if(near){prompt.style.display="block"; prompt.innerHTML="Press E to enter " + escapeText(near.name) + " Museum";} else prompt.style.display="none";
+    draw();
+    window.requestAnimationFrame(update);
+  }
+
+  function draw(){
+    drawBackground(); drawRoads(); drawCentralHub();
+    var ordered = subjects.slice(0).sort(function(a,b){return a.y-b.y;});
+    for(var i=0;i<ordered.length;i++) drawDistrict(ordered[i]);
+    drawPlayer(); drawMiniMap();
+  }
+
+  function drawMiniMap(){
+    var old = minimap.querySelectorAll(".mini");
+    for(var i=0;i<old.length;i++) old[i].parentNode.removeChild(old[i]);
+    for(var j=0;j<subjects.length;j++){
+      var s=subjects[j], d=document.createElement("span"); d.className="mini";
+      d.style.left=(50+(s.x-W/2)/W*72)+"%"; d.style.top=(50+(s.y-H/2)/H*72)+"%"; minimap.appendChild(d);
+    }
+    var p=document.createElement("span"); p.className="mini player";
+    p.style.left=(50+(player.x-W/2)/W*72)+"%"; p.style.top=(50+(player.y-H/2)/H*72)+"%"; minimap.appendChild(p);
+  }
+
+  function questionsFor(s){
+    var n = escapeText(s.name || "this subject");
+    return [
+      {q:"What is the best way to improve in "+n+"?", a:["Review mistakes and practice often","Ignore feedback","Study only once","Avoid exercises"], c:0},
+      {q:"What should you do before a "+n+" evaluation?", a:["Revise key concepts","Delete your notes","Skip practice","Guess without reading"], c:0},
+      {q:"Why does this building grow?", a:["Because your evaluations add points","Because time passes","Because the map is random","Because quizzes are ignored"], c:0}
+    ];
+  }
+  function openQuiz(s){
+    var qs=questionsFor(s), q=qs[Math.floor(Math.random()*qs.length)];
+    document.getElementById("quizTitle").innerHTML = escapeText(s.name) + " Museum";
+    document.getElementById("question").innerHTML = q.q;
+    var box=document.getElementById("answers"); box.innerHTML="";
+    for(var i=0;i<q.a.length;i++){
+      var b=document.createElement("button"); b.innerHTML=q.a[i]; b.setAttribute("data-ok", i===q.c ? "1":"0");
+      b.onclick=function(){answer(this.getAttribute("data-ok")==="1");};
+      box.appendChild(b);
+    }
+    document.getElementById("quiz").style.display="flex";
+  }
+  window.closeQuiz=function(){document.getElementById("quiz").style.display="none";};
+  function answer(ok){
+    if(ok){bonusPts+=25; safeSetBonus(bonusPts); document.getElementById("bonusPts").innerHTML=String(bonusPts); flash("Correct answer: +25 city bonus points");}
+    else flash("Wrong answer. Try again in another building.");
+    window.closeQuiz();
+  }
+  function flash(msg){toast.innerHTML=msg;toast.style.display="block";window.setTimeout(function(){toast.style.display="none";},1800);}
+  function escapeText(v){return String(v==null?"":v).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];});}
+
+  window.addEventListener("keydown",function(e){
+    keys[e.keyCode]=true;
+    if((e.keyCode===69) && near){openQuiz(near); e.preventDefault();}
+  });
+  window.addEventListener("keyup",function(e){keys[e.keyCode]=false;});
+  window.addEventListener("resize",resize);
+  resize(); update();
+})();
+</script>
+</body>
+</html>

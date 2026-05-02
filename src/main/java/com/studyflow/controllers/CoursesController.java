@@ -1,5 +1,7 @@
 package com.studyflow.controllers;
 
+import com.studyflow.game.Building;
+import com.studyflow.game.GamePointsService;
 import com.studyflow.services.EvaluationMatiereService;
 import com.studyflow.services.MatiereService;
 import com.studyflow.models.EvaluationMatiere;
@@ -16,10 +18,14 @@ import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.css.PseudoClass;
+import javafx.scene.Node;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
@@ -39,7 +45,7 @@ import javafx.scene.chart.*;
 public class CoursesController implements Initializable {
 
     // ════════════════════════════════════════════════════════════
-    //  FXML — Stats
+    //  FXML — Stats cards
     // ════════════════════════════════════════════════════════════
     @FXML private Label statTotal;
     @FXML private Label statMoyenne;
@@ -70,6 +76,7 @@ public class CoursesController implements Initializable {
     @FXML private VBox     formPanel;
     @FXML private VBox     statsView;
     @FXML private VBox     quizMainView;
+    @FXML private VBox     cityView;
     @FXML private FlowPane courseGrid;
 
     // ── Formulaire ─────────────────────────────────────────────
@@ -138,11 +145,15 @@ public class CoursesController implements Initializable {
     private final VoiceAssistantService    voiceService = new VoiceAssistantService();
 
     // ════════════════════════════════════════════════════════════
+    //  CITY GAME — controller reference
+    // ════════════════════════════════════════════════════════════
+    private CityViewController cityViewController;
+
+    // ════════════════════════════════════════════════════════════
     //  ANTI-FRAUD ENGINE
     // ════════════════════════════════════════════════════════════
     private final AntiFraudEngine antiFraud = new AntiFraudEngine();
 
-    // Labels anti-fraude créés dynamiquement dans la barre de quiz
     private Label   lblFraudScore;
     private Label   lblFraudWarning;
     private HBox    fraudStatusBar;
@@ -167,7 +178,6 @@ public class CoursesController implements Initializable {
     private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private static final PseudoClass SELECTED   = PseudoClass.getPseudoClass("selected");
 
-    // Voice recording state
     private boolean isRecordingVoice = false;
 
     // ════════════════════════════════════════════════════════════
@@ -178,9 +188,8 @@ public class CoursesController implements Initializable {
         List<String> options;
         QuizQuestion(String q, List<String> opts, String correct,
                      String diff, String cat, String expl) {
-            question      = q;       options       = opts;
-            correctAnswer = correct; difficulty    = diff;
-            category      = cat;     explanation   = expl;
+            question = q; options = opts; correctAnswer = correct;
+            difficulty = diff; category = cat; explanation = expl;
         }
     }
 
@@ -244,7 +253,81 @@ public class CoursesController implements Initializable {
     }
 
     // ════════════════════════════════════════════════════════════
-    //  VOICE ASSISTANT SETUP  (fixed — matches VoiceAssistantService API)
+    //  CITY GAME — NAVIGATION (CORRECTED)
+    // ════════════════════════════════════════════════════════════
+    @FXML
+    public void handleShowCity() {
+        try {
+            loadCityView();
+            showView("city");
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.err.println("[CityGame] Erreur: " + e.getMessage());
+            showCityErrorAlert(e.getMessage());
+        }
+    }
+
+    @FXML
+    public void handleShowCityMouse(javafx.scene.input.MouseEvent event) {
+        handleShowCity();
+    }
+
+    private void loadCityView() throws java.io.IOException {
+        if (cityView == null) {
+            throw new IllegalStateException("cityView container is not injected from Courses.fxml");
+        }
+
+        if (cityViewController == null || cityView.getChildren().isEmpty()) {
+            FXMLLoader loader = new FXMLLoader(
+                    getClass().getResource("/com/studyflow/views/Cityview.fxml"));
+            Parent cityRoot = loader.load();
+            cityViewController = loader.getController();
+            cityView.getChildren().setAll(cityRoot);
+        }
+
+        if (cityViewController != null) {
+            cityViewController.refresh();
+        }
+    }
+
+    private void showCityErrorAlert(String error) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle("Erreur");
+        alert.setHeaderText("Impossible de charger My City");
+        alert.setContentText("Erreur: " + error + "\n\nVerifiez que Cityview.fxml existe dans:\n" +
+                "src/main/resources/com/studyflow/views/Cityview.fxml");
+        alert.showAndWait();
+    }
+
+    // ════════════════════════════════════════════════════════════
+    //  CITY GAME — BUILDING UNLOCK NOTIFICATION
+    // ════════════════════════════════════════════════════════════
+    private void checkAndNotifyBuildingUnlock(int pointsBeforeSave) {
+        try {
+            List<EvaluationMatiere> fresh = evalService.findByUser(
+                    UserSession.getInstance().getCurrentUser().getId());
+            int newTotal = GamePointsService.totalPoints(fresh);
+            Building.Type before = Building.getBuildingForPoints(pointsBeforeSave);
+            Building.Type after  = Building.getBuildingForPoints(newTotal);
+            if (!before.name.equals(after.name)) {
+                showUnlockAlert(after, newTotal);
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+    }
+
+    private void showUnlockAlert(Building.Type bt, int totalPts) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("🏙️ New Building Unlocked!");
+        alert.setHeaderText(bt.emoji + "  " + bt.name + " is now yours!");
+        alert.setContentText(
+                bt.description +
+                        "\n\n🏆 Total city points: " + totalPts +
+                        "\n\nClick on 'My City 🏙️' to admire your progress!");
+        alert.showAndWait();
+    }
+
+    // ════════════════════════════════════════════════════════════
+    //  VOICE ASSISTANT SETUP
     // ════════════════════════════════════════════════════════════
     private void setupVoiceAssistant() {
         if (!voiceService.hasApiKey()) {
@@ -259,29 +342,25 @@ public class CoursesController implements Initializable {
             return;
         }
 
-        // ── Transcription callback ─────────────────────────────
         voiceService.onTranscription = text -> Platform.runLater(() -> {
             voiceTranscriptionLabel.setText("🎤 You said: " + text);
             voiceStatusLabel.setText("✍️ Transcribed: "
                     + (text.length() > 40 ? text.substring(0, 40) + "…" : text));
         });
 
-        // ── AI response callback (was wrongly named onAIResponse in old code) ──
         voiceService.onAIResponse = response -> Platform.runLater(() -> {
             voiceResponseLabel.setText("🤖 Assistant: " + response);
             voiceStatusLabel.setText("💬 Assistant responded");
         });
 
-        // ── Status callback ────────────────────────────────────
         voiceService.onStatus = status -> Platform.runLater(() -> {
             voiceStatusLabel.setText(status);
             boolean idle = status.contains("Ready") || status.contains("ready")
-                    || status.contains("Prêt")  || status.contains("prêt")
+                    || status.contains("Prêt") || status.contains("prêt")
                     || status.contains("click");
             voiceProgress.setVisible(!idle);
         });
 
-        // ── Error callback ─────────────────────────────────────
         voiceService.onError = error -> Platform.runLater(() -> {
             voiceStatusLabel.setText("❌ Error: " + error);
             voiceTranscriptionLabel.setText("");
@@ -293,7 +372,6 @@ public class CoursesController implements Initializable {
             isRecordingVoice = false;
         });
 
-        // ── TTS start / done callbacks ─────────────────────────
         voiceService.onAudioStart = () -> Platform.runLater(() -> {
             voiceStatusLabel.setText("🔊 Speaking…");
             voiceProgress.setVisible(true);
@@ -316,7 +394,7 @@ public class CoursesController implements Initializable {
             return;
         }
         if (isRecordingVoice) stopVoiceRecording();
-        else                  startVoiceRecording();
+        else startVoiceRecording();
     }
 
     private void startVoiceRecording() {
@@ -330,14 +408,10 @@ public class CoursesController implements Initializable {
             voiceTranscriptionLabel.setText("");
             voiceResponseLabel.setText("");
             voiceProgress.setVisible(true);
-
-            // Auto-stop after 30 seconds
             new Thread(() -> {
-                try { Thread.sleep(30_000); }
-                catch (InterruptedException ignored) {}
+                try { Thread.sleep(30_000); } catch (InterruptedException ignored) {}
                 if (isRecordingVoice) Platform.runLater(this::stopVoiceRecording);
             }).start();
-
         } catch (Exception e) {
             showVoiceError("Microphone error: " + e.getMessage());
             isRecordingVoice = false;
@@ -359,7 +433,7 @@ public class CoursesController implements Initializable {
     @FXML
     private void handleCancelVoice() {
         if (isRecordingVoice) {
-            voiceService.cancel();   // ✅ cancel() now exists in service
+            voiceService.cancel();
             isRecordingVoice = false;
         }
         showVoiceBar(false);
@@ -390,10 +464,9 @@ public class CoursesController implements Initializable {
     }
 
     // ════════════════════════════════════════════════════════════
-    //  ANTI-FRAUD : SETUP DES CALLBACKS
+    //  ANTI-FRAUD ENGINE
     // ════════════════════════════════════════════════════════════
     private void setupAntiFraud() {
-
         antiFraud.setOnFraudDetected(event -> Platform.runLater(() -> {
             if (fraudStatusBar  != null) fraudStatusBar.setVisible(true);
             if (lblFraudWarning != null) {
@@ -406,14 +479,12 @@ public class CoursesController implements Initializable {
             if (lblFraudScore == null) return;
             lblFraudScore.setText("⚠ " + score + "/" + AntiFraudEngine.THRESHOLD_TERMINATE);
             String col = score >= AntiFraudEngine.THRESHOLD_PENALTY ? "#EF4444"
-                    : score >= AntiFraudEngine.THRESHOLD_WARNING  ? "#F59E0B"
-                    : "#34D399";
+                    : score >= AntiFraudEngine.THRESHOLD_WARNING  ? "#F59E0B" : "#34D399";
             lblFraudScore.setStyle("-fx-text-fill:" + col + ";-fx-font-size:12px;-fx-font-weight:700;");
         }));
 
         antiFraud.setOnPenalty(penaltyCount -> Platform.runLater(() -> {
             quizScore = Math.max(0, quizScore - 1);
-            System.out.println("[FRAUD] Penalty #" + penaltyCount + " — quiz score → " + quizScore);
         }));
 
         antiFraud.setOnWarning(msg -> Platform.runLater(() -> {
@@ -444,13 +515,8 @@ public class CoursesController implements Initializable {
     private HBox buildFraudBar() {
         HBox bar = new HBox(12);
         bar.setAlignment(Pos.CENTER_LEFT);
-        bar.setStyle(
-                "-fx-background-color:#1A0808;" +
-                        "-fx-border-color:#EF4444;" +
-                        "-fx-border-width:0 0 0 4;" +
-                        "-fx-padding:8 16;" +
-                        "-fx-background-radius:8;"
-        );
+        bar.setStyle("-fx-background-color:#1A0808;-fx-border-color:#EF4444;" +
+                "-fx-border-width:0 0 0 4;-fx-padding:8 16;-fx-background-radius:8;");
         bar.setVisible(false);
 
         Label icon = new Label("🔒");
@@ -475,8 +541,7 @@ public class CoursesController implements Initializable {
             if (lblFraudScore != null) {
                 lblFraudScore.setText("⚠ " + score + "/" + AntiFraudEngine.THRESHOLD_TERMINATE);
                 String col = score >= AntiFraudEngine.THRESHOLD_PENALTY ? "#EF4444"
-                        : score >= AntiFraudEngine.THRESHOLD_WARNING  ? "#F59E0B"
-                        : "#34D399";
+                        : score >= AntiFraudEngine.THRESHOLD_WARNING ? "#F59E0B" : "#34D399";
                 lblFraudScore.setStyle("-fx-text-fill:" + col + ";-fx-font-size:12px;-fx-font-weight:700;");
             }
         }));
@@ -494,11 +559,16 @@ public class CoursesController implements Initializable {
         boolean isForm  = "form".equals(view);
         boolean isStats = "stats".equals(view);
         boolean isQuiz  = "quiz".equals(view);
+        boolean isCity  = "city".equals(view);
 
         listView.setVisible(isList);     listView.setManaged(isList);
         formPanel.setVisible(isForm);    formPanel.setManaged(isForm);
         statsView.setVisible(isStats);   statsView.setManaged(isStats);
         quizMainView.setVisible(isQuiz); quizMainView.setManaged(isQuiz);
+        if (cityView != null) {
+            cityView.setVisible(isCity);
+            cityView.setManaged(isCity);
+        }
 
         boolean showCards = isList || isStats;
         statCards.setVisible(showCards); statCards.setManaged(showCards);
@@ -511,16 +581,19 @@ public class CoursesController implements Initializable {
             if (btnHeaderIcon != null) btnHeaderIcon.setIconLiteral("fth-plus");
             pageTitle.setText("My Assessments");
             pageSubtitle.setText("Track your results and manage your assessments by subject");
+
         } else if (isForm) {
             btnHeaderAction.setText("← Back");
             if (btnHeaderIcon != null) btnHeaderIcon.setIconLiteral("fth-arrow-left");
             pageTitle.setText(editTarget == null ? "New Assessment" : "Edit Assessment");
             pageSubtitle.setText("Fill in all fields below and save");
+
         } else if (isStats) {
             btnHeaderAction.setText("← Back");
             if (btnHeaderIcon != null) btnHeaderIcon.setIconLiteral("fth-arrow-left");
             pageTitle.setText("My Statistics");
             pageSubtitle.setText("Analysis of your " + allEvals.size() + " assessment(s)");
+
         } else if (isQuiz) {
             btnHeaderAction.setText("← Back");
             if (btnHeaderIcon != null) btnHeaderIcon.setIconLiteral("fth-arrow-left");
@@ -528,6 +601,12 @@ public class CoursesController implements Initializable {
             pageSubtitle.setText("Test your knowledge — Secure exam mode");
             showQuizSubView("setup");
             attachAntiFraudOnce();
+
+        } else if (isCity) {
+            btnHeaderAction.setText("← Back");
+            if (btnHeaderIcon != null) btnHeaderIcon.setIconLiteral("fth-arrow-left");
+            pageTitle.setText("My City 🏙️");
+            pageSubtitle.setText("Your academic progress as a growing city");
         }
     }
 
@@ -632,6 +711,9 @@ public class CoursesController implements Initializable {
         if (u == null) { showGlobalError("You must be logged in."); return; }
         if (!ok) return;
 
+        // Snapshot points BEFORE saving (for building unlock check)
+        int pointsBeforeSave = GamePointsService.totalPoints(new ArrayList<>(allEvals));
+
         try {
             EvaluationMatiere e = editTarget != null ? editTarget : new EvaluationMatiere();
             e.setScoreEval(score);
@@ -643,7 +725,14 @@ public class CoursesController implements Initializable {
             e.setUserId(u.getId());
             if (editTarget == null) evalService.create(e, cmbMatiere.getValue().getId());
             else                    evalService.update(e);
-            clearForm(); showView("list"); loadData();
+
+            clearForm();
+            showView("list");
+            loadData();
+
+            // Check if a new building was unlocked
+            checkAndNotifyBuildingUnlock(pointsBeforeSave);
+
         } catch (Exception ex) { showGlobalError("Database error: " + ex.getMessage()); }
     }
 
@@ -688,7 +777,8 @@ public class CoursesController implements Initializable {
     //  NAVIGATION
     // ════════════════════════════════════════════════════════════
     @FXML private void handleHeaderAction() {
-        if (formPanel.isVisible() || statsView.isVisible() || quizMainView.isVisible()) {
+        if (formPanel.isVisible() || statsView.isVisible() || quizMainView.isVisible()
+                || (cityView != null && cityView.isVisible())) {
             stopQuizTimer();
             antiFraud.stopMonitoring();
             showView("list");
@@ -698,6 +788,7 @@ public class CoursesController implements Initializable {
     }
 
     @FXML public void handleShowQuiz()  { showView("quiz"); }
+
     @FXML public void handleShowStats() {
         if (allEvals.isEmpty()) {
             new Alert(Alert.AlertType.INFORMATION,
@@ -782,7 +873,7 @@ public class CoursesController implements Initializable {
     private void showQuizLoading(boolean show) {
         if (btnGenerateAIQuiz != null) {
             btnGenerateAIQuiz.setDisable(show);
-            btnGenerateAIQuiz.setText(show ? "⏳ Generating…" : "🤖  Generate AI Quiz");
+            btnGenerateAIQuiz.setText(show ? "⏳ Generating…" : "🤖  Generate AI Quiz with Claude");
         }
         if (show) showQuizSubView("loading");
     }
@@ -806,16 +897,13 @@ public class CoursesController implements Initializable {
             HBox bar = buildFraudBar();
             quizInProgressView.getChildren().add(0, bar);
         }
-
         antiFraud.startMonitoring();
-
         Platform.runLater(() -> {
             if (courseGrid.getScene() != null
                     && courseGrid.getScene().getWindow() instanceof Stage stage) {
                 stage.setFullScreen(true);
             }
         });
-
         showQuizSubView("quiz");
         startQuizTimer();
         showQuizQuestion();
@@ -871,7 +959,6 @@ public class CoursesController implements Initializable {
             btn.setOnAction(e -> handleOptionSelected(btn, opt));
             quizVboxOptions.getChildren().add(btn);
         }
-
         antiFraud.onQuestionChanged(quizCurrentIndex);
     }
 
@@ -903,9 +990,8 @@ public class CoursesController implements Initializable {
         double rawScore      = quizScore;
         double adjustedScore = antiFraud.applyPenaltiesToScore(rawScore);
         int    displayScore  = (int) adjustedScore;
-
-        int total   = quizQuestions.size();
-        int percent = total > 0 ? (int)((adjustedScore * 100.0) / total) : 0;
+        int    total         = quizQuestions.size();
+        int    percent       = total > 0 ? (int)((adjustedScore * 100.0) / total) : 0;
 
         lblQuizFinalScore.setText(displayScore + " / " + total);
         lblQuizFinalPercent.setText(percent + "%");
@@ -926,10 +1012,8 @@ public class CoursesController implements Initializable {
         }
 
         quizVboxDetailedResults.getChildren().clear();
-
-        if (antiFraud.getFraudScore() > 0) {
+        if (antiFraud.getFraudScore() > 0)
             quizVboxDetailedResults.getChildren().add(buildFraudSummaryCard());
-        }
 
         for (int i = 0; i < quizQuestions.size(); i++) {
             QuizQuestion q = quizQuestions.get(i);
@@ -939,18 +1023,13 @@ public class CoursesController implements Initializable {
             String borderColor = ok ? "#34D399" : "#FB7185";
 
             VBox card = new VBox(10);
-            card.setStyle(
-                    "-fx-background-color:" + bgColor + ";-fx-border-color:" + borderColor + ";" +
-                            "-fx-border-width:1.5;-fx-border-radius:12;-fx-background-radius:12;-fx-padding:14 16;"
-            );
+            card.setStyle("-fx-background-color:" + bgColor + ";-fx-border-color:" + borderColor +
+                    ";-fx-border-width:1.5;-fx-border-radius:12;-fx-background-radius:12;-fx-padding:14 16;");
 
             HBox qHeader = new HBox(10); qHeader.setAlignment(Pos.TOP_LEFT);
             Label numBadge = new Label(String.valueOf(i + 1));
-            numBadge.setStyle(
-                    "-fx-background-color:" + accentColor + ";-fx-text-fill:#0F172A;" +
-                            "-fx-font-size:11px;-fx-font-weight:800;" +
-                            "-fx-padding:3 8;-fx-background-radius:20;-fx-min-width:24;-fx-alignment:CENTER;"
-            );
+            numBadge.setStyle("-fx-background-color:" + accentColor + ";-fx-text-fill:#0F172A;" +
+                    "-fx-font-size:11px;-fx-font-weight:800;-fx-padding:3 8;-fx-background-radius:20;");
             Label qText = new Label(q.question); qText.setWrapText(true);
             qText.setStyle("-fx-text-fill:#F8FAFC;-fx-font-size:13px;-fx-font-weight:600;-fx-line-spacing:2;");
             HBox.setHgrow(qText, Priority.ALWAYS);
@@ -982,13 +1061,10 @@ public class CoursesController implements Initializable {
             if (q.explanation != null && !q.explanation.isBlank()) {
                 Region sep = new Region(); sep.setPrefHeight(1);
                 sep.setStyle("-fx-background-color:rgba(255,255,255,0.08);");
-
                 VBox explBox = new VBox(6);
-                explBox.setStyle(
-                        "-fx-background-color:rgba(124,58,237,0.12);" +
-                                "-fx-border-color:rgba(167,139,250,0.4);-fx-border-width:1;" +
-                                "-fx-border-radius:8;-fx-background-radius:8;-fx-padding:10 12;"
-                );
+                explBox.setStyle("-fx-background-color:rgba(124,58,237,0.12);" +
+                        "-fx-border-color:rgba(167,139,250,0.4);-fx-border-width:1;" +
+                        "-fx-border-radius:8;-fx-background-radius:8;-fx-padding:10 12;");
                 Label explTitle = new Label("💡 AI Explanation");
                 explTitle.setStyle("-fx-text-fill:#A78BFA;-fx-font-size:11px;-fx-font-weight:700;");
                 Label explText = new Label(q.explanation); explText.setWrapText(true);
@@ -996,12 +1072,10 @@ public class CoursesController implements Initializable {
                 explBox.getChildren().addAll(explTitle, explText);
                 card.getChildren().addAll(sep, explBox);
             }
-
             quizVboxDetailedResults.getChildren().add(card);
         }
 
         showQuizSubView("results");
-
         Platform.runLater(() -> {
             if (courseGrid.getScene() != null
                     && courseGrid.getScene().getWindow() instanceof Stage stage) {
@@ -1012,38 +1086,28 @@ public class CoursesController implements Initializable {
 
     private VBox buildFraudSummaryCard() {
         VBox card = new VBox(10);
-        card.setStyle(
-                "-fx-background-color:#1A0A0A;-fx-border-color:#EF4444;-fx-border-width:2;" +
-                        "-fx-border-radius:12;-fx-background-radius:12;-fx-padding:16;"
-        );
-
+        card.setStyle("-fx-background-color:#1A0A0A;-fx-border-color:#EF4444;-fx-border-width:2;" +
+                "-fx-border-radius:12;-fx-background-radius:12;-fx-padding:16;");
         Label title = new Label("🔒 Exam Security Report");
         title.setStyle("-fx-text-fill:#F87171;-fx-font-size:14px;-fx-font-weight:700;");
-
         Label summary = new Label(antiFraud.getSummary());
         summary.setStyle("-fx-text-fill:#CBD5E1;-fx-font-size:12px;");
         summary.setWrapText(true);
-
         if (antiFraud.getPenaltyCount() > 0) {
-            Label penalty = new Label(
-                    "⚠ " + antiFraud.getPenaltyCount() + " penalty point(s) deducted from your score.");
+            Label penalty = new Label("⚠ " + antiFraud.getPenaltyCount() + " penalty point(s) deducted.");
             penalty.setStyle("-fx-text-fill:#FCA5A5;-fx-font-size:12px;-fx-font-weight:600;");
             card.getChildren().addAll(title, summary, penalty);
         } else {
             card.getChildren().addAll(title, summary);
         }
-
         FlowPane eventFlow = new FlowPane(8, 6);
         for (FraudEvent e : antiFraud.getEventLog()) {
             Label badge = new Label(e.getFormattedTimestamp() + " — " + e.getType().label);
-            badge.setStyle(
-                    "-fx-background-color:#2D0A0A;-fx-text-fill:" + e.getSeverityColor() + ";" +
-                            "-fx-font-size:11px;-fx-padding:4 10;-fx-background-radius:20;"
-            );
+            badge.setStyle("-fx-background-color:#2D0A0A;-fx-text-fill:" + e.getSeverityColor() +
+                    ";-fx-font-size:11px;-fx-padding:4 10;-fx-background-radius:20;");
             eventFlow.getChildren().add(badge);
         }
         if (!antiFraud.getEventLog().isEmpty()) card.getChildren().add(eventFlow);
-
         return card;
     }
 
@@ -1222,9 +1286,9 @@ public class CoursesController implements Initializable {
 
     private HBox buildKpiRow() {
         HBox row = new HBox(12);
-        double avg      = allEvals.stream().mapToDouble(EvaluationMatiere::getScoreEval).average().orElse(0);
-        long   totalMin = allEvals.stream().mapToLong(EvaluationMatiere::getDureeEvaluation).sum();
-        long   above14  = allEvals.stream().filter(e -> e.getScoreEval() >= 14).count();
+        double avg = allEvals.stream().mapToDouble(EvaluationMatiere::getScoreEval).average().orElse(0);
+        long totalMin = allEvals.stream().mapToLong(EvaluationMatiere::getDureeEvaluation).sum();
+        long above14  = allEvals.stream().filter(e -> e.getScoreEval() >= 14).count();
         Map<Integer,Double> avgBySub = allEvals.stream().collect(
                 Collectors.groupingBy(EvaluationMatiere::getMatiereId,
                         Collectors.averagingDouble(EvaluationMatiere::getScoreEval)));
@@ -1232,12 +1296,17 @@ public class CoursesController implements Initializable {
         String worst = avgBySub.entrySet().stream().min(Map.Entry.comparingByValue()).map(e -> getNomMatiere(e.getKey())).orElse("—");
         double bestA  = avgBySub.values().stream().mapToDouble(d -> d).max().orElse(0);
         double worstA = avgBySub.values().stream().mapToDouble(d -> d).min().orElse(0);
+
+        // Add total city points KPI
+        int cityPts = GamePointsService.totalPoints(new ArrayList<>(allEvals));
+        Building.Type bt = Building.getBuildingForPoints(cityPts);
+
         row.getChildren().addAll(
-                buildKpi("Total",        String.valueOf(allEvals.size()),                   "assessments",                  true,  "#A78BFA"),
+                buildKpi("Total",        String.valueOf(allEvals.size()),                   "assessments",          true,  "#A78BFA"),
                 buildKpi("Average",      String.format("%.1f/20", avg),                    avg >= 10 ? "Passing" : "Below passing", avg >= 10, "#34D399"),
-                buildKpi("Best subject", best,                                              String.format("avg %.1f", bestA),  true,  "#38BDF8"),
+                buildKpi("Best subject", best,                                              String.format("avg %.1f", bestA), true, "#38BDF8"),
                 buildKpi("Weakest",      worst,                                             String.format("avg %.1f — focus here", worstA), false, "#FB7185"),
-                buildKpi("Study time",   totalMin >= 60 ? String.format("%.1fh",totalMin/60.0) : totalMin+"min", above14+" ≥14/20", true, "#FBBF24")
+                buildKpi("City 🏙️",      bt.emoji + " " + bt.name,                        cityPts + " pts", true, "#F59E0B")
         );
         row.getChildren().forEach(n -> HBox.setHgrow(n, Priority.ALWAYS));
         return row;
@@ -1268,7 +1337,7 @@ public class CoursesController implements Initializable {
             Label nl = new Label(nm); nl.setMinWidth(90); nl.setStyle("-fx-text-fill:#94A3B8;-fx-font-size:12px;");
             StackPane track = new StackPane(); track.setMaxHeight(8); track.setPrefHeight(8);
             HBox.setHgrow(track, Priority.ALWAYS);
-            Region bg   = new Region(); bg.setPrefHeight(8);   bg.setMaxWidth(Double.MAX_VALUE); bg.setStyle("-fx-background-color:#1E293B;-fx-background-radius:4;");
+            Region bg   = new Region(); bg.setPrefHeight(8); bg.setMaxWidth(Double.MAX_VALUE); bg.setStyle("-fx-background-color:#1E293B;-fx-background-radius:4;");
             Region fill = new Region(); fill.setPrefHeight(8); fill.setStyle("-fx-background-color:"+col+";-fx-background-radius:4;");
             track.setMaxWidth(Double.MAX_VALUE);
             bg.prefWidthProperty().bind(track.widthProperty());
@@ -1312,17 +1381,25 @@ public class CoursesController implements Initializable {
     private VBox buildInsightsCard() {
         VBox card = cardBox("Smart insights");
         FlowPane flow = new FlowPane(10, 10);
-        double avg      = allEvals.stream().mapToDouble(EvaluationMatiere::getScoreEval).average().orElse(0);
-        long   above14  = allEvals.stream().filter(e -> e.getScoreEval() >= 14).count();
-        long   below10  = allEvals.stream().filter(e -> e.getScoreEval() < 10).count();
-        long   totalMin = allEvals.stream().mapToLong(EvaluationMatiere::getDureeEvaluation).sum();
+        double avg = allEvals.stream().mapToDouble(EvaluationMatiere::getScoreEval).average().orElse(0);
+        long above14  = allEvals.stream().filter(e -> e.getScoreEval() >= 14).count();
+        long below10  = allEvals.stream().filter(e -> e.getScoreEval() < 10).count();
+        long totalMin = allEvals.stream().mapToLong(EvaluationMatiere::getDureeEvaluation).sum();
+
+        int cityPts = GamePointsService.totalPoints(new ArrayList<>(allEvals));
+        Building.Type bt = Building.getBuildingForPoints(cityPts);
+
         if      (avg >= 16) addBadge(flow,"⭐  Excellent avg ≥ 16","#10B981","#0D2C1F");
         else if (avg >= 14) addBadge(flow,"✅  Good avg ≥ 14","#34D399","#0D2C1F");
         else if (avg >= 10) addBadge(flow,"🟡  Average 10–14","#F59E0B","#2C1E00");
         else                addBadge(flow,"🔴  Below avg — keep going!","#F43F5E","#2D0A0A");
-        if (above14  > 0)  addBadge(flow, above14+" assessment(s) ≥ 14","#A78BFA","#1E1B4B");
-        if (below10  > 0)  addBadge(flow, below10+" to revise (< 10)","#FB7185","#2D0A0A");
+        if (above14  > 0)   addBadge(flow, above14+" assessment(s) ≥ 14","#A78BFA","#1E1B4B");
+        if (below10  > 0)   addBadge(flow, below10+" to revise (< 10)","#FB7185","#2D0A0A");
         if (totalMin >= 60) addBadge(flow, String.format("⏱  %.1fh studied", totalMin/60.0),"#38BDF8","#0C2233");
+
+        // City badge
+        addBadge(flow, bt.emoji + "  " + bt.name + " — " + cityPts + " pts", "#F59E0B", "#1C1300");
+
         card.getChildren().add(flow); return card;
     }
 
@@ -1448,11 +1525,9 @@ public class CoursesController implements Initializable {
         VBox card = new VBox(0);
         card.getStyleClass().add("card");
         card.setPrefWidth(380); card.setMaxWidth(380);
-        card.setStyle(
-                "-fx-background-color:#0F172A;-fx-border-color:#1E293B;-fx-border-width:1.5;" +
-                        "-fx-border-radius:16;-fx-background-radius:16;-fx-cursor:hand;" +
-                        "-fx-effect:dropshadow(gaussian,rgba(0,0,0,0.4),12,0,0,4);"
-        );
+        card.setStyle("-fx-background-color:#0F172A;-fx-border-color:#1E293B;-fx-border-width:1.5;" +
+                "-fx-border-radius:16;-fx-background-radius:16;-fx-cursor:hand;" +
+                "-fx-effect:dropshadow(gaussian,rgba(0,0,0,0.4),12,0,0,4);");
 
         Region bar = new Region(); bar.setPrefHeight(4);
         bar.setStyle("-fx-background-color:" + getGradient(color) + ";-fx-background-radius:16 16 0 0;");
@@ -1470,10 +1545,8 @@ public class CoursesController implements Initializable {
         Region sp = new Region(); HBox.setHgrow(sp, Priority.ALWAYS);
 
         Label badge = new Label(String.format("%.1f / %.0f", ev.getScoreEval(), ev.getNoteMaximaleEval()));
-        badge.setStyle(
-                "-fx-background-color:" + getHex(color) + ";-fx-text-fill:white;" +
-                        "-fx-font-size:13px;-fx-font-weight:700;-fx-padding:5 12;-fx-background-radius:20;"
-        );
+        badge.setStyle("-fx-background-color:" + getHex(color) + ";-fx-text-fill:white;" +
+                "-fx-font-size:13px;-fx-font-weight:700;-fx-padding:5 12;-fx-background-radius:20;");
         header.getChildren().addAll(iconBox, sp, badge);
 
         Label nom = new Label(getNomMatiere(ev.getMatiereId()));
@@ -1487,10 +1560,19 @@ public class CoursesController implements Initializable {
         dateRow.getChildren().addAll(cal, dateL);
 
         HBox chips = new HBox(10); chips.setAlignment(Pos.CENTER_LEFT);
+
+        // City points chip
+        int evPts = GamePointsService.computePoints(ev);
+        Building.Type evBuilding = Building.getBuildingForPoints(evPts);
+        Label cityChip = new Label(evBuilding.emoji + " +" + evPts + " pts");
+        cityChip.setStyle("-fx-text-fill:#A78BFA;-fx-font-size:11px;-fx-font-weight:600;" +
+                "-fx-background-color:rgba(124,58,237,0.15);-fx-padding:3 8;-fx-background-radius:12;");
+
         chips.getChildren().addAll(
                 buildChip("fth-clock", ev.getDureeEvaluation() + " min", "#94A3B8"),
                 buildChip("fth-alert-circle", ev.getPrioriteE() != null ? ev.getPrioriteE() : "—",
-                        getPrioColor(ev.getPrioriteE()))
+                        getPrioColor(ev.getPrioriteE())),
+                cityChip
         );
 
         double progress = ev.getNoteMaximaleEval() > 0
@@ -1512,21 +1594,17 @@ public class CoursesController implements Initializable {
 
         HBox actions = new HBox(8); actions.setAlignment(Pos.CENTER_RIGHT);
         Button btnEdit = new Button("✏  Edit");
-        btnEdit.setStyle(
-                "-fx-background-color:transparent;-fx-text-fill:" + getHex(color) + ";" +
-                        "-fx-border-color:" + getHex(color) + ";-fx-border-width:1.5;" +
-                        "-fx-border-radius:8;-fx-background-radius:8;" +
-                        "-fx-font-size:12px;-fx-font-weight:600;-fx-padding:6 16;-fx-cursor:hand;"
-        );
+        btnEdit.setStyle("-fx-background-color:transparent;-fx-text-fill:" + getHex(color) + ";" +
+                "-fx-border-color:" + getHex(color) + ";-fx-border-width:1.5;" +
+                "-fx-border-radius:8;-fx-background-radius:8;" +
+                "-fx-font-size:12px;-fx-font-weight:600;-fx-padding:6 16;-fx-cursor:hand;");
         btnEdit.setOnAction(e -> startEdit(ev));
 
         Button btnDel = new Button("🗑  Delete");
-        btnDel.setStyle(
-                "-fx-background-color:transparent;-fx-text-fill:#FB7185;" +
-                        "-fx-border-color:#FB7185;-fx-border-width:1.5;" +
-                        "-fx-border-radius:8;-fx-background-radius:8;" +
-                        "-fx-font-size:12px;-fx-font-weight:600;-fx-padding:6 16;-fx-cursor:hand;"
-        );
+        btnDel.setStyle("-fx-background-color:transparent;-fx-text-fill:#FB7185;" +
+                "-fx-border-color:#FB7185;-fx-border-width:1.5;" +
+                "-fx-border-radius:8;-fx-background-radius:8;" +
+                "-fx-font-size:12px;-fx-font-weight:600;-fx-padding:6 16;-fx-cursor:hand;");
         btnDel.setOnAction(e -> deleteItem(ev));
         actions.getChildren().addAll(btnEdit, btnDel);
 
