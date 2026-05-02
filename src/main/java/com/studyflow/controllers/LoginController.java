@@ -115,6 +115,7 @@ public class LoginController implements Initializable {
             admin.setLastName("");
             admin.setUsername("admin");
             UserSession.getInstance().setCurrentUser(admin);
+            UserSession.getInstance().saveSession();
             try {
                 App.setRoot("views/AdminLayout");
             } catch (IOException e) {
@@ -195,6 +196,7 @@ public class LoginController implements Initializable {
                             return;
                         }
                         UserSession.getInstance().setCurrentUser(user);
+                        UserSession.getInstance().saveSession();
                         try {
                             App.setRoot("views/MainLayout");
                         } catch (IOException e) {
@@ -223,6 +225,7 @@ public class LoginController implements Initializable {
                 Platform.runLater(() -> {
                     if (success) {
                         UserSession.getInstance().setCurrentUser(user);
+                        UserSession.getInstance().saveSession();
                         try {
                             App.setRoot("views/MainLayout");
                         } catch (IOException e) {
@@ -355,6 +358,7 @@ public class LoginController implements Initializable {
                             status.setStyle("-fx-text-fill: #34D399; -fx-font-size: 14px; -fx-font-weight: bold;");
                             dialog.close();
                             UserSession.getInstance().setCurrentUser(foundUser);
+                            UserSession.getInstance().saveSession();
                             try {
                                 App.setRoot("views/MainLayout");
                             } catch (IOException ex) {
@@ -493,6 +497,7 @@ public class LoginController implements Initializable {
                     }
 
                     UserSession.getInstance().setCurrentUser(user);
+                    UserSession.getInstance().saveSession();
                     try {
                         App.setRoot("views/MainLayout");
                     } catch (IOException e) {
