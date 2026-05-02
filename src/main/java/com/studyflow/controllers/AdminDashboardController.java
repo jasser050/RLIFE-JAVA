@@ -8,6 +8,7 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.chart.*;
 import javafx.scene.control.*;
+import javafx.scene.layout.StackPane;
 import javafx.stage.FileChooser;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
@@ -27,6 +28,8 @@ public class AdminDashboardController implements Initializable {
     @FXML private Label activeUsersLabel;
     @FXML private Label bannedUsersLabel;
     @FXML private Label newUsersLabel;
+    @FXML private Label galaxyCountLabel;
+    @FXML private StackPane galaxyContainer;
 
     @FXML private BarChart<String, Number> registrationsChart;
     @FXML private PieChart genderChart;
@@ -48,6 +51,7 @@ public class AdminDashboardController implements Initializable {
     public void initialize(URL location, ResourceBundle resources) {
         allUsers = serviceUser.getAll();
         loadStats();
+        loadGalaxy();
         loadRegistrationsChart();
         loadGenderChart();
         loadActivityChart();
@@ -69,6 +73,19 @@ public class AdminDashboardController implements Initializable {
         activeUsersLabel.setText(String.valueOf(active));
         bannedUsersLabel.setText(String.valueOf(banned));
         newUsersLabel.setText(String.valueOf(newThisMonth));
+    }
+
+    private void loadGalaxy() {
+        try {
+            UserGalaxyPanel galaxy = new UserGalaxyPanel();
+            galaxyContainer.getChildren().add(galaxy);
+            galaxyCountLabel.setText(allUsers.size() + " stars");
+        } catch (Exception e) {
+            System.out.println("Galaxy failed to load: " + e.getMessage());
+            Label fallback = new Label("Galaxy requires 3D support");
+            fallback.setStyle("-fx-text-fill: #64748B; -fx-font-size: 14px;");
+            galaxyContainer.getChildren().add(fallback);
+        }
     }
 
     private void loadRegistrationsChart() {
