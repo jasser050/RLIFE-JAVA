@@ -43,6 +43,18 @@
     }
   }
 
+  function disposeMeeting() {
+    try {
+      if (window.meetApi) {
+        try { window.meetApi.executeCommand('hangup'); } catch (e) {}
+        try { window.meetApi.dispose(); } catch (e) {}
+        window.meetApi = null;
+      }
+    } catch (e) {
+      // ignore teardown issues on unload
+    }
+  }
+
   if (typeof JitsiMeetExternalAPI === 'undefined') {
     if (status) {
       status.textContent = 'Jitsi failed to load. Check your internet connection.';
@@ -80,6 +92,9 @@
 
     window.meetApi = api;
   }
+
+  window.addEventListener('beforeunload', disposeMeeting);
+  window.addEventListener('pagehide', disposeMeeting);
 </script>
 </body>
 </html>

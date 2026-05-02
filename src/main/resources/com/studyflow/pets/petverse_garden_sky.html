@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PetVerse Garden</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #08111c;
+      font-family: "Segoe UI", sans-serif;
+    }
+    #app {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #eef7ff;
+    }
+    #sky {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 20% 18%, rgba(255,255,255,0.18), transparent 18%),
+        linear-gradient(180deg, #7cc7ff 0%, #bde7ff 34%, #dff7ff 52%, #a6df91 52%, #5ea948 100%);
+      transition: background 0.35s ease;
+    }
+    #stars {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transition: opacity 0.35s ease;
+      pointer-events: none;
+      background-image:
+        radial-gradient(circle at 10% 18%, rgba(255,255,255,0.95) 0 1px, transparent 2px),
+        radial-gradient(circle at 28% 10%, rgba(255,255,255,0.8) 0 1px, transparent 2px),
+        radial-gradient(circle at 52% 14%, rgba(255,255,255,0.92) 0 1px, transparent 2px),
+        radial-gradient(circle at 78% 20%, rgba(255,255,255,0.82) 0 1px, transparent 2px),
+        radial-gradient(circle at 88% 12%, rgba(255,255,255,0.88) 0 1px, transparent 2px);
+    }
+    #garden {
+      position: absolute;
+      inset: 86px 22px 22px 22px;
+      overflow: hidden;
+      border-radius: 22px;
+      border: 1px solid rgba(122, 164, 255, 0.16);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.03);
+      background:
+        radial-gradient(circle at 22% 60%, rgba(64, 127, 46, 0.28), transparent 18%),
+        radial-gradient(circle at 76% 28%, rgba(64, 127, 46, 0.22), transparent 16%),
+        linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0)),
+        linear-gradient(180deg, #79b95a 0%, #5c9d44 100%);
+    }
+    .path {
+      position: absolute;
+      background: rgba(215, 194, 148, 0.9);
+      border-radius: 999px;
+      box-shadow: inset 0 0 0 1px rgba(117, 84, 34, 0.08);
+    }
+    .pond {
+      position: absolute;
+      width: 150px;
+      height: 100px;
+      left: 12%;
+      top: 17%;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 28%, #9ee6ff, #2798d9 58%, #176ea4 100%);
+      box-shadow: inset 0 0 0 3px rgba(255,255,255,0.16);
+    }
+    .tree {
+      position: absolute;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 40% 35%, #c8ff7e, #3b8d37 66%, #216121 100%);
+      box-shadow: 0 10px 26px rgba(17, 58, 23, 0.28);
+    }
+    .tree::after {
+      content: "";
+      position: absolute;
+      left: 17px;
+      bottom: -18px;
+      width: 10px;
+      height: 22px;
+      border-radius: 10px;
+      background: #6f4c2f;
+    }
+    .lantern {
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #fff5c7;
+      box-shadow: 0 0 0 5px rgba(255, 244, 170, 0.16);
+      opacity: 0.3;
+      transition: opacity 0.35s ease, box-shadow 0.35s ease;
+    }
+    .hud {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      background: linear-gradient(180deg, rgba(7, 14, 28, 0.72), rgba(7, 14, 28, 0));
+    }
+    .title {
+      font-size: 18px;
+      font-weight: 800;
+      color: #eef7ff;
+    }
+    .subtitle {
+      margin-top: 4px;
+      font-size: 12px;
+      color: rgba(223, 238, 255, 0.74);
+    }
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      pointer-events: all;
+    }
+    .btn {
+      border: 1px solid rgba(122, 164, 255, 0.28);
+      background: rgba(10, 18, 33, 0.76);
+      color: #eef7ff;
+      border-radius: 999px;
+      padding: 9px 14px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      backdrop-filter: blur(10px);
+    }
+    .btn:hover {
+      background: rgba(29, 46, 76, 0.9);
+    }
+    .status {
+      position: absolute;
+      left: 22px;
+      bottom: 22px;
+      max-width: 420px;
+      padding: 10px 14px;
+      border-radius: 12px;
+      background: rgba(10, 18, 33, 0.76);
+      border: 1px solid rgba(122, 164, 255, 0.18);
+      color: rgba(238, 247, 255, 0.88);
+      font-size: 12px;
+      pointer-events: none;
+    }
+    .panel {
+      position: absolute;
+      right: 22px;
+      bottom: 22px;
+      width: min(340px, calc(100vw - 44px));
+      padding: 16px;
+      border-radius: 18px;
+      background: rgba(10, 18, 33, 0.84);
+      border: 1px solid rgba(122, 164, 255, 0.18);
+      box-shadow: 0 16px 42px rgba(0,0,0,0.24);
+      backdrop-filter: blur(18px);
+      opacity: 0;
+      transform: translateY(14px);
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      pointer-events: none;
+    }
+    .panel.open {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: all;
+    }
+    .panel-name {
+      font-size: 20px;
+      font-weight: 800;
+    }
+    .panel-meta {
+      margin-top: 3px;
+      font-size: 12px;
+      color: rgba(223, 238, 255, 0.76);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .panel-desc {
+      margin-top: 12px;
+      font-size: 13px;
+      line-height: 1.5;
+      color: rgba(238, 247, 255, 0.82);
+    }
+    .stats {
+      margin-top: 14px;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .stat {
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(122, 164, 255, 0.14);
+    }
+    .stat-label {
+      font-size: 11px;
+      color: rgba(223, 238, 255, 0.62);
+      text-transform: uppercase;
+    }
+    .stat-value {
+      margin-top: 4px;
+      font-size: 15px;
+      font-weight: 800;
+      color: #eef7ff;
+    }
+    .pet {
+      position: absolute;
+      width: 94px;
+      height: 94px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      user-select: none;
+      cursor: pointer;
+      transform: translate(-50%, -50%);
+      transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.2s ease;
+      box-shadow: 0 10px 24px rgba(12, 26, 48, 0.22);
+    }
+    .pet:hover {
+      transform: translate(-50%, -50%) scale(1.06);
+      box-shadow: 0 14px 32px rgba(12, 26, 48, 0.3);
+      filter: saturate(1.08);
+    }
+    .pet-body {
+      width: 78px;
+      height: 78px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      border: 3px solid rgba(255,255,255,0.18);
+      box-shadow: inset 0 0 0 3px rgba(255,255,255,0.08);
+      font-size: 34px;
+    }
+    .pet-ring {
+      position: absolute;
+      inset: -8px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.2);
+      opacity: 0.78;
+    }
+    .pet-label {
+      margin-top: 6px;
+      min-width: 94px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: rgba(10, 18, 33, 0.76);
+      color: #eef7ff;
+      text-align: center;
+      font-size: 11px;
+      font-weight: 700;
+      white-space: nowrap;
+      box-shadow: 0 8px 18px rgba(0,0,0,0.16);
+    }
+    .empty {
+      position: absolute;
+      inset: 86px 22px 22px 22px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      border-radius: 22px;
+      color: rgba(238, 247, 255, 0.82);
+      font-size: 16px;
+      font-weight: 700;
+      background: rgba(8, 13, 24, 0.24);
+      border: 1px dashed rgba(122, 164, 255, 0.18);
+    }
+    .empty.show {
+      display: flex;
+    }
+    body.night #sky {
+      background:
+        radial-gradient(circle at 50% 20%, rgba(255, 244, 178, 0.18), transparent 18%),
+        linear-gradient(180deg, #07101f 0%, #10213d 42%, #17304b 58%, #315337 58%, #1d4022 100%);
+    }
+    body.night #stars {
+      opacity: 1;
+    }
+    body.night #garden {
+      background:
+        radial-gradient(circle at 22% 60%, rgba(59, 102, 45, 0.26), transparent 18%),
+        radial-gradient(circle at 76% 28%, rgba(47, 84, 37, 0.22), transparent 16%),
+        linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0)),
+        linear-gradient(180deg, #40633c 0%, #223c21 100%);
+    }
+    body.night .lantern {
+      opacity: 1;
+      box-shadow: 0 0 0 8px rgba(255, 244, 170, 0.16), 0 0 18px rgba(255, 214, 94, 0.42);
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+  <div id="sky"></div>
+  <div id="stars"></div>
+  <div id="garden">
+    <div class="path" style="left: 20%; top: 56%; width: 52%; height: 18px;"></div>
+    <div class="path" style="left: 44%; top: 25%; width: 18px; height: 44%;"></div>
+    <div class="path" style="left: 63%; top: 37%; width: 18%; height: 16px; transform: rotate(-28deg);"></div>
+    <div class="pond"></div>
+    <div class="tree" style="left: 7%; top: 18%;"></div>
+    <div class="tree" style="left: 82%; top: 13%;"></div>
+    <div class="tree" style="left: 76%; top: 66%;"></div>
+    <div class="tree" style="left: 18%; top: 73%;"></div>
+    <div class="lantern" style="left: 28%; top: 41%;"></div>
+    <div class="lantern" style="left: 63%; top: 62%;"></div>
+    <div class="lantern" style="left: 74%; top: 28%;"></div>
+  </div>
+  <div class="hud">
+    <div class="topbar">
+      <div>
+        <div class="title">PetVerse Garden</div>
+        <div class="subtitle">Wander, inspect, and manage your active companion in one place.</div>
+      </div>
+      <div class="toolbar">
+        <button id="toggle-mode" class="btn" type="button">Night Mode</button>
+      </div>
+    </div>
+    <div id="status" class="status">Loading garden...</div>
+    <div id="detail-panel" class="panel">
+      <div id="panel-name" class="panel-name">Companion</div>
+      <div id="panel-meta" class="panel-meta">Common • Curious</div>
+      <div id="panel-desc" class="panel-desc">Your companion details appear here.</div>
+      <div class="stats">
+        <div class="stat"><div class="stat-label">Level</div><div id="stat-level" class="stat-value">1</div></div>
+        <div class="stat"><div class="stat-label">Stage</div><div id="stat-stage" class="stat-value">Starter</div></div>
+        <div class="stat"><div class="stat-label">Mood</div><div id="stat-mood" class="stat-value">Calm</div></div>
+        <div class="stat"><div class="stat-label">Health</div><div id="stat-health" class="stat-value">100</div></div>
+      </div>
+    </div>
+    <div id="empty-state" class="empty">No pet data yet. Adopt a companion first.</div>
+  </div>
+</div>
+<script>
+  (function () {
+    var garden = document.getElementById("garden");
+    var status = document.getElementById("status");
+    var emptyState = document.getElementById("empty-state");
+    var panel = document.getElementById("detail-panel");
+    var toggleModeButton = document.getElementById("toggle-mode");
+
+    var TYPE_STYLES = {
+      cat:     { label: "Cat",     emoji: "🐱", color: "#F59E0B", accent: "#FCD34D", desc: "A quick, observant companion that patrols flower paths and sunny stones." },
+      dog:     { label: "Dog",     emoji: "🐶", color: "#D97706", accent: "#FDBA74", desc: "A loyal study partner that circles the garden and watches every path." },
+      dragon:  { label: "Dragon",  emoji: "🐉", color: "#16A34A", accent: "#86EFAC", desc: "A rare guardian that hovers above the garden and scans the horizon." },
+      fox:     { label: "Fox",     emoji: "🦊", color: "#EA580C", accent: "#FDBA74", desc: "A fast, curious scout that drifts between trees and lanterns." },
+      bird:    { label: "Bird",    emoji: "🐦", color: "#EAB308", accent: "#FDE68A", desc: "A bright singer that glides across the center lawn." },
+      hamster: { label: "Hamster", emoji: "🐹", color: "#D4A373", accent: "#F5D0A9", desc: "A small explorer that keeps close to the ground and gathers energy." },
+      panda:   { label: "Panda",   emoji: "🐼", color: "#475569", accent: "#E2E8F0", desc: "A calm heavyweight that moves slowly and anchors the space." },
+      rabbit:  { label: "Rabbit",  emoji: "🐰", color: "#EC4899", accent: "#FBCFE8", desc: "A fast hopper that cuts clean arcs through the grass." }
+    };
+
+    var slots = [
+      { x: 16, y: 24 }, { x: 35, y: 22 }, { x: 56, y: 21 }, { x: 78, y: 22 },
+      { x: 20, y: 48 }, { x: 42, y: 45 }, { x: 61, y: 48 }, { x: 79, y: 44 },
+      { x: 26, y: 73 }, { x: 49, y: 72 }, { x: 69, y: 71 }, { x: 86, y: 68 }
+    ];
+
+    var pets = [];
+    var isNight = false;
+    var rafHandle = 0;
+    var lastTime = performance.now();
+
+    function normalizePets(input) {
+      var list = [];
+      if (!Array.isArray(input)) {
+        return list;
+      }
+      input.forEach(function (entry, index) {
+        if (!entry || typeof entry !== "object") {
+          return;
+        }
+        var type = String(entry.type || "cat").trim().toLowerCase();
+        if (!TYPE_STYLES[type]) {
+          type = "cat";
+        }
+        list.push({
+          id: Number(entry.id || index + 1),
+          userId: Number(entry.userId || 0),
+          type: type,
+          name: String(entry.name || TYPE_STYLES[type].label),
+          level: Math.max(1, Number(entry.level || 1)),
+          mood: String(entry.mood || "Calm"),
+          rarity: String(entry.rarity || "Common"),
+          personality: String(entry.personality || "Curious"),
+          health: Math.max(0, Math.min(100, Number(entry.health || 100))),
+          stage: String(entry.stage || "Starter")
+        });
+      });
+      return list;
+    }
+
+    function clearPets() {
+      pets.forEach(function (pet) {
+        if (pet.element && pet.element.parentNode) {
+          pet.element.parentNode.removeChild(pet.element);
+        }
+      });
+      pets = [];
+      panel.classList.remove("open");
+    }
+
+    function createPet(entry, index) {
+      var slot = slots[index % slots.length];
+      var style = TYPE_STYLES[entry.type];
+      var element = document.createElement("button");
+      element.type = "button";
+      element.className = "pet";
+      element.style.left = slot.x + "%";
+      element.style.top = slot.y + "%";
+      element.style.background = "transparent";
+      element.style.border = "0";
+      element.style.padding = "0";
+
+      var body = document.createElement("div");
+      body.className = "pet-body";
+      body.style.background = "radial-gradient(circle at 35% 28%, " + style.accent + ", " + style.color + ")";
+      body.innerHTML = "<div class=\"pet-ring\"></div><div>" + style.emoji + "</div>";
+      element.appendChild(body);
+
+      var label = document.createElement("div");
+      label.className = "pet-label";
+      label.textContent = entry.name;
+      element.appendChild(label);
+
+      var pet = {
+        data: entry,
+        element: element,
+        x: slot.x,
+        y: slot.y,
+        angle: (index + 1) * 0.7,
+        speed: 0.6 + (index % 3) * 0.18,
+        drift: 0.85 + (index % 4) * 0.16,
+        homeX: slot.x,
+        homeY: slot.y
+      };
+
+      element.addEventListener("click", function (event) {
+        event.stopPropagation();
+        openPanel(pet.data);
+        status.textContent = pet.data.name + " selected.";
+        if (window.javaBridge && typeof window.javaBridge.onPetClicked === "function") {
+          window.javaBridge.onPetClicked(pet.data.type);
+        }
+      });
+
+      garden.appendChild(element);
+      return pet;
+    }
+
+    function setPets(list) {
+      clearPets();
+      var normalized = normalizePets(list);
+      if (!normalized.length) {
+        emptyState.classList.add("show");
+        status.textContent = "No pet data available yet.";
+        return;
+      }
+      emptyState.classList.remove("show");
+      normalized.forEach(function (entry, index) {
+        pets.push(createPet(entry, index));
+      });
+      status.textContent = normalized.length === 1
+        ? "1 companion active in the garden."
+        : normalized.length + " companions active in the garden.";
+    }
+
+    function openPanel(pet) {
+      var style = TYPE_STYLES[pet.type] || TYPE_STYLES.cat;
+      document.getElementById("panel-name").textContent = pet.name;
+      document.getElementById("panel-name").style.color = style.accent;
+      document.getElementById("panel-meta").textContent = pet.rarity + " • " + pet.personality;
+      document.getElementById("panel-desc").textContent = style.desc;
+      document.getElementById("stat-level").textContent = String(pet.level);
+      document.getElementById("stat-stage").textContent = pet.stage;
+      document.getElementById("stat-mood").textContent = pet.mood;
+      document.getElementById("stat-health").textContent = String(pet.health);
+      panel.classList.add("open");
+    }
+
+    function setMode(night) {
+      isNight = !!night;
+      document.body.classList.toggle("night", isNight);
+      toggleModeButton.textContent = isNight ? "Day Mode" : "Night Mode";
+      status.textContent = isNight ? "Night mode active." : "Day mode active.";
+    }
+
+    function animate(now) {
+      var dt = Math.min((now - lastTime) / 1000, 0.04);
+      lastTime = now;
+      pets.forEach(function (pet, index) {
+        pet.angle += dt * pet.speed;
+        var nextX = pet.homeX + Math.cos(pet.angle + index) * (2.8 + index % 3);
+        var nextY = pet.homeY + Math.sin(pet.angle * pet.drift + index * 0.4) * (2.1 + (index % 2));
+        pet.x = Math.max(8, Math.min(92, nextX));
+        pet.y = Math.max(10, Math.min(88, nextY));
+        var bob = Math.sin(pet.angle * 4) * 3;
+        pet.element.style.left = pet.x + "%";
+        pet.element.style.top = "calc(" + pet.y + "% + " + bob.toFixed(1) + "px)";
+      });
+      rafHandle = window.requestAnimationFrame(animate);
+    }
+
+    toggleModeButton.addEventListener("click", function () {
+      setMode(!isNight);
+    });
+
+    garden.addEventListener("click", function () {
+      panel.classList.remove("open");
+    });
+
+    window.setPetsFromJava = function (json) {
+      try {
+        setPets(JSON.parse(json || "[]"));
+      } catch (error) {
+        status.textContent = "Failed to parse pet data from Java.";
+      }
+    };
+
+    setMode(false);
+    setPets([]);
+    rafHandle = window.requestAnimationFrame(animate);
+    window.addEventListener("beforeunload", function () {
+      if (rafHandle) {
+        window.cancelAnimationFrame(rafHandle);
+      }
+    });
+  })();
+</script>
+</body>
+</html>

@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.embed.swing.SwingNode?>
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
-<?import javafx.scene.web.WebView?>
 <?import org.kordamp.ikonli.javafx.FontIcon?>
 
 <VBox xmlns="http://javafx.com/javafx/21"
@@ -56,10 +56,20 @@
 
     <Label fx:id="meetingShareStatusLabel" text="Share this meeting with the users already added to the project." styleClass="text-muted" wrapText="true"/>
 
-    <StackPane VBox.vgrow="ALWAYS" styleClass="card">
+    <StackPane VBox.vgrow="ALWAYS" styleClass="card" minHeight="620" prefHeight="720">
         <padding>
             <Insets top="10" right="10" bottom="10" left="10"/>
         </padding>
-        <WebView fx:id="meetingWebView" minHeight="620" prefHeight="720" />
+        <SwingNode fx:id="meetingBrowserNode" />
+        <StackPane fx:id="meetingBrowserOverlay" style="-fx-background-color: rgba(15, 23, 42, 0.9);" alignment="CENTER">
+            <VBox alignment="CENTER" spacing="10" maxWidth="520">
+                <Label text="Embedded Project Meeting" styleClass="text-heading"/>
+                <Label fx:id="meetingEmbedStatusLabel"
+                       text="Starting embedded meeting..."
+                       styleClass="text-muted"
+                       wrapText="true"
+                       textAlignment="CENTER"/>
+            </VBox>
+        </StackPane>
     </StackPane>
 </VBox>

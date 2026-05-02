@@ -23,7 +23,7 @@
                 <image><Image url="@../images/logo.png"/></image>
             </ImageView>
             <Label text="RLife" styleClass="title-bar-title"/>
-            <Label text="—" style="-fx-text-fill: #475569;"/>
+            <Label text="â€”" style="-fx-text-fill: #475569;"/>
             <Label text="Student Dashboard" styleClass="title-bar-subtitle"/>
         </HBox>
 
@@ -113,7 +113,7 @@
 
                         <Button fx:id="btnNotes" styleClass="nav-button" onAction="#showNotes" maxWidth="Infinity">
                             <graphic>
-                                <Label text="🐾" style="-fx-font-size: 16px; -fx-text-fill: #CBD5E1;"/>
+                                <FontIcon iconLiteral="fas-paw" iconSize="16"/>
                             </graphic>
                             <text>My Pet</text>
                         </Button>

@@ -17,6 +17,7 @@ import com.studyflow.utils.CrudViewContext;
 import com.studyflow.utils.PdfExportUtil;
 import com.studyflow.utils.UserSession;
 import javafx.stage.FileChooser;
+import javafx.stage.DirectoryChooser;
 import javafx.animation.PauseTransition;
 import javafx.collections.FXCollections;
 import javafx.concurrent.Task;
@@ -141,6 +142,7 @@ public class ProjectsController implements Initializable {
     @FXML private Label projectGitHintLabel;
     @FXML private Label projectGitStatusLabel;
     @FXML private TextField projectGitRepoPathField;
+    @FXML private Button browseProjectRepoPathButton;
     @FXML private TextField projectGitRemoteUrlField;
     @FXML private TextField projectGitBranchField;
     @FXML private TextField projectGitUsernameField;
@@ -1274,6 +1276,28 @@ public class ProjectsController implements Initializable {
     }
 
     @FXML
+    private void handleBrowseProjectRepoPath() {
+        DirectoryChooser chooser = new DirectoryChooser();
+        chooser.setTitle("Select Local Repository Folder");
+
+        String currentPath = defaultText(projectGitRepoPathField == null ? null : projectGitRepoPathField.getText());
+        if (!currentPath.isEmpty()) {
+            File currentDir = new File(currentPath);
+            File initialDir = currentDir.isDirectory() ? currentDir : currentDir.getParentFile();
+            if (initialDir != null && initialDir.exists()) {
+                chooser.setInitialDirectory(initialDir);
+            }
+        }
+
+        File selectedDirectory = chooser.showDialog(App.getPrimaryStage());
+        if (selectedDirectory == null) {
+            return;
+        }
+
+        projectGitRepoPathField.setText(selectedDirectory.getAbsolutePath());
+    }
+
+    @FXML
     private void handleSaveProjectGitSettings() {
         if (!isReady() || selectedProject == null) {
             showFeedback("Select a project before saving Git settings.", true);
@@ -1465,6 +1489,13 @@ public class ProjectsController implements Initializable {
         }
         if (updateProjectDescriptionArea != null) {
             updateProjectDescriptionArea.setAccessibleText("Selected project description");
+        }
+        if (projectGitRepoPathField != null) {
+            projectGitRepoPathField.setAccessibleText("Local repository path");
+        }
+        if (browseProjectRepoPathButton != null) {
+            browseProjectRepoPathButton.setAccessibleText("Browse for local repository folder");
+            browseProjectRepoPathButton.setTooltip(new Tooltip("Choose the local repository folder from your files"));
         }
         shareProjectEmailField.setAccessibleText("Share project using username, email, phone, or student id");
         shareProjectRoleCombo.setAccessibleText("Shared project role");

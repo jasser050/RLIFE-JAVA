@@ -44,6 +44,11 @@
         </dependency>
         <dependency>
             <groupId>org.openjfx</groupId>
+            <artifactId>javafx-swing</artifactId>
+            <version>${javafx.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.openjfx</groupId>
             <artifactId>javafx-media</artifactId>
             <version>${javafx.version}</version>
         </dependency>
@@ -146,6 +151,11 @@
             <artifactId>jackson-annotations</artifactId>
             <version>2.17.0</version>
         </dependency>
+        <dependency>
+            <groupId>me.friwi</groupId>
+            <artifactId>jcefmaven</artifactId>
+            <version>143.0.14</version>
+        </dependency>
     </dependencies>
 
     <build>
@@ -176,6 +186,8 @@
                         <option>java.base/java.lang=ALL-UNNAMED</option>
                         <option>--add-opens</option>
                         <option>java.base/java.lang.reflect=ALL-UNNAMED</option>
+                        <option>--add-opens</option>
+                        <option>java.desktop/sun.awt=ALL-UNNAMED</option>
                     </options>
                 </configuration>
             </plugin>

@@ -2,15 +2,18 @@ module com.studyflow {
     requires javafx.controls;
     requires javafx.fxml;
     requires javafx.graphics;
+    requires javafx.swing;
     requires javafx.web;
 
     requires org.kordamp.ikonli.javafx;
     requires org.kordamp.ikonli.feather;
+    requires org.kordamp.ikonli.fontawesome5;
 
     requires java.sql;
     requires java.desktop;
     requires java.net.http;
     requires jdk.httpserver;
+    requires jdk.jsobject;
 
     requires mysql.connector.j;
     requires jgltf.model;
@@ -22,6 +25,8 @@ module com.studyflow {
     requires com.fasterxml.jackson.databind;
     requires com.fasterxml.jackson.core;
     requires com.fasterxml.jackson.annotation;
+    requires jcef;
+    requires jcefmaven;
 
     requires kernel;
     requires layout;
