@@ -47,7 +47,17 @@
                 <Label text="PetVerse Garden" styleClass="card-title"/>
             </HBox>
             <VBox styleClass="card-body" spacing="0" VBox.vgrow="ALWAYS">
-                <WebView fx:id="metaverseWebView" prefHeight="700" VBox.vgrow="ALWAYS"/>
+                <StackPane prefHeight="700" VBox.vgrow="ALWAYS">
+                    <WebView fx:id="metaverseWebView"/>
+                    <StackPane fx:id="metaverseBrowserOverlay"
+                               visible="false"
+                               managed="false"
+                               style="-fx-background-color: rgba(6, 14, 32, 0.65);">
+                        <Label fx:id="metaverseEmbedStatusLabel"
+                               text=""
+                               styleClass="text-muted"/>
+                    </StackPane>
+                </StackPane>
             </VBox>
         </VBox>
     </HBox>
