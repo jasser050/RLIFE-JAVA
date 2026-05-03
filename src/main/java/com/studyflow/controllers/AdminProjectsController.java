@@ -9,6 +9,7 @@ import javafx.fxml.Initializable;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
@@ -32,17 +33,28 @@ public class AdminProjectsController implements Initializable {
     @FXML private VBox userProjectGroupsContainer;
     @FXML private Label userCountLabel;
     @FXML private Label projectCountLabel;
+    @FXML private TextField adminSearchField;
+    @FXML private VBox adminUsersProjectsList;
+    @FXML private Label adminUsersCountLabel;
+    @FXML private Label adminProjectsCountLabel;
 
     private final ServiceUser serviceUser = new ServiceUser();
     private final ProjectService projectService = new ProjectService();
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+        if (adminSearchField != null) {
+            adminSearchField.textProperty().addListener((obs, oldValue, newValue) -> loadUserProjects());
+        }
         loadUserProjects();
     }
 
     private void loadUserProjects() {
-        userProjectGroupsContainer.getChildren().clear();
+        VBox container = resolveContainer();
+        if (container == null) {
+            return;
+        }
+        container.getChildren().clear();
 
         List<Project> projects = new ArrayList<>(projectService.getAll());
         Map<Integer, List<Project>> projectsByUser = projects.stream()
@@ -52,11 +64,13 @@ public class AdminProjectsController implements Initializable {
         users.removeIf(user -> isAdminUser(user) || !projectsByUser.containsKey(user.getId()));
         users.sort(Comparator.comparing(this::displayName, String.CASE_INSENSITIVE_ORDER));
 
-        userCountLabel.setText(String.valueOf(users.size()));
-        projectCountLabel.setText(String.valueOf(projects.size()));
+        String query = normalize(adminSearchField == null ? null : adminSearchField.getText());
+        int visibleUserCount = 0;
+        int visibleProjectCount = 0;
 
         if (users.isEmpty()) {
-            userProjectGroupsContainer.getChildren().add(buildEmptyState("No users found."));
+            setCountLabels(0, 0);
+            container.getChildren().add(buildEmptyState("No users found."));
             return;
         }
 
@@ -64,7 +78,24 @@ public class AdminProjectsController implements Initializable {
             List<Project> ownedProjects = new ArrayList<>(projectsByUser.getOrDefault(user.getId(), List.of()));
             ownedProjects.sort(Comparator.comparing(Project::getUpdatedAt,
                     Comparator.nullsLast(Comparator.reverseOrder())));
-            userProjectGroupsContainer.getChildren().add(buildUserProjectsSection(user, ownedProjects));
+
+            boolean userMatches = matchesUser(user, query);
+            List<Project> visibleProjects = userMatches
+                    ? ownedProjects
+                    : ownedProjects.stream().filter(project -> matchesProject(project, query, user)).toList();
+
+            if (!userMatches && visibleProjects.isEmpty()) {
+                continue;
+            }
+
+            visibleUserCount++;
+            visibleProjectCount += visibleProjects.size();
+            container.getChildren().add(buildUserProjectsSection(user, visibleProjects));
+        }
+
+        setCountLabels(visibleUserCount, visibleProjectCount);
+        if (visibleUserCount == 0) {
+            container.getChildren().add(buildEmptyState("No users or projects match your search."));
         }
     }
 
@@ -232,6 +263,63 @@ public class AdminProjectsController implements Initializable {
     private String displayName(User user) {
         String fullName = user.getFullName() == null ? "" : user.getFullName().trim();
         return fullName.isEmpty() ? user.getUsername() : fullName;
+    }
+
+    private VBox resolveContainer() {
+        return userProjectGroupsContainer != null ? userProjectGroupsContainer : adminUsersProjectsList;
+    }
+
+    private void setCountLabels(int users, int projects) {
+        if (userCountLabel != null) {
+            userCountLabel.setText(String.valueOf(users));
+        }
+        if (projectCountLabel != null) {
+            projectCountLabel.setText(String.valueOf(projects));
+        }
+        if (adminUsersCountLabel != null) {
+            adminUsersCountLabel.setText(String.valueOf(users));
+        }
+        if (adminProjectsCountLabel != null) {
+            adminProjectsCountLabel.setText(String.valueOf(projects));
+        }
+    }
+
+    private boolean matchesUser(User user, String query) {
+        if (query.isBlank()) {
+            return true;
+        }
+        return normalize(displayName(user)).contains(query)
+                || normalize(user.getFullName()).contains(query)
+                || normalize(user.getUsername()).contains(query)
+                || normalize(user.getEmail()).contains(query)
+                || normalize(user.getUniversity()).contains(query)
+                || normalize(user.getStudentId()).contains(query)
+                || normalize(user.getPhoneNumber()).contains(query)
+                || normalize(user.isBanned() ? "banned" : "active").contains(query);
+    }
+
+    private boolean matchesProject(Project project, String query, User owner) {
+        if (query.isBlank()) {
+            return true;
+        }
+        return normalize(project.getTitle()).contains(query)
+                || normalize(project.getDescription()).contains(query)
+                || normalize(project.getStatus()).contains(query)
+                || normalize(project.getStatusStyleClass()).contains(query)
+                || normalize(formatDateRange(project)).contains(query)
+                || normalize(String.valueOf(project.getAssignmentCount())).contains(query)
+                || normalize(project.getGitRepoPath()).contains(query)
+                || normalize(project.getGitRemoteUrl()).contains(query)
+                || normalize(project.getGitDefaultBranch()).contains(query)
+                || normalize(project.getGitUsername()).contains(query)
+                || normalize(project.getGitLastStatusSummary()).contains(query)
+                || normalize(displayName(owner)).contains(query)
+                || normalize(owner.getEmail()).contains(query)
+                || normalize(owner.getUsername()).contains(query);
+    }
+
+    private String normalize(String value) {
+        return value == null ? "" : value.trim().toLowerCase();
     }
 
     private boolean isAdminUser(User user) {
