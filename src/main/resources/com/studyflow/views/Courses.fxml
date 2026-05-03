@@ -82,7 +82,6 @@
             </tooltip>
         </ComboBox>
 
-
         <!-- Export PDF -->
         <Button onAction="#handleExportPdf"
                 prefHeight="36.0"
@@ -225,6 +224,35 @@
         </HBox>
 
     </VBox>
+
+    <!-- ══ MY CITY BUTTON ═══════════════════════════════════════════════════ -->
+    <StackPane onMouseClicked="#handleShowCity"
+               pickOnBounds="true"
+               prefHeight="70"
+               style="
+               -fx-background-color: linear-gradient(to right, #4C1D95, #7C3AED);
+               -fx-background-radius: 16;
+               -fx-cursor: hand;
+               -fx-effect: dropshadow(gaussian, rgba(124,58,237,0.4), 12, 0, 0, 4);
+           ">
+
+        <HBox alignment="CENTER_LEFT"
+              spacing="12"
+              style="-fx-padding: 14 20;">
+
+            <Label text="🏙️"
+                   style="-fx-font-size: 22px;" />
+
+            <VBox spacing="2">
+                <Label text="My City"
+                       style="-fx-text-fill: white; -fx-font-size: 15px; -fx-font-weight: bold;" />
+                <Label text="Enter your virtual world"
+                       style="-fx-text-fill: #E9D5FF; -fx-font-size: 11px;" />
+            </VBox>
+
+        </HBox>
+
+    </StackPane>
 
     <!-- ══ VUE LISTE ════════════════════════════════════════════════════════ -->
     <VBox fx:id="listView" spacing="16">
@@ -828,6 +856,13 @@
                style="-fx-text-fill:#34D399;-fx-font-size:12px;-fx-line-spacing:2;-fx-font-weight:500;"
                wrapText="true" text=""/>
 
+    </VBox>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- ══ CITY VIEW CONTAINER (AJOUT OBLIGATOIRE) ═══════════════════════ -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <VBox fx:id="cityView" spacing="20" visible="false" managed="false">
+        <!-- CityView.fxml sera chargé dynamiquement ici -->
     </VBox>
 
 </VBox>
