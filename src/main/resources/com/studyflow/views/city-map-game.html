@@ -3,294 +3,101 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>StudyFlow City</title>
+  <title>StudyFlow City Builder</title>
   <style>
-    html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#06111f;color:#eef6ff;font-family:Segoe UI,Arial,sans-serif}
-    #game{position:relative;width:100vw;height:100vh;background:radial-gradient(circle at 50% 28%,#174267 0,#071426 48%,#030913 100%)}
+    html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#8ed46f;font-family:Segoe UI,Arial,sans-serif;color:#162033}
+    #game{position:relative;width:100vw;height:100vh;background:linear-gradient(135deg,#55b7d0 0,#f5df8e 18%,#8ed46f 30%,#73c967 100%)}
     #world{display:block;width:100%;height:100%}
-    .panel{position:absolute;background:rgba(3,12,24,.88);border:1px solid #214766;border-radius:10px;box-shadow:0 16px 46px rgba(0,0,0,.38)}
-    .title{font-size:18px;font-weight:900;letter-spacing:2px;margin:0;color:#f8fbff}.small{font-size:12px;color:#9dc3e8;line-height:1.45}
-    #intro{left:26px;top:20px;padding:14px 16px;width:430px}
-    #stats{right:26px;top:20px;padding:14px 16px;width:210px}.stat{display:flex;justify-content:space-between;font-size:13px;margin:6px 0}.value{font-weight:900;color:#b9ecff}
-    #legend{left:26px;bottom:22px;padding:13px 15px;width:245px}.legend-row{display:flex;align-items:center;gap:8px;margin-top:7px;color:#b7cce3;font-size:12px}.sw{width:13px;height:13px;border-radius:3px}
-    #minimap{right:26px;bottom:22px;width:190px;height:132px;padding:10px}.mini{position:absolute;width:8px;height:8px;background:#38bdf8;border:1px solid white;border-radius:50%;transform:translate(-50%,-50%)}.mini.player{background:#22c55e;width:10px;height:10px}
-    #prompt{position:absolute;left:50%;bottom:26px;transform:translateX(-50%);display:none;padding:10px 17px;border-radius:999px;background:#eef6ff;color:#071426;font-weight:900;font-size:13px;box-shadow:0 12px 36px rgba(0,0,0,.45)}
-    #toast{position:absolute;top:96px;left:50%;transform:translateX(-50%);display:none;padding:10px 15px;border-radius:8px;background:#06342f;border:1px solid #14b8a6;color:#a7f3d0;font-size:13px;font-weight:800}
-    #quiz{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(2,6,23,.72)}
-    .modal{width:560px;max-width:92vw;background:#09172a;border:1px solid #315071;border-radius:12px;padding:18px;box-shadow:0 30px 90px rgba(0,0,0,.6)}
-    .modal h2{margin:0 0 6px;font-size:20px}.modal p{margin:0 0 14px;color:#9fb8d3;font-size:13px}.question{margin:13px 0;font-size:16px;font-weight:900}
-    .answers{display:grid;gap:9px}.answers button,.close{border:1px solid #34516e;background:#13243a;color:#edf7ff;border-radius:8px;padding:11px 12px;text-align:left;font-weight:800;cursor:pointer}
-    .answers button:hover,.close:hover{background:#12314d;border-color:#38bdf8}.close{width:100%;margin-top:14px;text-align:center}
+    .topbar{position:absolute;top:14px;left:18px;right:18px;height:66px;display:flex;align-items:center;gap:14px;pointer-events:none}
+    .level{width:78px;height:78px;border-radius:50%;background:linear-gradient(#fff8ca,#f7c43f);border:6px solid #f8fafc;box-shadow:0 8px 24px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:900;color:#8a4a06;text-shadow:0 2px white}
+    .resource{height:42px;min-width:150px;border-radius:9px;background:linear-gradient(#283041,#121722);box-shadow:0 6px 18px rgba(0,0,0,.34);display:flex;align-items:center;gap:10px;padding:0 12px;color:white;font-weight:900;font-size:18px}
+    .resource .icon{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:linear-gradient(#fde047,#f59e0b);font-size:24px;box-shadow:inset 0 2px rgba(255,255,255,.45)}
+    .plus{margin-left:auto;background:#77d34f;color:#11340d;border-radius:5px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:900}
+    .rightStats{position:absolute;right:18px;top:102px;width:255px;display:grid;gap:14px;pointer-events:none}
+    .meter{height:48px;border-radius:8px;background:linear-gradient(90deg,#1aaeea,#60d9ff 70%,#223044 70%);box-shadow:0 5px 16px rgba(0,0,0,.28);border:2px solid rgba(255,255,255,.45);display:flex;align-items:center;justify-content:flex-end;padding-right:18px;color:#fff;font-size:20px;font-weight:900;text-shadow:0 2px 3px #000}
+    .sideBtns{position:absolute;right:26px;top:330px;display:grid;gap:18px}.roundBtn{width:54px;height:54px;border-radius:50%;background:white;box-shadow:0 5px 14px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;font-size:28px;color:#6b7280;font-weight:900}
+    .bottomBtns{position:absolute;left:28px;bottom:22px;display:flex;gap:22px}.bigBtn{width:92px;height:92px;border-radius:18px;background:linear-gradient(#fff,#dbeafe);box-shadow:0 8px 18px rgba(0,0,0,.32);display:flex;align-items:center;justify-content:center;font-size:44px;border:2px solid rgba(255,255,255,.8)}
+    #prompt{position:absolute;left:50%;bottom:30px;transform:translateX(-50%);display:none;background:linear-gradient(#fff,#e0f2fe);color:#162033;border-radius:16px;padding:11px 18px;font-weight:900;box-shadow:0 7px 22px rgba(0,0,0,.25);border:2px solid white}
+    #toast{position:absolute;top:88px;left:50%;transform:translateX(-50%);display:none;background:#173b20;color:#dcfce7;border:2px solid #22c55e;border-radius:10px;padding:10px 16px;font-weight:900}
+    #quiz{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(15,23,42,.54)}
+    .modal{width:540px;max-width:92vw;background:linear-gradient(#fff,#eaf6ff);border:4px solid white;border-radius:18px;padding:18px;box-shadow:0 22px 60px rgba(0,0,0,.45)}
+    .modal h2{margin:0 0 5px;font-size:22px;color:#0f172a}.modal p{margin:0 0 12px;color:#475569;font-size:13px}.question{font-size:17px;font-weight:900;margin:12px 0;color:#0f172a}
+    .answers{display:grid;gap:9px}.answers button,.close{border:2px solid #93c5fd;background:linear-gradient(#f8fafc,#dbeafe);color:#0f172a;border-radius:12px;padding:11px 12px;text-align:left;font-weight:900;cursor:pointer}
+    .answers button:hover,.close:hover{background:linear-gradient(#fef3c7,#fde68a);border-color:#f59e0b}.close{width:100%;margin-top:14px;text-align:center}
   </style>
 </head>
 <body>
 <div id="game">
   <canvas id="world"></canvas>
-  <div id="intro" class="panel">
-    <h1 class="title">STUDYFLOW CITY</h1>
-    <div class="small">Move with WASD or arrow keys. Walk to a subject building and press E. Each building is a subject museum with English quizzes.</div>
+  <div class="topbar">
+    <div class="level" id="levelBadge">1</div>
+    <div class="resource"><span class="icon">🪙</span><span id="coinCount">0</span><span class="plus">+</span></div>
+    <div class="resource" style="min-width:210px"><span class="icon">💵</span><span id="moneyCount">0</span><span class="plus">+</span></div>
+    <div class="resource"><span class="icon">🏗️</span><span id="buildCount">0/0</span><span class="plus">+</span></div>
   </div>
-  <div id="stats" class="panel">
-    <div class="stat"><span>Academic points</span><span class="value" id="academicPts">0</span></div>
-    <div class="stat"><span>Quiz bonus</span><span class="value" id="bonusPts">0</span></div>
-    <div class="stat"><span>Buildings</span><span class="value" id="buildingCount">0</span></div>
+  <div class="rightStats">
+    <div class="meter" id="xpMeter">0</div>
+    <div class="meter" id="subjectMeter" style="background:linear-gradient(90deg,#38bdf8,#7dd3fc 78%,#223044 78%)">0/0</div>
+    <div class="meter" id="questMeter" style="background:linear-gradient(90deg,#f97316,#facc15 48%,#78350f 48%)">0/0</div>
   </div>
-  <div id="legend" class="panel">
-    <h1 class="title" style="font-size:16px">LEGEND</h1>
-    <div class="legend-row"><span class="sw" style="background:#38bdf8"></span>Roads connect subject districts</div>
-    <div class="legend-row"><span class="sw" style="background:#f59e0b"></span>Higher towers mean stronger evaluations</div>
-    <div class="legend-row"><span class="sw" style="background:#22c55e"></span>Green marker is the player</div>
-    <div class="legend-row"><span class="sw" style="background:#a78bfa"></span>Press E inside a building zone</div>
-  </div>
-  <div id="minimap" class="panel"></div>
+  <div class="sideBtns"><div class="roundBtn">⚙</div><div class="roundBtn">⌂</div><div class="roundBtn">🔍</div></div>
+  <div class="bottomBtns"><div class="bigBtn">🛒</div><div class="bigBtn">📁</div><div class="bigBtn">🛣</div><div class="bigBtn">🎬</div></div>
   <div id="prompt"></div>
   <div id="toast"></div>
   <div id="quiz">
     <div class="modal">
-      <h2 id="quizTitle">Subject Museum</h2>
-      <p>Answer correctly in English to earn +25 city bonus points.</p>
+      <h2 id="quizTitle">Villa Museum</h2>
+      <p>Answer in English to upgrade your city.</p>
       <div id="question" class="question"></div>
       <div id="answers" class="answers"></div>
-      <button class="close" onclick="closeQuiz()">Leave building</button>
+      <button class="close" onclick="closeQuiz()">Leave villa</button>
     </div>
   </div>
 </div>
 <script>
 (function(){
-  var fallback = {cityName:"My City",totalPoints:0,subjects:[
-    {name:"Mathematics",points:140,building:"Academy",emoji:"MATH"},
-    {name:"Physics",points:90,building:"Lab",emoji:"PHYS"},
-    {name:"English",points:70,building:"Library",emoji:"ENG"},
-    {name:"History",points:45,building:"Archive",emoji:"HIST"},
-    {name:"Computer Science",points:210,building:"Tech Tower",emoji:"CS"}
+  var fallback={cityName:"My City",totalPoints:0,subjects:[
+    {name:"Mathematics",points:180,building:"Villa",emoji:"MATH"},
+    {name:"Physics",points:80,building:"House",emoji:"PHYS"},
+    {name:"English",points:120,building:"Villa",emoji:"ENG"},
+    {name:"Computer Science",points:270,building:"Tower",emoji:"CS"},
+    {name:"History",points:40,building:"Cottage",emoji:"HIST"}
   ]};
-
-  function safeJson(){
-    try{
-      var q = window.location.search || "";
-      var match = q.match(/[?&]data=([^&]+)/);
-      if(!match) return fallback;
-      var raw = match[1].replace(/\+/g,"%20");
-      var decoded = decodeURIComponent(raw);
-      var parsed = JSON.parse(decoded);
-      if(!parsed.subjects || !parsed.subjects.length) parsed.subjects = fallback.subjects;
-      return parsed;
-    }catch(e){ return fallback; }
-  }
-
-  function safeGetBonus(){
-    try{return parseInt(window.localStorage.getItem("studyflowCityBonus") || "0",10) || 0;}catch(e){return 0;}
-  }
-  function safeSetBonus(v){
-    try{window.localStorage.setItem("studyflowCityBonus", String(v));}catch(e){}
-  }
-
-  var data = safeJson();
-  var subjects = data.subjects && data.subjects.length ? data.subjects.slice(0,12) : fallback.subjects;
-  var canvas = document.getElementById("world");
-  var ctx = canvas.getContext("2d");
-  var minimap = document.getElementById("minimap");
-  var prompt = document.getElementById("prompt");
-  var toast = document.getElementById("toast");
-  var W = 0, H = 0, DPR = 1, keys = {}, near = null, tick = 0;
-  var bonusPts = safeGetBonus();
-  var player = {x:0,y:0,r:13,speed:3.2};
-
-  document.getElementById("academicPts").innerHTML = String(data.totalPoints || 0);
-  document.getElementById("bonusPts").innerHTML = String(bonusPts);
-  document.getElementById("buildingCount").innerHTML = String(subjects.length);
-
-  function resize(){
-    DPR = window.devicePixelRatio || 1;
-    W = window.innerWidth; H = window.innerHeight;
-    canvas.width = Math.max(1, Math.floor(W * DPR));
-    canvas.height = Math.max(1, Math.floor(H * DPR));
-    canvas.style.width = W + "px"; canvas.style.height = H + "px";
-    ctx.setTransform(DPR,0,0,DPR,0,0);
-    layout();
-  }
-
-  function layout(){
-    var cx = W/2, cy = H/2 + 28;
-    var rx = Math.min(430, W * 0.34), ry = Math.min(265, H * 0.31);
-    for(var i=0;i<subjects.length;i++){
-      var a = -Math.PI/2 + (Math.PI*2*i/subjects.length);
-      var s = subjects[i];
-      s.x = cx + Math.cos(a) * rx;
-      s.y = cy + Math.sin(a) * ry;
-      s.level = Math.max(1, Math.min(6, Math.floor((s.points || 0) / 110) + 1));
-      s.zone = 62;
-    }
-    if(!player.ready){player.x = cx; player.y = cy; player.ready = true;}
-  }
-
-  function poly(points, fill, stroke){
-    ctx.beginPath(); ctx.moveTo(points[0][0], points[0][1]);
-    for(var i=1;i<points.length;i++) ctx.lineTo(points[i][0], points[i][1]);
-    ctx.closePath(); ctx.fillStyle = fill; ctx.fill();
-    if(stroke){ctx.strokeStyle = stroke; ctx.stroke();}
-  }
-  function isoTile(x,y,w,h,fill,stroke){
-    poly([[x,y-h/2],[x+w,y],[x,y+h/2],[x-w,y]], fill, stroke || "rgba(179,218,255,.18)");
-  }
-  function drawPrism(x,y,w,d,h,front,right,top){
-    var halfW=w/2, halfD=d/2;
-    var A=[x,y-halfD], B=[x+halfW,y], C=[x,y+halfD], D=[x-halfW,y];
-    var A2=[A[0],A[1]-h], B2=[B[0],B[1]-h], C2=[C[0],C[1]-h], D2=[D[0],D[1]-h];
-    poly([D,C,C2,D2], front, "rgba(255,255,255,.18)");
-    poly([B,C,C2,B2], right, "rgba(255,255,255,.16)");
-    poly([A,B,C,D], top, "rgba(255,255,255,.22)");
-    poly([A2,B2,C2,D2], top, "rgba(255,255,255,.25)");
-  }
-
-  function drawBackground(){
-    var cx=W/2, cy=H/2+28;
-    ctx.clearRect(0,0,W,H);
-    var grd = ctx.createRadialGradient(cx,cy,20,cx,cy,Math.max(W,H)*0.65);
-    grd.addColorStop(0,"#16456d"); grd.addColorStop(0.55,"#092238"); grd.addColorStop(1,"#030913");
-    ctx.fillStyle=grd; ctx.fillRect(0,0,W,H);
-    for(var i=0;i<20;i++){
-      ctx.strokeStyle = i%2 ? "rgba(56,189,248,.05)" : "rgba(125,211,252,.04)";
-      ctx.lineWidth=1;
-      ctx.beginPath(); ctx.moveTo(cx - 900 + i*90, cy - 520); ctx.lineTo(cx + 900 + i*90, cy + 520); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(cx + 900 - i*90, cy - 520); ctx.lineTo(cx - 900 - i*90, cy + 520); ctx.stroke();
-    }
-    isoTile(cx,cy,Math.min(520,W*.43),Math.min(340,H*.46),"#0d3048","#23688c");
-    isoTile(cx,cy,Math.min(410,W*.34),Math.min(260,H*.36),"#123d59","#2a7ca4");
-  }
-
-  function drawRoads(){
-    var cx=W/2, cy=H/2+28;
-    ctx.lineCap="round"; ctx.lineJoin="round";
-    for(var i=0;i<subjects.length;i++){
-      var s=subjects[i];
-      ctx.strokeStyle="rgba(56,189,248,.22)"; ctx.lineWidth=18;
-      ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(s.x,s.y); ctx.stroke();
-      ctx.strokeStyle="rgba(186,230,253,.55)"; ctx.lineWidth=4;
-      ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(s.x,s.y); ctx.stroke();
-    }
-    ctx.strokeStyle="rgba(56,189,248,.28)"; ctx.lineWidth=16; ctx.beginPath();
-    for(var j=0;j<subjects.length;j++){
-      var p=subjects[j]; if(j===0)ctx.moveTo(p.x,p.y); else ctx.lineTo(p.x,p.y);
-    }
-    ctx.closePath(); ctx.stroke();
-  }
-
-  function drawDistrict(s){
-    isoTile(s.x,s.y+28,76,48,"rgba(15,58,82,.92)","#38bdf8");
-    var h = 28 + s.level * 13;
-    var strong = (s.points || 0) >= 250;
-    var front = strong ? "#8a4f13" : "#155a7a";
-    var right = strong ? "#6f3f10" : "#0d3f61";
-    var top = strong ? "#f59e0b" : "#38bdf8";
-    drawPrism(s.x,s.y+18,58,44,h,front,right,top);
-    if(s.level>=4) drawPrism(s.x+28,s.y+8,26,24,h*.75,"#4c1d95","#35145f","#a78bfa");
-    ctx.fillStyle="rgba(255,255,255,.75)";
-    for(var i=0;i<3;i++){ctx.fillRect(s.x-18+i*14,s.y-h+34,7,9);}
-    ctx.fillStyle="#f8fbff"; ctx.font="900 12px Segoe UI"; ctx.textAlign="center";
-    ctx.fillText(s.building || "Museum", s.x, s.y - h - 10);
-    ctx.fillStyle="#bdd7f0"; ctx.font="800 11px Segoe UI";
-    var label = String(s.name || "Subject");
-    if(label.length>22) label = label.substring(0,20) + "...";
-    ctx.fillText(label, s.x, s.y + 72);
-    ctx.fillStyle="#fbbf24"; ctx.font="900 11px Segoe UI";
-    ctx.fillText((s.points || 0) + " pts", s.x, s.y + 88);
-    if(near === s){
-      ctx.strokeStyle="#f8fafc"; ctx.lineWidth=3; isoTile(s.x,s.y+28,88,58,"rgba(255,255,255,.05)","#f8fafc");
-    }
-  }
-
-  function drawCentralHub(){
-    var cx=W/2, cy=H/2+28;
-    isoTile(cx,cy+24,100,66,"#0f3552","#7dd3fc");
-    drawPrism(cx,cy+12,66,52,70,"#283a72","#1b2a56","#22d3ee");
-    ctx.fillStyle="#ecfeff"; ctx.font="900 13px Segoe UI"; ctx.textAlign="center";
-    ctx.fillText("HUB CENTRAL",cx,cy-78);
-    ctx.strokeStyle="rgba(34,211,238,.65)"; ctx.lineWidth=2;
-    ctx.beginPath(); ctx.arc(cx,cy-28,18+Math.sin(tick/20)*4,0,Math.PI*2); ctx.stroke();
-  }
-
-  function drawPlayer(){
-    ctx.save();
-    ctx.translate(player.x,player.y);
-    ctx.fillStyle="rgba(0,0,0,.35)"; ctx.beginPath(); ctx.ellipse(0,13,18,7,0,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle="#22c55e"; ctx.beginPath(); ctx.arc(0,0,13,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle="#ecfeff"; ctx.beginPath(); ctx.arc(0,-5,5,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle="#16a34a"; ctx.fillRect(-7,8,5,13); ctx.fillRect(2,8,5,13);
-    ctx.restore();
-  }
-
-  function update(){
-    tick++;
-    var dx=0, dy=0;
-    if(keys[37]||keys[65]) dx--; if(keys[39]||keys[68]) dx++;
-    if(keys[38]||keys[87]) dy--; if(keys[40]||keys[83]) dy++;
-    if(dx||dy){var len=Math.sqrt(dx*dx+dy*dy); player.x += dx/len*player.speed; player.y += dy/len*player.speed;}
-    player.x=Math.max(35,Math.min(W-35,player.x)); player.y=Math.max(95,Math.min(H-35,player.y));
-    near=null; var best=9999;
-    for(var i=0;i<subjects.length;i++){
-      var s=subjects[i], dist=Math.sqrt(Math.pow(player.x-s.x,2)+Math.pow(player.y-s.y,2));
-      if(dist<s.zone && dist<best){near=s; best=dist;}
-    }
-    if(near){prompt.style.display="block"; prompt.innerHTML="Press E to enter " + escapeText(near.name) + " Museum";} else prompt.style.display="none";
-    draw();
-    window.requestAnimationFrame(update);
-  }
-
-  function draw(){
-    drawBackground(); drawRoads(); drawCentralHub();
-    var ordered = subjects.slice(0).sort(function(a,b){return a.y-b.y;});
-    for(var i=0;i<ordered.length;i++) drawDistrict(ordered[i]);
-    drawPlayer(); drawMiniMap();
-  }
-
-  function drawMiniMap(){
-    var old = minimap.querySelectorAll(".mini");
-    for(var i=0;i<old.length;i++) old[i].parentNode.removeChild(old[i]);
-    for(var j=0;j<subjects.length;j++){
-      var s=subjects[j], d=document.createElement("span"); d.className="mini";
-      d.style.left=(50+(s.x-W/2)/W*72)+"%"; d.style.top=(50+(s.y-H/2)/H*72)+"%"; minimap.appendChild(d);
-    }
-    var p=document.createElement("span"); p.className="mini player";
-    p.style.left=(50+(player.x-W/2)/W*72)+"%"; p.style.top=(50+(player.y-H/2)/H*72)+"%"; minimap.appendChild(p);
-  }
-
-  function questionsFor(s){
-    var n = escapeText(s.name || "this subject");
-    return [
-      {q:"What is the best way to improve in "+n+"?", a:["Review mistakes and practice often","Ignore feedback","Study only once","Avoid exercises"], c:0},
-      {q:"What should you do before a "+n+" evaluation?", a:["Revise key concepts","Delete your notes","Skip practice","Guess without reading"], c:0},
-      {q:"Why does this building grow?", a:["Because your evaluations add points","Because time passes","Because the map is random","Because quizzes are ignored"], c:0}
-    ];
-  }
-  function openQuiz(s){
-    var qs=questionsFor(s), q=qs[Math.floor(Math.random()*qs.length)];
-    document.getElementById("quizTitle").innerHTML = escapeText(s.name) + " Museum";
-    document.getElementById("question").innerHTML = q.q;
-    var box=document.getElementById("answers"); box.innerHTML="";
-    for(var i=0;i<q.a.length;i++){
-      var b=document.createElement("button"); b.innerHTML=q.a[i]; b.setAttribute("data-ok", i===q.c ? "1":"0");
-      b.onclick=function(){answer(this.getAttribute("data-ok")==="1");};
-      box.appendChild(b);
-    }
-    document.getElementById("quiz").style.display="flex";
-  }
-  window.closeQuiz=function(){document.getElementById("quiz").style.display="none";};
-  function answer(ok){
-    if(ok){bonusPts+=25; safeSetBonus(bonusPts); document.getElementById("bonusPts").innerHTML=String(bonusPts); flash("Correct answer: +25 city bonus points");}
-    else flash("Wrong answer. Try again in another building.");
-    window.closeQuiz();
-  }
-  function flash(msg){toast.innerHTML=msg;toast.style.display="block";window.setTimeout(function(){toast.style.display="none";},1800);}
-  function escapeText(v){return String(v==null?"":v).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];});}
-
-  window.addEventListener("keydown",function(e){
-    keys[e.keyCode]=true;
-    if((e.keyCode===69) && near){openQuiz(near); e.preventDefault();}
-  });
-  window.addEventListener("keyup",function(e){keys[e.keyCode]=false;});
-  window.addEventListener("resize",resize);
-  resize(); update();
+  function payload(){try{var m=(location.search||"").match(/[?&]data=([^&]+)/);if(!m)return fallback;var p=JSON.parse(decodeURIComponent(m[1].replace(/\+/g,"%20")));if(!p.subjects||!p.subjects.length)p.subjects=fallback.subjects;return p}catch(e){return fallback}}
+  function bonusGet(){try{return parseInt(localStorage.getItem("studyflowCityBonus")||"0",10)||0}catch(e){return 0}}
+  function bonusSet(v){try{localStorage.setItem("studyflowCityBonus",String(v))}catch(e){}}
+  var data=payload(),subjects=data.subjects.slice(0,12),bonus=bonusGet();
+  var canvas=document.getElementById("world"),ctx=canvas.getContext("2d"),W=0,H=0,DPR=1,tick=0,keys={},near=null,loopRunning=false,dirty=true;
+  var player={x:0,y:0,ready:false,speed:3.6};
+  var decorations=[];
+  document.getElementById("levelBadge").innerHTML=String(Math.max(1,Math.floor((data.totalPoints||0)/500)+1));
+  document.getElementById("coinCount").innerHTML=String(40+bonus);
+  document.getElementById("moneyCount").innerHTML=String((data.totalPoints||0)*95+981510);
+  document.getElementById("buildCount").innerHTML=subjects.length+"/"+Math.max(3,subjects.length);
+  document.getElementById("xpMeter").innerHTML=String((data.totalPoints||0)+bonus);
+  document.getElementById("subjectMeter").innerHTML=subjects.length+"/"+subjects.length;
+  document.getElementById("questMeter").innerHTML=bonus+"/"+Math.max(100,bonus+100);
+  function resize(){DPR=devicePixelRatio||1;W=innerWidth;H=innerHeight;canvas.width=W*DPR;canvas.height=H*DPR;canvas.style.width=W+"px";canvas.style.height=H+"px";ctx.setTransform(DPR,0,0,DPR,0,0);layout()}
+  function layout(){var cx=W*.52,cy=H*.52,rx=Math.min(390,W*.28),ry=Math.min(245,H*.24);var spots=[[0,-.72],[-.55,-.32],[.5,-.28],[-.25,.18],[.42,.16],[-.58,.33],[.12,.43],[.68,.36],[-.08,-.05],[.02,-.5],[.72,-.05],[-.78,-.02]];for(var i=0;i<subjects.length;i++){var s=subjects[i],p=spots[i%spots.length];s.x=cx+p[0]*rx;s.y=cy+p[1]*ry;s.level=Math.max(1,Math.min(6,Math.floor((s.points||0)/90)+1));s.zone=58}s=subjects[0];if(!player.ready){player.x=cx;player.y=cy;player.ready=true}decorations=[];for(var d=0;d<46;d++){var a=d*2.399,rr=.18+((d*47)%100)/100*.82;decorations.push({x:cx+Math.cos(a)*rx*1.55*rr,y:cy+Math.sin(a)*ry*1.45*rr,type:d%7===0?"rock":d%9===0?"flower":"tree",scale:.65+((d*13)%45)/100})}dirty=true;draw()}
+  function poly(p,c,s){ctx.beginPath();ctx.moveTo(p[0][0],p[0][1]);for(var i=1;i<p.length;i++)ctx.lineTo(p[i][0],p[i][1]);ctx.closePath();ctx.fillStyle=c;ctx.fill();if(s){ctx.strokeStyle=s;ctx.stroke()}}
+  function tile(x,y,w,h,c,s){poly([[x,y-h/2],[x+w,y],[x,y+h/2],[x-w,y]],c,s)}
+  function shadow(x,y,w,h,a){ctx.fillStyle="rgba(0,0,0,"+a+")";ctx.beginPath();ctx.ellipse(x,y,w,h,0,0,Math.PI*2);ctx.fill()}
+  function prism(x,y,w,d,h,front,right,top){var hw=w/2,hd=d/2,A=[x,y-hd],B=[x+hw,y],C=[x,y+hd],D=[x-hw,y],A2=[A[0],A[1]-h],B2=[B[0],B[1]-h],C2=[C[0],C[1]-h],D2=[D[0],D[1]-h];poly([D,C,C2,D2],front,"rgba(80,60,40,.25)");poly([B,C,C2,B2],right,"rgba(80,60,40,.22)");poly([A2,B2,C2,D2],top,"rgba(255,255,255,.38)")}
+  function grass(){var cx=W*.52,cy=H*.52;ctx.fillStyle="#8bd66f";ctx.fillRect(0,0,W,H);var g=ctx.createLinearGradient(0,0,W,H);g.addColorStop(0,"#b9e682");g.addColorStop(.42,"#7ecf65");g.addColorStop(1,"#59b85d");ctx.fillStyle=g;ctx.fillRect(0,0,W,H);ctx.fillStyle="rgba(255,234,139,.88)";ctx.beginPath();ctx.ellipse(W*.08,H*.05,280,170,-.35,0,Math.PI*2);ctx.fill();ctx.fillStyle="rgba(40,174,204,.9)";ctx.beginPath();ctx.ellipse(W*.02,H*.02,240,170,-.4,0,Math.PI*2);ctx.fill();for(var i=-8;i<28;i++){ctx.strokeStyle="rgba(57,132,65,.13)";ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(cx-980+i*82,cy-560);ctx.lineTo(cx+980+i*82,cy+560);ctx.stroke();ctx.beginPath();ctx.moveTo(cx+980-i*82,cy-560);ctx.lineTo(cx-980-i*82,cy+560);ctx.stroke()}}
+  function road(x1,y1,x2,y2){ctx.lineCap="butt";ctx.strokeStyle="#f4d6a2";ctx.lineWidth=44;ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();ctx.strokeStyle="#6b7280";ctx.lineWidth=30;ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();ctx.strokeStyle="#facc15";ctx.lineWidth=2;ctx.setLineDash([18,18]);ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();ctx.setLineDash([])}
+  function roads(){var cx=W*.52,cy=H*.52;road(cx-290,cy-18,cx+335,cy+145);road(cx-185,cy+165,cx+165,cy-175);road(cx-345,cy+108,cx+245,cy-58);for(var i=0;i<subjects.length;i++)road(cx,cy,subjects[i].x,subjects[i].y)}
+  function deco(o){if(o.type==="tree"){shadow(o.x+5,o.y+9,10*o.scale,4*o.scale,.18);ctx.fillStyle="#7a4b20";ctx.fillRect(o.x-2*o.scale,o.y-13*o.scale,4*o.scale,17*o.scale);ctx.fillStyle="#2f7d37";ctx.beginPath();ctx.arc(o.x,o.y-18*o.scale,11*o.scale,0,Math.PI*2);ctx.fill();ctx.fillStyle="#66b94c";ctx.beginPath();ctx.arc(o.x-5*o.scale,o.y-16*o.scale,7*o.scale,0,Math.PI*2);ctx.fill()}else if(o.type==="rock"){ctx.fillStyle="#8b8f86";ctx.beginPath();ctx.ellipse(o.x,o.y,12*o.scale,7*o.scale,-.3,0,Math.PI*2);ctx.fill();ctx.fillStyle="#b6b9ae";ctx.beginPath();ctx.ellipse(o.x-3,o.y-3,5*o.scale,3*o.scale,-.4,0,Math.PI*2);ctx.fill()}else{ctx.fillStyle="#f9a8d4";ctx.beginPath();ctx.arc(o.x,o.y,5*o.scale,0,Math.PI*2);ctx.fill();ctx.fillStyle="#22c55e";ctx.fillRect(o.x-1,o.y,2,7*o.scale)}}
+  function villa(s){var h=22+s.level*10,hot=s.level>=4,base="#fde68a",front=hot?"#ef7d22":"#f6c453",right=hot?"#d85c15":"#e6a735",roof=hot?"#ef4444":"#38bdf8";shadow(s.x+16,s.y+44,55,15,.24);tile(s.x,s.y+31,78,47,"#f8e4b5","#e8c98b");prism(s.x,s.y+18,56,38,h,front,right,base);poly([[s.x-37,s.y-h+14],[s.x,s.y-h-12],[s.x+37,s.y-h+14],[s.x,s.y-h+30]],roof,"#b45309");ctx.fillStyle="#e0f2fe";for(var i=0;i<3;i++){ctx.fillRect(s.x-21+i*16,s.y-h+23,9,10)}ctx.fillStyle="#78350f";ctx.fillRect(s.x-6,s.y+5,12,18);if(s.level>=3)prism(s.x+38,s.y+21,28,24,h*.7,"#93c5fd","#60a5fa","#dbeafe");if(s.level>=5)prism(s.x-35,s.y+21,24,22,h*.95,"#f97316","#c2410c","#fed7aa");bubble(s)}
+  function bubble(s){var by=s.y-78-s.level*7;ctx.fillStyle="rgba(255,255,255,.92)";round(s.x+38,by,58,43,10,true);ctx.fillStyle="#22c55e";ctx.font="900 18px Segoe UI";ctx.textAlign="center";ctx.fillText("💵",s.x+67,by+27);ctx.fillStyle="#ef4444";ctx.beginPath();ctx.arc(s.x+7,s.y+64,13,0,Math.PI*2);ctx.fill();ctx.fillStyle="white";ctx.font="900 14px Segoe UI";ctx.fillText(String(s.level),s.x+7,s.y+69)}
+  function round(x,y,w,h,r,f){ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);if(f)ctx.fill()}
+  function label(s){ctx.fillStyle="rgba(255,255,255,.92)";round(s.x-64,s.y+78,128,35,9,true);ctx.fillStyle="#1f2937";ctx.font="900 11px Segoe UI";ctx.textAlign="center";var n=String(s.name||"Subject");if(n.length>18)n=n.substring(0,16)+"...";ctx.fillText(n,s.x,s.y+94);ctx.fillStyle="#059669";ctx.fillText((s.points||0)+" pts",s.x,s.y+109)}
+  function playerDraw(){shadow(player.x+4,player.y+18,18,7,.28);ctx.fillStyle="#2563eb";ctx.beginPath();ctx.arc(player.x,player.y,13,0,Math.PI*2);ctx.fill();ctx.fillStyle="#fed7aa";ctx.beginPath();ctx.arc(player.x,player.y-7,7,0,Math.PI*2);ctx.fill();ctx.fillStyle="#1e3a8a";ctx.fillRect(player.x-7,player.y+8,5,14);ctx.fillRect(player.x+2,player.y+8,5,14);ctx.fillStyle="white";ctx.font="900 10px Segoe UI";ctx.textAlign="center";ctx.fillText("YOU",player.x,player.y-23)}
+  function draw(){grass();decorations.forEach(deco);roads();var order=subjects.slice(0).sort(function(a,b){return a.y-b.y});order.forEach(function(s){villa(s);label(s);if(near===s){ctx.strokeStyle="#fff";ctx.lineWidth=4;tile(s.x,s.y+31,96,60,"rgba(255,255,255,.12)","#fff")}});playerDraw()}
+  function update(){tick++;var dx=0,dy=0;if(keys[37]||keys[65])dx--;if(keys[39]||keys[68])dx++;if(keys[38]||keys[87])dy--;if(keys[40]||keys[83])dy++;var moving=!!(dx||dy);if(moving){var l=Math.sqrt(dx*dx+dy*dy);player.x+=dx/l*player.speed;player.y+=dy/l*player.speed;dirty=true}var oldNear=near;near=null;for(var i=0,b=999;i<subjects.length;i++){var s=subjects[i],d=Math.sqrt(Math.pow(player.x-s.x,2)+Math.pow(player.y-s.y,2));if(d<s.zone&&d<b){near=s;b=d}}if(oldNear!==near)dirty=true;var p=document.getElementById("prompt");if(near){p.style.display="block";p.innerHTML="Press E to enter "+esc(near.name)+" villa"}else p.style.display="none";if(dirty){draw();dirty=false}if(moving){requestAnimationFrame(update)}else{loopRunning=false}}
+  function quiz(s){var q={q:"What makes this "+esc(s.name)+" villa grow?",a:["Good evaluations and correct quiz answers","Closing the app","Ignoring practice","Random chance"],c:0};document.getElementById("quizTitle").innerHTML=esc(s.name)+" Villa";document.getElementById("question").innerHTML=q.q;var box=document.getElementById("answers");box.innerHTML="";for(var i=0;i<q.a.length;i++){var bt=document.createElement("button");bt.innerHTML=q.a[i];bt.setAttribute("ok",i===q.c?"1":"0");bt.onclick=function(){answer(this.getAttribute("ok")==="1")};box.appendChild(bt)}document.getElementById("quiz").style.display="flex"}
+  window.closeQuiz=function(){document.getElementById("quiz").style.display="none"};function answer(ok){if(ok){bonus+=25;bonusSet(bonus);document.getElementById("coinCount").innerHTML=String(40+bonus);flash("+25 coins. Villa progress upgraded.")}else flash("Wrong answer. Try another villa.");closeQuiz()}function flash(m){var t=document.getElementById("toast");t.innerHTML=m;t.style.display="block";setTimeout(function(){t.style.display="none"},1800)}function esc(v){return String(v==null?"":v).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]})}
+  function startLoop(){if(!loopRunning){loopRunning=true;requestAnimationFrame(update)}}
+  addEventListener("keydown",function(e){keys[e.keyCode]=true;if(e.keyCode===69&&near){quiz(near);e.preventDefault();return}startLoop()});addEventListener("keyup",function(e){keys[e.keyCode]=false});addEventListener("resize",function(){resize();startLoop()});resize();draw();
 })();
 </script>
 </body>

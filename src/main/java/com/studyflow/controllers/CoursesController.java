@@ -260,6 +260,9 @@ public class CoursesController implements Initializable {
         try {
             loadCityView();
             showView("city");
+            if (cityViewController != null) {
+                Platform.runLater(cityViewController::refresh);
+            }
         } catch (Exception e) {
             e.printStackTrace();
             System.err.println("[CityGame] Erreur: " + e.getMessage());
@@ -285,9 +288,6 @@ public class CoursesController implements Initializable {
             cityView.getChildren().setAll(cityRoot);
         }
 
-        if (cityViewController != null) {
-            cityViewController.refresh();
-        }
     }
 
     private void showCityErrorAlert(String error) {

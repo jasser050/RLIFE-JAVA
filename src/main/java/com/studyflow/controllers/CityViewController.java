@@ -53,13 +53,16 @@ public class CityViewController implements Initializable {
     private final MatiereService           matService  = new MatiereService();
 
     private List<EvaluationMatiere> allEvals = new ArrayList<>();
+    private String lastMapPayload = "";
+    private final Map<Integer, String> matiereNameCache = new HashMap<>();
 
     // ════════════════════════════════════════════════════════════
     //  INITIALIZE
     // ════════════════════════════════════════════════════════════
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        loadAndRender();
+        // Data is loaded when the page is actually shown, avoiding duplicate work
+        // during FXML construction.
     }
 
     /** Called from CoursesController whenever the city view is shown. */
@@ -76,6 +79,7 @@ public class CityViewController implements Initializable {
 
         try {
             allEvals = evalService.findByUser(u.getId());
+            warmMatiereNameCache();
         } catch (Exception e) {
             e.printStackTrace();
             allEvals = new ArrayList<>();
@@ -96,12 +100,11 @@ public class CityViewController implements Initializable {
             lblRank.setText(computeRankTitle(total));
 
         // ── Animated total points counter ─────────────────────
-        animateCounter(lblTotalPoints, 0, total, 1200);
+        if (lblTotalPoints != null) lblTotalPoints.setText(String.valueOf(total));
 
         // ── Current building ──────────────────────────────────
         if (lblBuildingEmoji != null) {
             lblBuildingEmoji.setText(current.emoji);
-            bounceIn(lblBuildingEmoji);
         }
         if (lblCurrentBuilding != null) lblCurrentBuilding.setText(current.name);
         if (lblBuildingDesc    != null) lblBuildingDesc.setText(current.description);
@@ -185,13 +188,6 @@ public class CityViewController implements Initializable {
                 ";-fx-font-size:10px;");
 
         card.getChildren().addAll(emojiLbl, nameLbl, ptsLbl);
-
-        // Staggered fade-in animation
-        card.setOpacity(0);
-        FadeTransition ft = new FadeTransition(Duration.millis(400), card);
-        ft.setToValue(1.0);
-        ft.setDelay(Duration.millis(delayMs));
-        ft.play();
 
         if (unlocked) {
             card.setOnMouseEntered(e -> {
@@ -323,14 +319,6 @@ public class CityViewController implements Initializable {
 
         badge.getChildren().addAll(em, lbl);
 
-        // Pop-in animation
-        badge.setScaleX(0); badge.setScaleY(0);
-        ScaleTransition st = new ScaleTransition(Duration.millis(300), badge);
-        st.setToX(1); st.setToY(1);
-        st.setInterpolator(Interpolator.EASE_OUT);
-        st.setDelay(Duration.millis(achievementRow.getChildren().size() * 80L));
-        st.play();
-
         achievementRow.getChildren().add(badge);
     }
 
@@ -348,6 +336,9 @@ public class CityViewController implements Initializable {
             payload.put("subjects", buildMapSubjects());
 
             String json = new Gson().toJson(payload);
+            if (json.equals(lastMapPayload)) return;
+            lastMapPayload = json;
+
             String encoded = URLEncoder.encode(json, StandardCharsets.UTF_8);
             WebEngine engine = cityMapWebView.getEngine();
             engine.setJavaScriptEnabled(true);
@@ -392,6 +383,17 @@ public class CityViewController implements Initializable {
         return subject;
     }
 
+    private void warmMatiereNameCache() {
+        if (!matiereNameCache.isEmpty()) return;
+        try {
+            for (Matiere matiere : matService.findAll()) {
+                matiereNameCache.put(matiere.getId(), matiere.getNomMatiere());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     private String computeRankTitle(int pts) {
         if (pts >= 5000) return "👑 Grand Scholar";
         if (pts >= 2000) return "🎓 Master";
@@ -425,9 +427,15 @@ public class CityViewController implements Initializable {
     }
 
     private String getNomMatiere(int id) {
+        String cached = matiereNameCache.get(id);
+        if (cached != null && !cached.isBlank()) return cached;
         try {
             Matiere m = matService.findById(id);
-            return m != null ? m.getNomMatiere() : "Subject #" + id;
+            if (m != null) {
+                matiereNameCache.put(id, m.getNomMatiere());
+                return m.getNomMatiere();
+            }
+            return "Subject #" + id;
         } catch (Exception e) { return "Subject #" + id; }
     }
 }
