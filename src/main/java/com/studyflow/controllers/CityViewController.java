@@ -10,6 +10,7 @@ import com.studyflow.services.MatiereService;
 import com.studyflow.utils.UserSession;
 import com.google.gson.Gson;
 import javafx.animation.*;
+import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.geometry.Insets;
@@ -44,6 +45,7 @@ public class CityViewController implements Initializable {
     @FXML private FlowPane   buildingsGrid;
     @FXML private VBox       subjectCityList;
     @FXML private HBox       achievementRow;
+    @FXML private StackPane  cityMapHost;
     @FXML private WebView    cityMapWebView;
 
     // ════════════════════════════════════════════════════════════
@@ -54,7 +56,10 @@ public class CityViewController implements Initializable {
 
     private List<EvaluationMatiere> allEvals = new ArrayList<>();
     private String lastMapPayload = "";
+    private String lastDetailsPayload = "";
     private final Map<Integer, String> matiereNameCache = new HashMap<>();
+    private boolean refreshInProgress = false;
+    private PauseTransition pendingDetailsRender;
 
     // ════════════════════════════════════════════════════════════
     //  INITIALIZE
@@ -67,24 +72,46 @@ public class CityViewController implements Initializable {
 
     /** Called from CoursesController whenever the city view is shown. */
     public void refresh() {
-        loadAndRender();
+        User u = UserSession.getInstance().getCurrentUser();
+        if (u == null || refreshInProgress) return;
+
+        refreshInProgress = true;
+        if (lblCityName != null) {
+            lblCityName.setText(u.getFirstName() != null ? u.getFirstName() + "'s City" : "My City");
+        }
+        if (lblRank != null) lblRank.setText("Loading...");
+
+        Task<List<EvaluationMatiere>> task = new Task<>() {
+            @Override
+            protected List<EvaluationMatiere> call() throws Exception {
+                List<EvaluationMatiere> evals = evalService.findByUser(u.getId());
+                warmMatiereNameCache();
+                return evals != null ? evals : new ArrayList<>();
+            }
+        };
+
+        task.setOnSucceeded(e -> {
+            refreshInProgress = false;
+            allEvals = task.getValue();
+            renderLoadedData(u);
+        });
+
+        task.setOnFailed(e -> {
+            refreshInProgress = false;
+            task.getException().printStackTrace();
+            allEvals = new ArrayList<>();
+            renderLoadedData(u);
+        });
+
+        Thread thread = new Thread(task, "studyflow-city-refresh");
+        thread.setDaemon(true);
+        thread.start();
     }
 
     // ════════════════════════════════════════════════════════════
     //  LOAD & RENDER
     // ════════════════════════════════════════════════════════════
-    private void loadAndRender() {
-        User u = UserSession.getInstance().getCurrentUser();
-        if (u == null) return;
-
-        try {
-            allEvals = evalService.findByUser(u.getId());
-            warmMatiereNameCache();
-        } catch (Exception e) {
-            e.printStackTrace();
-            allEvals = new ArrayList<>();
-        }
-
+    private void renderLoadedData(User u) {
         int total            = GamePointsService.totalPoints(allEvals);
         Building.Type current = Building.getBuildingForPoints(total);
         Building.Type next    = Building.getNextBuilding(total);
@@ -139,19 +166,38 @@ public class CityViewController implements Initializable {
         }
 
         // ── Buildings grid ────────────────────────────────────
-        if (buildingsGrid != null) renderBuildingsGrid(total);
+        // Details are rendered after the map paints to keep navigation responsive.
 
         // ── Per-subject mini cities ────────────────────────────
-        if (subjectCityList != null) renderSubjectCities();
+        
 
         // ── Achievements ──────────────────────────────────────
-        if (achievementRow != null) renderAchievements(total);
-        if (cityMapWebView != null) renderInteractiveMap(u, total);
+        if (cityMapHost != null || cityMapWebView != null) renderInteractiveMap(u, total);
+        renderDetailsLater(total);
     }
 
     // ════════════════════════════════════════════════════════════
     //  BUILDINGS GRID
     // ════════════════════════════════════════════════════════════
+    private void renderDetailsLater(int total) {
+        String detailsPayload = total + "|" + allEvals.stream()
+                .map(e -> e.getMatiereId() + ":" + e.getScoreEval() + ":" +
+                        e.getNoteMaximaleEval() + ":" + e.getPrioriteE())
+                .collect(Collectors.joining(";"));
+
+        if (detailsPayload.equals(lastDetailsPayload)) return;
+        if (pendingDetailsRender != null) pendingDetailsRender.stop();
+
+        pendingDetailsRender = new PauseTransition(Duration.millis(180));
+        pendingDetailsRender.setOnFinished(e -> {
+            lastDetailsPayload = detailsPayload;
+            if (buildingsGrid != null) renderBuildingsGrid(total);
+            if (subjectCityList != null) renderSubjectCities();
+            if (achievementRow != null) renderAchievements(total);
+        });
+        pendingDetailsRender.play();
+    }
+
     private void renderBuildingsGrid(int total) {
         buildingsGrid.getChildren().clear();
         Building.Type[] types = Building.Type.values();
@@ -329,6 +375,7 @@ public class CityViewController implements Initializable {
         try {
             URL mapUrl = getClass().getResource("/com/studyflow/views/city-map-game.html");
             if (mapUrl == null) return;
+            ensureCityMapWebView();
 
             Map<String, Object> payload = new LinkedHashMap<>();
             payload.put("cityName", user.getFirstName() != null ? user.getFirstName() + "'s City" : "My City");
@@ -345,6 +392,17 @@ public class CityViewController implements Initializable {
             engine.load(mapUrl.toExternalForm() + "?data=" + encoded);
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    private void ensureCityMapWebView() {
+        if (cityMapWebView != null) return;
+
+        cityMapWebView = new WebView();
+        cityMapWebView.setMinHeight(460);
+        cityMapWebView.setPrefHeight(560);
+        if (cityMapHost != null) {
+            cityMapHost.getChildren().setAll(cityMapWebView);
         }
     }
 

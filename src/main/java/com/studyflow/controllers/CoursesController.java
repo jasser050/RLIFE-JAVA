@@ -13,6 +13,7 @@ import com.studyflow.services.AntiFraudEngine;
 import com.studyflow.services.FraudEvent;
 import com.studyflow.services.VoiceAssistantService;
 import javafx.animation.KeyFrame;
+import javafx.animation.PauseTransition;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
@@ -148,6 +149,7 @@ public class CoursesController implements Initializable {
     //  CITY GAME — controller reference
     // ════════════════════════════════════════════════════════════
     private CityViewController cityViewController;
+    private boolean cityViewLoading = false;
 
     // ════════════════════════════════════════════════════════════
     //  ANTI-FRAUD ENGINE
@@ -258,11 +260,35 @@ public class CoursesController implements Initializable {
     @FXML
     public void handleShowCity() {
         try {
-            loadCityView();
+            if (cityViewController == null) {
+                showCityLoadingPlaceholder();
+            }
             showView("city");
+
             if (cityViewController != null) {
                 Platform.runLater(cityViewController::refresh);
+                return;
             }
+
+            if (cityViewLoading) return;
+            cityViewLoading = true;
+
+            PauseTransition delay = new PauseTransition(Duration.millis(120));
+            delay.setOnFinished(e -> {
+                try {
+                    loadCityView();
+                    cityViewLoading = false;
+                    if (cityViewController != null) {
+                        cityViewController.refresh();
+                    }
+                } catch (Exception ex) {
+                    cityViewLoading = false;
+                    ex.printStackTrace();
+                    System.err.println("[CityGame] Erreur: " + ex.getMessage());
+                    showCityErrorAlert(ex.getMessage());
+                }
+            });
+            delay.play();
         } catch (Exception e) {
             e.printStackTrace();
             System.err.println("[CityGame] Erreur: " + e.getMessage());
@@ -288,6 +314,28 @@ public class CoursesController implements Initializable {
             cityView.getChildren().setAll(cityRoot);
         }
 
+    }
+
+    private void showCityLoadingPlaceholder() {
+        if (cityView == null || cityViewLoading || cityViewController != null) return;
+
+        VBox placeholder = new VBox(10);
+        placeholder.setAlignment(Pos.CENTER);
+        placeholder.setMinHeight(520);
+        placeholder.setStyle("-fx-background-color:#060D1A;-fx-padding:36;");
+
+        Label title = new Label("Loading My City...");
+        title.setStyle("-fx-text-fill:#F8FAFC;-fx-font-size:22px;-fx-font-weight:800;");
+
+        Label subtitle = new Label("Preparing the game map");
+        subtitle.setStyle("-fx-text-fill:#64748B;-fx-font-size:13px;");
+
+        ProgressIndicator progress = new ProgressIndicator();
+        progress.setPrefSize(42, 42);
+        progress.setStyle("-fx-accent:#7C3AED;");
+
+        placeholder.getChildren().setAll(progress, title, subtitle);
+        cityView.getChildren().setAll(placeholder);
     }
 
     private void showCityErrorAlert(String error) {
