@@ -8,6 +8,7 @@ import com.studyflow.models.User;
 import com.studyflow.services.AssignmentService;
 import com.studyflow.services.NotificationService;
 import com.studyflow.services.ProjectService;
+import com.studyflow.services.UserCoinService;
 import com.studyflow.services.WellbeingAiService;
 import com.studyflow.utils.CrudViewContext;
 import com.studyflow.utils.UserSession;
@@ -16,6 +17,7 @@ import javafx.animation.PauseTransition;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
+import javafx.event.Event;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
@@ -32,7 +34,9 @@ import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Priority;
@@ -55,6 +59,8 @@ import java.util.prefs.Preferences;
  * Handles navigation, content switching, and window controls
  */
 public class MainController implements Initializable {
+    private static final long COIN_REWARD_INTERVAL_MILLIS = 60_000L;
+    private static final long ACTIVE_IDLE_TIMEOUT_MILLIS = 120_000L;
     private static MainController activeInstance;
 
     @FXML private StackPane contentArea;
@@ -92,6 +98,7 @@ public class MainController implements Initializable {
     private final ProjectService projectService = new ProjectService();
     private final AssignmentService assignmentService = new AssignmentService();
     private final NotificationService notificationService = new NotificationService();
+    private final UserCoinService userCoinService = new UserCoinService();
     private final WellbeingAiService wellbeingAiService = new WellbeingAiService();
     private final Preferences preferences = Preferences.userNodeForPackage(MainController.class);
     private Timeline quoteTicker;
@@ -109,6 +116,10 @@ public class MainController implements Initializable {
     private double quoteDragStartY;
     private double quoteStartLayoutX;
     private double quoteStartLayoutY;
+    private Timeline usageCoinTimeline;
+    private long lastActivityAtMillis = System.currentTimeMillis();
+    private long lastUsageTickAtMillis = System.currentTimeMillis();
+    private long accruedActiveMillis = 0L;
 
     // Window dragging
     private double xOffset = 0;
@@ -150,6 +161,8 @@ public class MainController implements Initializable {
         syncNotifications();
         setupGlobalQuoteDrag();
         setupGlobalQuoteWidget();
+        installActivityTracking();
+        startUsageCoinTracking();
     }
 
     public static MainController getInstance() {
@@ -735,6 +748,7 @@ public class MainController implements Initializable {
         if (themeToggleIcon != null) {
             themeToggleIcon.setIconLiteral(darkTheme ? "fth-sun" : "fth-moon");
         }
+        updateNotificationsButton();
     }
 
     /**
@@ -811,11 +825,89 @@ public class MainController implements Initializable {
 
     @FXML
     private void handleLogout() {
+        stopUsageCoinTracking();
         UserSession.getInstance().logout();
         try {
             App.setRoot("views/Landing");
         } catch (java.io.IOException e) {
             e.printStackTrace();
+        }
+    }
+
+    private void installActivityTracking() {
+        Platform.runLater(() -> {
+            if (contentArea == null || contentArea.getScene() == null) {
+                return;
+            }
+            contentArea.getScene().addEventFilter(MouseEvent.MOUSE_PRESSED, this::recordUserActivity);
+            contentArea.getScene().addEventFilter(MouseEvent.MOUSE_MOVED, this::recordUserActivity);
+            contentArea.getScene().addEventFilter(KeyEvent.KEY_PRESSED, this::recordUserActivity);
+            contentArea.getScene().addEventFilter(ScrollEvent.SCROLL, this::recordUserActivity);
+            Stage stage = App.getPrimaryStage();
+            if (stage != null) {
+                stage.focusedProperty().addListener((obs, oldValue, focused) -> {
+                    if (focused) {
+                        lastActivityAtMillis = System.currentTimeMillis();
+                        lastUsageTickAtMillis = lastActivityAtMillis;
+                    }
+                });
+            }
+        });
+    }
+
+    private void recordUserActivity(Event event) {
+        lastActivityAtMillis = System.currentTimeMillis();
+    }
+
+    private void startUsageCoinTracking() {
+        stopUsageCoinTracking();
+        lastActivityAtMillis = System.currentTimeMillis();
+        lastUsageTickAtMillis = lastActivityAtMillis;
+        accruedActiveMillis = 0L;
+        usageCoinTimeline = new Timeline(new KeyFrame(javafx.util.Duration.seconds(15), event -> rewardUsageCoinsIfNeeded()));
+        usageCoinTimeline.setCycleCount(Timeline.INDEFINITE);
+        usageCoinTimeline.play();
+    }
+
+    private void stopUsageCoinTracking() {
+        if (usageCoinTimeline != null) {
+            usageCoinTimeline.stop();
+            usageCoinTimeline = null;
+        }
+    }
+
+    private void rewardUsageCoinsIfNeeded() {
+        User currentUser = UserSession.getInstance().getCurrentUser();
+        long now = System.currentTimeMillis();
+        long elapsed = Math.max(0L, now - lastUsageTickAtMillis);
+        lastUsageTickAtMillis = now;
+
+        if (currentUser == null) {
+            accruedActiveMillis = 0L;
+            return;
+        }
+
+        Stage stage = App.getPrimaryStage();
+        boolean isActiveWindow = stage != null && stage.isFocused() && !stage.isIconified();
+        boolean isRecentlyActive = now - lastActivityAtMillis <= ACTIVE_IDLE_TIMEOUT_MILLIS;
+        if (!isActiveWindow || !isRecentlyActive) {
+            return;
+        }
+
+        accruedActiveMillis += elapsed;
+        int coinsToAward = (int) (accruedActiveMillis / COIN_REWARD_INTERVAL_MILLIS);
+        if (coinsToAward <= 0) {
+            return;
+        }
+
+        accruedActiveMillis %= COIN_REWARD_INTERVAL_MILLIS;
+        try {
+            int awardedCoins = userCoinService.addUsageCoins(currentUser.getId(), coinsToAward);
+            if (awardedCoins > 0) {
+                currentUser.setCoins(currentUser.getCoins() + awardedCoins);
+            }
+        } catch (RuntimeException ex) {
+            System.out.println("MainController.rewardUsageCoinsIfNeeded: " + ex.getMessage());
         }
     }
 }

@@ -118,7 +118,7 @@
 
                         <Button fx:id="btnNotes" styleClass="nav-button" onAction="#showNotes" maxWidth="Infinity">
                             <graphic>
-                                <Label text="🐾" style="-fx-font-size: 16px; -fx-text-fill: #CBD5E1;"/>
+                                <FontIcon iconLiteral="fas-paw" iconSize="16"/>
                             </graphic>
                             <text>My Pet</text>
                         </Button>

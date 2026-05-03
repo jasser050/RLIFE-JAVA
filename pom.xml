@@ -162,6 +162,11 @@
             <version>2.11.0</version>
         </dependency>
         <dependency>
+            <groupId>me.friwi</groupId>
+            <artifactId>jcefmaven</artifactId>
+            <version>143.0.14</version>
+        </dependency>
+        <dependency>
             <groupId>org.apache.poi</groupId>
             <artifactId>poi</artifactId>
             <version>5.5.1</version>
@@ -191,7 +196,9 @@
                     <mainClass>com.studyflow/com.studyflow.App</mainClass>
                     <executable>${javafx.executable}</executable>
                     <options>
+                        <option>-Xms512m</option>
                         <option>-Xmx2048m</option>
+                        <option>-XX:+UseG1GC</option>
                         <option>-Dfile.encoding=UTF-8</option>
                         <option>-Dprism.forceGPU=true</option>
                         <option>-Dprism.vsync=false</option>
@@ -199,6 +206,8 @@
                         <option>java.base/java.lang=ALL-UNNAMED</option>
                         <option>--add-opens</option>
                         <option>java.base/java.lang.reflect=ALL-UNNAMED</option>
+                        <option>--add-opens</option>
+                        <option>java.desktop/sun.awt=ALL-UNNAMED</option>
                     </options>
                 </configuration>
             </plugin>

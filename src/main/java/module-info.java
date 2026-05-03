@@ -8,6 +8,7 @@ module com.studyflow {
 
     requires org.kordamp.ikonli.javafx;
     requires org.kordamp.ikonli.feather;
+    requires org.kordamp.ikonli.fontawesome5;
 
     requires java.sql;
     requires java.desktop;
@@ -17,6 +18,8 @@ module com.studyflow {
     requires jdk.jsobject;
     requires webcam.capture;
     requires com.google.gson;
+    requires jcef;
+    requires jcefmaven;
     requires org.apache.poi.poi;
     requires org.apache.poi.ooxml;
 
