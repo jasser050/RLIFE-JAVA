@@ -70,6 +70,7 @@ public class CoursesController implements Initializable {
     @FXML private Label             voiceTranscriptionLabel;
     @FXML private Label             voiceResponseLabel;
     @FXML private ProgressIndicator voiceProgress;
+    @FXML private Button            btnVoiceMic;
     @FXML private Button            btnVoiceCancel;
 
     // ── Vues ───────────────────────────────────────────────────
@@ -379,15 +380,10 @@ public class CoursesController implements Initializable {
     // ════════════════════════════════════════════════════════════
     private void setupVoiceAssistant() {
         if (!voiceService.hasApiKey()) {
-            btnVoiceAssistant.setDisable(true);
-            btnVoiceAssistant.setStyle("-fx-background-color:#3B0764;-fx-text-fill:#64748B;");
-            btnVoiceAssistant.setText("🔑 Missing API Key");
             Platform.runLater(() -> {
-                voiceStatusLabel.setText("⚠ OPENROUTER_API_KEY not set in environment");
-                voiceBar.setVisible(true);
-                voiceBar.setManaged(true);
+                voiceStatusLabel.setText("GROQ_API_KEY required for real voice detection");
+                voiceProgress.setVisible(false);
             });
-            return;
         }
 
         voiceService.onTranscription = text -> Platform.runLater(() -> {
@@ -414,9 +410,9 @@ public class CoursesController implements Initializable {
             voiceTranscriptionLabel.setText("");
             voiceResponseLabel.setText("");
             voiceProgress.setVisible(false);
-            btnVoiceAssistant.setDisable(false);
-            btnVoiceAssistant.setText("🎤  Voice");
-            btnVoiceAssistant.setStyle("");
+            btnVoiceMic.setDisable(false);
+            btnVoiceMic.setText("Start Speaking");
+            btnVoiceMic.setStyle("-fx-background-color:#7C3AED;-fx-text-fill:white;-fx-border-radius:12;-fx-background-radius:12;-fx-padding:12 24;-fx-font-size:14px;-fx-font-weight:900;-fx-cursor:hand;");
             isRecordingVoice = false;
         });
 
@@ -427,18 +423,30 @@ public class CoursesController implements Initializable {
 
         voiceService.onAudioDone = () -> Platform.runLater(() -> {
             voiceStatusLabel.setText("🎤 Ready — click mic to ask");
-            btnVoiceAssistant.setDisable(false);
-            btnVoiceAssistant.setText("🎤  Voice");
-            btnVoiceAssistant.setStyle("");
+            btnVoiceMic.setDisable(false);
+            btnVoiceMic.setText("Start Speaking");
+            btnVoiceMic.setStyle("-fx-background-color:#7C3AED;-fx-text-fill:white;-fx-border-radius:12;-fx-background-radius:12;-fx-padding:12 24;-fx-font-size:14px;-fx-font-weight:900;-fx-cursor:hand;");
             voiceProgress.setVisible(false);
             isRecordingVoice = false;
         });
     }
 
     @FXML
+    private void handleShowVoicePage() {
+        showView("voice");
+        if (!voiceService.hasApiKey()) {
+            voiceStatusLabel.setText("GROQ_API_KEY required for real voice detection");
+            voiceProgress.setVisible(false);
+        } else if (!isRecordingVoice) {
+            voiceStatusLabel.setText("Ready - click Start Speaking");
+            voiceProgress.setVisible(false);
+        }
+    }
+
+    @FXML
     private void handleVoiceAssistant() {
         if (!voiceService.hasApiKey()) {
-            showVoiceError("OPENROUTER_API_KEY not configured in environment variables");
+            showVoiceError("GROQ_API_KEY is required for real speech-to-text and AI answers");
             return;
         }
         if (isRecordingVoice) stopVoiceRecording();
@@ -449,8 +457,8 @@ public class CoursesController implements Initializable {
         try {
             voiceService.startRecording();
             isRecordingVoice = true;
-            btnVoiceAssistant.setText("⏹️  Stop");
-            btnVoiceAssistant.setStyle("-fx-background-color:#EF4444;-fx-text-fill:white;");
+            btnVoiceMic.setText("Stop Recording");
+            btnVoiceMic.setStyle("-fx-background-color:#EF4444;-fx-text-fill:white;-fx-border-radius:12;-fx-background-radius:12;-fx-padding:12 24;-fx-font-size:14px;-fx-font-weight:900;-fx-cursor:hand;");
             showVoiceBar(true);
             voiceStatusLabel.setText("🎙️ Recording… click Stop when done");
             voiceTranscriptionLabel.setText("");
@@ -463,16 +471,16 @@ public class CoursesController implements Initializable {
         } catch (Exception e) {
             showVoiceError("Microphone error: " + e.getMessage());
             isRecordingVoice = false;
-            btnVoiceAssistant.setText("🎤  Voice");
-            btnVoiceAssistant.setStyle("");
+            btnVoiceMic.setText("Start Speaking");
+            btnVoiceMic.setStyle("-fx-background-color:#7C3AED;-fx-text-fill:white;-fx-border-radius:12;-fx-background-radius:12;-fx-padding:12 24;-fx-font-size:14px;-fx-font-weight:900;-fx-cursor:hand;");
         }
     }
 
     private void stopVoiceRecording() {
         if (!isRecordingVoice) return;
         isRecordingVoice = false;
-        btnVoiceAssistant.setDisable(true);
-        btnVoiceAssistant.setText("⏳ Processing…");
+        btnVoiceMic.setDisable(true);
+        btnVoiceMic.setText("Processing...");
         voiceStatusLabel.setText("⏳ Processing your request…");
         voiceProgress.setVisible(true);
         voiceService.stopAndProcess();
@@ -484,16 +492,15 @@ public class CoursesController implements Initializable {
             voiceService.cancel();
             isRecordingVoice = false;
         }
-        showVoiceBar(false);
-        btnVoiceAssistant.setDisable(false);
-        btnVoiceAssistant.setText("🎤  Voice");
-        btnVoiceAssistant.setStyle("");
+        showView("voice");
+        btnVoiceMic.setDisable(false);
+        btnVoiceMic.setText("Start Speaking");
+        btnVoiceMic.setStyle("-fx-background-color:#7C3AED;-fx-text-fill:white;-fx-border-radius:12;-fx-background-radius:12;-fx-padding:12 24;-fx-font-size:14px;-fx-font-weight:900;-fx-cursor:hand;");
         voiceStatusLabel.setText("🎤 Voice assistant ready");
     }
 
     private void showVoiceBar(boolean show) {
-        voiceBar.setVisible(show);
-        voiceBar.setManaged(show);
+        if (show) showView("voice");
     }
 
     private void showVoiceError(String message) {
@@ -504,9 +511,9 @@ public class CoursesController implements Initializable {
             voiceBar.setVisible(true);
             voiceBar.setManaged(true);
             voiceProgress.setVisible(false);
-            btnVoiceAssistant.setDisable(false);
-            btnVoiceAssistant.setText("🎤  Voice");
-            btnVoiceAssistant.setStyle("");
+            btnVoiceMic.setDisable(false);
+            btnVoiceMic.setText("Start Speaking");
+            btnVoiceMic.setStyle("-fx-background-color:#7C3AED;-fx-text-fill:white;-fx-border-radius:12;-fx-background-radius:12;-fx-padding:12 24;-fx-font-size:14px;-fx-font-weight:900;-fx-cursor:hand;");
             isRecordingVoice = false;
         });
     }
@@ -608,11 +615,16 @@ public class CoursesController implements Initializable {
         boolean isStats = "stats".equals(view);
         boolean isQuiz  = "quiz".equals(view);
         boolean isCity  = "city".equals(view);
+        boolean isVoice = "voice".equals(view);
 
         listView.setVisible(isList);     listView.setManaged(isList);
         formPanel.setVisible(isForm);    formPanel.setManaged(isForm);
         statsView.setVisible(isStats);   statsView.setManaged(isStats);
         quizMainView.setVisible(isQuiz); quizMainView.setManaged(isQuiz);
+        if (voiceBar != null) {
+            voiceBar.setVisible(isVoice);
+            voiceBar.setManaged(isVoice);
+        }
         if (cityView != null) {
             cityView.setVisible(isCity);
             cityView.setManaged(isCity);
@@ -655,6 +667,11 @@ public class CoursesController implements Initializable {
             if (btnHeaderIcon != null) btnHeaderIcon.setIconLiteral("fth-arrow-left");
             pageTitle.setText("My City 🏙️");
             pageSubtitle.setText("Your academic progress as a growing city");
+        } else if (isVoice) {
+            btnHeaderAction.setText("Back");
+            if (btnHeaderIcon != null) btnHeaderIcon.setIconLiteral("fth-arrow-left");
+            pageTitle.setText("Voice Assistant");
+            pageSubtitle.setText("Speech to text assistant for study questions");
         }
     }
 
@@ -826,7 +843,8 @@ public class CoursesController implements Initializable {
     // ════════════════════════════════════════════════════════════
     @FXML private void handleHeaderAction() {
         if (formPanel.isVisible() || statsView.isVisible() || quizMainView.isVisible()
-                || (cityView != null && cityView.isVisible())) {
+                || (cityView != null && cityView.isVisible())
+                || (voiceBar != null && voiceBar.isVisible())) {
             stopQuizTimer();
             antiFraud.stopMonitoring();
             showView("list");

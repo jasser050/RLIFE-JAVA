@@ -8,6 +8,7 @@ import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.*;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
@@ -33,7 +34,8 @@ public class VoiceAssistantService {
     // ── ⚠️  Remplace par ta clé Groq (console.groq.com) ──────────
     private static final String API_KEY = firstNonBlank(
             System.getenv("GROQ_API_KEY"),
-            System.getProperty("groq.api.key")
+            System.getProperty("groq.api.key"),
+            loadGroqKeyFromDotEnv()
     );
 
     // ── Format audio optimal pour Whisper ────────────────────────
@@ -236,7 +238,7 @@ public class VoiceAssistantService {
         }
 
         System.err.println("[STT] Groq Whisper échoué. Vérifiez votre clé API.");
-        return null;
+        throw new IOException("Groq Whisper failed: " + resp.statusCode() + " " + resp.body());
     }
 
     // ══════════════════════════════════════════════════════════════
@@ -587,6 +589,29 @@ public class VoiceAssistantService {
         for (String value : values) {
             if (value != null && !value.isBlank()) {
                 return value.trim();
+            }
+        }
+        return "";
+    }
+
+    private static String loadGroqKeyFromDotEnv() {
+        for (String fileName : List.of(".env", "config/.env")) {
+            Path path = Path.of(fileName);
+            if (!Files.exists(path)) continue;
+            try {
+                for (String line : Files.readAllLines(path)) {
+                    String trimmed = line.trim();
+                    if (trimmed.startsWith("GROQ_API_KEY=")) {
+                        String value = trimmed.substring("GROQ_API_KEY=".length()).trim();
+                        if ((value.startsWith("\"") && value.endsWith("\""))
+                                || (value.startsWith("'") && value.endsWith("'"))) {
+                            value = value.substring(1, value.length() - 1);
+                        }
+                        return value;
+                    }
+                }
+            } catch (IOException ignored) {
+                // Environment variable remains the primary configuration path.
             }
         }
         return "";
