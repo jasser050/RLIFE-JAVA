@@ -1,23 +1,38 @@
 package com.studyflow.utils;
 
-import com.studyflow.pets.CatGlbPreview;
 import com.studyflow.pets.CatPetScene;
-import javafx.animation.AnimationTimer;
+import javafx.animation.Animation;
+import javafx.animation.Interpolator;
+import javafx.animation.KeyFrame;
+import javafx.animation.KeyValue;
+import javafx.animation.RotateTransition;
+import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.geometry.Bounds;
 import javafx.geometry.Pos;
-import javafx.scene.*;
+import javafx.scene.AmbientLight;
+import javafx.scene.Group;
+import javafx.scene.Node;
+import javafx.scene.PerspectiveCamera;
+import javafx.scene.PointLight;
+import javafx.scene.SceneAntialiasing;
+import javafx.scene.SubScene;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.scene.transform.Rotate;
 import javafx.scene.transform.Scale;
 import javafx.scene.transform.Translate;
+import javafx.util.Duration;
 
 public final class PetPreviewSupport {
 
     private static final double FIT_SCALE = 1.8;
     private static final double SCENE_DEPTH = 3.2;
+    private static final double ROTATION_SPEED_DEGREES = 60.0;
+    private static final double IDLE_TILT_AMPLITUDE_DEGREES = 5.0;
+    private static final Duration IDLE_TILT_DURATION = Duration.seconds(1.8);
+    private static final String PREVIEW_ANIMATIONS_KEY = "petPreviewAnimations";
 
     private PetPreviewSupport() {
     }
@@ -71,7 +86,7 @@ public final class PetPreviewSupport {
         camera.setFarClip(200);
         camera.setTranslateZ(-SCENE_DEPTH);
 
-        SubScene subScene = new SubScene(world, width, height, true, SceneAntialiasing.BALANCED);
+        SubScene subScene = new SubScene(world, width, height, true, SceneAntialiasing.DISABLED);
         subScene.setFill(Color.TRANSPARENT);
         subScene.setCamera(camera);
         subScene.widthProperty().bind(container.widthProperty());
@@ -90,7 +105,7 @@ public final class PetPreviewSupport {
                 Group loaded = GlbLoader.loadFromResource(getGlbResource(type));
                 Platform.runLater(() -> {
                     fitModel(loaded, modelGroup, type);
-                    startRotation(modelGroup);
+                    startRotation(container, modelGroup);
                 });
             } catch (Exception ex) {
                 Platform.runLater(() -> {
@@ -133,20 +148,45 @@ public final class PetPreviewSupport {
         loaded.getTransforms().add(new Translate(-cx, -cy, -cz));
     }
 
-    private static void startRotation(Group modelGroup) {
-        Rotate rot = new Rotate(0, Rotate.Y_AXIS);
-        modelGroup.getTransforms().add(rot);
+    private static void startRotation(StackPane container, Group modelGroup) {
+        Rotate pitch = new Rotate(-8, Rotate.X_AXIS);
+        modelGroup.getTransforms().add(pitch);
 
-        AnimationTimer rotator = new AnimationTimer() {
-            private long last = 0;
-            @Override public void handle(long now) {
-                if (last != 0) {
-                    rot.setAngle(rot.getAngle() + (now - last) * 1e-9 * 55.0);
-                }
-                last = now;
+        RotateTransition yawAnimation = new RotateTransition(Duration.seconds(360.0 / ROTATION_SPEED_DEGREES), modelGroup);
+        yawAnimation.setAxis(Rotate.Y_AXIS);
+        yawAnimation.setByAngle(360.0);
+        yawAnimation.setCycleCount(Animation.INDEFINITE);
+        yawAnimation.setInterpolator(Interpolator.LINEAR);
+
+        Timeline pitchAnimation = new Timeline(
+            new KeyFrame(Duration.ZERO, new KeyValue(pitch.angleProperty(), -8 - IDLE_TILT_AMPLITUDE_DEGREES, Interpolator.EASE_BOTH)),
+            new KeyFrame(IDLE_TILT_DURATION, new KeyValue(pitch.angleProperty(), -8 + IDLE_TILT_AMPLITUDE_DEGREES, Interpolator.EASE_BOTH))
+        );
+        pitchAnimation.setAutoReverse(true);
+        pitchAnimation.setCycleCount(Animation.INDEFINITE);
+
+        registerAnimationLifecycle(container, yawAnimation, pitchAnimation);
+        yawAnimation.play();
+        pitchAnimation.play();
+    }
+
+    private static void registerAnimationLifecycle(StackPane container, Animation... animations) {
+        Object existing = container.getProperties().get(PREVIEW_ANIMATIONS_KEY);
+        if (existing instanceof Animation[] previousAnimations) {
+            for (Animation animation : previousAnimations) {
+                animation.stop();
             }
-        };
-        rotator.start();
+        }
+        container.getProperties().put(PREVIEW_ANIMATIONS_KEY, animations);
+        container.sceneProperty().addListener((obs, oldScene, newScene) -> {
+            for (Animation animation : animations) {
+                if (newScene == null) {
+                    animation.stop();
+                } else {
+                    animation.play();
+                }
+            }
+        });
     }
 
     private static StackPane wrap(Node node, double width, double height) {

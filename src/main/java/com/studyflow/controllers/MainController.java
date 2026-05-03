@@ -3,14 +3,17 @@ package com.studyflow.controllers;
 import com.studyflow.App;
 import com.studyflow.models.Assignment;
 import com.studyflow.models.Notification;
+import com.studyflow.models.Pet;
 import com.studyflow.models.Project;
 import com.studyflow.models.User;
 import com.studyflow.services.AssignmentService;
 import com.studyflow.services.NotificationService;
+import com.studyflow.services.PetService;
 import com.studyflow.services.ProjectService;
 import com.studyflow.services.UserCoinService;
 import com.studyflow.services.WellbeingAiService;
 import com.studyflow.utils.CrudViewContext;
+import com.studyflow.utils.PetPreviewSupport;
 import com.studyflow.utils.UserSession;
 import javafx.animation.KeyFrame;
 import javafx.animation.PauseTransition;
@@ -23,6 +26,7 @@ import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.geometry.Bounds;
 import javafx.geometry.Point2D;
+import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
@@ -89,10 +93,12 @@ public class MainController implements Initializable {
     @FXML private Button notificationsButton;
     @FXML private Button themeToggleButton;
     @FXML private FontIcon themeToggleIcon;
-    @FXML private VBox globalQuoteCard;
+    @FXML private StackPane globalQuoteCard;
     @FXML private Label globalQuoteTextLabel;
     @FXML private Label globalQuoteMetaLabel;
     @FXML private Pane quoteOverlayPane;
+    @FXML private StackPane globalQuotePetBadge;
+    @FXML private StackPane globalQuotePetPreviewPane;
 
     private Button activeButton;
     private final ProjectService projectService = new ProjectService();
@@ -100,6 +106,7 @@ public class MainController implements Initializable {
     private final NotificationService notificationService = new NotificationService();
     private final UserCoinService userCoinService = new UserCoinService();
     private final WellbeingAiService wellbeingAiService = new WellbeingAiService();
+    private final PetService petService = new PetService();
     private final Preferences preferences = Preferences.userNodeForPackage(MainController.class);
     private Timeline quoteTicker;
     private PauseTransition quoteResumeTimer;
@@ -120,6 +127,7 @@ public class MainController implements Initializable {
     private long lastActivityAtMillis = System.currentTimeMillis();
     private long lastUsageTickAtMillis = System.currentTimeMillis();
     private long accruedActiveMillis = 0L;
+    private Pet quotePet;
 
     // Window dragging
     private double xOffset = 0;
@@ -564,6 +572,8 @@ public class MainController implements Initializable {
         }
         globalQuoteCard.setVisible(true);
         globalQuoteCard.setManaged(true);
+        quotePet = loadQuotePet(currentUser());
+        refreshQuotePetPresentation();
 
         String type = safeQuoteType(preferences.get(PREF_QUOTE_TYPE, "motivation"));
         globalQuoteMetaLabel.setText(type.toUpperCase(Locale.ROOT) + " - LOADING");
@@ -614,6 +624,8 @@ public class MainController implements Initializable {
             return;
         }
         String type = safeQuoteType(preferences.get(PREF_QUOTE_TYPE, "motivation"));
+        quotePet = loadQuotePet(currentUser());
+        refreshQuotePetPresentation();
         globalQuoteTextLabel.setText("Small progress every day beats perfect plans.");
         globalQuoteMetaLabel.setText(type.toUpperCase(Locale.ROOT) + " - FALLBACK");
     }
@@ -737,6 +749,38 @@ public class MainController implements Initializable {
         }
         preferences.putDouble(PREF_QUOTE_POS_X, globalQuoteCard.getLayoutX());
         preferences.putDouble(PREF_QUOTE_POS_Y, globalQuoteCard.getLayoutY());
+    }
+
+    private User currentUser() {
+        return UserSession.getInstance().getCurrentUser();
+    }
+
+    private Pet loadQuotePet(User user) {
+        if (user == null || !petService.isDatabaseAvailable()) {
+            return null;
+        }
+        try {
+            return petService.findByUserId(user.getId()).map(petService::syncPetState).orElse(null);
+        } catch (RuntimeException ignored) {
+            return null;
+        }
+    }
+
+    private void refreshQuotePetPresentation() {
+        if (globalQuotePetPreviewPane == null || globalQuotePetBadge == null) {
+            return;
+        }
+        if (quotePet == null) {
+            globalQuotePetPreviewPane.getChildren().clear();
+            globalQuotePetBadge.setVisible(false);
+            globalQuotePetBadge.setManaged(false);
+            return;
+        }
+        Node preview = PetPreviewSupport.createPreview(quotePet.getType(), 34, 34);
+        preview.setMouseTransparent(true);
+        globalQuotePetPreviewPane.getChildren().setAll(preview);
+        globalQuotePetBadge.setVisible(true);
+        globalQuotePetBadge.setManaged(true);
     }
 
     private void syncThemeToggleUi() {

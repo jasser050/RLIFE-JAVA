@@ -215,16 +215,21 @@
           AnchorPane.rightAnchor="0.0"
           AnchorPane.bottomAnchor="0.0"
           AnchorPane.leftAnchor="0.0">
-        <VBox fx:id="globalQuoteCard" styleClass="global-quote-card" spacing="6"
-              visible="false" managed="false" layoutX="16" layoutY="16">
-            <HBox alignment="CENTER_LEFT" spacing="8">
-                <Label text="QUOTE" styleClass="global-quote-top"/>
-                <Region HBox.hgrow="ALWAYS"/>
-                <Button text="x" styleClass="global-quote-close-btn" onAction="#handleGlobalQuoteClose"/>
-            </HBox>
-            <Label text="&quot;" styleClass="global-quote-mark"/>
-            <Label fx:id="globalQuoteTextLabel" text="" styleClass="global-quote-text" wrapText="true"/>
-            <Label fx:id="globalQuoteMetaLabel" text="" styleClass="global-quote-meta"/>
-        </VBox>
+        <StackPane fx:id="globalQuoteCard" styleClass="global-quote-card"
+                   visible="false" managed="false" layoutX="16" layoutY="16">
+            <VBox spacing="6">
+                <HBox alignment="CENTER_LEFT" spacing="8">
+                    <Label text="QUOTE" styleClass="global-quote-top"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Button text="x" styleClass="global-quote-close-btn" onAction="#handleGlobalQuoteClose"/>
+                </HBox>
+                <Label text="&quot;" styleClass="global-quote-mark"/>
+                <Label fx:id="globalQuoteTextLabel" text="" styleClass="global-quote-text" wrapText="true"/>
+                <Label fx:id="globalQuoteMetaLabel" text="" styleClass="global-quote-meta"/>
+            </VBox>
+            <StackPane fx:id="globalQuotePetBadge" styleClass="global-quote-pet-badge" StackPane.alignment="BOTTOM_RIGHT">
+                <StackPane fx:id="globalQuotePetPreviewPane" prefWidth="36" prefHeight="36" maxWidth="36" maxHeight="36"/>
+            </StackPane>
+        </StackPane>
     </Pane>
 </AnchorPane>
