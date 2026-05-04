@@ -9,6 +9,7 @@ import com.studyflow.services.ServicePlanning;
 import com.studyflow.services.ServiceSeance;
 import com.studyflow.services.AIPlanningService;
 import com.studyflow.services.FootballDataService;
+import com.studyflow.services.GoogleCalendarSyncService;
 import com.studyflow.services.PlanningPdfApiService;
 import com.studyflow.services.PlanningEmailNotificationService;
 import com.studyflow.services.SpeechToTextService;
@@ -19,6 +20,8 @@ import javafx.application.Platform;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.PauseTransition;
+import javafx.animation.FadeTransition;
+import javafx.animation.RotateTransition;
 import javafx.animation.ScaleTransition;
 import javafx.animation.Timeline;
 import javafx.animation.TranslateTransition;
@@ -29,8 +32,10 @@ import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.geometry.Insets;
+import javafx.geometry.Point2D;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
+import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
@@ -41,11 +46,13 @@ import javafx.scene.control.Control;
 import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.DateCell;
+import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.OverrunStyle;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.TextArea;
 import javafx.scene.control.TextInputDialog;
 import javafx.scene.control.TextField;
 import javafx.scene.control.Tooltip;
@@ -57,6 +64,8 @@ import javafx.scene.image.ImageView;
 import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.KeyCode;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.transform.Transform;
 import javafx.scene.input.TransferMode;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
@@ -68,6 +77,7 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
+import javafx.scene.effect.DropShadow;
 import javafx.stage.FileChooser;
 import javafx.stage.Window;
 import javafx.util.Duration;
@@ -151,6 +161,8 @@ public class PlanningController implements Initializable {
     private static final String SESSION_TYPE_MATCH = "match";
     private static final String SESSION_TYPE_DAY_OFF = "day off";
     private static final String SESSION_TYPE_DAYOFF = "dayoff";
+    private static final String SESSION_TYPE_GOOGLE_IMPORTED = "google imported";
+    private static final String GOOGLE_IMPORTED_COLOR_HEX = "#3B82F6";
     private static final Map<String, String> KNOWN_TEAM_ACRONYMS = Map.ofEntries(
             Map.entry("atletico madrid", "ATM"),
             Map.entry("bayern munich", "FCB"),
@@ -272,14 +284,16 @@ public class PlanningController implements Initializable {
     @FXML private Label matchHomeTeamLabel;
     @FXML private Label matchAwayTeamLabel;
     @FXML private Button matchPrefillButton;
-    @FXML private Label mascotEmojiLabel;
+    @FXML private ImageView mascotStateImage;
+    @FXML private ImageView mascotOverlayEmojiImage;
+    @FXML private Label mascotOverlayFxLabel;
     @FXML private Label mascotNameLabel;
     @FXML private Label mascotMoodLabel;
     @FXML private Label mascotStreakLabel;
     @FXML private Label mascotMessageLabel;
     @FXML private VBox mascotDetailsBox;
     @FXML private VBox mascotOverlayCard;
-    @FXML private Button mascotToggleButton;
+    @FXML private CheckBox mascotDisplayCheckBox;
     @FXML private ScrollPane chatScrollPane;
     @FXML private VBox chatBox;
     @FXML private TextField assistantInputField;
@@ -291,6 +305,7 @@ public class PlanningController implements Initializable {
     private final ServiceTypeSeance serviceTypeSeance = new ServiceTypeSeance();
     private final PlanningEmailNotificationService planningEmailNotificationService = new PlanningEmailNotificationService();
     private final PlanningPdfApiService planningPdfApiService = new PlanningPdfApiService();
+    private final GoogleCalendarSyncService googleCalendarSyncService = new GoogleCalendarSyncService();
     private final AIPlanningService claudePlanningService = new AIPlanningService();
     private final FootballDataService footballDataService = new FootballDataService();
     private final SmartPlanService smartPlanService = new SmartPlanService();
@@ -327,11 +342,23 @@ public class PlanningController implements Initializable {
     private FootballDataService.NextMatch selectedNextMatch;
     private Timeline liveClockTimeline;
     private boolean smartPlanUsedFallback;
-    private boolean mascotMinimized = false;
     private List<SmartPlanService.SmartPlanTask> smartPlanPendingTasks = new ArrayList<>();
     private final List<ManualSmartBid> smartPlanManualBids = new ArrayList<>();
     private final ObservableList<SmartPlanPreviewItem> smartPlanPreviewItems = FXCollections.observableArrayList();
     private String smartPlanGenerationSignature;
+    private double mascotDragAnchorX;
+    private double mascotDragAnchorY;
+    private double mascotDragStartTranslateX;
+    private double mascotDragStartTranslateY;
+    private boolean mascotDragging;
+    private Double mascotPinnedSceneX;
+    private Double mascotPinnedSceneY;
+    private TranslateTransition mascotFloatAnimation;
+    private ScaleTransition mascotMoodPulseAnimation;
+    private Timeline mascotMoodBounceAnimation;
+    private FadeTransition mascotFxFadeAnimation;
+    private RotateTransition mascotFxRotateAnimation;
+    private Timeline mascotBadGlowAnimation;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -348,7 +375,12 @@ public class PlanningController implements Initializable {
         configureMatchPlannerControls();
         configureAssistantControls();
         configureLiveClock();
-        configureMascotOverlay();
+        configureMascotVisibility();
+        Platform.runLater(() -> {
+            positionMascotNearClock();
+            installMascotViewportPinning();
+            pinMascotAtCurrentScenePosition();
+        });
         loadSessions();
         refreshPlanningData();
         resetForm();
@@ -385,16 +417,167 @@ public class PlanningController implements Initializable {
         liveClockTimeline.play();
     }
 
-    private void configureMascotOverlay() {
+    private void configureMascotVisibility() {
+        if (mascotOverlayCard != null) {
+            mascotFloatAnimation = new TranslateTransition(Duration.seconds(2.4), mascotOverlayCard);
+            mascotFloatAnimation.setFromY(0);
+            mascotFloatAnimation.setToY(-4);
+            mascotFloatAnimation.setAutoReverse(true);
+            mascotFloatAnimation.setCycleCount(Animation.INDEFINITE);
+            mascotFloatAnimation.play();
+        }
+        applyMascotVisibility();
+    }
+
+    private void applyMascotMoodAnimation(double feedbackAverage) {
         if (mascotOverlayCard == null) {
             return;
         }
-        TranslateTransition floatAnimation = new TranslateTransition(Duration.seconds(2.4), mascotOverlayCard);
-        floatAnimation.setFromY(0);
-        floatAnimation.setToY(-4);
-        floatAnimation.setAutoReverse(true);
-        floatAnimation.setCycleCount(Animation.INDEFINITE);
-        floatAnimation.play();
+
+        if (mascotMoodPulseAnimation != null) {
+            mascotMoodPulseAnimation.stop();
+        }
+        if (mascotMoodBounceAnimation != null) {
+            mascotMoodBounceAnimation.stop();
+        }
+        if (mascotFxFadeAnimation != null) {
+            mascotFxFadeAnimation.stop();
+        }
+        if (mascotFxRotateAnimation != null) {
+            mascotFxRotateAnimation.stop();
+        }
+        if (mascotBadGlowAnimation != null) {
+            mascotBadGlowAnimation.stop();
+        }
+
+        mascotOverlayCard.setScaleX(1.0);
+        mascotOverlayCard.setScaleY(1.0);
+        mascotOverlayCard.setStyle("-fx-background-color: -color-surface;"
+                + "-fx-background-radius: 999;"
+                + "-fx-border-color: -color-border;"
+                + "-fx-border-radius: 999;"
+                + "-fx-cursor: hand;"
+                + "-fx-padding: 8 8 8 8;");
+        mascotOverlayCard.setEffect(null);
+        if (mascotOverlayFxLabel != null) {
+            mascotOverlayFxLabel.setText("");
+            mascotOverlayFxLabel.setOpacity(0);
+            mascotOverlayFxLabel.setRotate(0);
+            mascotOverlayFxLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: 700; -fx-text-fill: #FACC15;");
+        }
+
+        if (mascotFloatAnimation != null) {
+            mascotFloatAnimation.stop();
+            mascotFloatAnimation.setFromY(0);
+        }
+
+        if (feedbackAverage <= 0) {
+            mascotOverlayCard.setTranslateY(0);
+            return;
+        }
+
+        if (feedbackAverage >= 4.0) {
+            if (mascotFloatAnimation != null) {
+                mascotFloatAnimation.setDuration(Duration.seconds(1.9));
+                mascotFloatAnimation.setToY(-7);
+                mascotFloatAnimation.play();
+            }
+            mascotMoodPulseAnimation = new ScaleTransition(Duration.seconds(1.3), mascotOverlayCard);
+            mascotMoodPulseAnimation.setFromX(1.0);
+            mascotMoodPulseAnimation.setFromY(1.0);
+            mascotMoodPulseAnimation.setToX(1.08);
+            mascotMoodPulseAnimation.setToY(1.08);
+            mascotMoodPulseAnimation.setAutoReverse(true);
+            mascotMoodPulseAnimation.setCycleCount(Animation.INDEFINITE);
+            mascotMoodPulseAnimation.play();
+            playMascotStarsEffect("✨ ✨ ✨", 0.45, 1.0);
+        } else if (feedbackAverage >= 3.0) {
+            if (mascotFloatAnimation != null) {
+                mascotFloatAnimation.setDuration(Duration.seconds(2.4));
+                mascotFloatAnimation.setToY(-4);
+                mascotFloatAnimation.play();
+            }
+            playMascotStarsEffect("✨ ✨", 0.55, 1.3);
+        } else if (feedbackAverage > 0) {
+            if (mascotFloatAnimation != null) {
+                mascotFloatAnimation.setDuration(Duration.seconds(2.7));
+                mascotFloatAnimation.setToY(-3);
+                mascotFloatAnimation.play();
+            }
+            mascotMoodBounceAnimation = new Timeline(
+                    new KeyFrame(Duration.ZERO, event -> mascotOverlayCard.setTranslateY(0)),
+                    new KeyFrame(Duration.millis(180), event -> mascotOverlayCard.setTranslateY(-10)),
+                    new KeyFrame(Duration.millis(360), event -> mascotOverlayCard.setTranslateY(0)),
+                    new KeyFrame(Duration.seconds(2.6))
+            );
+            mascotMoodBounceAnimation.setCycleCount(Animation.INDEFINITE);
+            mascotMoodBounceAnimation.play();
+            playMascotBadMoodEffect();
+        }
+    }
+
+    private void playMascotBadMoodEffect() {
+        if (mascotOverlayCard == null) {
+            return;
+        }
+        mascotOverlayCard.setStyle("-fx-background-color: rgba(127, 29, 29, 0.16);"
+                + "-fx-background-radius: 999;"
+                + "-fx-border-color: #F87171;"
+                + "-fx-border-width: 1.2;"
+                + "-fx-border-radius: 999;"
+                + "-fx-cursor: hand;"
+                + "-fx-padding: 8 8 8 8;");
+
+        if (mascotOverlayFxLabel != null) {
+            mascotOverlayFxLabel.setText("⚠");
+            mascotOverlayFxLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: 800; -fx-text-fill: #EF4444;");
+            mascotOverlayFxLabel.setOpacity(0.95);
+        }
+
+        DropShadow badGlow = new DropShadow();
+        badGlow.setRadius(8);
+        badGlow.setSpread(0.2);
+        badGlow.setColor(Color.web("#EF4444"));
+        mascotOverlayCard.setEffect(badGlow);
+
+        mascotBadGlowAnimation = new Timeline(
+                new KeyFrame(Duration.ZERO, event -> {
+                    badGlow.setRadius(6);
+                    badGlow.setSpread(0.15);
+                }),
+                new KeyFrame(Duration.millis(420), event -> {
+                    badGlow.setRadius(14);
+                    badGlow.setSpread(0.35);
+                }),
+                new KeyFrame(Duration.millis(840), event -> {
+                    badGlow.setRadius(6);
+                    badGlow.setSpread(0.15);
+                })
+        );
+        mascotBadGlowAnimation.setCycleCount(Animation.INDEFINITE);
+        mascotBadGlowAnimation.play();
+    }
+
+    private void playMascotStarsEffect(String starsText, double fadeDurationSeconds, double rotateDurationSeconds) {
+        if (mascotOverlayFxLabel == null) {
+            return;
+        }
+        mascotOverlayFxLabel.setText(starsText);
+        mascotOverlayFxLabel.setOpacity(0.95);
+
+        mascotFxFadeAnimation = new FadeTransition(Duration.seconds(fadeDurationSeconds), mascotOverlayFxLabel);
+        mascotFxFadeAnimation.setFromValue(0.95);
+        mascotFxFadeAnimation.setToValue(0.25);
+        mascotFxFadeAnimation.setAutoReverse(true);
+        mascotFxFadeAnimation.setCycleCount(Animation.INDEFINITE);
+        mascotFxFadeAnimation.play();
+
+        mascotFxRotateAnimation = new RotateTransition(Duration.seconds(rotateDurationSeconds), mascotOverlayFxLabel);
+        mascotFxRotateAnimation.setFromAngle(-10);
+        mascotFxRotateAnimation.setToAngle(10);
+        mascotFxRotateAnimation.setAutoReverse(true);
+        mascotFxRotateAnimation.setCycleCount(Animation.INDEFINITE);
+        mascotFxRotateAnimation.play();
     }
 
     // ── Force explicit day-number colors to keep DatePicker readable in both themes ──
@@ -426,11 +609,7 @@ public class PlanningController implements Initializable {
     }
 
     private boolean isLightThemeActive() {
-        Scene scene = planningDatePicker != null ? planningDatePicker.getScene() : null;
-        if (scene == null) {
-            return App.getCurrentTheme() == App.Theme.LIGHT;
-        }
-        return scene.getStylesheets().stream().anyMatch(s -> s.contains("light"));
+        return App.getCurrentTheme() == App.Theme.LIGHT;
     }
 
     // ── Smart Plan : bouton principal → ouvre la page preview ──
@@ -863,8 +1042,13 @@ public class PlanningController implements Initializable {
 
     @FXML
     private void handleViewSessions() {
+        MainController mainController = MainController.getInstance();
+        if (mainController != null) {
+            MainController.loadContentInMainArea("views/Sessions.fxml");
+            return;
+        }
         try {
-            App.setRoot("views/Seance");
+            App.setRoot("views/Sessions");
         } catch (IOException exception) {
             showErrorOn(pageMessageLabel, "Unable to open sessions view: " + exception.getMessage());
         }
@@ -883,10 +1067,15 @@ public class PlanningController implements Initializable {
             showInfo("No planning entries available to export.");
             return;
         }
+        ExportPdfOptions options = showPlanningPdfOptionsDialog(entries);
+        if (options == null) {
+            showInfo("PDF export cancelled.");
+            return;
+        }
 
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Export Planning to PDF");
-        fileChooser.setInitialFileName("planning-export-" + LocalDate.now() + ".pdf");
+        fileChooser.setInitialFileName("planning-" + options.month() + ".pdf");
         fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("PDF Document", "*.pdf"));
 
         Window owner = planningBoardView == null || planningBoardView.getScene() == null
@@ -898,29 +1087,330 @@ public class PlanningController implements Initializable {
             return;
         }
 
-        try {
-            planningPdfApiService.exportPlanningPdf(entries, selected.toPath(), currentYearMonth, "🙂", "", true);
-            showInfo("Planning PDF exported successfully via API.");
-        } catch (Exception exception) {
-            showErrorOn(pageMessageLabel, "PDF export failed: " + exception.getMessage());
+        showInfo("Export in progress... Please wait.");
+        CompletableFuture.runAsync(() -> {
+            try {
+                planningPdfApiService.exportPlanningPdf(
+                        entries,
+                        selected.toPath(),
+                        options.month(),
+                        options.feedbackEmoji(),
+                        options.feedbackText(),
+                        true
+                );
+                Platform.runLater(() -> showInfo("Planning PDF exported successfully."));
+            } catch (Exception exception) {
+                Platform.runLater(() ->
+                        showErrorOn(pageMessageLabel, "PDF export failed: " + exception.getMessage()));
+            }
+        });
+    }
+
+    @FXML
+    private void handleImportGoogleCalendar() {
+        User currentUser = UserSession.getInstance().getCurrentUser();
+        if (currentUser == null) {
+            showErrorOn(pageMessageLabel, "No logged-in user found.");
+            return;
         }
+
+        showInfo("Connecting to Google Calendar... Complete authorization in your browser.");
+        CompletableFuture.runAsync(() -> {
+            try {
+                GoogleCalendarSyncService.SyncResult result = googleCalendarSyncService.syncFromGoogleCalendar(currentUser);
+                Platform.runLater(() -> {
+                    refreshPlanningData();
+                    showInfo(result.message() + " Imported: " + result.importedCount() + ", skipped: " + result.skippedCount() + ".");
+                });
+            } catch (Exception exception) {
+                Platform.runLater(() -> showErrorOn(pageMessageLabel, "Google Calendar sync failed: " + exception.getMessage()));
+            }
+        });
+    }
+
+    private ExportPdfOptions showPlanningPdfOptionsDialog(List<Planning> entries) {
+        YearMonth monthBase = currentYearMonth != null ? currentYearMonth : YearMonth.now();
+        List<YearMonth> availableMonths = new ArrayList<>();
+        for (int month = 1; month <= monthBase.getMonthValue(); month++) {
+            availableMonths.add(YearMonth.of(monthBase.getYear(), month));
+        }
+        if (availableMonths.isEmpty()) {
+            return null;
+        }
+
+        Dialog<ExportPdfOptions> dialog = new Dialog<>();
+        dialog.setTitle("Planning PDF Options");
+        dialog.setHeaderText("Choose month and student feedback section");
+        dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+
+        Label monthLabel = new Label("Month to export");
+        ComboBox<YearMonth> monthComboBox = new ComboBox<>();
+        monthComboBox.setItems(FXCollections.observableArrayList(availableMonths));
+        monthComboBox.setValue(availableMonths.get(availableMonths.size() - 1));
+        DateTimeFormatter monthTextFormatter = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ENGLISH);
+        monthComboBox.setConverter(new StringConverter<>() {
+            @Override
+            public String toString(YearMonth object) {
+                return object == null ? "" : object.format(monthTextFormatter);
+            }
+
+            @Override
+            public YearMonth fromString(String string) {
+                return null;
+            }
+        });
+
+        Label emojiLabel = new Label("Feedback emoji");
+        ComboBox<String> emojiComboBox = new ComboBox<>();
+        emojiComboBox.setItems(FXCollections.observableArrayList(
+                "☹️  Very Bad",
+                "😐  Neutral",
+                "🙂  Good",
+                "😄  Excellent",
+                "⭐  Outstanding"
+        ));
+        emojiComboBox.setValue("🙂  Good");
+        emojiComboBox.setButtonCell(new ListCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? null : item);
+                setStyle("-fx-font-size: 14px;");
+            }
+        });
+        emojiComboBox.setCellFactory(list -> new ListCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? null : item);
+                setStyle("-fx-font-size: 14px;");
+            }
+        });
+
+        Label commentLabel = new Label("Student comment (optional)");
+        TextArea commentArea = new TextArea();
+        commentArea.setPromptText("Write feedback for this month...");
+        commentArea.setPrefRowCount(4);
+
+        VBox content = new VBox(10, monthLabel, monthComboBox, emojiLabel, emojiComboBox, commentLabel, commentArea);
+        content.setPadding(new Insets(8, 0, 0, 0));
+        dialog.getDialogPane().setContent(content);
+
+        boolean lightTheme = isLightThemeActive();
+        String paneStyle = lightTheme
+                ? "-fx-background-color:#F8FAFC;"
+                : "-fx-background-color:#0F172A;";
+        String labelStyle = lightTheme
+                ? "-fx-text-fill:#0F172A;-fx-font-weight:700;"
+                : "-fx-text-fill:#E2E8F0;-fx-font-weight:700;";
+        String contentStyle = lightTheme
+                ? "-fx-background-color:#F8FAFC;"
+                : "-fx-background-color:#0F172A;";
+        String comboStyle = lightTheme
+                ? "-fx-background-color:#FFFFFF;-fx-border-color:#CBD5E1;-fx-text-fill:#0F172A;"
+                : "-fx-background-color:#1E293B;-fx-border-color:#334155;-fx-text-fill:#E2E8F0;";
+        String textAreaStyle = lightTheme
+                ? "-fx-control-inner-background:#FFFFFF;-fx-background-color:#FFFFFF;-fx-text-fill:#0F172A;-fx-prompt-text-fill:#64748B;-fx-border-color:#CBD5E1;"
+                : "-fx-control-inner-background:#1E293B;-fx-background-color:#1E293B;-fx-text-fill:#E2E8F0;-fx-prompt-text-fill:#94A3B8;-fx-border-color:#334155;";
+
+        dialog.getDialogPane().setStyle(paneStyle);
+        content.setStyle(contentStyle);
+        monthLabel.setStyle(labelStyle);
+        emojiLabel.setStyle(labelStyle);
+        commentLabel.setStyle(labelStyle);
+        monthComboBox.setStyle(comboStyle);
+        emojiComboBox.setStyle(comboStyle);
+        commentArea.setStyle(textAreaStyle);
+        dialog.setOnShown(event -> {
+            Window ownerWindow = planningBoardView == null || planningBoardView.getScene() == null
+                    ? null
+                    : planningBoardView.getScene().getWindow();
+            if (ownerWindow != null && ownerWindow.getScene() != null && dialog.getDialogPane().getScene() != null) {
+                dialog.getDialogPane().getScene().getStylesheets().setAll(ownerWindow.getScene().getStylesheets());
+            }
+
+            String listCellTextStyle = lightTheme ? "-fx-text-fill:#0F172A;-fx-font-size:14px;" : "-fx-text-fill:#E2E8F0;-fx-font-size:14px;";
+            monthComboBox.setButtonCell(new ListCell<>() {
+                @Override
+                protected void updateItem(YearMonth item, boolean empty) {
+                    super.updateItem(item, empty);
+                    setText(empty || item == null ? null : item.format(monthTextFormatter));
+                    setStyle(listCellTextStyle);
+                }
+            });
+            monthComboBox.setCellFactory(list -> new ListCell<>() {
+                @Override
+                protected void updateItem(YearMonth item, boolean empty) {
+                    super.updateItem(item, empty);
+                    setText(empty || item == null ? null : item.format(monthTextFormatter));
+                    setStyle(listCellTextStyle);
+                }
+            });
+
+            emojiComboBox.setButtonCell(new ListCell<>() {
+                @Override
+                protected void updateItem(String item, boolean empty) {
+                    super.updateItem(item, empty);
+                    setText(empty || item == null ? null : item);
+                    setStyle(listCellTextStyle);
+                }
+            });
+            emojiComboBox.setCellFactory(list -> new ListCell<>() {
+                @Override
+                protected void updateItem(String item, boolean empty) {
+                    super.updateItem(item, empty);
+                    setText(empty || item == null ? null : item);
+                    setStyle(listCellTextStyle);
+                }
+            });
+
+            Node header = dialog.getDialogPane().lookup(".header-panel");
+            if (header != null) {
+                header.setStyle(lightTheme
+                        ? "-fx-background-color:#F8FAFC;"
+                        : "-fx-background-color:#0F172A;");
+            }
+            Node headerLabel = dialog.getDialogPane().lookup(".header-panel .label");
+            if (headerLabel != null) {
+                headerLabel.setStyle(lightTheme
+                        ? "-fx-text-fill:#0F172A;-fx-font-weight:600;"
+                        : "-fx-text-fill:#E2E8F0;-fx-font-weight:600;");
+            }
+            Node textAreaContent = commentArea.lookup(".content");
+            if (textAreaContent != null) {
+                textAreaContent.setStyle(lightTheme
+                        ? "-fx-background-color:#FFFFFF;"
+                        : "-fx-background-color:#1E293B;");
+            }
+        });
+
+        dialog.setResultConverter(buttonType -> {
+            if (buttonType != ButtonType.OK) {
+                return null;
+            }
+            YearMonth month = monthComboBox.getValue();
+            if (month == null) {
+                return null;
+            }
+            String emojiValue = emojiComboBox.getValue() == null ? "🙂  Good" : emojiComboBox.getValue().trim();
+            String emoji = emojiValue.split("\\s+")[0];
+            String feedbackText = commentArea.getText() == null ? "" : commentArea.getText().trim();
+            return new ExportPdfOptions(month, emoji, feedbackText);
+        });
+
+        Optional<ExportPdfOptions> result = dialog.showAndWait();
+        return result.orElse(null);
+    }
+
+    private record ExportPdfOptions(YearMonth month, String feedbackEmoji, String feedbackText) {
     }
 
     @FXML
     private void handleToggleMascot() {
-        mascotMinimized = !mascotMinimized;
+        applyMascotVisibility();
+    }
+
+    private void applyMascotVisibility() {
+        boolean displayMascot = mascotDisplayCheckBox == null || mascotDisplayCheckBox.isSelected();
         if (mascotOverlayCard != null) {
-            mascotOverlayCard.setPrefWidth(mascotMinimized ? 64 : 88);
-            mascotOverlayCard.setMinWidth(mascotMinimized ? 64 : 80);
-            mascotOverlayCard.setMaxWidth(mascotMinimized ? 64 : 96);
-        }
-        if (mascotToggleButton != null) {
-            mascotToggleButton.setText(mascotMinimized ? "+" : "-");
+            mascotOverlayCard.setVisible(displayMascot);
         }
     }
 
+    private void positionMascotNearClock() {
+        if (mascotOverlayCard == null || liveClockLabel == null || mascotOverlayCard.getParent() == null) {
+            return;
+        }
+        if (liveClockLabel.getScene() == null) {
+            Platform.runLater(this::positionMascotNearClock);
+            return;
+        }
+        Point2D scenePoint = liveClockLabel.localToScene(
+                liveClockLabel.getBoundsInLocal().getMaxX() + 18,
+                liveClockLabel.getBoundsInLocal().getMinY() - 8
+        );
+        Point2D parentPoint = mascotOverlayCard.getParent().sceneToLocal(scenePoint);
+        mascotOverlayCard.setTranslateX(0);
+        mascotOverlayCard.setTranslateY(0);
+        mascotOverlayCard.relocate(parentPoint.getX(), parentPoint.getY());
+        mascotOverlayCard.toFront();
+    }
+
+    private void installMascotViewportPinning() {
+        if (mascotOverlayCard == null || mascotOverlayCard.getParent() == null) {
+            return;
+        }
+        mascotOverlayCard.getParent().localToSceneTransformProperty().addListener((obs, oldV, newV) -> {
+            if (!mascotDragging) {
+                syncMascotToPinnedScenePosition();
+            }
+        });
+        if (mascotOverlayCard.getScene() != null) {
+            mascotOverlayCard.getScene().heightProperty().addListener((obs, oldV, newV) -> {
+                if (!mascotDragging) {
+                    syncMascotToPinnedScenePosition();
+                }
+            });
+        }
+    }
+
+    private void pinMascotAtCurrentScenePosition() {
+        if (mascotOverlayCard == null) {
+            return;
+        }
+        Point2D scenePos = mascotOverlayCard.localToScene(0, 0);
+        if (scenePos != null) {
+            mascotPinnedSceneX = scenePos.getX();
+            mascotPinnedSceneY = scenePos.getY();
+        }
+    }
+
+    private void syncMascotToPinnedScenePosition() {
+        if (mascotOverlayCard == null || mascotOverlayCard.getParent() == null
+                || mascotPinnedSceneX == null || mascotPinnedSceneY == null) {
+            return;
+        }
+        Point2D parentPoint = mascotOverlayCard.getParent().sceneToLocal(mascotPinnedSceneX, mascotPinnedSceneY);
+        mascotOverlayCard.relocate(parentPoint.getX(), parentPoint.getY());
+        mascotOverlayCard.toFront();
+    }
+
+    @FXML
+    private void handleMascotDragStart(MouseEvent event) {
+        if (mascotOverlayCard == null) {
+            return;
+        }
+        mascotDragging = true;
+        mascotDragAnchorX = event.getSceneX();
+        mascotDragAnchorY = event.getSceneY();
+        mascotDragStartTranslateX = mascotOverlayCard.getLayoutX();
+        mascotDragStartTranslateY = mascotOverlayCard.getLayoutY();
+    }
+
+    @FXML
+    private void handleMascotDragged(MouseEvent event) {
+        if (mascotOverlayCard == null) {
+            return;
+        }
+        double deltaX = event.getSceneX() - mascotDragAnchorX;
+        double deltaY = event.getSceneY() - mascotDragAnchorY;
+        mascotOverlayCard.relocate(mascotDragStartTranslateX + deltaX, mascotDragStartTranslateY + deltaY);
+    }
+
+    @FXML
+    private void handleMascotDragEnd(MouseEvent event) {
+        mascotDragging = false;
+        pinMascotAtCurrentScenePosition();
+    }
+
+
     @FXML
     private void handleManageSessionTypes() {
+        MainController mainController = MainController.getInstance();
+        if (mainController != null) {
+            MainController.loadContentInMainArea("views/TypeSeance.fxml");
+            return;
+        }
         try {
             App.setRoot("views/TypeSeance");
         } catch (IOException exception) {
@@ -3677,36 +4167,50 @@ public class PlanningController implements Initializable {
     }
 
     private void updateMascotPanel(int streak, double feedbackAverage) {
-        if (mascotEmojiLabel == null) {
+        if (mascotStateImage == null && mascotOverlayEmojiImage == null) {
             return;
         }
+        double effectiveFeedbackAverage = streak <= 0 ? 0 : feedbackAverage;
         String emoji;
+        String emojiAsset;
         String name;
         String message;
         if (streak >= 7) {
             emoji = "🐥";
+            emojiAsset = "/com/studyflow/images/emoji/chicken-baby.png";
             name = "Shining Planner";
             message = "Excellent consistency this week.";
         } else if (streak >= 3) {
             emoji = "🐤";
+            emojiAsset = "/com/studyflow/images/emoji/chick.png";
             name = "Growing Planner";
             message = "Good rhythm, keep going.";
         } else {
             emoji = "🐣";
+            emojiAsset = "/com/studyflow/images/emoji/chick-baby.png";
             name = "Baby Planner";
             message = "Start with one focused session.";
         }
 
-        String mood = feedbackAverage >= 4.0 ? "Mood: Great 🙂"
-                : feedbackAverage >= 3.0 ? "Mood: Good 😊"
-                : feedbackAverage > 0 ? "Mood: Needs focus 😐"
+        String mood = effectiveFeedbackAverage >= 4.0 ? "Mood: Great 🙂"
+                : effectiveFeedbackAverage >= 3.0 ? "Mood: Good 😊"
+                : effectiveFeedbackAverage > 0 ? "Mood: Needs focus 😐"
                 : "Mood: No feedback yet";
 
-        mascotEmojiLabel.setText(emoji);
+        Image mascotImage = new Image(getClass().getResourceAsStream(emojiAsset));
+        if (mascotStateImage != null) {
+            mascotStateImage.setImage(mascotImage);
+            mascotStateImage.setUserData(emoji);
+        }
+        if (mascotOverlayEmojiImage != null) {
+            mascotOverlayEmojiImage.setImage(mascotImage);
+            mascotOverlayEmojiImage.setUserData(emoji);
+        }
         if (mascotNameLabel != null) mascotNameLabel.setText(name);
         if (mascotMoodLabel != null) mascotMoodLabel.setText(mood);
         if (mascotStreakLabel != null) mascotStreakLabel.setText("Streak: " + streak + " day(s)");
         if (mascotMessageLabel != null) mascotMessageLabel.setText(message);
+        applyMascotMoodAnimation(effectiveFeedbackAverage);
     }
 
     private double computePlannedHoursBetween(LocalDate startInclusive, LocalDate endInclusive) {
@@ -3966,6 +4470,7 @@ public class PlanningController implements Initializable {
     private HBox createCalendarEntryCard(Planning entry) {
         boolean matchEntry = isMatchPlanningEntry(entry);
         boolean dayOffEntry = !matchEntry && isDayOffPlanningEntry(entry);
+        boolean googleEntry = !matchEntry && !dayOffEntry && isGoogleImportedEntry(entry);
         HBox card = new HBox(matchEntry ? 8 : 6);
         card.getStyleClass().add("planning-calendar-entry-card");
         if (matchEntry) {
@@ -3974,6 +4479,11 @@ public class PlanningController implements Initializable {
         } else if (dayOffEntry) {
             card.getStyleClass().add("planning-dayoff-calendar-entry-card");
             card.setMinHeight(40);
+        } else if (googleEntry) {
+            card.getStyleClass().add("planning-google-calendar-entry-card");
+            card.setStyle("-fx-border-color: rgba(37,99,235,0.75);"
+                    + "-fx-border-width: 1.2;"
+                    + "-fx-background-color: linear-gradient(to right, rgba(37,99,235,0.16), rgba(255,255,255,0.95));");
         }
         if (isAssistantGeneratedEntry(entry)) {
             card.getStyleClass().add("planning-ai-calendar-entry-card");
@@ -3998,6 +4508,9 @@ public class PlanningController implements Initializable {
         } else if (dayOffEntry) {
             sessionTitle = "🌴";
         }
+        if (googleEntry) {
+            sessionTitle = "GOOGLE • " + sessionTitle;
+        }
         int maxTitleLength = matchEntry ? Integer.MAX_VALUE : 15;
         if (!matchEntry && sessionTitle.length() > maxTitleLength) {
             sessionTitle = sessionTitle.substring(0, maxTitleLength) + "...";
@@ -4013,6 +4526,8 @@ public class PlanningController implements Initializable {
             titleLabel.setTooltip(new Tooltip(sessionTitle));
         } else if (dayOffEntry) {
             titleLabel.getStyleClass().add("planning-dayoff-calendar-entry-title");
+        } else if (googleEntry) {
+            titleLabel.getStyleClass().add("planning-google-calendar-entry-title");
         }
         if (isAssistantGeneratedEntry(entry)) {
             titleLabel.getStyleClass().add("planning-ai-calendar-entry-title");
@@ -4035,6 +4550,12 @@ public class PlanningController implements Initializable {
             timeLabel.setVisible(false);
         }
         infoBox.getChildren().addAll(titleRow, timeLabel);
+        if (googleEntry) {
+            Label googleTag = new Label("GOOGLE");
+            googleTag.getStyleClass().add("planning-google-badge");
+            titleRow.getChildren().add(googleTag);
+            colorStrip.setStyle("-fx-background-color: " + GOOGLE_IMPORTED_COLOR_HEX + "; -fx-background-radius: 4;");
+        }
 
         if (matchChip != null) {
             card.getChildren().addAll(colorStrip, matchChip, infoBox);
@@ -4050,12 +4571,17 @@ public class PlanningController implements Initializable {
                 event.consume();
                 return;
             }
+            if (googleEntry) {
+                showInfo("Google Calendar entries are read-only.");
+                event.consume();
+                return;
+            }
             PlanningController.this.startEdit(entry);
             event.consume();
         });
 
         card.setOnDragDetected(event -> {
-            if (dayOffEntry) {
+            if (dayOffEntry || googleEntry) {
                 event.consume();
                 return;
             }
@@ -4141,6 +4667,31 @@ public class PlanningController implements Initializable {
                     || type.contains(SESSION_TYPE_DAY_OFF)
                     || typeName.contains(SESSION_TYPE_DAYOFF)
                     || type.contains(SESSION_TYPE_DAYOFF);
+        }
+
+        return false;
+    }
+
+    private boolean isGoogleImportedEntry(Planning entry) {
+        if (entry == null) {
+            return false;
+        }
+
+        if (sessionComboBox == null || sessionComboBox.getItems() == null) {
+            return false;
+        }
+
+        for (Seance seance : sessionComboBox.getItems()) {
+            if (seance == null || seance.getId() != entry.getSeanceId()) {
+                continue;
+            }
+            String typeName = normalizeAssistant(seance.getTypeSeanceName());
+            String type = normalizeAssistant(seance.getTypeSeance());
+            String description = normalizeAssistant(seance.getDescription());
+            return typeName.contains(SESSION_TYPE_GOOGLE_IMPORTED)
+                    || type.contains(SESSION_TYPE_GOOGLE_IMPORTED)
+                    || description.contains("imported from google calendar")
+                    || GOOGLE_IMPORTED_COLOR_HEX.equalsIgnoreCase(entry.getColorHex());
         }
 
         return false;
@@ -4579,6 +5130,10 @@ public class PlanningController implements Initializable {
     }
 
     private void startEdit(Planning planningEntry) {
+        if (isGoogleImportedEntry(planningEntry)) {
+            showInfo("Google Calendar entries are read-only.");
+            return;
+        }
         editingPlanning = planningEntry;
         planningFormTitleLabel.setText("Edit Planning");
         for (Seance seance : sessionComboBox.getItems()) {
@@ -4604,6 +5159,10 @@ public class PlanningController implements Initializable {
     }
 
     private void deletePlanning(Planning planningEntry) {
+        if (isGoogleImportedEntry(planningEntry)) {
+            showInfo("Google Calendar entries are read-only.");
+            return;
+        }
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
         alert.setTitle("Delete Planning");
         alert.setHeaderText("Delete planned session?");
@@ -5278,6 +5837,7 @@ public class PlanningController implements Initializable {
         private final Label dateTimeLabel = new Label();
         private final Label aiBadgeLabel = new Label("AI");
         private final Label matchBadgeLabel = new Label("⚽");
+        private final Label googleBadgeLabel = new Label("GOOGLE");
         private final HBox actionBox = new HBox(6);
         private final Button editButton = new Button();
         private final Button deleteButton = new Button();
@@ -5302,6 +5862,9 @@ public class PlanningController implements Initializable {
             matchBadgeLabel.getStyleClass().add("planning-match-badge");
             matchBadgeLabel.setManaged(false);
             matchBadgeLabel.setVisible(false);
+            googleBadgeLabel.getStyleClass().add("planning-google-badge");
+            googleBadgeLabel.setManaged(false);
+            googleBadgeLabel.setVisible(false);
 
             editButton.getStyleClass().addAll("btn-secondary", "planning-upcoming-action-btn", "planning-upcoming-action-icon");
             deleteButton.getStyleClass().addAll("btn-danger", "planning-upcoming-action-btn", "planning-upcoming-action-delete", "planning-upcoming-action-icon");
@@ -5324,7 +5887,7 @@ public class PlanningController implements Initializable {
                 }
             });
 
-            actionBox.getChildren().addAll(matchBadgeLabel, aiBadgeLabel, editButton, deleteButton);
+            actionBox.getChildren().addAll(matchBadgeLabel, aiBadgeLabel, googleBadgeLabel, editButton, deleteButton);
             actionBox.setAlignment(Pos.CENTER_RIGHT);
             actionBox.setMinWidth(Region.USE_PREF_SIZE);
 
@@ -5351,22 +5914,43 @@ public class PlanningController implements Initializable {
             }
 
             colorBar.setStyle("-fx-background-color: " + item.getColorHex() + "; -fx-background-radius: 4;");
-            titleLabel.setText(item.getSeanceTitle());
+            titleLabel.setText(isGoogleImportedEntry(item) ? "GOOGLE • " + item.getSeanceTitle() : item.getSeanceTitle());
             dateTimeLabel.setText(item.getPlanningDate().format(shortDateFormatter) + "  •  " + formatEntryTime(item));
 
             boolean aiGenerated = isAssistantGeneratedEntry(item);
             boolean matchEntry = isMatchPlanningEntry(item);
+            boolean googleEntry = isGoogleImportedEntry(item);
             aiBadgeLabel.setVisible(aiGenerated);
             aiBadgeLabel.setManaged(aiGenerated);
             matchBadgeLabel.setVisible(matchEntry);
             matchBadgeLabel.setManaged(matchEntry);
+            googleBadgeLabel.setVisible(googleEntry);
+            googleBadgeLabel.setManaged(googleEntry);
             root.getStyleClass().remove("planning-ai-upcoming-item-card");
             root.getStyleClass().remove("planning-match-upcoming-item-card");
+            root.getStyleClass().remove("planning-google-upcoming-item-card");
             if (aiGenerated) {
                 root.getStyleClass().add("planning-ai-upcoming-item-card");
             }
             if (matchEntry) {
                 root.getStyleClass().add("planning-match-upcoming-item-card");
+            }
+            if (googleEntry) {
+                root.getStyleClass().add("planning-google-upcoming-item-card");
+                root.setStyle("-fx-border-color: rgba(37,99,235,0.72);"
+                        + "-fx-border-width: 1.2;"
+                        + "-fx-background-color: linear-gradient(to right, rgba(37,99,235,0.14), rgba(255,255,255,0.98));");
+                colorBar.setStyle("-fx-background-color: " + GOOGLE_IMPORTED_COLOR_HEX + "; -fx-background-radius: 4;");
+                editButton.setDisable(true);
+                deleteButton.setDisable(true);
+                editButton.setTooltip(new Tooltip("Google event: read-only"));
+                deleteButton.setTooltip(new Tooltip("Google event: read-only"));
+            } else {
+                root.setStyle("");
+                editButton.setDisable(false);
+                deleteButton.setDisable(false);
+                editButton.setTooltip(new Tooltip("Edit"));
+                deleteButton.setTooltip(new Tooltip("Delete"));
             }
             setGraphic(root);
         }

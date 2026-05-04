@@ -46,6 +46,16 @@
                     <FontIcon iconLiteral="fth-list" iconSize="16" />
                 </graphic>
             </Button>
+            <Button onAction="#handleImportGoogleCalendar" styleClass="btn-secondary" text="Import Google">
+                <graphic>
+                    <FontIcon iconLiteral="fth-calendar" iconSize="16" />
+                </graphic>
+            </Button>
+            <Button onAction="#handleExportPlanningPdf" styleClass="btn-secondary" text="Export PDF">
+                <graphic>
+                    <FontIcon iconLiteral="fth-download" iconSize="16" />
+                </graphic>
+            </Button>
             <Button onAction="#handleManageSessionTypes" styleClass="btn-secondary" text="Manage Session Types">
                 <graphic>
                     <FontIcon iconLiteral="fth-settings" iconSize="16" />
@@ -131,18 +141,6 @@
                     </content>
                 </ScrollPane>
 
-                <!-- Mascot insights under calendar -->
-                <VBox spacing="10" styleClass="card" VBox.vgrow="NEVER">
-                    <HBox alignment="CENTER_LEFT" spacing="10" styleClass="card-header">
-                        <Label styleClass="card-title" text="Mascot Insights" />
-                    </HBox>
-                    <VBox fx:id="mascotDetailsBox" spacing="6" styleClass="card-body">
-                        <Label fx:id="mascotNameLabel" styleClass="card-title" text="Baby Planner" />
-                        <Label fx:id="mascotMoodLabel" styleClass="text-small" text="Mood: No feedback yet" />
-                        <Label fx:id="mascotStreakLabel" styleClass="text-small" text="Streak: 0 day(s)" />
-                        <Label fx:id="mascotMessageLabel" styleClass="text-small" text="Start with one focused session." wrapText="true" />
-                    </VBox>
-                </VBox>
             </VBox>
 
             <VBox maxWidth="430" minWidth="340" prefWidth="390" spacing="20" styleClass="planning-side-column">
@@ -514,20 +512,6 @@
 
         <VBox spacing="14" styleClass="stat-card" HBox.hgrow="ALWAYS">
             <HBox alignment="CENTER_LEFT" spacing="10">
-                <StackPane prefHeight="40" prefWidth="40" styleClass="stat-icon-box, success">
-                    <FontIcon iconLiteral="fth-check-circle" iconSize="16" />
-                </StackPane>
-                <Region HBox.hgrow="ALWAYS" />
-                <Label fx:id="planningCompletionTrendLabel" styleClass="kpi-trend-chip, neutral" text="0%" />
-            </HBox>
-            <VBox spacing="2">
-                <Label fx:id="planningCompletionValueLabel" styleClass="stat-value" text="0%" />
-                <Label styleClass="stat-label" text="Completion rate" />
-            </VBox>
-        </VBox>
-
-        <VBox spacing="14" styleClass="stat-card" HBox.hgrow="ALWAYS">
-            <HBox alignment="CENTER_LEFT" spacing="10">
                 <StackPane prefHeight="40" prefWidth="40" styleClass="stat-icon-box, warning">
                     <FontIcon iconLiteral="fth-smile" iconSize="16" />
                 </StackPane>
@@ -553,29 +537,57 @@
                 <Label styleClass="stat-label" text="Planning streak" />
             </VBox>
         </VBox>
+
+        <VBox spacing="14" styleClass="stat-card" HBox.hgrow="ALWAYS">
+            <HBox alignment="CENTER_LEFT" spacing="10">
+                <StackPane prefHeight="40" prefWidth="40" styleClass="stat-icon-box, primary">
+                    <FontIcon iconLiteral="fth-smile" iconSize="16" />
+                </StackPane>
+                <Label styleClass="stat-label" text="Mascot Insights" />
+                <Region HBox.hgrow="ALWAYS" />
+                <CheckBox fx:id="mascotDisplayCheckBox" onAction="#handleToggleMascot" selected="true" text="Display mascot" />
+            </HBox>
+            <HBox alignment="CENTER_LEFT" spacing="12">
+                <ImageView fx:id="mascotStateImage" fitHeight="52.0" fitWidth="52.0" pickOnBounds="true" preserveRatio="true" />
+                <VBox fx:id="mascotDetailsBox" spacing="4">
+                    <Label fx:id="mascotNameLabel" styleClass="stat-value" text="Baby Planner" />
+                    <Label fx:id="mascotMoodLabel" styleClass="text-small" text="Mood: No feedback yet" />
+                    <Label fx:id="mascotStreakLabel" styleClass="text-small" text="Streak: 0 day(s)" />
+                    <Label fx:id="mascotMessageLabel" styleClass="text-small" text="Start with one focused session." wrapText="true" />
+                </VBox>
+            </HBox>
+        </VBox>
     </HBox>
 </VBox>
 
-    <!-- Floating mascot overlay -->
     <VBox fx:id="mascotOverlayCard"
-          alignment="TOP_CENTER"
-          maxWidth="96"
-          minWidth="80"
-          prefWidth="88"
+          alignment="CENTER"
+          managed="false"
+          maxWidth="112"
+          minWidth="92"
+          onMouseDragged="#handleMascotDragged"
+          onMousePressed="#handleMascotDragStart"
+          onMouseReleased="#handleMascotDragEnd"
+          prefWidth="100"
           spacing="6"
           style="-fx-background-color: -color-surface;
                  -fx-background-radius: 999;
                  -fx-border-color: -color-border;
                  -fx-border-radius: 999;
+                 -fx-cursor: hand;
                  -fx-padding: 8 8 8 8;">
-        <StackPane.alignment>BOTTOM_RIGHT</StackPane.alignment>
+        <StackPane.alignment>TOP_LEFT</StackPane.alignment>
         <StackPane.margin>
-            <Insets bottom="16" right="16" />
+            <Insets right="0" top="0" />
         </StackPane.margin>
-        <HBox alignment="CENTER_RIGHT" spacing="6">
-            <Button fx:id="mascotToggleButton" onAction="#handleToggleMascot" styleClass="btn-secondary" text="-" />
-        </HBox>
-        <Label fx:id="mascotEmojiLabel" style="-fx-font-family: 'Segoe UI Emoji'; -fx-font-size: 44px;" text="🐣" />
+        <StackPane>
+            <ImageView fx:id="mascotOverlayEmojiImage" fitHeight="54.0" fitWidth="54.0" pickOnBounds="true" preserveRatio="true" />
+            <Label fx:id="mascotOverlayFxLabel"
+                   mouseTransparent="true"
+                   style="-fx-font-size: 16px; -fx-font-weight: 700; -fx-text-fill: #FACC15;"
+                   text=""
+                   translateX="20"
+                   translateY="-18" />
+        </StackPane>
     </VBox>
-
 </StackPane>
