@@ -30,6 +30,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.*;
 import javafx.util.Duration;
 import org.kordamp.ikonli.javafx.FontIcon;
 import javafx.scene.control.Tooltip;
@@ -54,6 +55,17 @@ public class CoursesController implements Initializable {
     @FXML private Label statMeilleur;
     @FXML private HBox  statCards;
     @FXML private VBox  smartQuizCard;
+    @FXML private HBox  flamyBookCard;
+    @FXML private StackPane flameMascotPane;
+    @FXML private Label flamyTitleLabel;
+    @FXML private Label flamyMoodLabel;
+    @FXML private Label flamyLevelLabel;
+    @FXML private Label flamyMessageLabel;
+    @FXML private Label flamyProgressLabel;
+    @FXML private Label flamyCoinsLabel;
+    @FXML private ProgressBar flamyProgressBar;
+    @FXML private HBox flameEffectsRow;
+    @FXML private FlowPane themeShopFlow;
 
     // ── Header ─────────────────────────────────────────────────
     @FXML private Label            pageTitle;
@@ -187,6 +199,21 @@ public class CoursesController implements Initializable {
 
     private boolean isRecordingVoice = false;
     private String lastVoiceResponse = "";
+    private String selectedFlamyTheme = "Cozy Desk";
+    private long currentFlamyTodayCount = 0;
+    private int currentFlamyLevel = 1;
+    private int currentFlamyStreak = 0;
+    private String previewFlamyEffect = "";
+    private static final List<FlamyTheme> FLAMY_THEMES = List.of(
+            new FlamyTheme("Cozy Desk", 0, "#1F1306", "#3B1D08", "#FB923C", "Warm desk"),
+            new FlamyTheme("Magic Library", 90, "#20123B", "#4C1D95", "#A78BFA", "Floating books"),
+            new FlamyTheme("Night Study", 140, "#07111F", "#0F3460", "#38BDF8", "Quiet stars"),
+            new FlamyTheme("Candy Notes", 190, "#351526", "#9D174D", "#F9A8D4", "Pastel glow"),
+            new FlamyTheme("Fire Academy", 240, "#2D0A0A", "#7C2D12", "#F97316", "Big flame"),
+            new FlamyTheme("Forest Focus", 300, "#071A12", "#14532D", "#34D399", "Calm leaves")
+    );
+
+    private record FlamyTheme(String name, int price, String from, String to, String accent, String perk) {}
 
     // ════════════════════════════════════════════════════════════
     //  QUIZ MODEL
@@ -257,6 +284,7 @@ public class CoursesController implements Initializable {
         setupVoiceLanguageSelector();
         setupVoiceAudioControls();
         setupAntiFraud();
+        setupFlamyThemeShop();
 
         showView("list");
         loadData();
@@ -728,6 +756,10 @@ public class CoursesController implements Initializable {
 
         boolean showCards = isList || isStats;
         statCards.setVisible(showCards); statCards.setManaged(showCards);
+        if (flamyBookCard != null) {
+            flamyBookCard.setVisible(isList);
+            flamyBookCard.setManaged(isList);
+        }
         if (smartQuizCard != null) { smartQuizCard.setVisible(isList); smartQuizCard.setManaged(isList); }
         sortCombo.setVisible(isList);   sortCombo.setManaged(isList);
         searchField.setVisible(isList); searchField.setManaged(isList);
@@ -789,16 +821,327 @@ public class CoursesController implements Initializable {
     private void loadData() {
         User u = UserSession.getInstance().getCurrentUser();
         if (u == null) {
+            allEvals.clear();
             courseGrid.getChildren().clear();
             statTotal.setText("0"); statMoyenne.setText("0");
             statLacunes.setText("0"); statMeilleur.setText("0");
+            updateFlamyBook();
             return;
         }
         try {
             allEvals.setAll(evalService.findByUser(u.getId()));
             updateStats();
+            updateFlamyBook();
             renderCards(allEvals);
         } catch (Exception e) { e.printStackTrace(); }
+    }
+
+    private void updateFlamyBook() {
+        if (flamyBookCard == null) {
+            return;
+        }
+
+        LocalDate today = LocalDate.now();
+        long todayCount = allEvals.stream()
+                .filter(e -> today.equals(e.getDateEvaluation()))
+                .count();
+        double todayAvg = allEvals.stream()
+                .filter(e -> today.equals(e.getDateEvaluation()))
+                .mapToDouble(EvaluationMatiere::getScoreEval)
+                .average()
+                .orElse(0);
+        int streak = computeEvaluationStreak();
+        int total = allEvals.size();
+        int level = Math.max(1, Math.min(20, 1 + total / 3 + streak / 4));
+        int flameCoins = total * 35 + streak * 20 + (int) todayCount * 15;
+        double dailyProgress = Math.min(1.0, todayCount / 4.0);
+        currentFlamyTodayCount = todayCount;
+        currentFlamyLevel = level;
+        currentFlamyStreak = streak;
+
+        if (FLAMY_THEMES.stream().filter(t -> t.name().equals(selectedFlamyTheme)).findFirst().map(FlamyTheme::price).orElse(0) > flameCoins) {
+            selectedFlamyTheme = "Cozy Desk";
+        }
+
+        String mood;
+        String message;
+        if (todayCount == 0) {
+            mood = "Sad little flame";
+            message = "Flamy is quiet today. Add one assessment to relight the face and warm up the camp logs.";
+        } else if (todayAvg > 0 && todayAvg < 10) {
+            mood = "Worried but brave";
+            message = "One tough result still gives energy. Review the weak subject and Flamy will keep glowing.";
+        } else if (todayCount == 1) {
+            mood = "Awake sparkle";
+            message = "Nice start. One more assessment today will unlock a stronger flame effect.";
+        } else if (todayCount < 4) {
+            mood = "Happy study flame";
+            message = "The pages are open and the flame is growing. Keep the daily streak alive.";
+        } else {
+            mood = "Radiant level rush";
+            message = "Full daily flame. Garland lights, runner sparks, and star glow are active.";
+        }
+
+        flamyTitleLabel.setText("FlamyBook");
+        flamyMoodLabel.setText(mood + " | " + streak + "-day streak");
+        flamyLevelLabel.setText("Level " + level);
+        flamyMessageLabel.setText(message);
+        flamyProgressLabel.setText(todayCount + " / 4 today");
+        flamyProgressBar.setProgress(dailyProgress);
+        flamyCoinsLabel.setText(flameCoins + " flame coins");
+
+        renderFlamyMascot(todayCount, level);
+        renderFlamyEffects(todayCount, streak, level);
+        renderThemeShop(flameCoins);
+        applyFlamyTheme(selectedFlamyTheme);
+    }
+
+    private int computeEvaluationStreak() {
+        Set<LocalDate> days = allEvals.stream()
+                .map(EvaluationMatiere::getDateEvaluation)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        int streak = 0;
+        LocalDate cursor = LocalDate.now();
+        while (days.contains(cursor)) {
+            streak++;
+            cursor = cursor.minusDays(1);
+        }
+        return streak;
+    }
+
+    private void setupFlamyThemeShop() {
+        renderThemeShop(0);
+        applyFlamyTheme(selectedFlamyTheme);
+        renderFlamyMascot(0, 1);
+    }
+
+    private void renderThemeShop(int flameCoins) {
+        if (themeShopFlow == null) {
+            return;
+        }
+        themeShopFlow.getChildren().clear();
+        for (FlamyTheme theme : FLAMY_THEMES) {
+            boolean selected = theme.name().equals(selectedFlamyTheme);
+            boolean unlocked = flameCoins >= theme.price();
+            Button button = new Button((selected ? "Selected " : unlocked ? "Use " : "Locked ") + theme.name());
+            button.setTooltip(new Tooltip(theme.perk() + " | " + theme.price() + " coins"));
+            button.setDisable(!unlocked);
+            button.setStyle("-fx-background-color:" + (selected ? theme.accent() : "rgba(255,255,255,0.07)") + ";"
+                    + "-fx-text-fill:" + (selected ? "#111827" : theme.accent()) + ";"
+                    + "-fx-border-color:" + theme.accent() + ";"
+                    + "-fx-border-width:1; -fx-border-radius:10; -fx-background-radius:10;"
+                    + "-fx-padding:7 10; -fx-font-size:11px; -fx-font-weight:800; -fx-cursor:hand;");
+            button.setOnAction(e -> {
+                selectedFlamyTheme = theme.name();
+                applyFlamyTheme(theme.name());
+                renderThemeShop(flameCoins);
+            });
+            themeShopFlow.getChildren().add(button);
+        }
+    }
+
+    private void applyFlamyTheme(String themeName) {
+        if (flamyBookCard == null) {
+            return;
+        }
+        FlamyTheme theme = FLAMY_THEMES.stream()
+                .filter(t -> t.name().equals(themeName))
+                .findFirst()
+                .orElse(FLAMY_THEMES.get(0));
+        flamyBookCard.setStyle("-fx-background-color:linear-gradient(to right," + theme.from() + "," + theme.to() + ");"
+                + "-fx-border-color:" + theme.accent() + "; -fx-border-width:1.2;"
+                + "-fx-border-radius:18; -fx-background-radius:18; -fx-padding:18 20;"
+                + "-fx-effect:dropshadow(gaussian," + toRgba(theme.accent(), 0.28) + ",18,0,0,5);");
+        flamyProgressBar.setStyle("-fx-accent:" + theme.accent() + "; -fx-background-color:rgba(0,0,0,0.25);"
+                + "-fx-background-radius:999; -fx-border-radius:999;");
+    }
+
+    private void renderFlamyEffects(long todayCount, int streak, int level) {
+        if (flameEffectsRow == null) {
+            return;
+        }
+        flameEffectsRow.getChildren().clear();
+        addEffectChip("Garland", "garland", streak >= 3, "needs 3-day streak", "#FBBF24");
+        addEffectChip("Runner sparks", "runner", todayCount >= 2, "needs 2 assessments today", "#38BDF8");
+        addEffectChip("Star glow", "star", level >= 5, "needs level 5", "#A78BFA");
+    }
+
+    private void addEffectChip(String text, String effect, boolean active, String lockedReason, String color) {
+        Button chip = new Button((active ? "Play " : "Locked ") + text);
+        chip.setTooltip(new Tooltip(active ? "Click to preview " + text : lockedReason));
+        chip.setStyle("-fx-text-fill:" + (active ? color : "#64748B") + ";"
+                + "-fx-background-color:" + (active ? toRgba(color, 0.16) : "rgba(100,116,139,0.12)") + ";"
+                + "-fx-border-color:" + (active ? color : "#334155") + ";"
+                + "-fx-border-width:1; -fx-background-radius:999; -fx-border-radius:999;"
+                + "-fx-padding:4 9; -fx-font-size:10px; -fx-font-weight:800; -fx-cursor:hand;");
+        chip.setOnAction(e -> {
+            if (!active) {
+                flamyMessageLabel.setText(text + " is locked: " + lockedReason + ".");
+                renderFlamyMascot(currentFlamyTodayCount, currentFlamyLevel);
+                return;
+            }
+            playFlamyEffect(effect, text);
+        });
+        flameEffectsRow.getChildren().add(chip);
+    }
+
+    private void playFlamyEffect(String effect, String label) {
+        previewFlamyEffect = effect;
+        flamyMessageLabel.setText(label + " effect preview is playing.");
+        renderFlamyMascot(currentFlamyTodayCount, currentFlamyLevel);
+        PauseTransition reset = new PauseTransition(Duration.seconds(1.8));
+        reset.setOnFinished(e -> {
+            previewFlamyEffect = "";
+            updateFlamyBook();
+        });
+        reset.play();
+    }
+
+    private void renderFlamyMascot(long todayCount, int level) {
+        if (flameMascotPane == null) {
+            return;
+        }
+        Pane art = new Pane();
+        art.setPrefSize(150, 136);
+
+        boolean garlandActive = currentFlamyStreak >= 3 || "garland".equals(previewFlamyEffect);
+        boolean runnerActive = todayCount >= 2 || "runner".equals(previewFlamyEffect);
+        boolean starActive = level >= 5 || "star".equals(previewFlamyEffect);
+
+        if (starActive) {
+            Circle aura = new Circle(75, 62, "star".equals(previewFlamyEffect) ? 61 : 50, Color.web("#FDE68A", 0.11));
+            aura.setStroke(Color.web("#FBBF24", 0.34));
+            aura.setStrokeWidth(2);
+            art.getChildren().add(aura);
+            addStar(20, 31, 5, "#FDE68A", art);
+            addStar(132, 39, 4, "#FDE68A", art);
+            addStar(116, 16, 3.5, "#FDE68A", art);
+        }
+
+        if (garlandActive) {
+            QuadCurve cord = new QuadCurve(12, 20, 75, "garland".equals(previewFlamyEffect) ? 42 : 31, 138, 20);
+            cord.setFill(Color.TRANSPARENT);
+            cord.setStroke(Color.web("#FBBF24"));
+            cord.setStrokeWidth(1.5);
+            art.getChildren().add(cord);
+            for (int i = 0; i < 6; i++) {
+                double x = 19 + i * 22;
+                double y = 24 + Math.sin(i * 0.95) * 7;
+                Circle bulb = new Circle(x, y, "garland".equals(previewFlamyEffect) ? 4.5 : 3.4,
+                        Color.web(i % 2 == 0 ? "#FDE68A" : "#FB923C"));
+                bulb.setStroke(Color.web("#7C2D12"));
+                bulb.setStrokeWidth(1);
+                art.getChildren().add(bulb);
+            }
+        }
+
+        SVGPath outerFlame = new SVGPath();
+        outerFlame.setContent("M75 5 C95 30 85 42 101 58 C111 35 128 55 119 78 C136 69 139 101 113 113 C92 124 59 124 38 113 C13 99 22 70 35 77 C29 54 45 35 52 57 C53 37 61 21 75 5 Z");
+        outerFlame.setFill(Color.web(todayCount == 0 ? "#F59E0B" : "#F97316"));
+        outerFlame.setStroke(Color.web("#B45309"));
+        outerFlame.setStrokeWidth(2.4);
+
+        SVGPath midFlame = new SVGPath();
+        midFlame.setContent("M76 26 C90 45 82 57 94 70 C101 56 110 70 104 88 C115 89 108 106 91 112 C78 117 58 114 49 103 C37 88 47 72 55 84 C54 66 64 45 76 26 Z");
+        midFlame.setFill(Color.web(todayCount >= 4 ? "#FEF3C7" : "#FBBF24"));
+        midFlame.setOpacity(todayCount == 0 ? 0.62 : 1);
+
+        SVGPath innerFlame = new SVGPath();
+        innerFlame.setContent("M77 43 C86 58 78 69 88 80 C94 72 99 85 94 96 C88 106 68 109 59 96 C51 84 62 76 66 84 C65 68 70 54 77 43 Z");
+        innerFlame.setFill(Color.web(todayCount >= 4 ? "#FFFFFF" : "#FDBA74"));
+        innerFlame.setOpacity(todayCount == 0 ? 0.35 : 0.78);
+
+        art.getChildren().addAll(outerFlame, midFlame, innerFlame);
+
+        Circle leftEye = new Circle(58, 80, todayCount == 0 ? 5 : 7, Color.web("#3B1F16"));
+        Circle rightEye = new Circle(91, 80, todayCount == 0 ? 5 : 7, Color.web("#3B1F16"));
+        Circle leftEyeSpark = new Circle(55, 77, 2.1, Color.WHITE);
+        Circle rightEyeSpark = new Circle(88, 77, 2.1, Color.WHITE);
+        Circle blushL = new Circle(48, 91, 5.2, Color.web("#FB7185", 0.72));
+        Circle blushR = new Circle(102, 91, 5.2, Color.web("#FB7185", 0.72));
+
+        Arc mouth = new Arc(75, todayCount == 0 ? 96 : 91, todayCount == 0 ? 8 : 7, 5,
+                todayCount == 0 ? 20 : 200, 140);
+        mouth.setType(ArcType.OPEN);
+        mouth.setFill(Color.TRANSPARENT);
+        mouth.setStroke(Color.web("#3B1F16"));
+        mouth.setStrokeWidth(2);
+
+        Line browL = new Line(52, 69, 61, todayCount == 0 ? 67 : 68);
+        Line browR = new Line(88, todayCount == 0 ? 67 : 68, 98, 69);
+        browL.setStroke(Color.web("#3B1F16"));
+        browR.setStroke(Color.web("#3B1F16"));
+        browL.setStrokeWidth(2);
+        browR.setStrokeWidth(2);
+        browL.setStrokeLineCap(StrokeLineCap.ROUND);
+        browR.setStrokeLineCap(StrokeLineCap.ROUND);
+
+        art.getChildren().addAll(blushL, blushR, leftEye, rightEye, leftEyeSpark, rightEyeSpark, browL, browR, mouth);
+
+        if (todayCount == 0) {
+            Circle tear = new Circle(98, 86, 3, Color.web("#38BDF8"));
+            art.getChildren().add(tear);
+        }
+
+        addLog(34, 112, -16, art);
+        addLog(75, 116, 0, art);
+        addLog(116, 112, 16, art);
+
+        if (runnerActive) {
+            for (int i = 0; i < ("runner".equals(previewFlamyEffect) ? 7 : 4); i++) {
+                double x = 18 + i * 16;
+                double y = 122 - (i % 2) * 10;
+                Polygon spark = new Polygon(x, y - 7, x + 5, y, x, y + 7, x - 5, y);
+                spark.setFill(Color.web(i % 2 == 0 ? "#FDBA74" : "#38BDF8"));
+                spark.setStroke(Color.web("#7C2D12", 0.5));
+                spark.setStrokeWidth(0.8);
+                art.getChildren().add(spark);
+            }
+        }
+
+        flameMascotPane.getChildren().setAll(art);
+    }
+
+    private void addLog(double x, double y, double rotate, Pane art) {
+        Rectangle log = new Rectangle(x - 19, y - 6, 38, 12);
+        log.setArcWidth(10);
+        log.setArcHeight(10);
+        log.setFill(Color.web("#8B4513"));
+        log.setStroke(Color.web("#4A250B"));
+        log.setStrokeWidth(2);
+        log.setRotate(rotate);
+        Circle ring = new Circle(x + 13, y, 5, Color.web("#A16207"));
+        ring.setStroke(Color.web("#4A250B"));
+        ring.setStrokeWidth(1.5);
+        ring.setRotate(rotate);
+        art.getChildren().addAll(log, ring);
+    }
+
+    private void addStar(double x, double y, double size, String color, Pane art) {
+        Polygon star = new Polygon(
+                x, y - size,
+                x + size * 0.35, y - size * 0.35,
+                x + size, y,
+                x + size * 0.35, y + size * 0.35,
+                x, y + size,
+                x - size * 0.35, y + size * 0.35,
+                x - size, y,
+                x - size * 0.35, y - size * 0.35
+        );
+        star.setFill(Color.web(color));
+        star.setStroke(Color.web("#7C2D12", 0.45));
+        star.setStrokeWidth(0.8);
+        art.getChildren().add(star);
+    }
+
+    private String toRgba(String hex, double alpha) {
+        Color color = Color.web(hex);
+        return String.format(Locale.US, "rgba(%d,%d,%d,%.2f)",
+                (int) Math.round(color.getRed() * 255),
+                (int) Math.round(color.getGreen() * 255),
+                (int) Math.round(color.getBlue() * 255),
+                alpha);
     }
 
     private void updateStats() {
