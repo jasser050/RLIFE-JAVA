@@ -1,0 +1,386 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.chart.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import org.kordamp.ikonli.javafx.FontIcon?>
+
+<StackPane xmlns="http://javafx.com/javafx/21"
+           xmlns:fx="http://javafx.com/fxml/1"
+           fx:controller="com.studyflow.controllers.AssignmentsController">
+
+<VBox spacing="20"
+      styleClass="page-section">
+
+    <HBox alignment="CENTER_LEFT" spacing="16">
+        <VBox spacing="4" HBox.hgrow="ALWAYS">
+            <Label text="Assignments" styleClass="text-heading"/>
+            <Label text="A Trello-style workspace with separate edit/delete windows, dynamic sharing, and stricter date rules." styleClass="text-muted"/>
+        </VBox>
+        <ComboBox fx:id="assignmentSortCombo" prefWidth="190" styleClass="form-combo"/>
+        <Button fx:id="exportAssignmentsPdfButton" text="Export PDF" onAction="#handleExportAssignmentsPdf" styleClass="pdf-export-button">
+            <graphic>
+                <FontIcon iconLiteral="fth-download" iconSize="16"/>
+            </graphic>
+        </Button>
+        <TextField fx:id="assignmentSearchField" promptText="Search assignments..." styleClass="search-field" prefWidth="300"/>
+    </HBox>
+
+    <Label fx:id="feedbackLabel" managed="false" visible="false" maxWidth="Infinity" styleClass="inline-alert, inline-alert-success"/>
+
+    <HBox spacing="20" VBox.vgrow="ALWAYS">
+        <VBox spacing="16" HBox.hgrow="ALWAYS">
+            <VBox styleClass="card, board-hero-card" spacing="14">
+                <HBox alignment="CENTER_LEFT" spacing="16">
+                    <VBox spacing="4" HBox.hgrow="ALWAYS">
+                        <Label text="Assignment Board" styleClass="card-title"/>
+                        <Label fx:id="selectedAssignmentTitleLabel" text="Select a card to manage comments, sharing, editing, deletion, or statistics." styleClass="text-muted" wrapText="true"/>
+                    </VBox>
+                    <VBox alignment="CENTER_RIGHT" spacing="4">
+                        <Label fx:id="selectedAssignmentMetaLabel" text="No assignment selected" styleClass="card-subtitle"/>
+                        <Label fx:id="taskCountLabel" text="0 assignments" styleClass="text-muted"/>
+                    </VBox>
+                </HBox>
+
+                <FlowPane hgap="10" vgap="10" prefWrapLength="760" styleClass="panel-toolbar">
+                    <Button fx:id="showCreatePanelButton" text="Create" onAction="#handleShowCreatePanel" styleClass="panel-switch-button, active">
+                        <graphic>
+                            <FontIcon iconLiteral="fth-plus-circle" iconSize="15"/>
+                        </graphic>
+                    </Button>
+                    <Button fx:id="showEditPanelButton" text="Edit" onAction="#handleShowEditPanel" styleClass="panel-switch-button">
+                        <graphic>
+                            <FontIcon iconLiteral="fth-edit-3" iconSize="15"/>
+                        </graphic>
+                    </Button>
+                    <Button fx:id="showDeletePanelButton" text="Delete" onAction="#handleShowDeletePanel" styleClass="panel-switch-button">
+                        <graphic>
+                            <FontIcon iconLiteral="fth-trash-2" iconSize="15"/>
+                        </graphic>
+                    </Button>
+                    <Button fx:id="showCommentsPanelButton" text="Comments" onAction="#handleShowCommentsPanel" styleClass="panel-switch-button">
+                        <graphic>
+                            <FontIcon iconLiteral="fth-message-square" iconSize="15"/>
+                        </graphic>
+                    </Button>
+                    <Button fx:id="showSharePanelButton" text="Share" onAction="#handleShowSharePanel" styleClass="panel-switch-button">
+                        <graphic>
+                            <FontIcon iconLiteral="fth-send" iconSize="15"/>
+                        </graphic>
+                    </Button>
+                    <Button fx:id="showAssignmentActivityPanelButton" text="Activity" onAction="#handleShowAssignmentActivityPanel" styleClass="panel-switch-button">
+                        <graphic>
+                            <FontIcon iconLiteral="fth-activity" iconSize="15"/>
+                        </graphic>
+                    </Button>
+                    <Button fx:id="showAssignmentFilesPanelButton" text="Files" onAction="#handleShowAssignmentFilesPanel" styleClass="panel-switch-button">
+                        <graphic>
+                            <FontIcon iconLiteral="fth-paperclip" iconSize="15"/>
+                        </graphic>
+                    </Button>
+                    <Button fx:id="showGitPanelButton" text="Git" onAction="#handleShowGitPanel" styleClass="panel-switch-button">
+                        <graphic>
+                            <FontIcon iconLiteral="fth-git-branch" iconSize="15"/>
+                        </graphic>
+                    </Button>
+                    <Button fx:id="showStatsPanelButton" text="Stats" onAction="#handleShowStatsPanel" styleClass="panel-switch-button">
+                        <graphic>
+                            <FontIcon iconLiteral="fth-bar-chart-2" iconSize="15"/>
+                        </graphic>
+                    </Button>
+                </FlowPane>
+            </VBox>
+
+            <ScrollPane fitToWidth="true" fitToHeight="true" VBox.vgrow="ALWAYS" styleClass="transparent-scroll, board-scroll">
+                <HBox spacing="18" style="-fx-padding: 4 4 10 4;">
+                    <VBox styleClass="board-column, board-column-todo" HBox.hgrow="ALWAYS">
+                        <HBox styleClass="board-column-header" alignment="CENTER_LEFT" spacing="10">
+                            <Region styleClass="board-column-accent, board-accent-todo"/>
+                            <Label text="To Do" styleClass="board-column-title"/>
+                            <Region HBox.hgrow="ALWAYS"/>
+                            <Label fx:id="todoCountLabel" text="0" styleClass="board-count-chip"/>
+                        </HBox>
+                        <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS" styleClass="transparent-scroll, board-column-scroll">
+                            <VBox fx:id="todoColumn" spacing="12" styleClass="board-column-body"/>
+                        </ScrollPane>
+                    </VBox>
+
+                    <VBox styleClass="board-column, board-column-progress" HBox.hgrow="ALWAYS">
+                        <HBox styleClass="board-column-header" alignment="CENTER_LEFT" spacing="10">
+                            <Region styleClass="board-column-accent, board-accent-progress"/>
+                            <Label text="In Progress" styleClass="board-column-title"/>
+                            <Region HBox.hgrow="ALWAYS"/>
+                            <Label fx:id="progressCountLabel" text="0" styleClass="board-count-chip"/>
+                        </HBox>
+                        <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS" styleClass="transparent-scroll, board-column-scroll">
+                            <VBox fx:id="progressColumn" spacing="12" styleClass="board-column-body"/>
+                        </ScrollPane>
+                    </VBox>
+
+                    <VBox styleClass="board-column, board-column-review" HBox.hgrow="ALWAYS">
+                        <HBox styleClass="board-column-header" alignment="CENTER_LEFT" spacing="10">
+                            <Region styleClass="board-column-accent, board-accent-review"/>
+                            <Label text="Review" styleClass="board-column-title"/>
+                            <Region HBox.hgrow="ALWAYS"/>
+                            <Label fx:id="reviewCountLabel" text="0" styleClass="board-count-chip"/>
+                        </HBox>
+                        <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS" styleClass="transparent-scroll, board-column-scroll">
+                            <VBox fx:id="reviewColumn" spacing="12" styleClass="board-column-body"/>
+                        </ScrollPane>
+                    </VBox>
+
+                    <VBox styleClass="board-column, board-column-done" HBox.hgrow="ALWAYS">
+                        <HBox styleClass="board-column-header" alignment="CENTER_LEFT" spacing="10">
+                            <Region styleClass="board-column-accent, board-accent-done"/>
+                            <Label text="Done" styleClass="board-column-title"/>
+                            <Region HBox.hgrow="ALWAYS"/>
+                            <Label fx:id="doneCountLabel" text="0" styleClass="board-count-chip"/>
+                        </HBox>
+                        <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS" styleClass="transparent-scroll, board-column-scroll">
+                            <VBox fx:id="doneColumn" spacing="12" styleClass="board-column-body"/>
+                        </ScrollPane>
+                    </VBox>
+                </HBox>
+            </ScrollPane>
+        </VBox>
+
+        <StackPane fx:id="actionPanelStack" prefWidth="430" minWidth="400" maxWidth="450">
+            <VBox fx:id="createPanel" styleClass="card, form-shell, action-panel-card" spacing="14">
+                <Label text="Create Assignment" styleClass="card-title"/>
+                <Label fx:id="createAssignmentHintLabel" text="Create a new assignment with a maximum 500-character description." styleClass="text-muted" wrapText="true"/>
+
+                <VBox spacing="6">
+                    <Label text="Title" styleClass="form-label"/>
+                    <TextField fx:id="createAssignmentTitleField" styleClass="form-input" promptText="Design ER diagram"/>
+                    <Label fx:id="createAssignmentTitleError" styleClass="field-error" managed="false" visible="false"/>
+                </VBox>
+
+                <VBox spacing="6">
+                    <Label text="Project" styleClass="form-label"/>
+                    <ComboBox fx:id="createAssignmentProjectCombo" maxWidth="Infinity" styleClass="form-combo"/>
+                    <Label fx:id="createAssignmentProjectError" styleClass="field-error" managed="false" visible="false"/>
+                </VBox>
+
+                <HBox spacing="12">
+                    <VBox spacing="8" HBox.hgrow="ALWAYS">
+                        <Label text="Priority" styleClass="form-label"/>
+                        <ComboBox fx:id="createAssignmentPriorityCombo" maxWidth="Infinity" styleClass="form-combo"/>
+                    </VBox>
+                    <VBox spacing="8" HBox.hgrow="ALWAYS">
+                        <Label text="Status" styleClass="form-label"/>
+                        <ComboBox fx:id="createAssignmentStatusCombo" maxWidth="Infinity" styleClass="form-combo"/>
+                    </VBox>
+                </HBox>
+
+                <HBox spacing="12">
+                    <VBox spacing="6" HBox.hgrow="ALWAYS">
+                        <Label text="Start Date" styleClass="form-label"/>
+                        <DatePicker fx:id="createAssignmentStartDatePicker" maxWidth="Infinity" styleClass="form-date"/>
+                        <Label fx:id="createAssignmentStartDateError" styleClass="field-error" managed="false" visible="false"/>
+                    </VBox>
+                    <VBox spacing="6" HBox.hgrow="ALWAYS">
+                        <Label text="Start Time" styleClass="form-label"/>
+                        <ComboBox fx:id="createAssignmentStartTimeCombo" maxWidth="Infinity" styleClass="form-combo"/>
+                    </VBox>
+                </HBox>
+
+                <HBox spacing="12">
+                    <VBox spacing="6" HBox.hgrow="ALWAYS">
+                        <Label text="End Date" styleClass="form-label"/>
+                        <DatePicker fx:id="createAssignmentEndDatePicker" maxWidth="Infinity" styleClass="form-date"/>
+                        <Label fx:id="createAssignmentEndDateError" styleClass="field-error" managed="false" visible="false"/>
+                    </VBox>
+                    <VBox spacing="6" HBox.hgrow="ALWAYS">
+                        <Label text="End Time" styleClass="form-label"/>
+                        <ComboBox fx:id="createAssignmentEndTimeCombo" maxWidth="Infinity" styleClass="form-combo"/>
+                    </VBox>
+                </HBox>
+
+                <VBox spacing="8">
+                    <Label text="Description" styleClass="form-label"/>
+                    <TextArea fx:id="createAssignmentDescriptionArea" styleClass="form-textarea" wrapText="true" promptText="Task scope, expected result, and notes. 500 characters maximum."/>
+                </VBox>
+
+                <HBox spacing="10">
+                    <Button fx:id="createAssignmentButton" text="Create Assignment" onAction="#handleCreateAssignment" styleClass="btn-primary" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
+                    <Button fx:id="generateAiAssignmentsButton" text="AI Suggestions" onAction="#handleGenerateAiAssignments" styleClass="btn-secondary"/>
+                    <Button fx:id="clearCreateAssignmentButton" text="Clear" onAction="#handleResetCreateAssignment" styleClass="btn-secondary"/>
+                </HBox>
+            </VBox>
+
+            <VBox fx:id="commentsPanel" styleClass="card, form-shell, action-panel-card" spacing="14" visible="false" managed="false">
+                <Label text="Comments" styleClass="card-title"/>
+                <Label fx:id="commentsAssignmentLabel" text="Select an assignment to open its comments thread." styleClass="text-muted" wrapText="true"/>
+
+                <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS" styleClass="transparent-scroll">
+                    <VBox fx:id="commentsList" spacing="10" style="-fx-padding: 0 4 0 0;"/>
+                </ScrollPane>
+
+                <VBox spacing="8">
+                    <Label text="Add Comment" styleClass="form-label"/>
+                    <TextArea fx:id="commentInputArea" styleClass="form-textarea" wrapText="true" promptText="Write a comment..."/>
+                </VBox>
+
+                <Button fx:id="addCommentButton" text="Post Comment" onAction="#handleAddComment" styleClass="btn-primary" maxWidth="Infinity"/>
+            </VBox>
+
+            <VBox fx:id="sharePanel" styleClass="card, form-shell, action-panel-card" spacing="14" visible="false" managed="false">
+                <Label text="Share Assignment" styleClass="card-title"/>
+                <Label text="Sharing is handled separately from edit/delete and requires project access first." styleClass="text-muted" wrapText="true"/>
+
+                <VBox spacing="6">
+                    <Label text="Recipient" styleClass="form-label"/>
+                    <TextField fx:id="shareAssignmentEmailField" styleClass="form-input" promptText="username, email, phone, or student id"/>
+                </VBox>
+
+                <VBox spacing="8">
+                    <Label text="Shared With" styleClass="form-label"/>
+                    <VBox fx:id="sharedAssignmentUsersList" spacing="8"/>
+                </VBox>
+
+                <Button fx:id="shareAssignmentButton" text="Share Assignment" onAction="#handleShareAssignment" styleClass="btn-primary" maxWidth="Infinity"/>
+            </VBox>
+
+            <VBox fx:id="activityPanel" styleClass="card, form-shell, action-panel-card" spacing="14" visible="false" managed="false">
+                <Label text="Assignment Activity" styleClass="card-title"/>
+                <Label text="Track updates, reviews, deadline changes, shares, and file uploads for the selected assignment." styleClass="text-muted" wrapText="true"/>
+
+                <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS" styleClass="transparent-scroll">
+                    <VBox fx:id="assignmentActivityList" spacing="10" style="-fx-padding: 0 4 0 0;"/>
+                </ScrollPane>
+            </VBox>
+
+            <VBox fx:id="filesPanel" styleClass="card, form-shell, action-panel-card" spacing="14" visible="false" managed="false">
+                <Label text="Assignment Files" styleClass="card-title"/>
+                <Label fx:id="assignmentFilesHintLabel" text="Upload docs, screenshots, deliverables, and review assets." styleClass="text-muted" wrapText="true"/>
+
+                <Button fx:id="uploadAssignmentAttachmentButton" text="Upload File" onAction="#handleUploadAssignmentAttachment" styleClass="btn-primary" maxWidth="Infinity"/>
+
+                <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS" styleClass="transparent-scroll">
+                    <VBox fx:id="assignmentAttachmentList" spacing="10" style="-fx-padding: 0 4 0 0;"/>
+                </ScrollPane>
+            </VBox>
+
+            <VBox fx:id="gitPanel" styleClass="card, form-shell, action-panel-card" spacing="14" visible="false" managed="false">
+                <Label text="Assignment Git" styleClass="card-title"/>
+                <Label fx:id="assignmentGitHintLabel" text="Select a completed assignment to save commit settings or commit it to Git." styleClass="text-muted" wrapText="true"/>
+
+                <VBox spacing="6" styleClass="detail-row">
+                    <Label text="Linked Repository" styleClass="form-label"/>
+                    <Label fx:id="assignmentGitRepoLabel" text="No project repository selected" styleClass="item-desc" wrapText="true"/>
+                </VBox>
+
+                <VBox spacing="6" styleClass="detail-row">
+                    <Label text="Repository Status" styleClass="form-label"/>
+                    <Label fx:id="assignmentGitStatusLabel" text="Repository status unavailable" styleClass="item-desc" wrapText="true"/>
+                </VBox>
+
+                <VBox spacing="6" styleClass="detail-row">
+                    <Label text="Last Commit" styleClass="form-label"/>
+                    <Label fx:id="assignmentGitLastCommitLabel" text="No commit recorded" styleClass="item-desc" wrapText="true"/>
+                </VBox>
+
+                <VBox spacing="6">
+                    <Label text="Commit Message" styleClass="form-label"/>
+                    <TextField fx:id="assignmentGitCommitMessageField" styleClass="form-input" promptText="complete(assignment): finish UI polish"/>
+                </VBox>
+
+                <VBox spacing="6">
+                    <Label text="Pathspec" styleClass="form-label"/>
+                    <TextField fx:id="assignmentGitPathspecField" styleClass="form-input" promptText=". or src/main/java"/>
+                </VBox>
+
+                <HBox spacing="10">
+                    <Button fx:id="saveAssignmentGitButton" text="Save" onAction="#handleSaveAssignmentGitSettings" styleClass="btn-primary" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
+                    <Button fx:id="refreshAssignmentGitButton" text="Refresh" onAction="#handleRefreshAssignmentGitStatus" styleClass="btn-secondary"/>
+                </HBox>
+
+                <HBox spacing="10">
+                    <Button fx:id="commitAssignmentGitButton" text="Commit" onAction="#handleCommitAssignmentToGit" styleClass="btn-secondary" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
+                    <Button fx:id="commitAndPushAssignmentGitButton" text="Commit &amp; Push" onAction="#handleCommitAndPushAssignmentToGit" styleClass="btn-secondary" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
+                </HBox>
+            </VBox>
+
+            <VBox fx:id="statsPanel" styleClass="card, form-shell, action-panel-card" spacing="14" visible="false" managed="false">
+                <Label text="Assignment Stats" styleClass="card-title"/>
+                <Label text="Statistics moved into a dedicated interface as requested." styleClass="text-muted" wrapText="true"/>
+
+                <HBox spacing="12">
+                    <VBox styleClass="mini-stat-card, mini-stat-purple" HBox.hgrow="ALWAYS">
+                        <Label fx:id="totalAssignmentsLabel" text="0" styleClass="mini-stat-value"/>
+                        <Label text="Total" styleClass="mini-stat-label"/>
+                    </VBox>
+                    <VBox styleClass="mini-stat-card, mini-stat-rose" HBox.hgrow="ALWAYS">
+                        <Label fx:id="overdueLabel" text="0" styleClass="mini-stat-value"/>
+                        <Label text="Overdue" styleClass="mini-stat-label"/>
+                    </VBox>
+                </HBox>
+
+                <HBox spacing="12">
+                    <VBox styleClass="mini-stat-card, mini-stat-violet" HBox.hgrow="ALWAYS">
+                        <Label fx:id="inProgressLabel" text="0" styleClass="mini-stat-value"/>
+                        <Label text="In Progress" styleClass="mini-stat-label"/>
+                    </VBox>
+                    <VBox styleClass="mini-stat-card, mini-stat-amber" HBox.hgrow="ALWAYS">
+                        <Label fx:id="reviewLabel" text="0" styleClass="mini-stat-value"/>
+                        <Label text="Review" styleClass="mini-stat-label"/>
+                    </VBox>
+                    <VBox styleClass="mini-stat-card, mini-stat-green" HBox.hgrow="ALWAYS">
+                        <Label fx:id="completedLabel" text="0" styleClass="mini-stat-value"/>
+                        <Label text="Done" styleClass="mini-stat-label"/>
+                    </VBox>
+                </HBox>
+
+                <VBox styleClass="card, chart-shell">
+                    <HBox styleClass="card-header" alignment="CENTER_LEFT">
+                        <Label text="Status Mix" styleClass="card-title"/>
+                    </HBox>
+                    <VBox styleClass="card-body" alignment="CENTER">
+                        <PieChart fx:id="assignmentStatusChart" prefHeight="210" labelsVisible="false"/>
+                    </VBox>
+                </VBox>
+
+                <VBox styleClass="card, chart-shell">
+                    <HBox styleClass="card-header" alignment="CENTER_LEFT">
+                        <Label text="Priority Balance" styleClass="card-title"/>
+                    </HBox>
+                    <VBox styleClass="card-body">
+                        <BarChart fx:id="assignmentPriorityChart" legendVisible="false" prefHeight="210">
+                            <xAxis>
+                                <CategoryAxis side="BOTTOM"/>
+                            </xAxis>
+                            <yAxis>
+                                <NumberAxis side="LEFT"/>
+                            </yAxis>
+                        </BarChart>
+                    </VBox>
+                </VBox>
+            </VBox>
+        </StackPane>
+    </HBox>
+
+    <padding>
+        <Insets top="0" right="0" bottom="24" left="0"/>
+    </padding>
+</VBox>
+
+    <VBox fx:id="aiLoadingOverlay"
+          visible="false"
+          managed="false"
+          alignment="CENTER"
+          spacing="18"
+          maxWidth="Infinity"
+          maxHeight="Infinity"
+          styleClass="ai-loading-overlay">
+        <VBox alignment="CENTER" spacing="14" styleClass="ai-loading-card">
+            <HBox alignment="CENTER" spacing="8">
+                <Label text="AI Pipeline" styleClass="badge, primary"/>
+                <Label text="Live" styleClass="badge, accent"/>
+            </HBox>
+            <Label fx:id="aiLoadingTitleLabel" text="Generating assignments" styleClass="ai-loading-title"/>
+            <Label fx:id="aiLoadingSubtitleLabel" text="Preparing AI suggestions..." styleClass="ai-loading-subtitle" wrapText="true"/>
+            <ProgressBar progress="-1" maxWidth="260" prefWidth="260" styleClass="ai-loading-bar"/>
+        </VBox>
+    </VBox>
+</StackPane>

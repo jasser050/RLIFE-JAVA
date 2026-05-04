@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mood Camera</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card: #111827;
+            --border: #334155;
+            --text: #e2e8f0;
+            --muted: #94a3b8;
+            --accent: #8b5cf6;
+            --ok: #10b981;
+            --warn: #f59e0b;
+            --danger: #ef4444;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: "Segoe UI", Arial, sans-serif;
+            background: radial-gradient(circle at top right, #1e293b, var(--bg));
+            color: var(--text);
+            padding: 16px;
+        }
+        .wrap {
+            width: 100%;
+            max-width: 900px;
+            margin: 0 auto;
+            display: grid;
+            gap: 12px;
+        }
+        .panel {
+            background: linear-gradient(180deg, #111827, #0f172a);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 12px;
+        }
+        video, canvas {
+            width: 100%;
+            border-radius: 12px;
+            background: #000;
+            border: 1px solid #1f2937;
+        }
+        .row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        button {
+            border: 0;
+            border-radius: 10px;
+            background: var(--accent);
+            color: #fff;
+            padding: 10px 14px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        button.secondary {
+            background: #334155;
+        }
+        button:disabled {
+            opacity: 0.6;
+            cursor: default;
+        }
+        .status {
+            color: var(--muted);
+            font-size: 13px;
+            min-height: 20px;
+        }
+        .ok { color: var(--ok); }
+        .warn { color: var(--warn); }
+        .danger { color: var(--danger); }
+    </style>
+</head>
+<body>
+<div class="wrap">
+    <div class="panel">
+        <div class="row" style="justify-content: space-between;">
+            <strong>Webcam preview</strong>
+            <span id="status" class="status">Initializing camera...</span>
+        </div>
+        <video id="video" autoplay playsinline muted></video>
+    </div>
+
+    <div class="panel">
+        <div class="row">
+            <button id="startBtn" class="secondary">Restart Camera</button>
+            <button id="captureBtn">Capture &amp; Analyze</button>
+            <button id="uploadBtn" class="secondary">Upload &amp; Analyze</button>
+            <input id="fileInput" type="file" accept="image/*" style="display:none;">
+            <span class="status">The image is sent to Java, then analyzed by Groq API.</span>
+        </div>
+        <canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
+    </div>
+</div>
+
+<script>
+    const video = document.getElementById("video");
+    const canvas = document.getElementById("canvas");
+    const statusEl = document.getElementById("status");
+    const startBtn = document.getElementById("startBtn");
+    const captureBtn = document.getElementById("captureBtn");
+    const uploadBtn = document.getElementById("uploadBtn");
+    const fileInput = document.getElementById("fileInput");
+
+    let stream = null;
+
+    function setStatus(text, cls) {
+        statusEl.textContent = text;
+        statusEl.className = "status " + (cls || "");
+    }
+
+    async function startCamera() {
+        if (!navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== "function") {
+            setStatus("WebView camera API unavailable. Use Upload & Analyze.", "warn");
+            captureBtn.disabled = true;
+            return;
+        }
+        try {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+            stream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
+                audio: false
+            });
+            video.srcObject = stream;
+            setStatus("Camera ready", "ok");
+            captureBtn.disabled = false;
+        } catch (e) {
+            setStatus("Camera error: " + (e && e.message ? e.message : "permission denied"), "danger");
+        }
+    }
+
+    function captureAndSend() {
+        if (!video.videoWidth || !video.videoHeight) {
+            setStatus("Camera not ready yet.", "warn");
+            return;
+        }
+        const ctx = canvas.getContext("2d");
+        canvas.width = 480;
+        canvas.height = 360;
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+
+        if (window.appBridge && typeof window.appBridge.sendFrame === "function") {
+            setStatus("Frame captured. Sending for analysis...", "ok");
+            window.appBridge.sendFrame(dataUrl);
+        } else {
+            setStatus("Java bridge unavailable in WebView.", "danger");
+        }
+    }
+
+    function sendDataUrlToJava(dataUrl) {
+        if (window.appBridge && typeof window.appBridge.sendFrame === "function") {
+            setStatus("Image ready. Sending for analysis...", "ok");
+            window.appBridge.sendFrame(dataUrl);
+        } else {
+            setStatus("Java bridge unavailable in WebView.", "danger");
+        }
+    }
+
+    function handleUploadClick() {
+        fileInput.click();
+    }
+
+    function handleFileSelected(event) {
+        const file = event.target.files && event.target.files[0];
+        if (!file) {
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = () => {
+            const dataUrl = reader.result;
+            if (typeof dataUrl === "string" && dataUrl.startsWith("data:image/")) {
+                sendDataUrlToJava(dataUrl);
+            } else {
+                setStatus("Invalid image file.", "danger");
+            }
+            fileInput.value = "";
+        };
+        reader.onerror = () => {
+            setStatus("Could not read image file.", "danger");
+            fileInput.value = "";
+        };
+        reader.readAsDataURL(file);
+    }
+
+    startBtn.addEventListener("click", startCamera);
+    captureBtn.addEventListener("click", captureAndSend);
+    uploadBtn.addEventListener("click", handleUploadClick);
+    fileInput.addEventListener("change", handleFileSelected);
+    startCamera();
+</script>
+</body>
+</html>

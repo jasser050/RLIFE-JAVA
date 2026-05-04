@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.geometry.Insets?>
+<?import org.kordamp.ikonli.javafx.FontIcon?>
+
+<VBox xmlns="http://javafx.com/javafx/17"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.studyflow.controllers.CourseCardController"
+      styleClass="card" spacing="0" style="-fx-cursor: hand;"
+      HBox.hgrow="ALWAYS">
+
+    <padding>
+        <Insets top="16" right="16" bottom="16" left="16"/>
+    </padding>
+
+    <!-- Course Header -->
+    <HBox alignment="CENTER_LEFT" spacing="12">
+        <StackPane fx:id="iconBox" styleClass="stat-icon-box, primary"
+                   prefWidth="40" prefHeight="40">
+            <FontIcon fx:id="courseIcon" iconLiteral="fth-book-open" iconSize="18"/>
+        </StackPane>
+        <VBox spacing="2" HBox.hgrow="ALWAYS">
+            <Label fx:id="codeLabel" text="CS301" styleClass="text-small"
+                   style="-fx-font-weight: 600; -fx-text-fill: #64748B;"/>
+            <Label fx:id="nameLabel" text="Data Structures" styleClass="text-body"
+                   style="-fx-font-weight: 600; -fx-text-fill: #F8FAFC;"/>
+        </VBox>
+    </HBox>
+
+    <!-- Spacer -->
+    <Region prefHeight="16"/>
+
+    <!-- Progress Section -->
+    <VBox spacing="8">
+        <HBox alignment="CENTER_LEFT">
+            <Label text="Progress" styleClass="text-small"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Label fx:id="progressLabel" text="68%" styleClass="text-body"
+                   style="-fx-font-weight: 600; -fx-text-fill: #F8FAFC;"/>
+        </HBox>
+        <ProgressBar fx:id="progressBar" progress="0.68" maxWidth="Infinity"
+                     styleClass="primary"/>
+    </VBox>
+</VBox>

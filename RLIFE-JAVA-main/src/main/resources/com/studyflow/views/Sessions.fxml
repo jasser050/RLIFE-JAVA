@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import org.kordamp.ikonli.javafx.*?>
+
+<VBox fillWidth="true" maxWidth="1.7976931348623157E308" spacing="24" style="-fx-background-color: #020617;" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.studyflow.controllers.SessionsController">
+
+    <padding>
+        <Insets bottom="24" left="0" right="0" top="0" />
+    </padding>
+
+    <HBox alignment="CENTER_LEFT" spacing="16">
+        <VBox spacing="4">
+            <Label styleClass="text-heading" text="Sessions" />
+        </VBox>
+        <Region HBox.hgrow="ALWAYS" />
+        <Label fx:id="sessionsCountLabel" styleClass="text-muted" text="0 sessions" />
+        <Button onAction="#handleBackToPlanning" styleClass="btn-secondary" text="Back to Planning">
+            <graphic>
+                <FontIcon iconLiteral="fth-arrow-left" iconSize="16" />
+            </graphic>
+        </Button>
+        <Button fx:id="addSessionButton" onAction="#handleAddSession" styleClass="btn-primary" text="Add Session">
+            <graphic>
+                <FontIcon iconColor="white" iconLiteral="fth-plus" iconSize="16" />
+            </graphic>
+        </Button>
+    </HBox>
+
+    <Label fx:id="pageMessageLabel" managed="false" visible="false" />
+
+    <VBox fx:id="formCard" managed="false" maxWidth="1.7976931348623157E308" prefHeight="720" spacing="0" styleClass="card session-form-card" visible="false" VBox.vgrow="ALWAYS">
+        <HBox alignment="CENTER_LEFT" spacing="12" styleClass="card-header">
+            <StackPane prefHeight="36" prefWidth="36" styleClass="stat-icon-box, accent">
+                <FontIcon iconLiteral="fth-edit-3" iconSize="16" />
+            </StackPane>
+            <VBox spacing="2">
+                <Label fx:id="formTitleLabel" styleClass="card-title" text="Add Session" />
+                <Label fx:id="formSubtitleLabel" styleClass="text-small" text="Create a new session without leaving this page" />
+            </VBox>
+        </HBox>
+
+        <VBox spacing="22" styleClass="card-body session-form-body" VBox.vgrow="ALWAYS">
+            <Label fx:id="formMessageLabel" managed="false" visible="false" />
+
+            <GridPane hgap="18" maxWidth="1.7976931348623157E308" vgap="18" VBox.vgrow="ALWAYS">
+                <columnConstraints>
+                    <ColumnConstraints hgrow="NEVER" minWidth="160" />
+                    <ColumnConstraints hgrow="ALWAYS" />
+                </columnConstraints>
+
+                <HBox alignment="CENTER_LEFT" spacing="4" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                    <Label styleClass="text-body" text="Title" />
+                    <Label style="-fx-text-fill: #FB7185; -fx-font-size: 15px; -fx-font-weight: 700;" text="*" />
+                </HBox>
+                <VBox spacing="5" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                    <TextField fx:id="titleField" maxWidth="1.7976931348623157E308" promptText="Enter session title" />
+                    <Label styleClass="session-field-tip" text="Tip: letters only. Spaces, '_' and '-' are allowed." />
+                    <Label fx:id="titleErrorLabel" managed="false" styleClass="session-field-error" visible="false" />
+                </VBox>
+
+                <HBox alignment="CENTER_LEFT" spacing="4" GridPane.columnIndex="0" GridPane.rowIndex="1">
+                    <Label styleClass="text-body" text="Type" />
+                    <Label style="-fx-text-fill: #FB7185; -fx-font-size: 15px; -fx-font-weight: 700;" text="*" />
+                </HBox>
+                <VBox spacing="5" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                    <ComboBox fx:id="typeComboBox" maxWidth="1.7976931348623157E308" promptText="Select session type" />
+                    <Label styleClass="session-field-tip" text="Tip: selecting a type is required." />
+                    <Label fx:id="typeErrorLabel" managed="false" styleClass="session-field-error" visible="false" />
+                </VBox>
+
+                <HBox alignment="CENTER_LEFT" spacing="4" GridPane.columnIndex="0" GridPane.rowIndex="2">
+                    <Label styleClass="text-body" text="Description" />
+                    <Label style="-fx-text-fill: #FB7185; -fx-font-size: 15px; -fx-font-weight: 700;" text="*" />
+                </HBox>
+                <VBox spacing="5" GridPane.columnIndex="1" GridPane.rowIndex="2">
+                    <TextArea fx:id="descriptionArea" maxWidth="1.7976931348623157E308" prefHeight="220" prefRowCount="8" promptText="Add a short description" styleClass="text-area session-description-area" wrapText="true" />
+                    <Label styleClass="session-field-tip" text="Tip: description is required and must include meaningful text (not symbols only)." />
+                    <Label fx:id="descriptionErrorLabel" managed="false" styleClass="session-field-error" visible="false" />
+                    <HBox alignment="CENTER_RIGHT">
+                        <Label fx:id="descriptionCounterLabel" styleClass="session-field-counter" text="0 / 1200 characters" />
+                    </HBox>
+                </VBox>
+            <rowConstraints>
+               <RowConstraints />
+               <RowConstraints />
+               <RowConstraints />
+            </rowConstraints>
+            </GridPane>
+
+            <HBox alignment="CENTER_RIGHT" spacing="10">
+                <Button fx:id="cancelButton" onAction="#handleCancelForm" styleClass="btn-secondary" text="Cancel" />
+                <Button fx:id="saveButton" onAction="#handleSaveSession" styleClass="btn-primary" text="Save Session">
+                    <graphic>
+                        <FontIcon iconColor="white" iconLiteral="fth-save" iconSize="16" />
+                    </graphic>
+                </Button>
+            </HBox>
+        </VBox>
+    </VBox>
+
+    <VBox fx:id="listCard" maxWidth="1.7976931348623157E308" spacing="0" styleClass="card" VBox.vgrow="ALWAYS">
+        <HBox alignment="CENTER_LEFT" spacing="12" styleClass="card-header">
+            <StackPane prefHeight="36" prefWidth="36" styleClass="stat-icon-box, primary">
+                <FontIcon iconLiteral="fth-calendar" iconSize="16" />
+            </StackPane>
+            <VBox spacing="2">
+                <Label styleClass="card-title" text="Global Sessions View" />
+                <Label styleClass="text-small" text="List of sessions with edit and delete actions" />
+            </VBox>
+        </HBox>
+
+        <HBox alignment="CENTER_LEFT" spacing="14" styleClass="session-toolbar">
+            <VBox spacing="4" HBox.hgrow="ALWAYS">
+                <Label styleClass="session-toolbar-label" text="Search" />
+                <TextField fx:id="searchField" maxWidth="1.7976931348623157E308" promptText="Search by title, type or description" styleClass="search-field, session-search-field" />
+            </VBox>
+            <VBox spacing="4">
+                <Label styleClass="session-toolbar-label" text="Sort By" />
+                <ComboBox fx:id="sortComboBox" maxWidth="220" prefWidth="220" promptText="Choose criteria" styleClass="session-sort-combo" />
+            </VBox>
+            <HBox alignment="BOTTOM_RIGHT" spacing="10">
+                <Button contentDisplay="LEFT" onAction="#handleExportExcel" styleClass="btn-secondary, session-action-button" text="Excel">
+                    <graphic>
+                        <FontIcon iconLiteral="fth-file-text" iconSize="14" />
+                    </graphic>
+                </Button>
+                <Button contentDisplay="LEFT" onAction="#handleExportPdf" styleClass="btn-secondary, session-action-button" text="PDF">
+                    <graphic>
+                        <FontIcon iconLiteral="fth-download" iconSize="14" />
+                    </graphic>
+                </Button>
+                <Button contentDisplay="LEFT" onAction="#handlePrintSessions" styleClass="btn-primary, session-action-button" text="Print">
+                    <graphic>
+                        <FontIcon iconColor="white" iconLiteral="fth-printer" iconSize="14" />
+                    </graphic>
+                </Button>
+            </HBox>
+        </HBox>
+
+        <ListView fx:id="sessionsListView" styleClass="sessions-list-view" VBox.vgrow="ALWAYS" />
+    </VBox>
+</VBox>

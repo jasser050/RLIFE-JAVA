@@ -1,0 +1,315 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.text.*?>
+<?import javafx.scene.chart.*?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.image.ImageView?>
+<?import org.kordamp.ikonli.javafx.FontIcon?>
+
+<VBox xmlns="http://javafx.com/javafx/17"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.studyflow.controllers.DashboardController"
+      spacing="24">
+
+    <padding>
+        <Insets top="0" right="0" bottom="24" left="0"/>
+    </padding>
+
+    <!-- ══ WELCOME HEADER ═══════════════════════════════════════════════════ -->
+    <HBox alignment="CENTER_LEFT" spacing="16">
+        <VBox spacing="4" HBox.hgrow="ALWAYS">
+            <Label fx:id="welcomeLabel" text="Good evening, Student" styleClass="text-heading"/>
+            <Label text="Here's what's happening with your studies today" styleClass="text-muted"/>
+        </VBox>
+
+        <!-- Streak Card -->
+        <HBox styleClass="card" alignment="CENTER_LEFT" spacing="12"
+              style="-fx-padding: 12 16;">
+            <StackPane styleClass="stat-icon-box, accent" prefWidth="40" prefHeight="40">
+                <FontIcon iconLiteral="fth-zap" iconSize="18"/>
+            </StackPane>
+            <VBox spacing="2">
+                <Label fx:id="streakLabel" text="0" styleClass="stat-value"
+                       style="-fx-font-size: 22px;"/>
+                <Label text="Day streak" styleClass="text-small"/>
+            </VBox>
+        </HBox>
+    </HBox>
+
+    <!-- ══ STAT CARDS ════════════════════════════════════════════════════════ -->
+    <VBox fx:id="petHeroCard" styleClass="card" spacing="0" visible="false" managed="false">
+        <HBox styleClass="card-header" alignment="CENTER_LEFT" spacing="12">
+            <VBox spacing="2" HBox.hgrow="ALWAYS">
+                <Label text="Your Pet Companion" styleClass="card-title"/>
+                <Label fx:id="petHeroSubLabel" text="Track mood, hunger, and progression from the dashboard." styleClass="text-small"/>
+            </VBox>
+            <Button fx:id="petManageButton" text="Manage Pet" styleClass="btn-secondary"/>
+            <Button fx:id="petMetaverseButton" text="Pet Metaverse" styleClass="btn-primary"/>
+        </HBox>
+        <HBox styleClass="card-body" spacing="20" alignment="CENTER_LEFT">
+            <StackPane styleClass="pet-hero-image-shell" prefWidth="240" maxWidth="240" prefHeight="240" maxHeight="240">
+                <StackPane fx:id="petHeroContainer"/>
+            </StackPane>
+            <VBox spacing="14" HBox.hgrow="ALWAYS">
+                <HBox alignment="CENTER_LEFT" spacing="8">
+                    <Label fx:id="petHeroNameLabel" text="Companion" styleClass="pet-display-name"/>
+                    <Label fx:id="petHeroRarityBadge" text="Common" styleClass="pet-rarity-badge"/>
+                </HBox>
+                <Label fx:id="petHeroMetaLabel" text="Level 1 - Good - Starter" styleClass="text-muted"/>
+                <HBox spacing="12">
+                    <VBox styleClass="stat-card" spacing="6" HBox.hgrow="ALWAYS">
+                        <Label text="Level" styleClass="text-small"/>
+                        <Label fx:id="petHeroLevelLabel" text="Lv. 1" styleClass="stat-value"/>
+                    </VBox>
+                    <VBox styleClass="stat-card" spacing="6" HBox.hgrow="ALWAYS">
+                        <Label text="Coins" styleClass="text-small"/>
+                        <Label fx:id="petHeroCoinsLabel" text="0" styleClass="stat-value"/>
+                    </VBox>
+                    <VBox styleClass="stat-card" spacing="6" HBox.hgrow="ALWAYS">
+                        <Label text="Type" styleClass="text-small"/>
+                        <Label fx:id="petHeroTypeLabel" text="Cat" styleClass="stat-value"/>
+                    </VBox>
+                    <VBox styleClass="stat-card" spacing="6" HBox.hgrow="ALWAYS">
+                        <Label text="Mood" styleClass="text-small"/>
+                        <Label fx:id="petHeroMoodLabel" text="Good" styleClass="stat-value"/>
+                    </VBox>
+                </HBox>
+                <VBox spacing="8">
+                    <HBox alignment="CENTER_LEFT" spacing="8">
+                        <Label text="Hunger Progress" styleClass="pet-stat-title"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Label fx:id="petHeroHungerLabel" text="0/100" styleClass="pet-stat-value"/>
+                    </HBox>
+                    <ProgressBar fx:id="petHeroHungerBar" progress="0" styleClass="pet-progress-hunger"/>
+                </VBox>
+            </VBox>
+        </HBox>
+    </VBox>
+
+    <VBox fx:id="petEmptyCard" styleClass="card" spacing="0" visible="false" managed="false">
+        <HBox styleClass="card-header" alignment="CENTER_LEFT" spacing="12">
+            <VBox spacing="2" HBox.hgrow="ALWAYS">
+                <Label text="Your Pet Companion" styleClass="card-title"/>
+                <Label text="Create a pet to earn coins, track mood, and stay motivated while studying." styleClass="text-small"/>
+            </VBox>
+            <Button fx:id="petCreateButton" text="Create Your Pet" styleClass="btn-primary"/>
+        </HBox>
+    </VBox>
+
+    <HBox spacing="16">
+
+        <!-- Total Assessments -->
+        <VBox styleClass="stat-card" spacing="16" HBox.hgrow="ALWAYS">
+            <HBox alignment="CENTER_LEFT">
+                <StackPane styleClass="stat-icon-box, primary" prefWidth="44" prefHeight="44">
+                    <FontIcon iconLiteral="fth-clipboard" iconSize="20"/>
+                </StackPane>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Label text="Total" styleClass="badge, primary"/>
+            </HBox>
+            <VBox spacing="4">
+                <Label fx:id="assignmentsDueLabel" text="0" styleClass="stat-value"/>
+                <Label text="Assessments" styleClass="stat-label"/>
+            </VBox>
+        </VBox>
+
+        <!-- Passed Card -->
+        <VBox styleClass="stat-card" spacing="16" HBox.hgrow="ALWAYS">
+            <HBox alignment="CENTER_LEFT">
+                <StackPane styleClass="stat-icon-box, success" prefWidth="44" prefHeight="44">
+                    <FontIcon iconLiteral="fth-check-circle" iconSize="20"/>
+                </StackPane>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Label text="≥10" styleClass="badge, success"/>
+            </HBox>
+            <VBox spacing="4">
+                <Label fx:id="completedLabel" text="0" styleClass="stat-value"/>
+                <Label text="Passed" styleClass="stat-label"/>
+            </VBox>
+        </VBox>
+
+        <!-- Study Hours Card -->
+        <VBox styleClass="stat-card" spacing="16" HBox.hgrow="ALWAYS">
+            <HBox alignment="CENTER_LEFT">
+                <StackPane styleClass="stat-icon-box, accent" prefWidth="44" prefHeight="44">
+                    <FontIcon iconLiteral="fth-clock" iconSize="20"/>
+                </StackPane>
+            </HBox>
+            <VBox spacing="4">
+                <HBox alignment="BASELINE_LEFT" spacing="2">
+                    <Label fx:id="studyHoursLabel" text="0" styleClass="stat-value"/>
+                    <Label text="h" styleClass="text-muted" style="-fx-font-size: 16px;"/>
+                </HBox>
+                <Label text="Study time" styleClass="stat-label"/>
+            </VBox>
+        </VBox>
+
+        <!-- Cards Reviewed Card -->
+        <VBox styleClass="stat-card" spacing="16" HBox.hgrow="ALWAYS">
+            <HBox alignment="CENTER_LEFT">
+                <StackPane styleClass="stat-icon-box, warning" prefWidth="44" prefHeight="44">
+                    <FontIcon iconLiteral="fth-layers" iconSize="20"/>
+                </StackPane>
+            </HBox>
+            <VBox spacing="4">
+                <Label fx:id="cardsReviewedLabel" text="0" styleClass="stat-value"/>
+                <Label text="Cards reviewed" styleClass="stat-label"/>
+            </VBox>
+        </VBox>
+
+    </HBox>
+
+    <!-- ══ CHARTS ROW ════════════════════════════════════════════════════════ -->
+    <HBox spacing="16">
+
+        <!-- Study Time Chart -->
+        <VBox styleClass="card" HBox.hgrow="ALWAYS">
+            <HBox styleClass="card-header" alignment="CENTER_LEFT" spacing="12">
+                <StackPane styleClass="stat-icon-box, primary" prefWidth="36" prefHeight="36">
+                    <FontIcon iconLiteral="fth-bar-chart-2" iconSize="16"/>
+                </StackPane>
+                <VBox spacing="2" HBox.hgrow="ALWAYS">
+                    <Label text="Study Time" styleClass="card-title"/>
+                    <Label text="Hours per day" styleClass="text-small"/>
+                </VBox>
+                <Label text="This Week" styleClass="badge, primary"/>
+            </HBox>
+            <VBox styleClass="card-body" VBox.vgrow="ALWAYS">
+                <AreaChart fx:id="studyTimeChart" legendVisible="false"
+                           prefHeight="200" createSymbols="true">
+                    <xAxis><CategoryAxis side="BOTTOM"/></xAxis>
+                    <yAxis><NumberAxis side="LEFT" autoRanging="true"/></yAxis>
+                </AreaChart>
+            </VBox>
+        </VBox>
+
+        <!-- Weekly Progress Chart -->
+        <VBox styleClass="card" HBox.hgrow="ALWAYS">
+            <HBox styleClass="card-header" alignment="CENTER_LEFT" spacing="12">
+                <StackPane styleClass="stat-icon-box, success" prefWidth="36" prefHeight="36">
+                    <FontIcon iconLiteral="fth-trending-up" iconSize="16"/>
+                </StackPane>
+                <VBox spacing="2" HBox.hgrow="ALWAYS">
+                    <Label text="Weekly Progress" styleClass="card-title"/>
+                    <Label text="Passed vs failed assessments" styleClass="text-small"/>
+                </VBox>
+                <Label text="Real data" styleClass="badge, success"/>
+            </HBox>
+            <VBox styleClass="card-body" VBox.vgrow="ALWAYS">
+                <BarChart fx:id="weeklyProgressChart" legendVisible="true"
+                          prefHeight="200" barGap="2" categoryGap="20">
+                    <xAxis><CategoryAxis side="BOTTOM"/></xAxis>
+                    <yAxis><NumberAxis side="LEFT" autoRanging="true"/></yAxis>
+                </BarChart>
+            </VBox>
+        </VBox>
+
+    </HBox>
+
+    <!-- ══ MAIN CONTENT GRID ═════════════════════════════════════════════════ -->
+    <HBox spacing="16">
+
+        <!-- Today's Schedule -->
+        <VBox styleClass="card" HBox.hgrow="ALWAYS" maxWidth="400">
+            <HBox styleClass="card-header" alignment="CENTER_LEFT" spacing="12">
+                <StackPane styleClass="stat-icon-box, primary" prefWidth="36" prefHeight="36">
+                    <FontIcon iconLiteral="fth-calendar" iconSize="16"/>
+                </StackPane>
+                <Label text="Today's Schedule" styleClass="card-title" HBox.hgrow="ALWAYS"/>
+                <Hyperlink text="View all"
+                           style="-fx-text-fill: #A78BFA; -fx-font-size: 13px;"/>
+            </HBox>
+            <VBox fx:id="scheduleList" styleClass="card-body" spacing="8"/>
+        </VBox>
+
+        <!-- Upcoming Tasks — real data from assessments -->
+        <VBox styleClass="card" HBox.hgrow="ALWAYS" maxWidth="400">
+            <HBox styleClass="card-header" alignment="CENTER_LEFT" spacing="12">
+                <StackPane styleClass="stat-icon-box, accent" prefWidth="36" prefHeight="36">
+                    <FontIcon iconLiteral="fth-clipboard" iconSize="16"/>
+                </StackPane>
+                <Label text="Recent Assessments" styleClass="card-title" HBox.hgrow="ALWAYS"/>
+                <Hyperlink text="View all"
+                           style="-fx-text-fill: #A78BFA; -fx-font-size: 13px;"/>
+            </HBox>
+            <VBox fx:id="tasksList" styleClass="card-body" spacing="8"/>
+        </VBox>
+
+        <!-- Recent Activity — real data -->
+        <VBox styleClass="card" HBox.hgrow="ALWAYS" maxWidth="400">
+            <HBox styleClass="card-header" alignment="CENTER_LEFT" spacing="12">
+                <StackPane styleClass="stat-icon-box, success" prefWidth="36" prefHeight="36">
+                    <FontIcon iconLiteral="fth-activity" iconSize="16"/>
+                </StackPane>
+                <Label text="Recent Activity" styleClass="card-title" HBox.hgrow="ALWAYS"/>
+            </HBox>
+            <VBox fx:id="activityList" styleClass="card-body" spacing="12"/>
+        </VBox>
+
+    </HBox>
+
+    <!-- ══ COURSE PROGRESS ═══════════════════════════════════════════════════ -->
+    <VBox styleClass="card">
+        <HBox styleClass="card-header" alignment="CENTER_LEFT" spacing="12">
+            <StackPane styleClass="stat-icon-box, primary" prefWidth="36" prefHeight="36">
+                <FontIcon iconLiteral="fth-book-open" iconSize="16"/>
+            </StackPane>
+            <VBox spacing="2" HBox.hgrow="ALWAYS">
+                <Label text="Course Progress" styleClass="card-title"/>
+                <Label text="Average score per subject — updated from My Assessments"
+                       styleClass="text-small"/>
+            </VBox>
+            <Label text="Live" styleClass="badge, success"/>
+        </HBox>
+        <VBox fx:id="courseProgressList" styleClass="card-body" spacing="4"/>
+    </VBox>
+
+    <!-- ══ QUICK ACTIONS ══════════════════════════════════════════════════════ -->
+    <HBox spacing="16">
+
+        <VBox fx:id="quickCardAssignment" styleClass="stat-card" alignment="CENTER"
+              spacing="12" HBox.hgrow="ALWAYS" style="-fx-cursor: hand;">
+            <StackPane styleClass="stat-icon-box, primary" prefWidth="48" prefHeight="48">
+                <FontIcon iconLiteral="fth-plus-circle" iconSize="24"/>
+            </StackPane>
+            <Label text="Add Assessment" styleClass="text-body"
+                   style="-fx-font-weight: 600;"/>
+            <Label text="Track new results" styleClass="text-small"/>
+        </VBox>
+
+        <VBox fx:id="quickCardSchedule" styleClass="stat-card" alignment="CENTER"
+              spacing="12" HBox.hgrow="ALWAYS" style="-fx-cursor: hand;">
+            <StackPane styleClass="stat-icon-box, accent" prefWidth="48" prefHeight="48">
+                <FontIcon iconLiteral="fth-calendar" iconSize="24"/>
+            </StackPane>
+            <Label text="Schedule Event" styleClass="text-body"
+                   style="-fx-font-weight: 600;"/>
+            <Label text="Plan your time" styleClass="text-small"/>
+        </VBox>
+
+        <VBox fx:id="quickCardDecks" styleClass="stat-card" alignment="CENTER"
+              spacing="12" HBox.hgrow="ALWAYS" style="-fx-cursor: hand;">
+            <StackPane styleClass="stat-icon-box, success" prefWidth="48" prefHeight="48">
+                <FontIcon iconLiteral="fth-layers" iconSize="24"/>
+            </StackPane>
+            <Label text="Start Revision" styleClass="text-body"
+                   style="-fx-font-weight: 600;"/>
+            <Label text="Review flashcards" styleClass="text-small"/>
+        </VBox>
+
+        <VBox fx:id="quickCardWellness" styleClass="stat-card" alignment="CENTER"
+              spacing="12" HBox.hgrow="ALWAYS" style="-fx-cursor: hand;">
+            <StackPane styleClass="stat-icon-box, danger" prefWidth="48" prefHeight="48">
+                <FontIcon iconLiteral="fth-heart" iconSize="24"/>
+            </StackPane>
+            <Label text="Wellness Check" styleClass="text-body"
+                   style="-fx-font-weight: 600;"/>
+            <Label text="How are you feeling?" styleClass="text-small"/>
+        </VBox>
+
+    </HBox>
+
+</VBox>
+

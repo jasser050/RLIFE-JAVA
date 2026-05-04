@@ -1,0 +1,294 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import org.kordamp.ikonli.javafx.FontIcon?>
+
+<VBox xmlns="http://javafx.com/javafx/21"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:id="formView" visible="false" managed="false"
+      >
+
+    <!-- Form header -->
+    <HBox alignment="CENTER_LEFT" spacing="16"
+          style="-fx-padding:24 28 20 28;-fx-border-color:#1E293B;-fx-border-width:0 0 1 0;">
+        <Button onAction="#handleCancel"
+                style="-fx-background-color:#1E293B;-fx-text-fill:#94A3B8;
+                       -fx-font-size:12px;-fx-background-radius:10;-fx-cursor:hand;
+                       -fx-padding:8 14;-fx-border-color:#334155;-fx-border-radius:10;-fx-border-width:1;">
+            <graphic><FontIcon iconLiteral="fth-arrow-left" iconSize="14" iconColor="#94A3B8"/></graphic>
+        </Button>
+        <VBox spacing="3" HBox.hgrow="ALWAYS">
+            <Label fx:id="formTitle" text="New Flashcard" styleClass="text-heading"/>
+            <Label text="Fill in the question and answer for your flashcard" styleClass="text-muted"/>
+        </VBox>
+        <Label fx:id="formCompletionLabel" text="0% complete"
+               style="-fx-background-color:#1E293B;-fx-text-fill:#64748B;
+                      -fx-font-size:11px;-fx-font-weight:700;
+                      -fx-padding:6 14;-fx-background-radius:20;"/>
+    </HBox>
+
+    <!-- Form body -->
+    <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS"
+                style="-fx-background-color:transparent;-fx-background:transparent;">
+        <VBox spacing="20" style="-fx-padding:28;">
+
+            <!-- ═══ TITLE ═══ -->
+            <VBox spacing="6">
+                <HBox alignment="CENTER_LEFT" spacing="6">
+                    <FontIcon iconLiteral="fth-tag" iconSize="13" iconColor="#A78BFA"/>
+                    <Label text="Card Title" style="-fx-text-fill:#CBD5E1;-fx-font-size:13px;-fx-font-weight:600;"/>
+                    <Label text=" *" style="-fx-text-fill:#FB7185;-fx-font-weight:700;"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Label fx:id="titleCharCount" text="0/80"
+                           style="-fx-text-fill:#334155;-fx-font-size:10px;"/>
+                </HBox>
+                <!-- Conseil -->
+                <HBox spacing="6" alignment="CENTER_LEFT"
+                      style="-fx-background-color:rgba(167,139,250,0.08);-fx-background-radius:8;
+                             -fx-border-color:rgba(167,139,250,0.2);-fx-border-radius:8;-fx-border-width:1;
+                             -fx-padding:6 12;">
+                    <Label text="💡" style="-fx-font-size:11px;"/>
+                    <Label text="Minimum 3 caractères, maximum 80. Choisissez un titre court et clair."
+                           style="-fx-text-fill:#94A3B8;-fx-font-size:11px;-fx-font-style:italic;" wrapText="true"/>
+                </HBox>
+                <TextField fx:id="fieldTitre" promptText="e.g. Binary Search, Ohm's Law…"
+                           style="-fx-background-color:#1E293B;-fx-text-fill:#F8FAFC;
+                                  -fx-prompt-text-fill:#475569;-fx-border-color:#334155;-fx-border-width:2;
+                                  -fx-border-radius:10;-fx-background-radius:10;
+                                  -fx-padding:11 16;-fx-font-size:13px;"/>
+                <Label fx:id="errTitre" text=""
+                       style="-fx-text-fill:#FB7185;-fx-font-size:11px;-fx-font-weight:600;"
+                       visible="false" managed="false"/>
+            </VBox>
+
+            <!-- ═══ QUESTION ═══ -->
+            <VBox spacing="6">
+                <HBox alignment="CENTER_LEFT" spacing="6">
+                    <FontIcon iconLiteral="fth-help-circle" iconSize="13" iconColor="#38BDF8"/>
+                    <Label text="Question" style="-fx-text-fill:#CBD5E1;-fx-font-size:13px;-fx-font-weight:600;"/>
+                    <Label text=" *" style="-fx-text-fill:#FB7185;-fx-font-weight:700;"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Label fx:id="questionCharCount" text="0/500"
+                           style="-fx-text-fill:#334155;-fx-font-size:10px;"/>
+                </HBox>
+                <!-- Conseil -->
+                <HBox spacing="6" alignment="CENTER_LEFT"
+                      style="-fx-background-color:rgba(56,189,248,0.08);-fx-background-radius:8;
+                             -fx-border-color:rgba(56,189,248,0.2);-fx-border-radius:8;-fx-border-width:1;
+                             -fx-padding:6 12;">
+                    <Label text="💡" style="-fx-font-size:11px;"/>
+                    <Label text="Minimum 3 caractères, maximum 500. Posez une question précise et claire."
+                           style="-fx-text-fill:#94A3B8;-fx-font-size:11px;-fx-font-style:italic;" wrapText="true"/>
+                </HBox>
+                <TextArea fx:id="fieldQuestion" promptText="Write your question here…"
+                          prefRowCount="3"
+                          style="-fx-control-inner-background:#1E293B;-fx-background-color:#1E293B;
+                                 -fx-text-fill:#F8FAFC;-fx-prompt-text-fill:#475569;
+                                 -fx-border-color:#334155;-fx-border-width:2;
+                                 -fx-border-radius:10;-fx-background-radius:10;-fx-font-size:13px;"/>
+                <Label fx:id="errQuestion" text=""
+                       style="-fx-text-fill:#FB7185;-fx-font-size:11px;-fx-font-weight:600;"
+                       visible="false" managed="false"/>
+            </VBox>
+
+            <!-- ═══ ANSWER ═══ -->
+            <VBox spacing="6">
+                <HBox alignment="CENTER_LEFT" spacing="6">
+                    <FontIcon iconLiteral="fth-check-square" iconSize="13" iconColor="#34D399"/>
+                    <Label text="Answer" style="-fx-text-fill:#CBD5E1;-fx-font-size:13px;-fx-font-weight:600;"/>
+                    <Label text=" *" style="-fx-text-fill:#FB7185;-fx-font-weight:700;"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Label fx:id="answerCharCount" text="0/500"
+                           style="-fx-text-fill:#334155;-fx-font-size:10px;"/>
+                </HBox>
+                <!-- Conseil -->
+                <HBox spacing="6" alignment="CENTER_LEFT"
+                      style="-fx-background-color:rgba(52,211,153,0.08);-fx-background-radius:8;
+                             -fx-border-color:rgba(52,211,153,0.2);-fx-border-radius:8;-fx-border-width:1;
+                             -fx-padding:6 12;">
+                    <Label text="💡" style="-fx-font-size:11px;"/>
+                    <Label text="Minimum 3 caractères, maximum 500. Soyez précis et complet dans votre réponse."
+                           style="-fx-text-fill:#94A3B8;-fx-font-size:11px;-fx-font-style:italic;" wrapText="true"/>
+                </HBox>
+                <TextArea fx:id="fieldReponse" promptText="Write the answer here…"
+                          prefRowCount="3"
+                          style="-fx-control-inner-background:#1E293B;-fx-background-color:#1E293B;
+                                 -fx-text-fill:#F8FAFC;-fx-prompt-text-fill:#475569;
+                                 -fx-border-color:#334155;-fx-border-width:2;
+                                 -fx-border-radius:10;-fx-background-radius:10;-fx-font-size:13px;"/>
+                <Label fx:id="errReponse" text=""
+                       style="-fx-text-fill:#FB7185;-fx-font-size:11px;-fx-font-weight:600;"
+                       visible="false" managed="false"/>
+            </VBox>
+
+            <!-- ═══ EXTRA NOTES ═══ -->
+            <VBox spacing="6">
+                <HBox alignment="CENTER_LEFT" spacing="6">
+                    <FontIcon iconLiteral="fth-align-left" iconSize="13" iconColor="#FB923C"/>
+                    <Label text="Extra Notes" style="-fx-text-fill:#CBD5E1;-fx-font-size:13px;-fx-font-weight:600;"/>
+                    <Label text=" (optionnel)" style="-fx-text-fill:#475569;-fx-font-size:11px;"/>
+                </HBox>
+                <!-- Conseil -->
+                <HBox spacing="6" alignment="CENTER_LEFT"
+                      style="-fx-background-color:rgba(251,146,60,0.08);-fx-background-radius:8;
+                             -fx-border-color:rgba(251,146,60,0.2);-fx-border-radius:8;-fx-border-width:1;
+                             -fx-padding:6 12;">
+                    <Label text="💡" style="-fx-font-size:11px;"/>
+                    <Label text="Maximum 300 caractères. Ajoutez des indices, astuces ou contexte supplémentaire."
+                           style="-fx-text-fill:#94A3B8;-fx-font-size:11px;-fx-font-style:italic;" wrapText="true"/>
+                </HBox>
+                <TextArea fx:id="fieldDescription" promptText="Add hints, mnemonics, or context…"
+                          prefRowCount="2"
+                          style="-fx-control-inner-background:#1E293B;-fx-background-color:#1E293B;
+                                 -fx-text-fill:#F8FAFC;-fx-prompt-text-fill:#475569;
+                                 -fx-border-color:#334155;-fx-border-width:2;
+                                 -fx-border-radius:10;-fx-background-radius:10;-fx-font-size:13px;"/>
+                <Label fx:id="errDescription" text=""
+                       style="-fx-text-fill:#FB7185;-fx-font-size:11px;-fx-font-weight:600;"
+                       visible="false" managed="false"/>
+            </VBox>
+
+            <!-- ═══ DIFFICULTY + STATUS ═══ -->
+            <HBox spacing="16">
+                <!-- Difficulty -->
+                <VBox spacing="6" HBox.hgrow="ALWAYS">
+                    <HBox alignment="CENTER_LEFT" spacing="6">
+                        <FontIcon iconLiteral="fth-bar-chart-2" iconSize="13" iconColor="#FBBF24"/>
+                        <Label text="Difficulty" style="-fx-text-fill:#CBD5E1;-fx-font-size:13px;-fx-font-weight:600;"/>
+                        <Label text=" *" style="-fx-text-fill:#FB7185;-fx-font-weight:700;"/>
+                    </HBox>
+                    <HBox spacing="6" alignment="CENTER_LEFT"
+                          style="-fx-background-color:rgba(251,191,36,0.08);-fx-background-radius:8;
+                                 -fx-border-color:rgba(251,191,36,0.2);-fx-border-radius:8;-fx-border-width:1;
+                                 -fx-padding:6 12;">
+                        <Label text="💡" style="-fx-font-size:11px;"/>
+                        <Label text="Easy / Medium / Hard"
+                               style="-fx-text-fill:#94A3B8;-fx-font-size:11px;-fx-font-style:italic;"/>
+                    </HBox>
+                    <ComboBox fx:id="combDifficulte" promptText="Select difficulty…" maxWidth="Infinity"
+                              style="-fx-background-color:#1E293B;-fx-border-color:#334155;-fx-border-width:2;
+                                     -fx-border-radius:10;-fx-background-radius:10;-fx-font-size:13px;"/>
+                    <Label fx:id="errDifficulte" text=""
+                           style="-fx-text-fill:#FB7185;-fx-font-size:11px;-fx-font-weight:600;"
+                           visible="false" managed="false"/>
+                </VBox>
+                <!-- Status -->
+                <VBox spacing="6" HBox.hgrow="ALWAYS">
+                    <HBox alignment="CENTER_LEFT" spacing="6">
+                        <FontIcon iconLiteral="fth-activity" iconSize="13" iconColor="#A78BFA"/>
+                        <Label text="Status" style="-fx-text-fill:#CBD5E1;-fx-font-size:13px;-fx-font-weight:600;"/>
+                        <Label text=" *" style="-fx-text-fill:#FB7185;-fx-font-weight:700;"/>
+                    </HBox>
+                    <HBox spacing="6" alignment="CENTER_LEFT"
+                          style="-fx-background-color:rgba(167,139,250,0.08);-fx-background-radius:8;
+                                 -fx-border-color:rgba(167,139,250,0.2);-fx-border-radius:8;-fx-border-width:1;
+                                 -fx-padding:6 12;">
+                        <Label text="💡" style="-fx-font-size:11px;"/>
+                        <Label text="New / Learning / Mastered"
+                               style="-fx-text-fill:#94A3B8;-fx-font-size:11px;-fx-font-style:italic;"/>
+                    </HBox>
+                    <ComboBox fx:id="combEtat" promptText="Select status…" maxWidth="Infinity"
+                              style="-fx-background-color:#1E293B;-fx-border-color:#334155;-fx-border-width:2;
+                                     -fx-border-radius:10;-fx-background-radius:10;-fx-font-size:13px;"/>
+                    <Label fx:id="errEtat" text=""
+                           style="-fx-text-fill:#FB7185;-fx-font-size:11px;-fx-font-weight:600;"
+                           visible="false" managed="false"/>
+                </VBox>
+            </HBox>
+
+            <!-- ═══ IMAGE ═══ -->
+            <VBox spacing="6">
+                <HBox alignment="CENTER_LEFT" spacing="6">
+                    <FontIcon iconLiteral="fth-image" iconSize="13" iconColor="#38BDF8"/>
+                    <Label text="Image" style="-fx-text-fill:#CBD5E1;-fx-font-size:13px;-fx-font-weight:600;"/>
+                    <Label text=" (optionnel)" style="-fx-text-fill:#475569;-fx-font-size:11px;"/>
+                </HBox>
+                <HBox spacing="6" alignment="CENTER_LEFT"
+                      style="-fx-background-color:rgba(56,189,248,0.08);-fx-background-radius:8;
+                             -fx-border-color:rgba(56,189,248,0.2);-fx-border-radius:8;-fx-border-width:1;
+                             -fx-padding:6 12;">
+                    <Label text="💡" style="-fx-font-size:11px;"/>
+                    <Label text="Formats acceptés : PNG, JPG, JPEG, GIF, WEBP. Taille max : 10 Mo."
+                           style="-fx-text-fill:#94A3B8;-fx-font-size:11px;-fx-font-style:italic;" wrapText="true"/>
+                </HBox>
+                <HBox spacing="10" alignment="CENTER_LEFT">
+                    <TextField fx:id="fieldImage" promptText="Aucune image sélectionnée…"
+                               HBox.hgrow="ALWAYS" editable="false"
+                               style="-fx-background-color:#1E293B;-fx-text-fill:#94A3B8;
+                                      -fx-prompt-text-fill:#475569;-fx-border-color:#334155;-fx-border-width:2;
+                                      -fx-border-radius:10;-fx-background-radius:10;
+                                      -fx-padding:11 16;-fx-font-size:12px;"/>
+                    <Button text=" Browse…" onAction="#pickImage" prefHeight="42"
+                            style="-fx-background-color:rgba(56,189,248,0.1);-fx-text-fill:#38BDF8;
+                                   -fx-font-size:12px;-fx-font-weight:600;-fx-background-radius:10;
+                                   -fx-cursor:hand;-fx-padding:11 18;-fx-border-color:#38BDF8;
+                                   -fx-border-radius:10;-fx-border-width:1;">
+                        <graphic><FontIcon iconLiteral="fth-upload" iconSize="13" iconColor="#38BDF8"/></graphic>
+                    </Button>
+                </HBox>
+                <Label fx:id="errImage" text=""
+                       style="-fx-text-fill:#FB7185;-fx-font-size:11px;-fx-font-weight:600;"
+                       visible="false" managed="false"/>
+                <Label fx:id="imagePreviewLabel" text=""
+                       style="-fx-text-fill:#34D399;-fx-font-size:11px;"
+                       visible="false" managed="false"/>
+            </VBox>
+
+            <!-- ═══ PDF ═══ -->
+            <VBox spacing="6">
+                <HBox alignment="CENTER_LEFT" spacing="6">
+                    <FontIcon iconLiteral="fth-file-text" iconSize="13" iconColor="#F472B6"/>
+                    <Label text="PDF Document" style="-fx-text-fill:#CBD5E1;-fx-font-size:13px;-fx-font-weight:600;"/>
+                    <Label text=" (optionnel)" style="-fx-text-fill:#475569;-fx-font-size:11px;"/>
+                </HBox>
+                <HBox spacing="6" alignment="CENTER_LEFT"
+                      style="-fx-background-color:rgba(244,114,182,0.08);-fx-background-radius:8;
+                             -fx-border-color:rgba(244,114,182,0.2);-fx-border-radius:8;-fx-border-width:1;
+                             -fx-padding:6 12;">
+                    <Label text="💡" style="-fx-font-size:11px;"/>
+                    <Label text="Seuls les fichiers .pdf sont acceptés. Taille max : 10 Mo."
+                           style="-fx-text-fill:#94A3B8;-fx-font-size:11px;-fx-font-style:italic;" wrapText="true"/>
+                </HBox>
+                <HBox spacing="10" alignment="CENTER_LEFT">
+                    <TextField fx:id="fieldPdf" promptText="Aucun PDF sélectionné…"
+                               HBox.hgrow="ALWAYS" editable="false"
+                               style="-fx-background-color:#1E293B;-fx-text-fill:#94A3B8;
+                                      -fx-prompt-text-fill:#475569;-fx-border-color:#334155;-fx-border-width:2;
+                                      -fx-border-radius:10;-fx-background-radius:10;
+                                      -fx-padding:11 16;-fx-font-size:12px;"/>
+                    <Button text=" Browse…" onAction="#pickPdf" prefHeight="42"
+                            style="-fx-background-color:rgba(244,114,182,0.1);-fx-text-fill:#F472B6;
+                                   -fx-font-size:12px;-fx-font-weight:600;-fx-background-radius:10;
+                                   -fx-cursor:hand;-fx-padding:11 18;-fx-border-color:#F472B6;
+                                   -fx-border-radius:10;-fx-border-width:1;">
+                        <graphic><FontIcon iconLiteral="fth-upload" iconSize="13" iconColor="#F472B6"/></graphic>
+                    </Button>
+                </HBox>
+                <Label fx:id="errPdf" text=""
+                       style="-fx-text-fill:#FB7185;-fx-font-size:11px;-fx-font-weight:600;"
+                       visible="false" managed="false"/>
+                <Label fx:id="pdfPreviewLabel" text=""
+                       style="-fx-text-fill:#34D399;-fx-font-size:11px;"
+                       visible="false" managed="false"/>
+            </VBox>
+
+        </VBox>
+    </ScrollPane>
+
+    <!-- Footer -->
+    <HBox spacing="12" alignment="CENTER_RIGHT"
+          style="-fx-padding:18 28 22 28;-fx-border-color:#1E293B;-fx-border-width:1 0 0 0;">
+        <Button text="Cancel" onAction="#handleCancel"
+                style="-fx-background-color:#1E293B;-fx-text-fill:#94A3B8;
+                       -fx-font-size:13px;-fx-font-weight:600;
+                       -fx-background-radius:10;-fx-cursor:hand;
+                       -fx-padding:11 26;-fx-border-color:#334155;
+                       -fx-border-radius:10;-fx-border-width:1;"/>
+        <Button text="💾  Save Flashcard" onAction="#handleSave"
+                style="-fx-background-color:linear-gradient(to right,#7C3AED,#6D28D9);
+                       -fx-text-fill:white;-fx-font-size:13px;-fx-font-weight:700;
+                       -fx-background-radius:10;-fx-cursor:hand;-fx-padding:11 30;
+                       -fx-effect:dropshadow(gaussian,rgba(124,58,237,0.5),12,0,0,4);"/>
+    </HBox>
+</VBox>
