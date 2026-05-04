@@ -195,12 +195,14 @@
                 <configuration>
                     <mainClass>com.studyflow/com.studyflow.App</mainClass>
                     <executable>${javafx.executable}</executable>
+                    <includePathExceptionsInClasspath>true</includePathExceptionsInClasspath>
                     <options>
                         <option>-Xms512m</option>
                         <option>-Xmx2048m</option>
                         <option>-XX:+UseG1GC</option>
                         <option>-Dfile.encoding=UTF-8</option>
-                        <option>-Dprism.forceGPU=true</option>
+                        <option>-Dprism.order=sw</option>
+                        <option>-Dprism.forceGPU=false</option>
                         <option>-Dprism.vsync=false</option>
                         <option>--add-opens</option>
                         <option>java.base/java.lang=ALL-UNNAMED</option>

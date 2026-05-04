@@ -43,6 +43,23 @@
                                   style="-fx-background-color:#1E293B;-fx-border-color:#334155;
                                          -fx-border-radius:14;-fx-background-radius:14;
                                          -fx-font-size:12px;-fx-text-fill:#CBD5E1;-fx-padding:2 0;"/>
+                        <Button text="Notes" onAction="#openNotesWorkspace"
+                                style="-fx-background-color:linear-gradient(to right,#7C3AED,#A855F7);
+                                       -fx-text-fill:white;-fx-font-size:12px;-fx-font-weight:700;
+                                       -fx-background-radius:14;-fx-cursor:hand;-fx-padding:10 16;">
+                            <graphic>
+                                <FontIcon iconLiteral="fth-file-text" iconSize="14" iconColor="white"/>
+                            </graphic>
+                        </Button>
+                        <Button text="Présentation" onAction="#openPresentationStudio"
+                                style="-fx-background-color:#1E293B;
+                                       -fx-text-fill:#DDD6FE;-fx-font-size:12px;-fx-font-weight:700;
+                                       -fx-background-radius:14;-fx-cursor:hand;-fx-padding:10 16;
+                                       -fx-border-color:rgba(127,119,221,0.35);-fx-border-radius:14;-fx-border-width:1;">
+                            <graphic>
+                                <FontIcon iconLiteral="fth-monitor" iconSize="14" iconColor="#DDD6FE"/>
+                            </graphic>
+                        </Button>
                     </HBox>
                     <HBox fx:id="activeFiltersBar" spacing="8" alignment="CENTER_LEFT"
                           visible="false" managed="false">

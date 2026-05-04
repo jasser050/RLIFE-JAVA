@@ -116,13 +116,13 @@ public class DashboardController implements Initializable {
 
     private void setupPetHero() {
         if (petManageButton != null) {
-            petManageButton.setOnAction(event -> navigateTo("views/Notes.fxml"));
+            petManageButton.setOnAction(event -> navigateTo("views/MyPet.fxml"));
         }
         if (petMetaverseButton != null) {
             petMetaverseButton.setOnAction(event -> navigateTo("views/PetMetaverse.fxml"));
         }
         if (petCreateButton != null) {
-            petCreateButton.setOnAction(event -> navigateTo("views/Notes.fxml"));
+            petCreateButton.setOnAction(event -> navigateTo("views/MyPet.fxml"));
         }
 
         User currentUser = UserSession.getInstance().getCurrentUser();

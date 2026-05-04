@@ -116,7 +116,7 @@
                             <text>Projects</text>
                         </Button>
 
-                        <Button fx:id="btnNotes" styleClass="nav-button" onAction="#showNotes" maxWidth="Infinity">
+                        <Button fx:id="btnNotes" styleClass="nav-button" onAction="#showMyPet" maxWidth="Infinity">
                             <graphic>
                                 <FontIcon iconLiteral="fas-paw" iconSize="16"/>
                             </graphic>

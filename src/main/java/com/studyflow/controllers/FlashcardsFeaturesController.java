@@ -1781,6 +1781,7 @@ public abstract class FlashcardsFeaturesController implements Initializable {
     }
 
     @FXML public void goBackToFlashcards() { goToFlashcards(); refreshFlashcards(); }
+    @FXML public void openNotesWorkspace() { MainController.loadContentInMainArea("views/Notes.fxml"); }
 
     protected void alert(String msg) { new Alert(Alert.AlertType.WARNING, msg, ButtonType.OK).showAndWait(); }
     protected void showInfo(String msg) {
