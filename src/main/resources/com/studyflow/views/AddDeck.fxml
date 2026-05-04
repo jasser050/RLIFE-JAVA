@@ -10,12 +10,12 @@
             xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="com.studyflow.controllers.RevisionsController"
             fitToWidth="true"
-            style="-fx-background-color:#020617;-fx-background:#020617;">
+            >
     <stylesheets>
         <URL value="@../styles/dark-form.css"/>
     </stylesheets>
 
-    <VBox spacing="0" style="-fx-background-color:#020617;-fx-padding:32;">
+    <VBox spacing="0" style="-fx-padding:32;">
 
         <!-- Breadcrumb -->
         <HBox alignment="CENTER_LEFT" spacing="10" style="-fx-padding:0 0 24 0;">

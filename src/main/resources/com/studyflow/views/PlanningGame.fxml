@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import org.kordamp.ikonli.javafx.FontIcon?>
+
+<VBox spacing="20" styleClass="planning-root, planning-game-root" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.studyflow.controllers.PlanningGameController">
+    <padding>
+        <Insets top="6" right="0" bottom="10" left="0" />
+    </padding>
+
+    <HBox alignment="CENTER_LEFT" spacing="12">
+        <StackPane prefHeight="38" prefWidth="38" styleClass="stat-icon-box, accent">
+            <FontIcon iconLiteral="fth-zap" iconSize="16" />
+        </StackPane>
+        <VBox spacing="2" HBox.hgrow="ALWAYS">
+            <Label styleClass="text-heading" text="Planning Game" />
+            <Label styleClass="text-muted" text="Boost your planning with missions, XP and level progression" />
+        </VBox>
+        <Button onAction="#handleRefreshGame" styleClass="btn-secondary" text="Refresh" />
+        <Button onAction="#handleBackToPlanning" styleClass="btn-primary" text="Back to Planning" />
+    </HBox>
+
+    <HBox spacing="14" styleClass="planning-game-kpi-row">
+        <VBox spacing="12" styleClass="stat-card, planning-game-kpi-card" HBox.hgrow="ALWAYS">
+            <Label styleClass="stat-label" text="Total XP" />
+            <Label fx:id="totalXpLabel" styleClass="stat-value, planning-game-main-value" text="0 XP" />
+            <Label fx:id="progressLabel" styleClass="text-small" text="0/100 XP to next level" />
+        </VBox>
+        <VBox spacing="12" styleClass="stat-card, planning-game-kpi-card" HBox.hgrow="ALWAYS">
+            <Label styleClass="stat-label" text="Current Level" />
+            <Label fx:id="levelLabel" styleClass="stat-value, planning-game-main-value" text="Level 1" />
+            <Label fx:id="streakLabel" styleClass="text-small" text="0 day streak" />
+        </VBox>
+    </HBox>
+
+    <HBox spacing="14" VBox.vgrow="ALWAYS">
+        <VBox spacing="14" styleClass="card, planning-game-card" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
+            <HBox alignment="CENTER_LEFT" spacing="10" styleClass="card-header">
+                <StackPane prefHeight="34" prefWidth="34" styleClass="stat-icon-box, success">
+                    <FontIcon iconLiteral="fth-flag" iconSize="14" />
+                </StackPane>
+                <VBox spacing="1">
+                    <Label styleClass="card-title" text="Daily Mission" />
+                    <Label styleClass="text-small" text="Complete challenges to level up faster" />
+                </VBox>
+            </HBox>
+            <VBox spacing="10" styleClass="card-body" VBox.vgrow="ALWAYS">
+                <Label fx:id="dailyMissionLabel" styleClass="planning-game-mission-title" text="Mission: Plan at least 2 sessions today" wrapText="true" />
+                <Label fx:id="challengeStatusLabel" styleClass="planning-game-mission-status" text="Not completed yet ⏳" />
+                <Region VBox.vgrow="ALWAYS" />
+                <Label styleClass="text-muted" text="Tip: planning consistency increases your streak and XP." wrapText="true" />
+            </VBox>
+        </VBox>
+
+        <VBox spacing="14" styleClass="card, planning-game-card" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
+            <HBox alignment="CENTER_LEFT" spacing="10" styleClass="card-header">
+                <StackPane prefHeight="34" prefWidth="34" styleClass="stat-icon-box, warning">
+                    <FontIcon iconLiteral="fth-check-square" iconSize="14" />
+                </StackPane>
+                <VBox spacing="1">
+                    <Label styleClass="card-title" text="Quest Board" />
+                    <Label styleClass="text-small" text="Simple goals for today and this week" />
+                </VBox>
+            </HBox>
+            <VBox fx:id="missionListBox" spacing="8" styleClass="card-body planning-game-mission-list" VBox.vgrow="ALWAYS" />
+        </VBox>
+    </HBox>
+</VBox>
+

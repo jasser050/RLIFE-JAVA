@@ -1,5 +1,8 @@
 package com.studyflow;
 
+import com.studyflow.models.User;
+import com.studyflow.services.ServiceUser;
+import com.studyflow.utils.UserSession;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -21,12 +24,39 @@ public class App extends Application {
     private static Stage primaryStage;
     private static boolean darkTheme = true;
 
+    public enum Theme {
+        DARK,
+        LIGHT
+    }
+
     @Override
     public void start(Stage stage) throws IOException {
         primaryStage = stage;
         LocalServer.start();
 
-        Parent root = loadFXML("views/Landing");
+
+        // Check for saved session — auto-login if token exists
+        String startView = "views/Landing";
+        String savedEmail = UserSession.getInstance().loadSession();
+        if (savedEmail != null) {
+            try {
+                ServiceUser serviceUser = new ServiceUser();
+                User user = serviceUser.findByEmail(savedEmail);
+                if (user != null && !user.isBanned()) {
+                    UserSession.getInstance().setCurrentUser(user);
+                    startView = "admin@rlife.com".equalsIgnoreCase(user.getEmail())
+                            ? "views/AdminLayout" : "views/MainLayout";
+                } else {
+                    UserSession.getInstance().clearSession();
+                }
+            } catch (Exception e) {
+                System.out.println("Auto-login failed: " + e.getMessage());
+                UserSession.getInstance().clearSession();
+            }
+        }
+
+        Parent root = loadFXML(startView);
+
         scene = new Scene(root, 1400, 900);
         scene.setFill(Color.TRANSPARENT);
         applyTheme();
@@ -56,6 +86,10 @@ public class App extends Application {
 
     public static boolean isDarkTheme() {
         return darkTheme;
+    }
+
+    public static Theme getCurrentTheme() {
+        return darkTheme ? Theme.DARK : Theme.LIGHT;
     }
 
     private static void applyTheme() {

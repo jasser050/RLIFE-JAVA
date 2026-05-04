@@ -120,6 +120,21 @@ public class NotificationService {
         }
     }
 
+    public void markAsRead(int notificationId, int userId) {
+        if (!isDatabaseAvailable() || notificationId <= 0 || userId <= 0) {
+            return;
+        }
+
+        String sql = "UPDATE notification SET is_read = 1 WHERE id = ? AND user_id = ?";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, notificationId);
+            statement.setInt(2, userId);
+            statement.executeUpdate();
+        } catch (SQLException e) {
+            System.out.println("NotificationService.markAsRead: " + e.getMessage());
+        }
+    }
+
     public void addNotificationForUser(int userId, String title, String message, String type, String link) {
         if (!isDatabaseAvailable()) {
             return;

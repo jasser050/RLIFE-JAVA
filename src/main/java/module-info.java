@@ -4,15 +4,24 @@ module com.studyflow {
     requires javafx.graphics;
     requires javafx.web;
     requires javafx.media;
+    requires javafx.swing;
 
     requires org.kordamp.ikonli.javafx;
     requires org.kordamp.ikonli.feather;
+    requires org.kordamp.ikonli.fontawesome5;
 
     requires java.sql;
     requires java.desktop;
     requires java.prefs;
     requires java.net.http;
     requires jdk.httpserver;
+    requires jdk.jsobject;
+    requires webcam.capture;
+    requires com.google.gson;
+    requires jcef;
+    requires jcefmaven;
+    requires org.apache.poi.poi;
+    requires org.apache.poi.ooxml;
 
     requires mysql.connector.j;
 
@@ -47,6 +56,7 @@ module com.studyflow {
     opens com.studyflow.controllers to javafx.fxml;
     opens com.studyflow.controllers.admin to javafx.fxml;
     opens com.studyflow.models to javafx.fxml;
+    opens com.studyflow.pets to javafx.fxml;
     opens com.studyflow.utils to javafx.fxml;
     opens com.studyflow.services to javafx.fxml;
 
@@ -54,6 +64,7 @@ module com.studyflow {
     exports com.studyflow.controllers;
     exports com.studyflow.controllers.admin;
     exports com.studyflow.models;
+    exports com.studyflow.pets;
     exports com.studyflow.utils;
     exports com.studyflow.interfaces;
     exports com.studyflow.services;

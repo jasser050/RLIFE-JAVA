@@ -47,6 +47,11 @@
             <artifactId>javafx-media</artifactId>
             <version>${javafx.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-swing</artifactId>
+            <version>${javafx.version}</version>
+        </dependency>
 
         <!-- Ikonli -->
         <dependency>
@@ -146,6 +151,31 @@
             <artifactId>jackson-annotations</artifactId>
             <version>2.17.0</version>
         </dependency>
+        <dependency>
+            <groupId>com.github.sarxos</groupId>
+            <artifactId>webcam-capture</artifactId>
+            <version>0.3.12</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.11.0</version>
+        </dependency>
+        <dependency>
+            <groupId>me.friwi</groupId>
+            <artifactId>jcefmaven</artifactId>
+            <version>143.0.14</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi</artifactId>
+            <version>5.5.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml</artifactId>
+            <version>5.5.1</version>
+        </dependency>
     </dependencies>
 
     <build>
@@ -165,15 +195,27 @@
                 <configuration>
                     <mainClass>com.studyflow/com.studyflow.App</mainClass>
                     <executable>${javafx.executable}</executable>
+                    <includePathExceptionsInClasspath>true</includePathExceptionsInClasspath>
                     <options>
-                        <option>-Xmx512m</option>
+                        <option>-Xms64m</option>
+                        <option>-Xmx384m</option>
+                        <option>-Xss256k</option>
+                        <option>-XX:+UseSerialGC</option>
+                        <option>-XX:TieredStopAtLevel=1</option>
+                        <option>-XX:CICompilerCount=2</option>
+                        <option>-XX:ActiveProcessorCount=2</option>
+                        <option>-XX:MaxMetaspaceSize=192m</option>
+                        <option>-XX:ReservedCodeCacheSize=64m</option>
                         <option>-Dfile.encoding=UTF-8</option>
-                        <option>-Dprism.forceGPU=true</option>
+                        <option>-Dprism.order=sw</option>
+                        <option>-Dprism.forceGPU=false</option>
                         <option>-Dprism.vsync=false</option>
                         <option>--add-opens</option>
                         <option>java.base/java.lang=ALL-UNNAMED</option>
                         <option>--add-opens</option>
                         <option>java.base/java.lang.reflect=ALL-UNNAMED</option>
+                        <option>--add-opens</option>
+                        <option>java.desktop/sun.awt=ALL-UNNAMED</option>
                     </options>
                 </configuration>
             </plugin>

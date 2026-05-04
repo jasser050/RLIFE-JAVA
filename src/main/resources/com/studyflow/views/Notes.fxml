@@ -1,40 +1,79 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.scene.layout.*?>
-<?import javafx.scene.control.*?>
 <?import javafx.geometry.Insets?>
+<?import javafx.scene.canvas.Canvas?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
 <?import org.kordamp.ikonli.javafx.FontIcon?>
 
 <VBox xmlns="http://javafx.com/javafx/21"
       xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="com.studyflow.controllers.NotesController"
-      spacing="24" style="-fx-background-color: #020617;">
+      spacing="20">
 
     <padding>
         <Insets top="0" right="0" bottom="24" left="0"/>
     </padding>
 
-    <!-- Header -->
+    <!-- ═══════════════════════════════════════════════════
+         TOP HEADER BAR
+    ════════════════════════════════════════════════════ -->
     <HBox alignment="CENTER_LEFT" spacing="16">
         <VBox spacing="4" HBox.hgrow="ALWAYS">
-            <Label text="Notes" styleClass="text-heading"/>
-            <Label text="Organize and search your study notes" styleClass="text-muted"/>
+            <Label text="Smart Notes" styleClass="text-heading"/>
+            <Label text="Write notes, sketch ideas and generate guided drawings from prompts" styleClass="text-muted"/>
         </VBox>
-        <HBox spacing="12">
-            <Button text="Import" styleClass="btn-secondary">
+        <HBox spacing="10">
+            <!-- Voice-to-note (innovative) -->
+            <Button onAction="#handleVoiceNote"
+                    style="-fx-background-color:#1E293B;-fx-text-fill:#CBD5E1;-fx-background-radius:12;
+                           -fx-border-color:#334155;-fx-border-radius:12;-fx-border-width:1;
+                           -fx-font-weight:700;-fx-padding:10 14;-fx-cursor:hand;">
                 <graphic>
-                    <FontIcon iconLiteral="fth-upload" iconSize="16"/>
+                    <FontIcon iconLiteral="fth-mic" iconSize="15" iconColor="#F43F5E"/>
                 </graphic>
+                <tooltip><Tooltip text="Voice to note (speak your note)"/></tooltip>
             </Button>
-            <Button text="New Note" styleClass="btn-primary" onAction="#showNewNoteDialog">
+            <!-- Smart Assist -->
+            <Button onAction="#handleSmartAssist"
+                    style="-fx-background-color:#1E293B;-fx-text-fill:#CBD5E1;-fx-background-radius:12;
+                           -fx-border-color:#334155;-fx-border-radius:12;-fx-border-width:1;
+                           -fx-font-weight:700;-fx-padding:10 14;-fx-cursor:hand;">
+                <graphic>
+                    <FontIcon iconLiteral="fth-cpu" iconSize="15" iconColor="#A78BFA"/>
+                </graphic>
+                <tooltip><Tooltip text="Smart assist"/></tooltip>
+            </Button>
+            <!-- Export -->
+            <Button onAction="#handleExportNote"
+                    style="-fx-background-color:#1E293B;-fx-text-fill:#CBD5E1;-fx-background-radius:12;
+                           -fx-border-color:#334155;-fx-border-radius:12;-fx-border-width:1;
+                           -fx-font-weight:700;-fx-padding:10 14;-fx-cursor:hand;">
+                <graphic>
+                    <FontIcon iconLiteral="fth-download" iconSize="15" iconColor="#38BDF8"/>
+                </graphic>
+                <tooltip><Tooltip text="Export note as PDF / image"/></tooltip>
+            </Button>
+            <Button onAction="#showNewNoteDialog" styleClass="btn-primary">
                 <graphic>
                     <FontIcon iconLiteral="fth-plus" iconSize="16" iconColor="white"/>
                 </graphic>
+                <tooltip><Tooltip text="New note"/></tooltip>
+            </Button>
+            <Button onAction="#handleSaveNote"
+                    style="-fx-background-color:linear-gradient(to right,#7C3AED,#A855F7);-fx-text-fill:white;
+                           -fx-font-weight:700;-fx-background-radius:12;-fx-padding:10 14;-fx-cursor:hand;">
+                <graphic>
+                    <FontIcon iconLiteral="fth-save" iconSize="15" iconColor="white"/>
+                </graphic>
+                <tooltip><Tooltip text="Save note"/></tooltip>
             </Button>
         </HBox>
     </HBox>
 
-    <!-- Stats Row -->
+    <!-- ═══════════════════════════════════════════════════
+         STAT CARDS
+    ════════════════════════════════════════════════════ -->
     <HBox spacing="16">
         <VBox styleClass="stat-card" spacing="8" HBox.hgrow="ALWAYS">
             <HBox alignment="CENTER_LEFT" spacing="12">
@@ -47,7 +86,6 @@
                 </VBox>
             </HBox>
         </VBox>
-
         <VBox styleClass="stat-card" spacing="8" HBox.hgrow="ALWAYS">
             <HBox alignment="CENTER_LEFT" spacing="12">
                 <StackPane styleClass="stat-icon-box, success" prefWidth="40" prefHeight="40">
@@ -59,7 +97,6 @@
                 </VBox>
             </HBox>
         </VBox>
-
         <VBox styleClass="stat-card" spacing="8" HBox.hgrow="ALWAYS">
             <HBox alignment="CENTER_LEFT" spacing="12">
                 <StackPane styleClass="stat-icon-box, warning" prefWidth="40" prefHeight="40">
@@ -71,70 +108,553 @@
                 </VBox>
             </HBox>
         </VBox>
-
         <VBox styleClass="stat-card" spacing="8" HBox.hgrow="ALWAYS">
             <HBox alignment="CENTER_LEFT" spacing="12">
                 <StackPane styleClass="stat-icon-box, accent" prefWidth="40" prefHeight="40">
-                    <FontIcon iconLiteral="fth-clock" iconSize="18"/>
+                    <FontIcon iconLiteral="fth-image" iconSize="18"/>
                 </StackPane>
                 <VBox spacing="2">
                     <Label fx:id="recentLabel" text="0" styleClass="stat-value"/>
-                    <Label text="Recent" styleClass="stat-label"/>
+                    <Label text="AI Drafts" styleClass="stat-label"/>
                 </VBox>
             </HBox>
         </VBox>
     </HBox>
 
-    <!-- Main Content -->
-    <HBox spacing="20" VBox.vgrow="ALWAYS">
-        <!-- Sidebar with folders -->
-        <VBox styleClass="card" prefWidth="260" spacing="0">
-            <HBox styleClass="card-header" alignment="CENTER_LEFT" spacing="8">
-                <FontIcon iconLiteral="fth-folder" iconSize="16" iconColor="#A78BFA"/>
-                <Label text="Folders" styleClass="card-title" HBox.hgrow="ALWAYS"/>
-                <Button style="-fx-background-color: transparent; -fx-cursor: hand;">
-                    <graphic>
-                        <FontIcon iconLiteral="fth-plus" iconSize="14" iconColor="#64748B"/>
-                    </graphic>
-                </Button>
-            </HBox>
-            <VBox styleClass="card-body" spacing="4" VBox.vgrow="ALWAYS">
-                <VBox fx:id="foldersBox" spacing="4"/>
+    <!-- ═══════════════════════════════════════════════════
+         MAIN WORKSPACE  (split: left=text  right=sketch)
+    ════════════════════════════════════════════════════ -->
+    <VBox styleClass="card" spacing="0" VBox.vgrow="ALWAYS">
+
+        <!-- Card header -->
+        <HBox styleClass="card-header" alignment="CENTER_LEFT" spacing="12">
+            <StackPane styleClass="stat-icon-box, accent" prefWidth="36" prefHeight="36">
+                <FontIcon iconLiteral="fth-pen-tool" iconSize="16"/>
+            </StackPane>
+            <VBox spacing="2" HBox.hgrow="ALWAYS">
+                <Label text="Note Workspace" styleClass="card-title"/>
+                <Label text="One full page for notes, drawing and prompt-based sketch generation" styleClass="text-small"/>
             </VBox>
-        </VBox>
+            <!-- Focus mode toggle (innovative) -->
+            <Button onAction="#handleFocusMode"
+                    style="-fx-background-color:#1E293B;-fx-text-fill:#94A3B8;-fx-padding:6 12;
+                           -fx-background-radius:100;-fx-font-size:11px;-fx-font-weight:700;-fx-cursor:hand;">
+                <graphic>
+                    <FontIcon iconLiteral="fth-maximize-2" iconSize="12" iconColor="#38BDF8"/>
+                </graphic>
+                <tooltip><Tooltip text="Focus mode – hide everything except canvas"/></tooltip>
+            </Button>
+            <Label fx:id="noteStatusLabel" text="Draft ready"
+                   style="-fx-background-color:#1E293B;-fx-text-fill:#94A3B8;-fx-padding:6 12;
+                          -fx-background-radius:100;-fx-font-size:11px;-fx-font-weight:700;"/>
+        </HBox>
 
-        <!-- Notes List -->
-        <VBox spacing="16" HBox.hgrow="ALWAYS">
-            <HBox alignment="CENTER_LEFT" spacing="12">
-                <TextField promptText="Search notes..." prefWidth="280" styleClass="search-field">
-                    <HBox.margin>
-                        <Insets right="8"/>
-                    </HBox.margin>
-                </TextField>
-                <Region HBox.hgrow="ALWAYS"/>
-                <HBox styleClass="filter-tabs" spacing="0">
-                    <Button text="All" styleClass="filter-tab, active"/>
-                    <Button text="Recent" styleClass="filter-tab"/>
-                    <Button text="Favorites" styleClass="filter-tab"/>
-                </HBox>
-                <HBox styleClass="filter-tabs" spacing="0">
-                    <Button styleClass="filter-tab, active">
-                        <graphic>
-                            <FontIcon iconLiteral="fth-grid" iconSize="14"/>
-                        </graphic>
-                    </Button>
-                    <Button styleClass="filter-tab">
-                        <graphic>
-                            <FontIcon iconLiteral="fth-list" iconSize="14"/>
-                        </graphic>
-                    </Button>
-                </HBox>
+        <VBox styleClass="card-body" spacing="18" VBox.vgrow="ALWAYS">
+
+            <!-- Title row -->
+            <HBox spacing="12" alignment="CENTER_LEFT">
+                <TextField fx:id="noteTitleField" promptText="Note title…"
+                           HBox.hgrow="ALWAYS"
+                           style="-fx-background-color:#0F172A;-fx-text-fill:#F8FAFC;-fx-prompt-text-fill:#64748B;
+                                  -fx-border-color:#334155;-fx-border-radius:12;-fx-background-radius:12;
+                                  -fx-padding:11 14;-fx-font-size:14px;-fx-font-weight:700;"/>
+                <ComboBox fx:id="noteFolderCombo" prefWidth="180"
+                          style="-fx-background-color:#0F172A;-fx-border-color:#334155;
+                                 -fx-border-radius:12;-fx-background-radius:12;-fx-font-size:12px;"/>
+                <!-- Tags field (innovative) -->
+                <TextField fx:id="noteTagsField" promptText="#tags"
+                           prefWidth="120"
+                           style="-fx-background-color:#0F172A;-fx-text-fill:#A78BFA;-fx-prompt-text-fill:#64748B;
+                                  -fx-border-color:#334155;-fx-border-radius:12;-fx-background-radius:12;
+                                  -fx-padding:11 12;-fx-font-size:12px;"/>
+                <ToggleButton fx:id="favoriteToggle"
+                              style="-fx-background-color:#1E293B;-fx-text-fill:#FBBF24;-fx-font-weight:700;
+                                     -fx-background-radius:12;-fx-border-color:#3F3F46;-fx-border-radius:12;
+                                     -fx-padding:10 14;-fx-cursor:hand;">
+                    <graphic>
+                        <FontIcon iconLiteral="fth-star" iconSize="15" iconColor="#FBBF24"/>
+                    </graphic>
+                    <tooltip><Tooltip text="Favorite note"/></tooltip>
+                </ToggleButton>
             </HBox>
 
-            <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS"
-                        style="-fx-background-color: transparent; -fx-background: transparent;">
-                <FlowPane fx:id="notesGrid" hgap="16" vgap="16" prefWrapLength="800"/>
-            </ScrollPane>
+            <!-- ─── TWO-COLUMN SPLIT ─── -->
+            <HBox spacing="18" VBox.vgrow="ALWAYS">
+
+                <!-- ══════════════════════════════════════
+                     LEFT – SIMPLE TEXT NOTE PANEL
+                ═══════════════════════════════════════ -->
+                <VBox spacing="10" prefWidth="300" minWidth="260" maxWidth="320">
+
+                    <!-- Mini toolbar for text (bold, italic, list, etc.) -->
+                    <HBox alignment="CENTER_LEFT" spacing="6"
+                          style="-fx-background-color:#11192C;-fx-background-radius:12;
+                                 -fx-border-color:#1E293B;-fx-border-radius:12;-fx-border-width:1;
+                                 -fx-padding:8 12;">
+                        <Label text="Text"
+                               style="-fx-text-fill:#CBD5E1;-fx-font-size:12px;-fx-font-weight:700;"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Button onAction="#handleTextBold"
+                                style="-fx-background-color:transparent;-fx-cursor:hand;-fx-padding:4 8;
+                                       -fx-border-color:#334155;-fx-border-radius:8;-fx-background-radius:8;">
+                            <graphic><FontIcon iconLiteral="fth-bold" iconSize="13" iconColor="#CBD5E1"/></graphic>
+                            <tooltip><Tooltip text="Bold"/></tooltip>
+                        </Button>
+                        <Button onAction="#handleTextItalic"
+                                style="-fx-background-color:transparent;-fx-cursor:hand;-fx-padding:4 8;
+                                       -fx-border-color:#334155;-fx-border-radius:8;-fx-background-radius:8;">
+                            <graphic><FontIcon iconLiteral="fth-italic" iconSize="13" iconColor="#CBD5E1"/></graphic>
+                            <tooltip><Tooltip text="Italic"/></tooltip>
+                        </Button>
+                        <Button onAction="#handleTextList"
+                                style="-fx-background-color:transparent;-fx-cursor:hand;-fx-padding:4 8;
+                                       -fx-border-color:#334155;-fx-border-radius:8;-fx-background-radius:8;">
+                            <graphic><FontIcon iconLiteral="fth-list" iconSize="13" iconColor="#CBD5E1"/></graphic>
+                            <tooltip><Tooltip text="Bullet list"/></tooltip>
+                        </Button>
+                        <Button onAction="#handleTextCode"
+                                style="-fx-background-color:transparent;-fx-cursor:hand;-fx-padding:4 8;
+                                       -fx-border-color:#334155;-fx-border-radius:8;-fx-background-radius:8;">
+                            <graphic><FontIcon iconLiteral="fth-code" iconSize="13" iconColor="#A78BFA"/></graphic>
+                            <tooltip><Tooltip text="Inline code"/></tooltip>
+                        </Button>
+                        <Label fx:id="wordCountLabel" text="0 words"
+                               style="-fx-text-fill:#64748B;-fx-font-size:10px;-fx-font-weight:600;"/>
+                    </HBox>
+
+                    <!-- Plain text area – simple, full height -->
+                    <TextArea fx:id="noteTextArea" wrapText="true" VBox.vgrow="ALWAYS"
+                              promptText="Write your ideas, formulas, key points…"
+                              style="-fx-control-inner-background:#0A1120;-fx-background-color:#0A1120;
+                                     -fx-text-fill:#E2E8F0;-fx-prompt-text-fill:#475569;
+                                     -fx-border-color:#1E293B;-fx-border-width:1.2;
+                                     -fx-border-radius:16;-fx-background-radius:16;
+                                     -fx-font-family:'JetBrains Mono', 'Consolas', monospace;
+                                     -fx-font-size:13px;-fx-line-spacing:4;"/>
+
+                    <!-- Smart Assist output (below text) -->
+                    <VBox spacing="6">
+                        <HBox alignment="CENTER_LEFT" spacing="8">
+                            <FontIcon iconLiteral="fth-cpu" iconSize="13" iconColor="#A78BFA"/>
+                            <Label text="Smart Assist"
+                                   style="-fx-text-fill:#A78BFA;-fx-font-size:12px;-fx-font-weight:700;"/>
+                            <Region HBox.hgrow="ALWAYS"/>
+                            <Button onAction="#handleSmartAssist"
+                                    style="-fx-background-color:#1E293B;-fx-text-fill:#CBD5E1;-fx-font-size:10px;
+                                           -fx-font-weight:700;-fx-background-radius:8;-fx-padding:4 10;-fx-cursor:hand;">
+                                Run
+                            </Button>
+                        </HBox>
+                        <Label fx:id="smartSummaryLabel"
+                               text="Summarise • Keywords • Next step – click Run to analyse your note."
+                               wrapText="true"
+                               style="-fx-background-color:#0F172A;-fx-text-fill:#94A3B8;-fx-padding:12 14;
+                                      -fx-background-radius:12;-fx-border-color:#1E293B;
+                                      -fx-border-radius:12;-fx-border-width:1;-fx-font-size:11.5px;"/>
+                    </VBox>
+                </VBox>
+
+                <!-- ══════════════════════════════════════
+                     RIGHT – SKETCH BOARD (LARGE)
+                ═══════════════════════════════════════ -->
+                <VBox spacing="12" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
+
+                    <!-- ── TOOLBAR STRIP ── -->
+                    <VBox spacing="10"
+                          style="-fx-background-color:#11192C;-fx-background-radius:16;
+                                 -fx-border-color:#1E293B;-fx-border-radius:16;-fx-border-width:1;
+                                 -fx-padding:14 16;">
+
+                        <!-- Row 1 – AI Prompt -->
+                        <HBox alignment="CENTER_LEFT" spacing="10">
+                            <FontIcon iconLiteral="fth-zap" iconSize="13" iconColor="#EC4899"/>
+                            <Label text="AI Sketch Prompt"
+                                   style="-fx-text-fill:#64748B;-fx-font-size:11px;-fx-font-weight:700;"/>
+                            <TextField fx:id="aiPromptField"
+                                       promptText="e.g. human heart anatomy, solar system diagram…"
+                                       HBox.hgrow="ALWAYS"
+                                       style="-fx-background-color:#0F172A;-fx-text-fill:#F8FAFC;-fx-prompt-text-fill:#64748B;
+                                              -fx-border-color:#334155;-fx-border-radius:12;-fx-background-radius:12;
+                                              -fx-padding:9 12;-fx-font-size:12px;"/>
+                            <Button fx:id="generateAiSketchButton" onAction="#handleGenerateAiSketch"
+                                    style="-fx-background-color:linear-gradient(to right,#EC4899,#8B5CF6);
+                                           -fx-text-fill:white;-fx-background-radius:12;-fx-font-weight:700;
+                                           -fx-padding:9 14;-fx-cursor:hand;-fx-font-size:12px;">
+                                Generate
+                                <graphic>
+                                    <FontIcon iconLiteral="fth-zap" iconSize="13" iconColor="white"/>
+                                </graphic>
+                            </Button>
+                            <!-- Style selector for AI (innovative) -->
+                            <ComboBox fx:id="aiStyleCombo" prefWidth="120"
+                                      promptText="Sketch style"
+                                      style="-fx-background-color:#0F172A;-fx-border-color:#334155;
+                                             -fx-border-radius:12;-fx-background-radius:12;-fx-font-size:11px;"/>
+                        </HBox>
+
+                        <!-- Separator -->
+                        <Separator style="-fx-background-color:#1E293B;-fx-opacity:0.5;"/>
+
+                        <!-- Row 2 – Drawing tools + Stroke + Actions -->
+                        <HBox alignment="CENTER_LEFT" spacing="14">
+
+                            <!-- PEN STYLES -->
+                            <VBox spacing="5">
+                                <Label text="PEN STYLE"
+                                       style="-fx-text-fill:#475569;-fx-font-size:9px;-fx-font-weight:700;"/>
+                                <HBox spacing="6">
+                                    <!-- Ballpoint -->
+                                    <ToggleButton fx:id="penToolButton" onAction="#handlePenTool"
+                                                  style="-fx-background-radius:10;-fx-cursor:hand;-fx-padding:7 9;
+                                                         -fx-background-color:#1E293B;-fx-border-color:#334155;-fx-border-radius:10;">
+                                        <graphic><FontIcon iconLiteral="fth-pen-tool" iconSize="15" iconColor="#CBD5E1"/></graphic>
+                                        <tooltip><Tooltip text="Ballpoint pen – thin, precise"/></tooltip>
+                                    </ToggleButton>
+                                    <!-- Pencil / sketch -->
+                                    <ToggleButton fx:id="pencilToolButton" onAction="#handlePencilTool"
+                                                  style="-fx-background-radius:10;-fx-cursor:hand;-fx-padding:7 9;
+                                                         -fx-background-color:#1E293B;-fx-border-color:#334155;-fx-border-radius:10;">
+                                        <graphic><FontIcon iconLiteral="fth-edit-3" iconSize="15" iconColor="#CBD5E1"/></graphic>
+                                        <tooltip><Tooltip text="Pencil – textured, sketchy"/></tooltip>
+                                    </ToggleButton>
+                                    <!-- Marker / chisel -->
+                                    <ToggleButton fx:id="markerToolButton" onAction="#handleMarkerTool"
+                                                  style="-fx-background-radius:10;-fx-cursor:hand;-fx-padding:7 9;
+                                                         -fx-background-color:#1E293B;-fx-border-color:#334155;-fx-border-radius:10;">
+                                        <graphic><FontIcon iconLiteral="fth-droplet" iconSize="15" iconColor="#CBD5E1"/></graphic>
+                                        <tooltip><Tooltip text="Marker – bold, opaque"/></tooltip>
+                                    </ToggleButton>
+                                    <!-- Soft brush -->
+                                    <ToggleButton fx:id="brushToolButton" onAction="#handleBrushTool"
+                                                  style="-fx-background-radius:10;-fx-cursor:hand;-fx-padding:7 9;
+                                                         -fx-background-color:#1E293B;-fx-border-color:#334155;-fx-border-radius:10;">
+                                        <graphic><FontIcon iconLiteral="fth-feather" iconSize="15" iconColor="#CBD5E1"/></graphic>
+                                        <tooltip><Tooltip text="Soft brush – semi-transparent, painted"/></tooltip>
+                                    </ToggleButton>
+                                    <!-- Highlighter (innovative) -->
+                                    <ToggleButton fx:id="highlighterToolButton" onAction="#handleHighlighterTool"
+                                                  style="-fx-background-radius:10;-fx-cursor:hand;-fx-padding:7 9;
+                                                         -fx-background-color:#1E293B;-fx-border-color:#334155;-fx-border-radius:10;">
+                                        <graphic><FontIcon iconLiteral="fth-sun" iconSize="15" iconColor="#FBBF24"/></graphic>
+                                        <tooltip><Tooltip text="Highlighter – semi-transparent wide stroke"/></tooltip>
+                                    </ToggleButton>
+                                    <!-- Calligraphy / nib (innovative) -->
+                                    <ToggleButton fx:id="calligraphyToolButton" onAction="#handleCalligraphyTool"
+                                                  style="-fx-background-radius:10;-fx-cursor:hand;-fx-padding:7 9;
+                                                         -fx-background-color:#1E293B;-fx-border-color:#334155;-fx-border-radius:10;">
+                                        <graphic><FontIcon iconLiteral="fth-type" iconSize="15" iconColor="#CBD5E1"/></graphic>
+                                        <tooltip><Tooltip text="Calligraphy nib – angle-sensitive width"/></tooltip>
+                                    </ToggleButton>
+                                    <!-- Eraser -->
+                                    <ToggleButton fx:id="eraserToolButton" onAction="#handleEraserTool"
+                                                  style="-fx-background-radius:10;-fx-cursor:hand;-fx-padding:7 9;
+                                                         -fx-background-color:#1E293B;-fx-border-color:#334155;-fx-border-radius:10;">
+                                        <graphic><FontIcon iconLiteral="fth-x-circle" iconSize="15" iconColor="#F87171"/></graphic>
+                                        <tooltip><Tooltip text="Eraser"/></tooltip>
+                                    </ToggleButton>
+                                </HBox>
+                            </VBox>
+
+                            <!-- SEPARATOR -->
+                            <Separator orientation="VERTICAL" style="-fx-background-color:#1E293B;-fx-opacity:0.6;"/>
+
+                            <!-- STROKE SIZE -->
+                            <VBox spacing="5">
+                                <Label text="SIZE"
+                                       style="-fx-text-fill:#475569;-fx-font-size:9px;-fx-font-weight:700;"/>
+                                <HBox spacing="6" alignment="CENTER_LEFT">
+                                    <Button fx:id="strokeThinButton" onAction="#handleStrokeThin"
+                                            style="-fx-background-color:#1E293B;-fx-border-color:#334155;
+                                                   -fx-background-radius:10;-fx-border-radius:10;-fx-cursor:hand;-fx-padding:7 10;">
+                                        <graphic><FontIcon iconLiteral="fth-circle" iconSize="6" iconColor="#CBD5E1"/></graphic>
+                                        <tooltip><Tooltip text="Thin (1–2 px)"/></tooltip>
+                                    </Button>
+                                    <Button fx:id="strokeMediumButton" onAction="#handleStrokeMedium"
+                                            style="-fx-background-color:#1E293B;-fx-border-color:#334155;
+                                                   -fx-background-radius:10;-fx-border-radius:10;-fx-cursor:hand;-fx-padding:7 10;">
+                                        <graphic><FontIcon iconLiteral="fth-circle" iconSize="11" iconColor="#CBD5E1"/></graphic>
+                                        <tooltip><Tooltip text="Medium (4–6 px)"/></tooltip>
+                                    </Button>
+                                    <Button fx:id="strokeBoldButton" onAction="#handleStrokeBold"
+                                            style="-fx-background-color:#1E293B;-fx-border-color:#334155;
+                                                   -fx-background-radius:10;-fx-border-radius:10;-fx-cursor:hand;-fx-padding:7 10;">
+                                        <graphic><FontIcon iconLiteral="fth-circle" iconSize="16" iconColor="#CBD5E1"/></graphic>
+                                        <tooltip><Tooltip text="Bold (10–14 px)"/></tooltip>
+                                    </Button>
+                                    <Button fx:id="strokeXLButton" onAction="#handleStrokeXL"
+                                            style="-fx-background-color:#1E293B;-fx-border-color:#334155;
+                                                   -fx-background-radius:10;-fx-border-radius:10;-fx-cursor:hand;-fx-padding:7 10;">
+                                        <graphic><FontIcon iconLiteral="fth-circle" iconSize="22" iconColor="#CBD5E1"/></graphic>
+                                        <tooltip><Tooltip text="XL (20–28 px)"/></tooltip>
+                                    </Button>
+                                    <!-- Opacity slider (innovative) -->
+                                    <VBox spacing="2" alignment="CENTER">
+                                        <Label text="opacity"
+                                               style="-fx-text-fill:#475569;-fx-font-size:9px;-fx-font-weight:700;"/>
+                                        <Slider fx:id="opacitySlider" min="10" max="100" value="100"
+                                                prefWidth="80"
+                                                style="-fx-padding:4 0;"/>
+                                    </VBox>
+                                </HBox>
+                            </VBox>
+
+                            <Region HBox.hgrow="ALWAYS"/>
+
+                            <!-- ACTIONS -->
+                            <VBox spacing="5">
+                                <Label text="ACTIONS"
+                                       style="-fx-text-fill:#475569;-fx-font-size:9px;-fx-font-weight:700;"/>
+                                <HBox spacing="6">
+                                    <Button fx:id="undoStrokeButton" onAction="#handleUndoStroke"
+                                            style="-fx-background-color:#1E293B;-fx-border-color:#334155;
+                                                   -fx-background-radius:10;-fx-border-radius:10;-fx-cursor:hand;-fx-padding:7 10;">
+                                        <graphic><FontIcon iconLiteral="fth-rotate-ccw" iconSize="15" iconColor="#CBD5E1"/></graphic>
+                                        <tooltip><Tooltip text="Undo last stroke"/></tooltip>
+                                    </Button>
+                                    <Button fx:id="redoStrokeButton" onAction="#handleRedoStroke"
+                                            style="-fx-background-color:#1E293B;-fx-border-color:#334155;
+                                                   -fx-background-radius:10;-fx-border-radius:10;-fx-cursor:hand;-fx-padding:7 10;">
+                                        <graphic><FontIcon iconLiteral="fth-rotate-cw" iconSize="15" iconColor="#CBD5E1"/></graphic>
+                                        <tooltip><Tooltip text="Redo"/></tooltip>
+                                    </Button>
+                                    <Button fx:id="clearCanvasButton" onAction="#handleClearCanvas"
+                                            style="-fx-background-color:#1E293B;-fx-border-color:#334155;
+                                                   -fx-background-radius:10;-fx-border-radius:10;-fx-cursor:hand;-fx-padding:7 10;">
+                                        <graphic><FontIcon iconLiteral="fth-trash-2" iconSize="15" iconColor="#F87171"/></graphic>
+                                        <tooltip><Tooltip text="Clear canvas"/></tooltip>
+                                    </Button>
+                                    <!-- Canvas texture toggle (innovative) -->
+                                    <Button fx:id="toggleTextureButton" onAction="#handleToggleTexture"
+                                            style="-fx-background-color:#1E293B;-fx-border-color:#334155;
+                                                   -fx-background-radius:10;-fx-border-radius:10;-fx-cursor:hand;-fx-padding:7 10;">
+                                        <graphic><FontIcon iconLiteral="fth-grid" iconSize="15" iconColor="#94A3B8"/></graphic>
+                                        <tooltip><Tooltip text="Cycle canvas: blank / lined / grid / dot-grid"/></tooltip>
+                                    </Button>
+                                    <!-- Snap-to-shape (innovative) -->
+                                    <ToggleButton fx:id="snapShapeToggle"
+                                                  style="-fx-background-color:#1E293B;-fx-border-color:#334155;
+                                                         -fx-background-radius:10;-fx-border-radius:10;-fx-cursor:hand;-fx-padding:7 10;">
+                                        <graphic><FontIcon iconLiteral="fth-triangle" iconSize="15" iconColor="#38BDF8"/></graphic>
+                                        <tooltip><Tooltip text="Snap to shape: auto-correct circles, rectangles, lines"/></tooltip>
+                                    </ToggleButton>
+                                </HBox>
+                            </VBox>
+                        </HBox>
+
+                        <!-- Separator -->
+                        <Separator style="-fx-background-color:#1E293B;-fx-opacity:0.5;"/>
+
+                        <!-- Row 3 – Full Color Palette -->
+                        <VBox spacing="8">
+                            <HBox alignment="CENTER_LEFT" spacing="10">
+                                <Label text="PALETTE"
+                                       style="-fx-text-fill:#475569;-fx-font-size:9px;-fx-font-weight:700;"/>
+                                <Region HBox.hgrow="ALWAYS"/>
+                                <!-- Custom colour picker (innovative) -->
+                                <ColorPicker fx:id="customColorPicker"
+                                             style="-fx-background-color:#0F172A;-fx-border-color:#334155;
+                                                    -fx-border-radius:10;-fx-background-radius:10;
+                                                    -fx-font-size:10px;-fx-pref-height:28;"
+                                             promptText="Custom"/>
+                                <Label fx:id="colorModeLabel" text="Violet"
+                                       style="-fx-background-color:#1E293B;-fx-text-fill:#CBD5E1;-fx-padding:5 10;
+                                              -fx-background-radius:100;-fx-font-size:10px;-fx-font-weight:700;"/>
+                            </HBox>
+
+                            <!-- Palette grid – 5 rows of colours -->
+                            <FlowPane fx:id="paletteBox" hgap="8" vgap="8">
+
+                                <!-- ── Row 1: Purples & Pinks ── -->
+                                <Button userData="#7C3AED" minWidth="28" minHeight="28" maxWidth="28" maxHeight="28"
+                                        style="-fx-background-color:#7C3AED;-fx-background-radius:100;-fx-cursor:hand;"/>
+                                <Button userData="#8B5CF6" minWidth="28" minHeight="28" maxWidth="28" maxHeight="28"
+                                        style="-fx-background-color:#8B5CF6;-fx-background-radius:100;-fx-cursor:hand;"/>
+                                <Button userData="#A855F7" minWidth="28" minHeight="28" maxWidth="28" maxHeight="28"
+                                        style="-fx-background-color:#A855F7;-fx-background-radius:100;-fx-cursor:hand;"/>
+                                <Button userData="#C084FC" minWidth="28" minHeight="28" maxWidth="28" maxHeight="28"
+                                        style="-fx-background-color:#C084FC;-fx-background-radius:100;-fx-cursor:hand;"/>
+                                <Button userData="#EC4899" minWidth="28" minHeight="28" maxWidth="28" maxHeight="28"
+                                        style="-fx-background-color:#EC4899;-fx-background-radius:100;-fx-cursor:hand;"/>
+                                <Button userData="#F472B6" minWidth="28" minHeight="28" maxWidth="28" maxHeight="28"
+                                        style="-fx-background-color:#F472B6;-fx-background-radius:100;-fx-cursor:hand;"/>
+                                <Button userData="#FB7185" minWidth="28" minHeight="28" maxWidth="28" maxHeight="28"
+                                        style="-fx-background-color:#FB7185;-fx-background-radius:100;-fx-cursor:hand;"/>
+                                <Button userData="#F43F5E" minWidth="28" minHeight="28" maxWidth="28" maxHeight="28"
+                                        style="-fx-background-color:#F43F5E;-fx-background-radius:100;-fx-cursor:hand;"/>
+
+                                <!-- ── Row 2: Reds & Oranges ── -->
+                                <Button userData="#EF4444" minWidth="28" minHeight="28" maxWidth="28" maxHeight="28"
+                                        style="-fx-background-color:#EF4444;-fx-background-radius:100;-fx-cursor:hand;"/>
+                                <Button userData="#DC2626" minWidth="28" minHeight="28" maxWidth="28" maxHeight="28"
+                                        style="-fx-background-color:#DC2626;-fx-background-radius:100;-fx-cursor:hand;"/>
+                                <Button userData="#F97316" minWidth="28" minHeight="28" maxWidth="28" maxHeight="28"
+                                        style="-fx-background-color:#F97316;-fx-background-radius:100;-fx-cursor:hand;"/>
+                                <Button userData="#FB923C" minWidth="28" minHeight="28" maxWidth="28" maxHeight="28"
+                                        style="-fx-background-color:#FB923C;-fx-background-radius:100;-fx-cursor:hand;"/>
+                                <Button userData="#FDBA74" minWidth="28" minHeight="28" maxWidth="28" maxHeight="28"
+                                        style="-fx-background-color:#FDBA74;-fx-background-radius:100;-fx-cursor:hand;"/>
+                                <Button userData="#F59E0B" minWidth="28" minHeight="28" maxWidth="28" maxHeight="28"
+                                        style="-fx-background-color:#F59E0B;-fx-background-radius:100;-fx-cursor:hand;"/>
+                                <Button userData="#EAB308" minWidth="28" minHeight="28" maxWidth="28" maxHeight="28"
+                                        style="-fx-background-color:#EAB308;-fx-background-radius:100;-fx-cursor:hand;"/>
+                                <Button userData="#FDE047" minWidth="28" minHeight="28" maxWidth="28" maxHeight="28"
+                                        style="-fx-background-color:#FDE047;-fx-background-radius:100;-fx-cursor:hand;"/>
+
+                                <!-- ── Row 3: Greens ── -->
+                                <Button userData="#4ADE80" minWidth="28" minHeight="28" maxWidth="28" maxHeight="28"
+                                        style="-fx-background-color:#4ADE80;-fx-background-radius:100;-fx-cursor:hand;"/>
+                                <Button userData="#22C55E" minWidth="28" minHeight="28" maxWidth="28" maxHeight="28"
+                                        style="-fx-background-color:#22C55E;-fx-background-radius:100;-fx-cursor:hand;"/>
+                                <Button userData="#16A34A" minWidth="28" minHeight="28" maxWidth="28" maxHeight="28"
+                                        style="-fx-background-color:#16A34A;-fx-background-radius:100;-fx-cursor:hand;"/>
+                                <Button userData="#15803D" minWidth="28" minHeight="28" maxWidth="28" maxHeight="28"
+                                        style="-fx-background-color:#15803D;-fx-background-radius:100;-fx-cursor:hand;"/>
+                                <Button userData="#14B8A6" minWidth="28" minHeight="28" maxWidth="28" maxHeight="28"
+                                        style="-fx-background-color:#14B8A6;-fx-background-radius:100;-fx-cursor:hand;"/>
+                                <Button userData="#2DD4BF" minWidth="28" minHeight="28" maxWidth="28" maxHeight="28"
+                                        style="-fx-background-color:#2DD4BF;-fx-background-radius:100;-fx-cursor:hand;"/>
+                                <Button userData="#10B981" minWidth="28" minHeight="28" maxWidth="28" maxHeight="28"
+                                        style="-fx-background-color:#10B981;-fx-background-radius:100;-fx-cursor:hand;"/>
+                                <Button userData="#6EE7B7" minWidth="28" minHeight="28" maxWidth="28" maxHeight="28"
+                                        style="-fx-background-color:#6EE7B7;-fx-background-radius:100;-fx-cursor:hand;"/>
+
+                                <!-- ── Row 4: Blues & Cyans ── -->
+                                <Button userData="#06B6D4" minWidth="28" minHeight="28" maxWidth="28" maxHeight="28"
+                                        style="-fx-background-color:#06B6D4;-fx-background-radius:100;-fx-cursor:hand;"/>
+                                <Button userData="#22D3EE" minWidth="28" minHeight="28" maxWidth="28" maxHeight="28"
+                                        style="-fx-background-color:#22D3EE;-fx-background-radius:100;-fx-cursor:hand;"/>
+                                <Button userData="#38BDF8" minWidth="28" minHeight="28" maxWidth="28" maxHeight="28"
+                                        style="-fx-background-color:#38BDF8;-fx-background-radius:100;-fx-cursor:hand;"/>
+                                <Button userData="#0EA5E9" minWidth="28" minHeight="28" maxWidth="28" maxHeight="28"
+                                        style="-fx-background-color:#0EA5E9;-fx-background-radius:100;-fx-cursor:hand;"/>
+                                <Button userData="#3B82F6" minWidth="28" minHeight="28" maxWidth="28" maxHeight="28"
+                                        style="-fx-background-color:#3B82F6;-fx-background-radius:100;-fx-cursor:hand;"/>
+                                <Button userData="#2563EB" minWidth="28" minHeight="28" maxWidth="28" maxHeight="28"
+                                        style="-fx-background-color:#2563EB;-fx-background-radius:100;-fx-cursor:hand;"/>
+                                <Button userData="#1D4ED8" minWidth="28" minHeight="28" maxWidth="28" maxHeight="28"
+                                        style="-fx-background-color:#1D4ED8;-fx-background-radius:100;-fx-cursor:hand;"/>
+                                <Button userData="#818CF8" minWidth="28" minHeight="28" maxWidth="28" maxHeight="28"
+                                        style="-fx-background-color:#818CF8;-fx-background-radius:100;-fx-cursor:hand;"/>
+
+                                <!-- ── Row 5: Neutrals, Black & White ── -->
+                                <Button userData="#F8FAFC" minWidth="28" minHeight="28" maxWidth="28" maxHeight="28"
+                                        style="-fx-background-color:#F8FAFC;-fx-background-radius:100;-fx-cursor:hand;
+                                               -fx-border-color:#475569;-fx-border-radius:100;-fx-border-width:1;"/>
+                                <Button userData="#E2E8F0" minWidth="28" minHeight="28" maxWidth="28" maxHeight="28"
+                                        style="-fx-background-color:#E2E8F0;-fx-background-radius:100;-fx-cursor:hand;
+                                               -fx-border-color:#475569;-fx-border-radius:100;-fx-border-width:1;"/>
+                                <Button userData="#94A3B8" minWidth="28" minHeight="28" maxWidth="28" maxHeight="28"
+                                        style="-fx-background-color:#94A3B8;-fx-background-radius:100;-fx-cursor:hand;"/>
+                                <Button userData="#64748B" minWidth="28" minHeight="28" maxWidth="28" maxHeight="28"
+                                        style="-fx-background-color:#64748B;-fx-background-radius:100;-fx-cursor:hand;"/>
+                                <Button userData="#475569" minWidth="28" minHeight="28" maxWidth="28" maxHeight="28"
+                                        style="-fx-background-color:#475569;-fx-background-radius:100;-fx-cursor:hand;"/>
+                                <Button userData="#334155" minWidth="28" minHeight="28" maxWidth="28" maxHeight="28"
+                                        style="-fx-background-color:#334155;-fx-background-radius:100;-fx-cursor:hand;"/>
+                                <Button userData="#1E293B" minWidth="28" minHeight="28" maxWidth="28" maxHeight="28"
+                                        style="-fx-background-color:#1E293B;-fx-background-radius:100;-fx-cursor:hand;
+                                               -fx-border-color:#64748B;-fx-border-radius:100;-fx-border-width:1;"/>
+                                <Button userData="#0F172A" minWidth="28" minHeight="28" maxWidth="28" maxHeight="28"
+                                        style="-fx-background-color:#0F172A;-fx-background-radius:100;-fx-cursor:hand;
+                                               -fx-border-color:#64748B;-fx-border-radius:100;-fx-border-width:1;"/>
+                            </FlowPane>
+                        </VBox>
+
+                        <!-- Row 4 – Status labels -->
+                        <HBox alignment="CENTER_LEFT" spacing="10">
+                            <Label fx:id="toolModeLabel" text="Pen"
+                                   style="-fx-background-color:#1E293B;-fx-text-fill:#CBD5E1;-fx-padding:4 10;
+                                          -fx-background-radius:100;-fx-font-size:10px;-fx-font-weight:700;"/>
+                            <Label fx:id="strokeModeLabel" text="Medium"
+                                   style="-fx-background-color:#1E293B;-fx-text-fill:#CBD5E1;-fx-padding:4 10;
+                                          -fx-background-radius:100;-fx-font-size:10px;-fx-font-weight:700;"/>
+                            <Label fx:id="opacityLabel" text="100%"
+                                   style="-fx-background-color:#1E293B;-fx-text-fill:#CBD5E1;-fx-padding:4 10;
+                                          -fx-background-radius:100;-fx-font-size:10px;-fx-font-weight:700;"/>
+                            <Region HBox.hgrow="ALWAYS"/>
+                            <!-- Zoom controls (innovative) -->
+                            <Label text="Zoom"
+                                   style="-fx-text-fill:#475569;-fx-font-size:10px;-fx-font-weight:700;"/>
+                            <Button onAction="#handleZoomOut"
+                                    style="-fx-background-color:#1E293B;-fx-border-color:#334155;
+                                           -fx-background-radius:8;-fx-border-radius:8;-fx-cursor:hand;-fx-padding:4 10;">
+                                <graphic><FontIcon iconLiteral="fth-minus" iconSize="12" iconColor="#CBD5E1"/></graphic>
+                            </Button>
+                            <Label fx:id="zoomLabel" text="100%"
+                                   style="-fx-text-fill:#94A3B8;-fx-font-size:11px;-fx-font-weight:700;
+                                          -fx-min-width:42;-fx-alignment:CENTER;"/>
+                            <Button onAction="#handleZoomIn"
+                                    style="-fx-background-color:#1E293B;-fx-border-color:#334155;
+                                           -fx-background-radius:8;-fx-border-radius:8;-fx-cursor:hand;-fx-padding:4 10;">
+                                <graphic><FontIcon iconLiteral="fth-plus" iconSize="12" iconColor="#CBD5E1"/></graphic>
+                            </Button>
+                            <Button onAction="#handleZoomReset"
+                                    style="-fx-background-color:transparent;-fx-text-fill:#64748B;
+                                           -fx-font-size:10px;-fx-cursor:hand;-fx-padding:4 8;">Reset
+                            </Button>
+                        </HBox>
+                    </VBox>
+
+                    <!-- ── THE CANVAS (large, scrollable) ── -->
+                    <ScrollPane fx:id="canvasScrollPane" fitToWidth="true" fitToHeight="true"
+                                prefHeight="440" minHeight="360"
+                                VBox.vgrow="ALWAYS"
+                                style="-fx-background-color:transparent;-fx-background:transparent;
+                                       -fx-border-color:transparent;">
+                        <StackPane fx:id="canvasContainer"
+                                   prefWidth="1120" minWidth="1120"
+                                   prefHeight="680" minHeight="680"
+                                   style="-fx-background-color:#F8F5EF;-fx-background-radius:18;
+                                          -fx-border-color:#D1D5DB;-fx-border-radius:18;-fx-border-width:1;
+                                          -fx-effect:dropshadow(gaussian,rgba(0,0,0,0.18),18,0,0,4);
+                                          -fx-padding:0;">
+                            <Canvas fx:id="drawingCanvas" width="1120" height="680"/>
+                        </StackPane>
+                    </ScrollPane>
+
+                    <!-- ── Canvas background style picker (innovative) ── -->
+                    <HBox alignment="CENTER_LEFT" spacing="10">
+                        <Label text="Canvas"
+                               style="-fx-text-fill:#475569;-fx-font-size:10px;-fx-font-weight:700;"/>
+                        <ToggleButton fx:id="bgBlankToggle" selected="true"
+                                      style="-fx-background-color:#1E293B;-fx-border-color:#334155;
+                                             -fx-background-radius:8;-fx-border-radius:8;-fx-font-size:10px;
+                                             -fx-text-fill:#CBD5E1;-fx-cursor:hand;-fx-padding:5 10;">Blank</ToggleButton>
+                        <ToggleButton fx:id="bgLinedToggle"
+                                      style="-fx-background-color:#1E293B;-fx-border-color:#334155;
+                                             -fx-background-radius:8;-fx-border-radius:8;-fx-font-size:10px;
+                                             -fx-text-fill:#CBD5E1;-fx-cursor:hand;-fx-padding:5 10;">Lined</ToggleButton>
+                        <ToggleButton fx:id="bgGridToggle"
+                                      style="-fx-background-color:#1E293B;-fx-border-color:#334155;
+                                             -fx-background-radius:8;-fx-border-radius:8;-fx-font-size:10px;
+                                             -fx-text-fill:#CBD5E1;-fx-cursor:hand;-fx-padding:5 10;">Grid</ToggleButton>
+                        <ToggleButton fx:id="bgDotToggle"
+                                      style="-fx-background-color:#1E293B;-fx-border-color:#334155;
+                                             -fx-background-radius:8;-fx-border-radius:8;-fx-font-size:10px;
+                                             -fx-text-fill:#CBD5E1;-fx-cursor:hand;-fx-padding:5 10;">Dot Grid</ToggleButton>
+                        <ToggleButton fx:id="bgDarkToggle"
+                                      style="-fx-background-color:#1E293B;-fx-border-color:#334155;
+                                             -fx-background-radius:8;-fx-border-radius:8;-fx-font-size:10px;
+                                             -fx-text-fill:#CBD5E1;-fx-cursor:hand;-fx-padding:5 10;">Dark</ToggleButton>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <!-- Save canvas as image -->
+                        <Button onAction="#handleSaveCanvasImage"
+                                style="-fx-background-color:#1E293B;-fx-border-color:#334155;
+                                       -fx-background-radius:10;-fx-border-radius:10;-fx-cursor:hand;-fx-padding:6 12;
+                                       -fx-text-fill:#94A3B8;-fx-font-size:11px;-fx-font-weight:700;">
+                            <graphic><FontIcon iconLiteral="fth-image" iconSize="13" iconColor="#38BDF8"/></graphic>
+                            <tooltip><Tooltip text="Save canvas as PNG"/></tooltip>
+                        </Button>
+                    </HBox>
+
+                </VBox>
+                <!-- END RIGHT PANEL -->
+
+            </HBox>
+            <!-- END TWO-COLUMN SPLIT -->
+
         </VBox>
-    </HBox>
+    </VBox>
+    <!-- END MAIN CARD -->
+
 </VBox>

@@ -1,6 +1,5 @@
 package com.studyflow.controllers;
 
-import com.studyflow.App;
 import com.studyflow.services.EvaluationMatiereService;
 import com.studyflow.services.MatiereService;
 import com.studyflow.models.EvaluationMatiere;
@@ -8,6 +7,9 @@ import com.studyflow.models.Matiere;
 import com.studyflow.models.User;
 import com.studyflow.utils.UserSession;
 import com.studyflow.services.AIQuizService;
+import com.studyflow.services.AntiFraudEngine;
+import com.studyflow.services.FraudEvent;
+import com.studyflow.services.VoiceAssistantService;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
@@ -23,8 +25,6 @@ import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.util.Duration;
 import org.kordamp.ikonli.javafx.FontIcon;
-import javafx.scene.layout.FlowPane;
-import javafx.scene.layout.GridPane;
 import javafx.scene.control.Tooltip;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -38,33 +38,41 @@ import javafx.scene.chart.*;
 
 public class CoursesController implements Initializable {
 
-    // ── Stats cards ───────────────────────────────────────────────────────────
+    // ════════════════════════════════════════════════════════════
+    //  FXML — Stats
+    // ════════════════════════════════════════════════════════════
     @FXML private Label statTotal;
     @FXML private Label statMoyenne;
     @FXML private Label statLacunes;
     @FXML private Label statMeilleur;
     @FXML private HBox  statCards;
-    @FXML private VBox smartQuizCard;
+    @FXML private VBox  smartQuizCard;
 
-    // ── Header ────────────────────────────────────────────────────────────────
+    // ── Header ─────────────────────────────────────────────────
     @FXML private Label            pageTitle;
     @FXML private Label            pageSubtitle;
     @FXML private TextField        searchField;
     @FXML private ComboBox<String> sortCombo;
     @FXML private Button           btnHeaderAction;
     @FXML private FontIcon         btnHeaderIcon;
-    @FXML private Button           btnSmartQuiz;
+    @FXML private Button           btnVoiceAssistant;
 
-    // ── Vues principales ─────────────────────────────────────────────────────
-    @FXML private VBox listView;
-    @FXML private VBox formPanel;
-    @FXML private VBox statsView;
-    @FXML private VBox quizMainView;
+    // ── Voice Assistant UI ─────────────────────────────────────
+    @FXML private VBox              voiceBar;
+    @FXML private Label             voiceStatusLabel;
+    @FXML private Label             voiceTranscriptionLabel;
+    @FXML private Label             voiceResponseLabel;
+    @FXML private ProgressIndicator voiceProgress;
+    @FXML private Button            btnVoiceCancel;
 
-    // ── Grid ──────────────────────────────────────────────────────────────────
+    // ── Vues ───────────────────────────────────────────────────
+    @FXML private VBox     listView;
+    @FXML private VBox     formPanel;
+    @FXML private VBox     statsView;
+    @FXML private VBox     quizMainView;
     @FXML private FlowPane courseGrid;
 
-    // ── Formulaire ────────────────────────────────────────────────────────────
+    // ── Formulaire ─────────────────────────────────────────────
     @FXML private Label              formTitle;
     @FXML private ComboBox<Matiere>  cmbMatiere;
     @FXML private TextField          fldScore;
@@ -74,33 +82,25 @@ public class CoursesController implements Initializable {
     @FXML private ComboBox<String>   cmbPriorite;
     @FXML private Button             btnSave;
     @FXML private Label              formError;
+    @FXML private Button             btnPrioHaute;
+    @FXML private Button             btnPrioMoyenne;
+    @FXML private Button             btnPrioBasse;
+    @FXML private Label              errMatiere, errScore, errNoteMax;
+    @FXML private Label              errDuree, errPriorite, errDate, errSection;
+    @FXML private ComboBox<String>   cmbSection;
 
-    @FXML private Button btnPrioHaute;
-    @FXML private Button btnPrioMoyenne;
-    @FXML private Button btnPrioBasse;
+    // ── Stats ──────────────────────────────────────────────────
+    @FXML private BarChart<String,Number>  scoreBySubjectChart;
+    @FXML private PieChart                 priorityPieChart;
+    @FXML private LineChart<String,Number> progressLineChart;
+    @FXML private HBox                     insightBox;
 
-    @FXML private Label errMatiere;
-    @FXML private Label errScore;
-    @FXML private Label errNoteMax;
-    @FXML private Label errDuree;
-    @FXML private Label errPriorite;
-    @FXML private Label errDate;
-    @FXML private ComboBox<String> cmbSection;
-    @FXML private Label            errSection;
-
-    // ── Statistics View ───────────────────────────────────────────────────────
-    @FXML private BarChart<String, Number>  scoreBySubjectChart;
-    @FXML private PieChart                  priorityPieChart;
-    @FXML private LineChart<String, Number> progressLineChart;
-    @FXML private HBox                      insightBox;
-
-    // ── QUIZ bindings ─────────────────────────────────────────────────────────
+    // ── Quiz setup ─────────────────────────────────────────────
     @FXML private VBox        quizSetupView;
     @FXML private VBox        quizLoadingView;
     @FXML private VBox        quizInProgressView;
     @FXML private ScrollPane  quizResultsView;
     @FXML private VBox        quizVboxDetailedResults;
-
     @FXML private ComboBox<String>  cmbQuizSection;
     @FXML private ComboBox<Matiere> cmbQuizMatiere;
     @FXML private ComboBox<String>  cmbQuizDifficulty;
@@ -108,7 +108,9 @@ public class CoursesController implements Initializable {
     @FXML private Label             lblQuizSetupError;
     @FXML private Label             lblQuizLoadingStatus;
     @FXML private ProgressIndicator quizLoadingSpinner;
+    @FXML private Button            btnGenerateAIQuiz;
 
+    // ── Quiz in progress ───────────────────────────────────────
     @FXML private Label       lblQuizQuestionNum;
     @FXML private Label       lblQuizDiffBadge;
     @FXML private Label       lblQuizCategoryBadge;
@@ -120,6 +122,7 @@ public class CoursesController implements Initializable {
     @FXML private Label       lblQuizAnsweredCount;
     @FXML private Button      btnQuizNext;
 
+    // ── Quiz results ───────────────────────────────────────────
     @FXML private Label lblQuizFinalScore;
     @FXML private Label lblQuizFinalPercent;
     @FXML private Label lblQuizFinalLevel;
@@ -127,105 +130,365 @@ public class CoursesController implements Initializable {
     @FXML private Label lblQuizWrongCount;
     @FXML private Label lblQuizTotalTime;
 
-    @FXML private Button btnGenerateAIQuiz;
+    // ════════════════════════════════════════════════════════════
+    //  SERVICES
+    // ════════════════════════════════════════════════════════════
+    private final EvaluationMatiereService evalService  = new EvaluationMatiereService();
+    private final MatiereService           matService   = new MatiereService();
+    private final VoiceAssistantService    voiceService = new VoiceAssistantService();
 
-    // ── Services ──────────────────────────────────────────────────────────────
-    private final EvaluationMatiereService evalService = new EvaluationMatiereService();
-    private final MatiereService matService = new MatiereService();
+    // ════════════════════════════════════════════════════════════
+    //  ANTI-FRAUD ENGINE
+    // ════════════════════════════════════════════════════════════
+    private final AntiFraudEngine antiFraud = new AntiFraudEngine();
 
-    // ── State ─────────────────────────────────────────────────────────────────
+    // Labels anti-fraude créés dynamiquement dans la barre de quiz
+    private Label   lblFraudScore;
+    private Label   lblFraudWarning;
+    private HBox    fraudStatusBar;
+    private boolean antiFraudAttached = false;
+
+    // ════════════════════════════════════════════════════════════
+    //  STATE
+    // ════════════════════════════════════════════════════════════
     private ObservableList<EvaluationMatiere> allEvals = FXCollections.observableArrayList();
-    private EvaluationMatiere editTarget = null;
-    private String selectedPriorite = null;
+    private EvaluationMatiere editTarget  = null;
+    private String selectedPriorite       = null;
 
-    private List<QuizQuestion> quizQuestions = new ArrayList<>();
-    private int quizCurrentIndex = 0;
-    private int quizScore = 0;
-    private int quizAnsweredCount = 0;
-    private String quizSelectedOpt = null;
+    private List<QuizQuestion> quizQuestions    = new ArrayList<>();
+    private int     quizCurrentIndex  = 0;
+    private int     quizScore         = 0;
+    private int     quizAnsweredCount = 0;
+    private String  quizSelectedOpt   = null;
     private Timeline quizTimer;
-    private int quizSecondsElapsed = 0;
+    private int     quizSecondsElapsed = 0;
 
-    private static final String[] COLORS = {"primary", "success", "accent", "warning", "danger"};
+    private static final String[] COLORS = {"primary","success","accent","warning","danger"};
     private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-    private static final PseudoClass SELECTED = PseudoClass.getPseudoClass("selected");
+    private static final PseudoClass SELECTED   = PseudoClass.getPseudoClass("selected");
 
-    // ══════════════════════════════════════════════════════════════════════════
+    // Voice recording state
+    private boolean isRecordingVoice = false;
+
+    // ════════════════════════════════════════════════════════════
     //  QUIZ MODEL
-    // ══════════════════════════════════════════════════════════════════════════
+    // ════════════════════════════════════════════════════════════
     private static class QuizQuestion {
-        String question, correctAnswer, userAnswer, difficulty, category;
+        String question, correctAnswer, userAnswer, difficulty, category, explanation;
         List<String> options;
-        QuizQuestion(String q, List<String> opts, String correct, String diff, String cat) {
-            question = q; options = opts; correctAnswer = correct;
-            difficulty = diff; category = cat;
+        QuizQuestion(String q, List<String> opts, String correct,
+                     String diff, String cat, String expl) {
+            question      = q;       options       = opts;
+            correctAnswer = correct; difficulty    = diff;
+            category      = cat;     explanation   = expl;
         }
     }
 
-    // ══════════════════════════════════════════════════════════════════════════
+    // ════════════════════════════════════════════════════════════
     //  INITIALIZE
-    // ══════════════════════════════════════════════════════════════════════════
+    // ════════════════════════════════════════════════════════════
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+
         cmbPriorite.setItems(FXCollections.observableArrayList("High", "Medium", "Low"));
         sortCombo.setItems(FXCollections.observableArrayList(
-                "Date ↓", "Date ↑", "Score ↓", "Score ↑", "Durée ↓", "Priority"));
+                "Date ↓","Date ↑","Score ↓","Score ↑","Durée ↓","Priority"));
         sortCombo.getSelectionModel().selectFirst();
         sortCombo.setOnAction(e -> applySort());
 
-        fldScore.textProperty().addListener((obs, o, n) -> {
-            if (!n.matches("\\d*(\\.\\d*)?")) fldScore.setText(o);
-        });
-        fldNoteMax.textProperty().addListener((obs, o, n) -> {
-            if (!n.matches("\\d*(\\.\\d*)?")) fldNoteMax.setText(o);
-        });
-        fldDuree.textProperty().addListener((obs, o, n) -> {
-            if (!n.matches("\\d*")) fldDuree.setText(o);
-        });
+        fldScore.textProperty().addListener((o,old,n)  -> { if(!n.matches("\\d*(\\.\\d*)?")) fldScore.setText(old); });
+        fldNoteMax.textProperty().addListener((o,old,n) -> { if(!n.matches("\\d*(\\.\\d*)?")) fldNoteMax.setText(old); });
+        fldDuree.textProperty().addListener((o,old,n)  -> { if(!n.matches("\\d*")) fldDuree.setText(old); });
 
         try {
-            List<String> sections = matService.findAll().stream()
+            List<String> secs = matService.findAll().stream()
                     .map(Matiere::getSectionMatiere)
                     .filter(Objects::nonNull).distinct().sorted()
                     .collect(Collectors.toList());
-            cmbSection.setItems(FXCollections.observableArrayList(sections));
+            cmbSection.setItems(FXCollections.observableArrayList(secs));
             cmbMatiere.setItems(FXCollections.observableArrayList());
         } catch (Exception e) { e.printStackTrace(); }
 
-        searchField.textProperty().addListener((o, old, val) -> filterAndRender(val));
+        searchField.textProperty().addListener((o,old,val) -> filterAndRender(val));
 
-        dpDate.setDayCellFactory(picker -> new DateCell() {
-            @Override public void updateItem(LocalDate date, boolean empty) {
-                super.updateItem(date, empty);
-                if (date.isAfter(LocalDate.now())) {
+        dpDate.setDayCellFactory(p -> new DateCell() {
+            @Override public void updateItem(LocalDate d, boolean empty) {
+                super.updateItem(d, empty);
+                if (d.isAfter(LocalDate.now())) {
                     setDisable(true);
-                    setStyle("-fx-background-color:#1E293B; -fx-text-fill:#475569;");
+                    setStyle("-fx-background-color:#1E293B;-fx-text-fill:#475569;");
                 } else {
-                    setStyle("-fx-background-color:#0F172A; -fx-text-fill:#F8FAFC;");
+                    setStyle("-fx-background-color:#0F172A;-fx-text-fill:#F8FAFC;");
                 }
             }
         });
 
-        cmbQuizDifficulty.setItems(FXCollections.observableArrayList("Easy", "Medium", "Hard"));
+        cmbQuizDifficulty.setItems(FXCollections.observableArrayList("Easy","Medium","Hard"));
         cmbQuizDifficulty.getSelectionModel().selectFirst();
-        cmbQuizCount.setItems(FXCollections.observableArrayList(5, 10, 15, 20));
+        cmbQuizCount.setItems(FXCollections.observableArrayList(5,10,15,20));
         cmbQuizCount.getSelectionModel().select(1);
 
         try {
-            List<String> sections = matService.findAll().stream()
+            List<String> secs = matService.findAll().stream()
                     .map(Matiere::getSectionMatiere)
                     .filter(Objects::nonNull).distinct().sorted()
                     .collect(Collectors.toList());
-            cmbQuizSection.setItems(FXCollections.observableArrayList(sections));
+            cmbQuizSection.setItems(FXCollections.observableArrayList(secs));
         } catch (Exception e) { e.printStackTrace(); }
+
+        setupVoiceAssistant();
+        setupAntiFraud();
 
         showView("list");
         loadData();
     }
 
-    // ══════════════════════════════════════════════════════════════════════════
+    // ════════════════════════════════════════════════════════════
+    //  VOICE ASSISTANT SETUP  (fixed — matches VoiceAssistantService API)
+    // ════════════════════════════════════════════════════════════
+    private void setupVoiceAssistant() {
+        if (!voiceService.hasApiKey()) {
+            btnVoiceAssistant.setDisable(true);
+            btnVoiceAssistant.setStyle("-fx-background-color:#3B0764;-fx-text-fill:#64748B;");
+            btnVoiceAssistant.setText("🔑 Missing API Key");
+            Platform.runLater(() -> {
+                voiceStatusLabel.setText("⚠ OPENROUTER_API_KEY not set in environment");
+                voiceBar.setVisible(true);
+                voiceBar.setManaged(true);
+            });
+            return;
+        }
+
+        // ── Transcription callback ─────────────────────────────
+        voiceService.onTranscription = text -> Platform.runLater(() -> {
+            voiceTranscriptionLabel.setText("🎤 You said: " + text);
+            voiceStatusLabel.setText("✍️ Transcribed: "
+                    + (text.length() > 40 ? text.substring(0, 40) + "…" : text));
+        });
+
+        // ── AI response callback (was wrongly named onAIResponse in old code) ──
+        voiceService.onAIResponse = response -> Platform.runLater(() -> {
+            voiceResponseLabel.setText("🤖 Assistant: " + response);
+            voiceStatusLabel.setText("💬 Assistant responded");
+        });
+
+        // ── Status callback ────────────────────────────────────
+        voiceService.onStatus = status -> Platform.runLater(() -> {
+            voiceStatusLabel.setText(status);
+            boolean idle = status.contains("Ready") || status.contains("ready")
+                    || status.contains("Prêt")  || status.contains("prêt")
+                    || status.contains("click");
+            voiceProgress.setVisible(!idle);
+        });
+
+        // ── Error callback ─────────────────────────────────────
+        voiceService.onError = error -> Platform.runLater(() -> {
+            voiceStatusLabel.setText("❌ Error: " + error);
+            voiceTranscriptionLabel.setText("");
+            voiceResponseLabel.setText("");
+            voiceProgress.setVisible(false);
+            btnVoiceAssistant.setDisable(false);
+            btnVoiceAssistant.setText("🎤  Voice");
+            btnVoiceAssistant.setStyle("");
+            isRecordingVoice = false;
+        });
+
+        // ── TTS start / done callbacks ─────────────────────────
+        voiceService.onAudioStart = () -> Platform.runLater(() -> {
+            voiceStatusLabel.setText("🔊 Speaking…");
+            voiceProgress.setVisible(true);
+        });
+
+        voiceService.onAudioDone = () -> Platform.runLater(() -> {
+            voiceStatusLabel.setText("🎤 Ready — click mic to ask");
+            btnVoiceAssistant.setDisable(false);
+            btnVoiceAssistant.setText("🎤  Voice");
+            btnVoiceAssistant.setStyle("");
+            voiceProgress.setVisible(false);
+            isRecordingVoice = false;
+        });
+    }
+
+    @FXML
+    private void handleVoiceAssistant() {
+        if (!voiceService.hasApiKey()) {
+            showVoiceError("OPENROUTER_API_KEY not configured in environment variables");
+            return;
+        }
+        if (isRecordingVoice) stopVoiceRecording();
+        else                  startVoiceRecording();
+    }
+
+    private void startVoiceRecording() {
+        try {
+            voiceService.startRecording();
+            isRecordingVoice = true;
+            btnVoiceAssistant.setText("⏹️  Stop");
+            btnVoiceAssistant.setStyle("-fx-background-color:#EF4444;-fx-text-fill:white;");
+            showVoiceBar(true);
+            voiceStatusLabel.setText("🎙️ Recording… click Stop when done");
+            voiceTranscriptionLabel.setText("");
+            voiceResponseLabel.setText("");
+            voiceProgress.setVisible(true);
+
+            // Auto-stop after 30 seconds
+            new Thread(() -> {
+                try { Thread.sleep(30_000); }
+                catch (InterruptedException ignored) {}
+                if (isRecordingVoice) Platform.runLater(this::stopVoiceRecording);
+            }).start();
+
+        } catch (Exception e) {
+            showVoiceError("Microphone error: " + e.getMessage());
+            isRecordingVoice = false;
+            btnVoiceAssistant.setText("🎤  Voice");
+            btnVoiceAssistant.setStyle("");
+        }
+    }
+
+    private void stopVoiceRecording() {
+        if (!isRecordingVoice) return;
+        isRecordingVoice = false;
+        btnVoiceAssistant.setDisable(true);
+        btnVoiceAssistant.setText("⏳ Processing…");
+        voiceStatusLabel.setText("⏳ Processing your request…");
+        voiceProgress.setVisible(true);
+        voiceService.stopAndProcess();
+    }
+
+    @FXML
+    private void handleCancelVoice() {
+        if (isRecordingVoice) {
+            voiceService.cancel();   // ✅ cancel() now exists in service
+            isRecordingVoice = false;
+        }
+        showVoiceBar(false);
+        btnVoiceAssistant.setDisable(false);
+        btnVoiceAssistant.setText("🎤  Voice");
+        btnVoiceAssistant.setStyle("");
+        voiceStatusLabel.setText("🎤 Voice assistant ready");
+    }
+
+    private void showVoiceBar(boolean show) {
+        voiceBar.setVisible(show);
+        voiceBar.setManaged(show);
+    }
+
+    private void showVoiceError(String message) {
+        Platform.runLater(() -> {
+            voiceStatusLabel.setText("❌ " + message);
+            voiceTranscriptionLabel.setText("");
+            voiceResponseLabel.setText("");
+            voiceBar.setVisible(true);
+            voiceBar.setManaged(true);
+            voiceProgress.setVisible(false);
+            btnVoiceAssistant.setDisable(false);
+            btnVoiceAssistant.setText("🎤  Voice");
+            btnVoiceAssistant.setStyle("");
+            isRecordingVoice = false;
+        });
+    }
+
+    // ════════════════════════════════════════════════════════════
+    //  ANTI-FRAUD : SETUP DES CALLBACKS
+    // ════════════════════════════════════════════════════════════
+    private void setupAntiFraud() {
+
+        antiFraud.setOnFraudDetected(event -> Platform.runLater(() -> {
+            if (fraudStatusBar  != null) fraudStatusBar.setVisible(true);
+            if (lblFraudWarning != null) {
+                lblFraudWarning.setText(event.getType().label + ": " + event.getDetails());
+                lblFraudWarning.setStyle("-fx-text-fill:" + event.getSeverityColor() + ";-fx-font-size:12px;");
+            }
+        }));
+
+        antiFraud.setOnFraudScoreUpdated(score -> Platform.runLater(() -> {
+            if (lblFraudScore == null) return;
+            lblFraudScore.setText("⚠ " + score + "/" + AntiFraudEngine.THRESHOLD_TERMINATE);
+            String col = score >= AntiFraudEngine.THRESHOLD_PENALTY ? "#EF4444"
+                    : score >= AntiFraudEngine.THRESHOLD_WARNING  ? "#F59E0B"
+                    : "#34D399";
+            lblFraudScore.setStyle("-fx-text-fill:" + col + ";-fx-font-size:12px;-fx-font-weight:700;");
+        }));
+
+        antiFraud.setOnPenalty(penaltyCount -> Platform.runLater(() -> {
+            quizScore = Math.max(0, quizScore - 1);
+            System.out.println("[FRAUD] Penalty #" + penaltyCount + " — quiz score → " + quizScore);
+        }));
+
+        antiFraud.setOnWarning(msg -> Platform.runLater(() -> {
+            if (lblFraudWarning != null) {
+                lblFraudWarning.setText("⚠ " + msg);
+                lblFraudWarning.setStyle("-fx-text-fill:#F59E0B;-fx-font-size:12px;");
+            }
+        }));
+
+        antiFraud.setOnTerminate(() -> Platform.runLater(() -> {
+            stopQuizTimer();
+            finishQuiz();
+        }));
+    }
+
+    private void attachAntiFraudOnce() {
+        if (antiFraudAttached) return;
+        antiFraudAttached = true;
+        Platform.runLater(() -> {
+            if (courseGrid.getScene() != null
+                    && courseGrid.getScene().getWindow() instanceof Stage stage) {
+                antiFraud.attach(stage);
+                antiFraud.blockSystemActions(courseGrid.getScene());
+            }
+        });
+    }
+
+    private HBox buildFraudBar() {
+        HBox bar = new HBox(12);
+        bar.setAlignment(Pos.CENTER_LEFT);
+        bar.setStyle(
+                "-fx-background-color:#1A0808;" +
+                        "-fx-border-color:#EF4444;" +
+                        "-fx-border-width:0 0 0 4;" +
+                        "-fx-padding:8 16;" +
+                        "-fx-background-radius:8;"
+        );
+        bar.setVisible(false);
+
+        Label icon = new Label("🔒");
+        icon.setStyle("-fx-font-size:13px;");
+
+        lblFraudWarning = new Label("Secure exam mode active");
+        lblFraudWarning.setStyle("-fx-text-fill:#94A3B8;-fx-font-size:12px;");
+        HBox.setHgrow(lblFraudWarning, Priority.ALWAYS);
+
+        lblFraudScore = new Label("⚠ 0/" + AntiFraudEngine.THRESHOLD_TERMINATE);
+        lblFraudScore.setStyle("-fx-text-fill:#34D399;-fx-font-size:12px;-fx-font-weight:700;");
+
+        ProgressBar fraudBar = new ProgressBar(0);
+        fraudBar.setPrefWidth(80);
+        fraudBar.setPrefHeight(6);
+        fraudBar.setStyle("-fx-accent:#EF4444;-fx-background-color:#1E293B;");
+
+        antiFraud.setOnFraudScoreUpdated(score -> Platform.runLater(() -> {
+            double prog = (double) score / AntiFraudEngine.THRESHOLD_TERMINATE;
+            fraudBar.setProgress(Math.min(1.0, prog));
+            if (score > 0) bar.setVisible(true);
+            if (lblFraudScore != null) {
+                lblFraudScore.setText("⚠ " + score + "/" + AntiFraudEngine.THRESHOLD_TERMINATE);
+                String col = score >= AntiFraudEngine.THRESHOLD_PENALTY ? "#EF4444"
+                        : score >= AntiFraudEngine.THRESHOLD_WARNING  ? "#F59E0B"
+                        : "#34D399";
+                lblFraudScore.setStyle("-fx-text-fill:" + col + ";-fx-font-size:12px;-fx-font-weight:700;");
+            }
+        }));
+
+        bar.getChildren().addAll(icon, lblFraudWarning, fraudBar, lblFraudScore);
+        fraudStatusBar = bar;
+        return bar;
+    }
+
+    // ════════════════════════════════════════════════════════════
     //  VIEW SWITCHER
-    // ══════════════════════════════════════════════════════════════════════════
+    // ════════════════════════════════════════════════════════════
     private void showView(String view) {
         boolean isList  = "list".equals(view);
         boolean isForm  = "form".equals(view);
@@ -239,11 +502,7 @@ public class CoursesController implements Initializable {
 
         boolean showCards = isList || isStats;
         statCards.setVisible(showCards); statCards.setManaged(showCards);
-
-        if (smartQuizCard != null) {
-            smartQuizCard.setVisible(isList); smartQuizCard.setManaged(isList);
-        }
-
+        if (smartQuizCard != null) { smartQuizCard.setVisible(isList); smartQuizCard.setManaged(isList); }
         sortCombo.setVisible(isList);   sortCombo.setManaged(isList);
         searchField.setVisible(isList); searchField.setManaged(isList);
 
@@ -266,32 +525,37 @@ public class CoursesController implements Initializable {
             btnHeaderAction.setText("← Back");
             if (btnHeaderIcon != null) btnHeaderIcon.setIconLiteral("fth-arrow-left");
             pageTitle.setText("Smart Quiz");
-            pageSubtitle.setText("Test your knowledge by section and subject");
+            pageSubtitle.setText("Test your knowledge — Secure exam mode");
             showQuizSubView("setup");
+            attachAntiFraudOnce();
         }
     }
 
     private void showQuizSubView(String sub) {
-        quizSetupView.setVisible("setup".equals(sub));     quizSetupView.setManaged("setup".equals(sub));
-        quizLoadingView.setVisible("loading".equals(sub)); quizLoadingView.setManaged("loading".equals(sub));
-        quizInProgressView.setVisible("quiz".equals(sub)); quizInProgressView.setManaged("quiz".equals(sub));
-        quizResultsView.setVisible("results".equals(sub)); quizResultsView.setManaged("results".equals(sub));
+        boolean setup   = "setup".equals(sub);
+        boolean loading = "loading".equals(sub);
+        boolean quiz    = "quiz".equals(sub);
+        boolean results = "results".equals(sub);
+
+        quizSetupView.setVisible(setup);     quizSetupView.setManaged(setup);
+        quizLoadingView.setVisible(loading); quizLoadingView.setManaged(loading);
+        quizInProgressView.setVisible(quiz); quizInProgressView.setManaged(quiz);
+        quizResultsView.setVisible(results); quizResultsView.setManaged(results);
     }
 
-    // ══════════════════════════════════════════════════════════════════════════
+    // ════════════════════════════════════════════════════════════
     //  DATA
-    // ══════════════════════════════════════════════════════════════════════════
+    // ════════════════════════════════════════════════════════════
     private void loadData() {
-        User currentUser = UserSession.getInstance().getCurrentUser();
-        if (currentUser == null) {
+        User u = UserSession.getInstance().getCurrentUser();
+        if (u == null) {
             courseGrid.getChildren().clear();
             statTotal.setText("0"); statMoyenne.setText("0");
             statLacunes.setText("0"); statMeilleur.setText("0");
             return;
         }
         try {
-            List<EvaluationMatiere> list = evalService.findByUser(currentUser.getId());
-            allEvals.setAll(list);
+            allEvals.setAll(evalService.findByUser(u.getId()));
             updateStats();
             renderCards(allEvals);
         } catch (Exception e) { e.printStackTrace(); }
@@ -299,160 +563,24 @@ public class CoursesController implements Initializable {
 
     private void updateStats() {
         statTotal.setText(String.valueOf(allEvals.size()));
-        double moy = allEvals.stream().mapToDouble(EvaluationMatiere::getScoreEval).average().orElse(0);
-        statMoyenne.setText(String.format("%.1f", moy));
-        long totalDuree = allEvals.stream().mapToLong(EvaluationMatiere::getDureeEvaluation).sum();
-        statLacunes.setText(String.valueOf(totalDuree));
+        double avg = allEvals.stream().mapToDouble(EvaluationMatiere::getScoreEval).average().orElse(0);
+        statMoyenne.setText(String.format("%.1f", avg));
+        statLacunes.setText(String.valueOf(allEvals.stream().mapToLong(EvaluationMatiere::getDureeEvaluation).sum()));
         double best = allEvals.stream().mapToDouble(EvaluationMatiere::getScoreEval).max().orElse(0);
         statMeilleur.setText(String.format("%.1f", best));
     }
 
     private void renderCards(List<EvaluationMatiere> list) {
         courseGrid.getChildren().clear();
-        for (int i = 0; i < list.size(); i++) {
+        for (int i = 0; i < list.size(); i++)
             courseGrid.getChildren().add(buildCard(list.get(i), COLORS[i % COLORS.length]));
-        }
     }
 
-    // ══════════════════════════════════════════════════════════════════════════
-    //  BUILD CARD
-    // ══════════════════════════════════════════════════════════════════════════
-    private VBox buildCard(EvaluationMatiere ev, String color) {
-        VBox card = new VBox(0);
-        card.getStyleClass().add("card");
-        card.setPrefWidth(380);
-        card.setMaxWidth(380);
-        card.setStyle(
-                "-fx-background-color:#0F172A;" +
-                        "-fx-border-color:#1E293B;" +
-                        "-fx-border-width:1.5;" +
-                        "-fx-border-radius:16;" +
-                        "-fx-background-radius:16;" +
-                        "-fx-cursor:hand;" +
-                        "-fx-effect:dropshadow(gaussian,rgba(0,0,0,0.4),12,0,0,4);"
-        );
-
-        Region colorBar = new Region();
-        colorBar.setPrefHeight(4);
-        colorBar.setStyle("-fx-background-color:" + getGradientForColor(color) + "; -fx-background-radius:16 16 0 0;");
-
-        VBox content = new VBox(14);
-        content.setPadding(new Insets(18, 20, 18, 20));
-
-        HBox header = new HBox(12);
-        header.setAlignment(Pos.CENTER_LEFT);
-
-        StackPane iconBox = new StackPane();
-        iconBox.setPrefSize(46, 46);
-        iconBox.setMinSize(46, 46);
-        iconBox.setMaxSize(46, 46);
-        iconBox.setStyle("-fx-background-color:" + getIconBg(color) + ";-fx-background-radius:12;");
-        FontIcon icon = new FontIcon("fth-clipboard");
-        icon.setIconSize(20);
-        icon.setIconColor(Color.web(getColorHex(color)));
-        iconBox.getChildren().add(icon);
-
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-
-        Label scoreBadge = new Label(String.format("%.1f / %.0f", ev.getScoreEval(), ev.getNoteMaximaleEval()));
-        scoreBadge.setStyle(
-                "-fx-background-color:" + getColorHex(color) + ";" +
-                        "-fx-text-fill:#FFFFFF;" +
-                        "-fx-font-size:13px;" +
-                        "-fx-font-weight:700;" +
-                        "-fx-padding:5 12;" +
-                        "-fx-background-radius:20;"
-        );
-
-        header.getChildren().addAll(iconBox, spacer, scoreBadge);
-
-        Label nomLabel = new Label(getNomMatiere(ev.getMatiereId()));
-        nomLabel.setStyle("-fx-text-fill:#F8FAFC;-fx-font-size:17px;-fx-font-weight:700;");
-        nomLabel.setWrapText(true);
-
-        HBox dateRow = new HBox(6);
-        dateRow.setAlignment(Pos.CENTER_LEFT);
-        FontIcon calIcon = new FontIcon("fth-calendar");
-        calIcon.setIconSize(12);
-        calIcon.setIconColor(Color.web("#94A3B8"));
-        Label dateLabel = new Label(ev.getDateEvaluation() != null ? ev.getDateEvaluation().format(FMT) : "—");
-        dateLabel.setStyle("-fx-text-fill:#94A3B8; -fx-font-size:12px;");
-        dateRow.getChildren().addAll(calIcon, dateLabel);
-
-        HBox chipsRow = new HBox(10);
-        chipsRow.setAlignment(Pos.CENTER_LEFT);
-        chipsRow.getChildren().addAll(
-                buildChip("fth-clock", ev.getDureeEvaluation() + " min", "#94A3B8"),
-                buildChip("fth-alert-circle",
-                        ev.getPrioriteE() != null ? ev.getPrioriteE() : "—",
-                        getPriorityColor(ev.getPrioriteE()))
-        );
-
-        double progress = ev.getNoteMaximaleEval() > 0
-                ? ev.getScoreEval() / ev.getNoteMaximaleEval() : 0;
-
-        VBox progressSection = new VBox(6);
-        HBox progressHeader = new HBox();
-        progressHeader.setAlignment(Pos.CENTER_LEFT);
-        Label scoreLabel = new Label("Score");
-        scoreLabel.setStyle("-fx-text-fill:#64748B; -fx-font-size:12px;");
-        Region ps = new Region();
-        HBox.setHgrow(ps, Priority.ALWAYS);
-        Label pv = new Label((int)(progress * 100) + "%");
-        pv.setStyle("-fx-text-fill:" + getColorHex(color) + ";-fx-font-size:13px;-fx-font-weight:700;");
-        progressHeader.getChildren().addAll(scoreLabel, ps, pv);
-
-        ProgressBar progressBar = new ProgressBar(progress);
-        progressBar.setMaxWidth(Double.MAX_VALUE);
-        progressBar.setStyle(
-                "-fx-accent:" + getColorHex(color) + ";" +
-                        "-fx-background-color:#1E293B;" +
-                        "-fx-background-radius:4;" +
-                        "-fx-border-radius:4;"
-        );
-        progressSection.getChildren().addAll(progressHeader, progressBar);
-
-        Region divider = new Region();
-        divider.setPrefHeight(1);
-        divider.setStyle("-fx-background-color:#1E293B;");
-
-        HBox actions = new HBox(8);
-        actions.setAlignment(Pos.CENTER_RIGHT);
-
-        Button btnEdit = new Button("✏  Edit");
-        btnEdit.setStyle(
-                "-fx-background-color:transparent;" +
-                        "-fx-text-fill:" + getColorHex(color) + ";" +
-                        "-fx-border-color:" + getColorHex(color) + ";" +
-                        "-fx-border-width:1.5;-fx-border-radius:8;-fx-background-radius:8;" +
-                        "-fx-font-size:12px;-fx-font-weight:600;-fx-padding:6 16;-fx-cursor:hand;"
-        );
-        btnEdit.setOnAction(e -> startEdit(ev));
-
-        Button btnDel = new Button("🗑  Delete");
-        btnDel.setStyle(
-                "-fx-background-color:transparent;" +
-                        "-fx-text-fill:#FB7185;" +
-                        "-fx-border-color:#FB7185;" +
-                        "-fx-border-width:1.5;-fx-border-radius:8;-fx-background-radius:8;" +
-                        "-fx-font-size:12px;-fx-font-weight:600;-fx-padding:6 16;-fx-cursor:hand;"
-        );
-        btnDel.setOnAction(e -> deleteItem(ev));
-
-        actions.getChildren().addAll(btnEdit, btnDel);
-
-        content.getChildren().addAll(header, nomLabel, dateRow, chipsRow, progressSection, divider, actions);
-        card.getChildren().addAll(colorBar, content);
-        return card;
-    }
-
-    // ══════════════════════════════════════════════════════════════════════════
+    // ════════════════════════════════════════════════════════════
     //  FORM HANDLERS
-    // ══════════════════════════════════════════════════════════════════════════
+    // ════════════════════════════════════════════════════════════
     @FXML private void handleShowForm() {
-        editTarget = null;
-        clearForm();
+        editTarget = null; clearForm();
         formTitle.setText("New Assessment");
         btnSave.setText("➕  Add Assessment");
         showView("form");
@@ -463,12 +591,10 @@ public class CoursesController implements Initializable {
         clearErrors();
 
         if (cmbSection.getValue() == null || cmbSection.getValue().isBlank()) {
-            errSection.setText("⚠ Please select a section.");
-            ok = false;
+            errSection.setText("⚠ Please select a section."); ok = false;
         }
         if (cmbMatiere.getValue() == null) {
-            errMatiere.setText("⚠ Please select a subject.");
-            ok = false;
+            errMatiere.setText("⚠ Please select a subject."); ok = false;
         }
 
         double score = 0, noteMax = 0;
@@ -476,31 +602,23 @@ public class CoursesController implements Initializable {
             if (fldScore.getText().isBlank()) throw new NumberFormatException();
             score = Double.parseDouble(fldScore.getText().trim());
             if (score < 0) { errScore.setText("⚠ Score cannot be negative."); ok = false; }
-        } catch (NumberFormatException ex) {
-            errScore.setText("⚠ Enter a valid number (e.g. 14.5)."); ok = false;
-        }
+        } catch (NumberFormatException ex) { errScore.setText("⚠ Enter a valid number."); ok = false; }
 
         try {
             if (fldNoteMax.getText().isBlank()) throw new NumberFormatException();
             noteMax = Double.parseDouble(fldNoteMax.getText().trim());
-            if (noteMax <= 0) { errNoteMax.setText("⚠ Must be greater than 0."); ok = false; }
-            else if (noteMax > 20) { errNoteMax.setText("⚠ Maximum grade cannot exceed 20."); ok = false; }
-        } catch (NumberFormatException ex) {
-            errNoteMax.setText("⚠ Enter a valid number (e.g. 20)."); ok = false;
-        }
+            if (noteMax <= 0)  { errNoteMax.setText("⚠ Must be > 0.");   ok = false; }
+            else if (noteMax > 20) { errNoteMax.setText("⚠ Max is 20."); ok = false; }
+        } catch (NumberFormatException ex) { errNoteMax.setText("⚠ Enter a valid number."); ok = false; }
 
-        if (ok && score > noteMax) {
-            errScore.setText("⚠ Score cannot exceed the maximum grade (" + noteMax + ")."); ok = false;
-        }
+        if (ok && score > noteMax) { errScore.setText("⚠ Score cannot exceed max."); ok = false; }
 
         int duree = 0;
         try {
             if (fldDuree.getText().isBlank()) throw new NumberFormatException();
             duree = Integer.parseInt(fldDuree.getText().trim());
-            if (duree <= 0) { errDuree.setText("⚠ Duration must be greater than 0."); ok = false; }
-        } catch (NumberFormatException ex) {
-            errDuree.setText("⚠ Enter a whole number (e.g. 90)."); ok = false;
-        }
+            if (duree <= 0) { errDuree.setText("⚠ Must be > 0."); ok = false; }
+        } catch (NumberFormatException ex) { errDuree.setText("⚠ Enter a whole number."); ok = false; }
 
         if (selectedPriorite == null) { errPriorite.setText("⚠ Please select a priority."); ok = false; }
 
@@ -510,8 +628,8 @@ public class CoursesController implements Initializable {
             errDate.setText("⚠ Date cannot be in the future."); ok = false;
         }
 
-        User currentUser = UserSession.getInstance().getCurrentUser();
-        if (currentUser == null) { showGlobalError("You must be logged in."); return; }
+        User u = UserSession.getInstance().getCurrentUser();
+        if (u == null) { showGlobalError("You must be logged in."); return; }
         if (!ok) return;
 
         try {
@@ -522,17 +640,11 @@ public class CoursesController implements Initializable {
             e.setDureeEvaluation(duree);
             e.setPrioriteE(selectedPriorite);
             e.setMatiereId(cmbMatiere.getValue().getId());
-            e.setUserId(currentUser.getId());
-
+            e.setUserId(u.getId());
             if (editTarget == null) evalService.create(e, cmbMatiere.getValue().getId());
-            else evalService.update(e);
-
-            clearForm();
-            showView("list");
-            loadData();
-        } catch (Exception ex) {
-            showGlobalError("Database error: " + ex.getMessage());
-        }
+            else                    evalService.update(e);
+            clearForm(); showView("list"); loadData();
+        } catch (Exception ex) { showGlobalError("Database error: " + ex.getMessage()); }
     }
 
     @FXML private void handleCancel() { clearForm(); showView("list"); }
@@ -572,28 +684,38 @@ public class CoursesController implements Initializable {
         });
     }
 
-    // ══════════════════════════════════════════════════════════════════════════
+    // ════════════════════════════════════════════════════════════
     //  NAVIGATION
-    // ══════════════════════════════════════════════════════════════════════════
+    // ════════════════════════════════════════════════════════════
     @FXML private void handleHeaderAction() {
         if (formPanel.isVisible() || statsView.isVisible() || quizMainView.isVisible()) {
-            stopQuizTimer(); showView("list");
+            stopQuizTimer();
+            antiFraud.stopMonitoring();
+            showView("list");
         } else {
             handleShowForm();
         }
     }
 
-    @FXML public void handleShowQuiz() { showView("quiz"); }
+    @FXML public void handleShowQuiz()  { showView("quiz"); }
+    @FXML public void handleShowStats() {
+        if (allEvals.isEmpty()) {
+            new Alert(Alert.AlertType.INFORMATION,
+                    "No assessments yet.", ButtonType.OK).showAndWait();
+            return;
+        }
+        populateStats(); showView("stats");
+    }
 
-    // ══════════════════════════════════════════════════════════════════════════
-    //  QUIZ
-    // ══════════════════════════════════════════════════════════════════════════
+    // ════════════════════════════════════════════════════════════
+    //  QUIZ — SECTION CHANGE
+    // ════════════════════════════════════════════════════════════
     @FXML private void handleQuizSectionChange() {
-        String section = cmbQuizSection.getValue();
-        if (section == null) return;
+        String sec = cmbQuizSection.getValue();
+        if (sec == null) return;
         try {
             List<Matiere> filtered = matService.findAll().stream()
-                    .filter(m -> section.equals(m.getSectionMatiere()))
+                    .filter(m -> sec.equals(m.getSectionMatiere()))
                     .collect(Collectors.toList());
             cmbQuizMatiere.setItems(FXCollections.observableArrayList(filtered));
             cmbQuizMatiere.setPromptText("Choose a subject…");
@@ -601,79 +723,114 @@ public class CoursesController implements Initializable {
         } catch (Exception e) { e.printStackTrace(); }
     }
 
-    @FXML private void handleStartQuiz() {
+    // ════════════════════════════════════════════════════════════
+    //  QUIZ — AI GENERATION
+    // ════════════════════════════════════════════════════════════
+    @FXML private void handleGenerateAIQuiz() {
         lblQuizSetupError.setText("");
-        if (cmbQuizSection.getValue() == null) { lblQuizSetupError.setText("⚠ Please select a section."); return; }
-        if (cmbQuizMatiere.getValue() == null) { lblQuizSetupError.setText("⚠ Please select a subject."); return; }
+        if (cmbQuizSection.getValue() == null) {
+            lblQuizSetupError.setText("⚠ Please select a section."); return;
+        }
+        Matiere mat = cmbQuizMatiere.getValue();
+        if (mat == null) {
+            lblQuizSetupError.setText("⚠ Please select a subject."); return;
+        }
 
-        String subject    = cmbQuizMatiere.getValue().getNomMatiere();
-        String difficulty = cmbQuizDifficulty.getValue();
-        int count = cmbQuizCount.getValue() != null ? cmbQuizCount.getValue() : 10;
+        String matiere    = mat.getNomMatiere();
+        String section    = cmbQuizSection.getValue();
+        String difficulty = cmbQuizDifficulty.getValue() != null ? cmbQuizDifficulty.getValue() : "Medium";
+        int    count      = cmbQuizCount.getValue() != null ? cmbQuizCount.getValue() : 10;
+        String level      = detectLevel(getAvgForSubject(mat.getId()));
 
-        showQuizSubView("loading");
-        lblQuizLoadingStatus.setText("Generating questions…");
+        showQuizLoading(true);
+        lblQuizLoadingStatus.setText("Claude AI is generating your questions…");
 
         new Thread(() -> {
             try {
-                Thread.sleep(700);
-                List<QuizQuestion> generated = generateFallbackQuizQuestions(subject, difficulty, count);
+                AIQuizService service = new AIQuizService();
+                List<AIQuizService.ParsedQuestion> parsed =
+                        service.generateQuizQuestions(matiere, section, level, count);
                 Platform.runLater(() -> {
-                    quizQuestions = generated;
+                    showQuizLoading(false);
+                    if (parsed.isEmpty()) {
+                        lblQuizSetupError.setText("⚠ AI returned no questions. Check your API key.");
+                        showQuizSubView("setup"); return;
+                    }
+                    quizQuestions.clear();
+                    for (AIQuizService.ParsedQuestion pq : parsed) {
+                        quizQuestions.add(new QuizQuestion(
+                                pq.question, pq.options, pq.correct,
+                                pq.difficulty, pq.category, pq.explanation));
+                    }
                     quizCurrentIndex = 0; quizScore = 0; quizAnsweredCount = 0;
                     startQuizSession();
                 });
             } catch (Exception e) {
                 e.printStackTrace();
-                Platform.runLater(() -> showQuizSubView("setup"));
+                Platform.runLater(() -> {
+                    showQuizLoading(false);
+                    String msg = e.getMessage() != null ? e.getMessage() : "Unknown error";
+                    if      (msg.contains("401")) lblQuizSetupError.setText("⚠ Invalid API key.");
+                    else if (msg.contains("429")) lblQuizSetupError.setText("⚠ Rate limit. Retry later.");
+                    else                          lblQuizSetupError.setText("⚠ AI error: " + msg);
+                    showQuizSubView("setup");
+                });
             }
         }).start();
     }
 
-    private List<QuizQuestion> generateFallbackQuizQuestions(String subject, String difficulty, int count) {
-        List<QuizQuestion> questions = new ArrayList<>();
-        String ls = subject.toLowerCase();
-
-        if (ls.contains("math") || ls.contains("mathématiques")) {
-            questions.add(new QuizQuestion("What is the derivative of x²?",
-                    Arrays.asList("x","2x","x²","2"), "2x", difficulty, "Mathematics"));
-            questions.add(new QuizQuestion("Solve: 2x + 5 = 13",
-                    Arrays.asList("x = 4","x = 6","x = 8","x = 10"), "x = 4", difficulty, "Mathematics"));
-            questions.add(new QuizQuestion("What is π (pi) approximately?",
-                    Arrays.asList("2.14","3.14","4.14","5.14"), "3.14", difficulty, "Mathematics"));
-        } else if (ls.contains("phys")) {
-            questions.add(new QuizQuestion("What is Newton's second law?",
-                    Arrays.asList("F = ma","E = mc²","V = IR","P = VI"), "F = ma", difficulty, "Physics"));
-            questions.add(new QuizQuestion("What is the unit of force?",
-                    Arrays.asList("Joule","Watt","Newton","Pascal"), "Newton", difficulty, "Physics"));
-        } else if (ls.contains("prog") || ls.contains("java")) {
-            questions.add(new QuizQuestion("What does JVM stand for?",
-                    Arrays.asList("Java Virtual Machine","Java Variable Method","Java Version Manager","Java Visual Machine"),
-                    "Java Virtual Machine", difficulty, "Programming"));
-            questions.add(new QuizQuestion("Which is a Java keyword?",
-                    Arrays.asList("integer","String","static","float"), "static", difficulty, "Programming"));
+    private void showQuizLoading(boolean show) {
+        if (btnGenerateAIQuiz != null) {
+            btnGenerateAIQuiz.setDisable(show);
+            btnGenerateAIQuiz.setText(show ? "⏳ Generating…" : "🤖  Generate AI Quiz");
         }
-
-        if (questions.size() < count) {
-            questions.add(new QuizQuestion("Capital of France?",
-                    Arrays.asList("London","Berlin","Paris","Madrid"), "Paris", difficulty, "General"));
-            questions.add(new QuizQuestion("The Red Planet?",
-                    Arrays.asList("Mars","Jupiter","Venus","Saturn"), "Mars", difficulty, "General"));
-            questions.add(new QuizQuestion("Largest ocean?",
-                    Arrays.asList("Atlantic","Indian","Arctic","Pacific"), "Pacific", difficulty, "General"));
-        }
-
-        Collections.shuffle(questions);
-        return questions.subList(0, Math.min(count, questions.size()));
+        if (show) showQuizSubView("loading");
     }
 
-    private void startQuizSession() { showQuizSubView("quiz"); startQuizTimer(); showQuizQuestion(); }
+    private String detectLevel(double avg) {
+        if (avg < 10) return "easy";
+        if (avg < 14) return "medium";
+        return "hard";
+    }
 
+    private double getAvgForSubject(int id) {
+        return allEvals.stream().filter(e -> e.getMatiereId() == id)
+                .mapToDouble(EvaluationMatiere::getScoreEval).average().orElse(10.0);
+    }
+
+    // ════════════════════════════════════════════════════════════
+    //  QUIZ SESSION START
+    // ════════════════════════════════════════════════════════════
+    private void startQuizSession() {
+        if (fraudStatusBar == null) {
+            HBox bar = buildFraudBar();
+            quizInProgressView.getChildren().add(0, bar);
+        }
+
+        antiFraud.startMonitoring();
+
+        Platform.runLater(() -> {
+            if (courseGrid.getScene() != null
+                    && courseGrid.getScene().getWindow() instanceof Stage stage) {
+                stage.setFullScreen(true);
+            }
+        });
+
+        showQuizSubView("quiz");
+        startQuizTimer();
+        showQuizQuestion();
+    }
+
+    // ════════════════════════════════════════════════════════════
+    //  QUIZ TIMER
+    // ════════════════════════════════════════════════════════════
     private void startQuizTimer() {
         stopQuizTimer();
         quizSecondsElapsed = 0;
         quizTimer = new Timeline(new KeyFrame(Duration.seconds(1), e -> {
             quizSecondsElapsed++;
-            lblQuizTimer.setText(String.format("%d:%02d", quizSecondsElapsed/60, quizSecondsElapsed%60));
+            lblQuizTimer.setText(
+                    String.format("%d:%02d", quizSecondsElapsed / 60, quizSecondsElapsed % 60));
         }));
         quizTimer.setCycleCount(Timeline.INDEFINITE);
         quizTimer.play();
@@ -683,8 +840,12 @@ public class CoursesController implements Initializable {
         if (quizTimer != null) { quizTimer.stop(); quizTimer = null; }
     }
 
+    // ════════════════════════════════════════════════════════════
+    //  SHOW QUESTION
+    // ════════════════════════════════════════════════════════════
     private void showQuizQuestion() {
         if (quizCurrentIndex >= quizQuestions.size()) { finishQuiz(); return; }
+
         QuizQuestion q = quizQuestions.get(quizCurrentIndex);
         quizSelectedOpt = null;
         btnQuizNext.setDisable(true);
@@ -701,75 +862,189 @@ public class CoursesController implements Initializable {
         quizVboxOptions.getChildren().clear();
         String[] letters = {"A","B","C","D"};
         for (int i = 0; i < q.options.size(); i++) {
-            String opt = q.options.get(i);
-            String letter = i < letters.length ? letters[i] : String.valueOf(i+1);
+            String opt    = q.options.get(i);
+            String letter = i < letters.length ? letters[i] : String.valueOf(i + 1);
             Button btn = new Button(letter + ".  " + opt);
             btn.setMaxWidth(Double.MAX_VALUE);
             btn.setUserData(opt);
-            btn.setStyle(quizDefaultOptionStyle());
-            btn.setOnAction(e -> handleQuizOptionSelected(btn, opt));
+            btn.setStyle(styleOptionDefault());
+            btn.setOnAction(e -> handleOptionSelected(btn, opt));
             quizVboxOptions.getChildren().add(btn);
         }
+
+        antiFraud.onQuestionChanged(quizCurrentIndex);
     }
 
-    private void handleQuizOptionSelected(Button clicked, String opt) {
+    private void handleOptionSelected(Button clicked, String opt) {
         quizSelectedOpt = opt;
         btnQuizNext.setDisable(false);
-        quizVboxOptions.getChildren().forEach(n -> { if (n instanceof Button b) b.setStyle(quizDefaultOptionStyle()); });
-        clicked.setStyle(quizSelectedOptionStyle());
+        quizVboxOptions.getChildren().forEach(n -> {
+            if (n instanceof Button b) b.setStyle(styleOptionDefault());
+        });
+        clicked.setStyle(styleOptionSelected());
     }
 
     @FXML private void handleQuizNextQuestion() {
         QuizQuestion q = quizQuestions.get(quizCurrentIndex);
         q.userAnswer = quizSelectedOpt;
-        boolean correct = quizSelectedOpt != null && quizSelectedOpt.equals(q.correctAnswer);
-        if (correct) quizScore++;
+        if (quizSelectedOpt != null && quizSelectedOpt.equals(q.correctAnswer)) quizScore++;
         if (quizSelectedOpt != null) quizAnsweredCount++;
-        showQuizFeedback(correct, q.correctAnswer);
+        quizCurrentIndex++;
+        showQuizQuestion();
     }
 
-    private void showQuizFeedback(boolean correct, String correctAnswer) {
-        btnQuizNext.setDisable(true);
-        quizVboxOptions.getChildren().forEach(n -> {
-            if (n instanceof Button b) {
-                String raw = b.getText().length() > 4 ? b.getText().substring(4) : b.getText();
-                if (raw.equals(correctAnswer)) b.setStyle(quizCorrectOptionStyle());
-                else if (raw.equals(quizSelectedOpt) && !correct) b.setStyle(quizWrongOptionStyle());
-            }
-        });
-        new Timeline(new KeyFrame(Duration.millis(900), e -> { quizCurrentIndex++; showQuizQuestion(); })).play();
-    }
-
+    // ════════════════════════════════════════════════════════════
+    //  FINISH QUIZ
+    // ════════════════════════════════════════════════════════════
     private void finishQuiz() {
         stopQuizTimer();
-        showQuizSubView("results");
-        int total = quizQuestions.size();
-        int percent = total > 0 ? (int)((quizScore * 100.0) / total) : 0;
-        lblQuizFinalScore.setText(quizScore + " / " + total);
+        antiFraud.stopMonitoring();
+
+        double rawScore      = quizScore;
+        double adjustedScore = antiFraud.applyPenaltiesToScore(rawScore);
+        int    displayScore  = (int) adjustedScore;
+
+        int total   = quizQuestions.size();
+        int percent = total > 0 ? (int)((adjustedScore * 100.0) / total) : 0;
+
+        lblQuizFinalScore.setText(displayScore + " / " + total);
         lblQuizFinalPercent.setText(percent + "%");
         lblQuizCorrectCount.setText(String.valueOf(quizScore));
         lblQuizWrongCount.setText(String.valueOf(total - quizScore));
-        lblQuizTotalTime.setText(String.format("%d:%02d", quizSecondsElapsed/60, quizSecondsElapsed%60));
+        lblQuizTotalTime.setText(
+                String.format("%d:%02d", quizSecondsElapsed / 60, quizSecondsElapsed % 60));
 
-        if (percent >= 80) { lblQuizFinalLevel.setText("Excellent 🎉"); lblQuizFinalLevel.setStyle("-fx-text-fill:#34D399;-fx-font-size:20px;-fx-font-weight:700;"); }
-        else if (percent >= 60) { lblQuizFinalLevel.setText("Good 👍"); lblQuizFinalLevel.setStyle("-fx-text-fill:#60A5FA;-fx-font-size:20px;-fx-font-weight:700;"); }
-        else { lblQuizFinalLevel.setText("Need Improvement 📚"); lblQuizFinalLevel.setStyle("-fx-text-fill:#FB7185;-fx-font-size:20px;-fx-font-weight:700;"); }
+        if (percent >= 80) {
+            lblQuizFinalLevel.setText("Excellent 🎉");
+            lblQuizFinalLevel.setStyle("-fx-text-fill:#34D399;-fx-font-size:20px;-fx-font-weight:700;");
+        } else if (percent >= 60) {
+            lblQuizFinalLevel.setText("Good 👍");
+            lblQuizFinalLevel.setStyle("-fx-text-fill:#60A5FA;-fx-font-size:20px;-fx-font-weight:700;");
+        } else {
+            lblQuizFinalLevel.setText("Need Improvement 📚");
+            lblQuizFinalLevel.setStyle("-fx-text-fill:#FB7185;-fx-font-size:20px;-fx-font-weight:700;");
+        }
 
         quizVboxDetailedResults.getChildren().clear();
+
+        if (antiFraud.getFraudScore() > 0) {
+            quizVboxDetailedResults.getChildren().add(buildFraudSummaryCard());
+        }
+
         for (int i = 0; i < quizQuestions.size(); i++) {
             QuizQuestion q = quizQuestions.get(i);
-            boolean ok = q.correctAnswer.equals(q.userAnswer);
-            VBox c = new VBox(6);
-            c.setStyle("-fx-background-color:" + (ok?"#064E3B":"#4C0519") + ";-fx-border-color:" + (ok?"#34D399":"#FB7185") + ";-fx-border-width:1.5;-fx-border-radius:10;-fx-background-radius:10;-fx-padding:12 16;");
-            Label lq = new Label((i+1) + ".  " + q.question); lq.setWrapText(true);
-            lq.setStyle("-fx-text-fill:#F8FAFC;-fx-font-size:13px;-fx-font-weight:600;");
-            Label la = new Label("Your answer: " + (q.userAnswer != null ? q.userAnswer : "Not answered"));
-            la.setStyle("-fx-text-fill:" + (ok?"#34D399":"#FB7185") + ";-fx-font-size:12px;");
-            Label lc = new Label("✓  Correct: " + q.correctAnswer);
-            lc.setStyle("-fx-text-fill:#34D399;-fx-font-size:12px;");
-            c.getChildren().addAll(lq, la, lc);
-            quizVboxDetailedResults.getChildren().add(c);
+            boolean ok    = q.correctAnswer.equals(q.userAnswer);
+            String accentColor = ok ? "#34D399" : "#FB7185";
+            String bgColor     = ok ? "#064E3B" : "#4C0519";
+            String borderColor = ok ? "#34D399" : "#FB7185";
+
+            VBox card = new VBox(10);
+            card.setStyle(
+                    "-fx-background-color:" + bgColor + ";-fx-border-color:" + borderColor + ";" +
+                            "-fx-border-width:1.5;-fx-border-radius:12;-fx-background-radius:12;-fx-padding:14 16;"
+            );
+
+            HBox qHeader = new HBox(10); qHeader.setAlignment(Pos.TOP_LEFT);
+            Label numBadge = new Label(String.valueOf(i + 1));
+            numBadge.setStyle(
+                    "-fx-background-color:" + accentColor + ";-fx-text-fill:#0F172A;" +
+                            "-fx-font-size:11px;-fx-font-weight:800;" +
+                            "-fx-padding:3 8;-fx-background-radius:20;-fx-min-width:24;-fx-alignment:CENTER;"
+            );
+            Label qText = new Label(q.question); qText.setWrapText(true);
+            qText.setStyle("-fx-text-fill:#F8FAFC;-fx-font-size:13px;-fx-font-weight:600;-fx-line-spacing:2;");
+            HBox.setHgrow(qText, Priority.ALWAYS);
+            Label resultIcon = new Label(ok ? "✅" : "❌");
+            resultIcon.setStyle("-fx-font-size:18px;");
+            qHeader.getChildren().addAll(numBadge, qText, resultIcon);
+
+            HBox userRow = new HBox(8); userRow.setAlignment(Pos.CENTER_LEFT);
+            Label userLbl = new Label("Your answer:");
+            userLbl.setStyle("-fx-text-fill:#94A3B8;-fx-font-size:12px;");
+            Label userVal = new Label(q.userAnswer != null ? q.userAnswer : "Not answered");
+            userVal.setWrapText(true);
+            userVal.setStyle("-fx-text-fill:" + accentColor + ";-fx-font-size:12px;-fx-font-weight:600;");
+            HBox.setHgrow(userVal, Priority.ALWAYS);
+            userRow.getChildren().addAll(userLbl, userVal);
+            card.getChildren().addAll(qHeader, userRow);
+
+            if (!ok) {
+                HBox corrRow = new HBox(8); corrRow.setAlignment(Pos.CENTER_LEFT);
+                Label corrLbl = new Label("✓  Correct answer:");
+                corrLbl.setStyle("-fx-text-fill:#94A3B8;-fx-font-size:12px;");
+                Label corrVal = new Label(q.correctAnswer); corrVal.setWrapText(true);
+                corrVal.setStyle("-fx-text-fill:#34D399;-fx-font-size:12px;-fx-font-weight:700;");
+                HBox.setHgrow(corrVal, Priority.ALWAYS);
+                corrRow.getChildren().addAll(corrLbl, corrVal);
+                card.getChildren().add(corrRow);
+            }
+
+            if (q.explanation != null && !q.explanation.isBlank()) {
+                Region sep = new Region(); sep.setPrefHeight(1);
+                sep.setStyle("-fx-background-color:rgba(255,255,255,0.08);");
+
+                VBox explBox = new VBox(6);
+                explBox.setStyle(
+                        "-fx-background-color:rgba(124,58,237,0.12);" +
+                                "-fx-border-color:rgba(167,139,250,0.4);-fx-border-width:1;" +
+                                "-fx-border-radius:8;-fx-background-radius:8;-fx-padding:10 12;"
+                );
+                Label explTitle = new Label("💡 AI Explanation");
+                explTitle.setStyle("-fx-text-fill:#A78BFA;-fx-font-size:11px;-fx-font-weight:700;");
+                Label explText = new Label(q.explanation); explText.setWrapText(true);
+                explText.setStyle("-fx-text-fill:#CBD5E1;-fx-font-size:12px;-fx-line-spacing:3;");
+                explBox.getChildren().addAll(explTitle, explText);
+                card.getChildren().addAll(sep, explBox);
+            }
+
+            quizVboxDetailedResults.getChildren().add(card);
         }
+
+        showQuizSubView("results");
+
+        Platform.runLater(() -> {
+            if (courseGrid.getScene() != null
+                    && courseGrid.getScene().getWindow() instanceof Stage stage) {
+                stage.setFullScreen(false);
+            }
+        });
+    }
+
+    private VBox buildFraudSummaryCard() {
+        VBox card = new VBox(10);
+        card.setStyle(
+                "-fx-background-color:#1A0A0A;-fx-border-color:#EF4444;-fx-border-width:2;" +
+                        "-fx-border-radius:12;-fx-background-radius:12;-fx-padding:16;"
+        );
+
+        Label title = new Label("🔒 Exam Security Report");
+        title.setStyle("-fx-text-fill:#F87171;-fx-font-size:14px;-fx-font-weight:700;");
+
+        Label summary = new Label(antiFraud.getSummary());
+        summary.setStyle("-fx-text-fill:#CBD5E1;-fx-font-size:12px;");
+        summary.setWrapText(true);
+
+        if (antiFraud.getPenaltyCount() > 0) {
+            Label penalty = new Label(
+                    "⚠ " + antiFraud.getPenaltyCount() + " penalty point(s) deducted from your score.");
+            penalty.setStyle("-fx-text-fill:#FCA5A5;-fx-font-size:12px;-fx-font-weight:600;");
+            card.getChildren().addAll(title, summary, penalty);
+        } else {
+            card.getChildren().addAll(title, summary);
+        }
+
+        FlowPane eventFlow = new FlowPane(8, 6);
+        for (FraudEvent e : antiFraud.getEventLog()) {
+            Label badge = new Label(e.getFormattedTimestamp() + " — " + e.getType().label);
+            badge.setStyle(
+                    "-fx-background-color:#2D0A0A;-fx-text-fill:" + e.getSeverityColor() + ";" +
+                            "-fx-font-size:11px;-fx-padding:4 10;-fx-background-radius:20;"
+            );
+            eventFlow.getChildren().add(badge);
+        }
+        if (!antiFraud.getEventLog().isEmpty()) card.getChildren().add(eventFlow);
+
+        return card;
     }
 
     @FXML private void handleQuizRetake() {
@@ -779,74 +1054,74 @@ public class CoursesController implements Initializable {
         startQuizSession();
     }
 
-    @FXML private void handleQuizBackToSetup() { stopQuizTimer(); showQuizSubView("setup"); }
+    @FXML private void handleQuizBackToSetup() {
+        stopQuizTimer();
+        antiFraud.stopMonitoring();
+        showQuizSubView("setup");
+    }
 
-    private String quizDefaultOptionStyle() {
+    // ════════════════════════════════════════════════════════════
+    //  OPTION STYLES
+    // ════════════════════════════════════════════════════════════
+    private String styleOptionDefault() {
         return "-fx-background-color:#0F172A;-fx-border-color:#334155;-fx-border-width:1.5;" +
                 "-fx-border-radius:10;-fx-background-radius:10;-fx-padding:12 16;" +
                 "-fx-font-size:14px;-fx-text-fill:#CBD5E1;-fx-alignment:CENTER_LEFT;-fx-cursor:hand;";
     }
-    private String quizSelectedOptionStyle() {
-        return "-fx-background-color:#1E1B4B;-fx-border-color:#7C3AED;-fx-border-width:1.5;" +
+    private String styleOptionSelected() {
+        return "-fx-background-color:#1E1B4B;-fx-border-color:#7C3AED;-fx-border-width:2;" +
                 "-fx-border-radius:10;-fx-background-radius:10;-fx-padding:12 16;" +
-                "-fx-font-size:14px;-fx-text-fill:white;-fx-alignment:CENTER_LEFT;-fx-cursor:hand;";
-    }
-    private String quizCorrectOptionStyle() {
-        return "-fx-background-color:#064E3B;-fx-border-color:#34D399;-fx-border-width:1.5;" +
-                "-fx-border-radius:10;-fx-background-radius:10;-fx-padding:12 16;" +
-                "-fx-font-size:14px;-fx-text-fill:#34D399;-fx-alignment:CENTER_LEFT;";
-    }
-    private String quizWrongOptionStyle() {
-        return "-fx-background-color:#4C0519;-fx-border-color:#FB7185;-fx-border-width:1.5;" +
-                "-fx-border-radius:10;-fx-background-radius:10;-fx-padding:12 16;" +
-                "-fx-font-size:14px;-fx-text-fill:#FB7185;-fx-alignment:CENTER_LEFT;";
+                "-fx-font-size:14px;-fx-text-fill:white;-fx-alignment:CENTER_LEFT;-fx-cursor:hand;" +
+                "-fx-effect:dropshadow(gaussian,rgba(124,58,237,0.3),8,0,0,2);";
     }
 
-    // ══════════════════════════════════════════════════════════════════════════
-    //  PRIORITY & FILTERS
-    // ══════════════════════════════════════════════════════════════════════════
+    // ════════════════════════════════════════════════════════════
+    //  PRIORITY
+    // ════════════════════════════════════════════════════════════
     @FXML private void selectPrioHaute()   { setPriorite("High"); }
     @FXML private void selectPrioMoyenne() { setPriorite("Medium"); }
     @FXML private void selectPrioBasse()   { setPriorite("Low"); }
 
     @FXML private void handleSectionChange() {
-        String section = cmbSection.getValue();
-        cmbMatiere.setValue(null);
-        errSection.setText("");
-        if (section == null || section.isBlank()) {
+        String sec = cmbSection.getValue();
+        cmbMatiere.setValue(null); errSection.setText("");
+        if (sec == null || sec.isBlank()) {
             cmbMatiere.setItems(FXCollections.observableArrayList());
             cmbMatiere.setPromptText("Select a section first…"); return;
         }
         try {
             List<Matiere> filtered = matService.findAll().stream()
-                    .filter(m -> section.equals(m.getSectionMatiere())).collect(Collectors.toList());
+                    .filter(m -> sec.equals(m.getSectionMatiere()))
+                    .collect(Collectors.toList());
             cmbMatiere.setItems(FXCollections.observableArrayList(filtered));
-            cmbMatiere.setPromptText(filtered.isEmpty() ? "No subjects for this section" : "Choose a subject…");
-        } catch (Exception e) { e.printStackTrace(); errSection.setText("⚠ Error loading subjects."); }
-    }
-
-    private void setPriorite(String valeur) {
-        selectedPriorite = valeur;
-        cmbPriorite.setValue(valeur);
-        errPriorite.setText("");
-
-        btnPrioHaute.setStyle("-fx-background-color:#1E293B;-fx-text-fill:#FB7185;-fx-border-color:#FB7185;-fx-border-width:1.5;-fx-border-radius:10;-fx-background-radius:10;-fx-padding:10 20;-fx-font-size:13px;-fx-cursor:hand;");
-        btnPrioMoyenne.setStyle("-fx-background-color:#1E293B;-fx-text-fill:#FBBF24;-fx-border-color:#FBBF24;-fx-border-width:1.5;-fx-border-radius:10;-fx-background-radius:10;-fx-padding:10 20;-fx-font-size:13px;-fx-cursor:hand;");
-        btnPrioBasse.setStyle("-fx-background-color:#1E293B;-fx-text-fill:#34D399;-fx-border-color:#34D399;-fx-border-width:1.5;-fx-border-radius:10;-fx-background-radius:10;-fx-padding:10 20;-fx-font-size:13px;-fx-cursor:hand;");
-
-        switch (valeur) {
-            case "High"   -> btnPrioHaute.setStyle("-fx-background-color:#F43F5E;-fx-text-fill:white;-fx-border-color:#F43F5E;-fx-border-width:1.5;-fx-border-radius:10;-fx-background-radius:10;-fx-padding:10 20;-fx-font-size:13px;-fx-cursor:hand;-fx-font-weight:700;");
-            case "Medium" -> btnPrioMoyenne.setStyle("-fx-background-color:#F59E0B;-fx-text-fill:white;-fx-border-color:#F59E0B;-fx-border-width:1.5;-fx-border-radius:10;-fx-background-radius:10;-fx-padding:10 20;-fx-font-size:13px;-fx-cursor:hand;-fx-font-weight:700;");
-            case "Low"    -> btnPrioBasse.setStyle("-fx-background-color:#10B981;-fx-text-fill:white;-fx-border-color:#10B981;-fx-border-width:1.5;-fx-border-radius:10;-fx-background-radius:10;-fx-padding:10 20;-fx-font-size:13px;-fx-cursor:hand;-fx-font-weight:700;");
+            cmbMatiere.setPromptText(filtered.isEmpty()
+                    ? "No subjects for this section" : "Choose a subject…");
+        } catch (Exception e) {
+            e.printStackTrace(); errSection.setText("⚠ Error loading subjects.");
         }
-        updatePriorityButtons();
     }
 
+    private void setPriorite(String val) {
+        selectedPriorite = val; cmbPriorite.setValue(val); errPriorite.setText("");
+        String bH = "-fx-background-color:#1E293B;-fx-text-fill:#FB7185;-fx-border-color:#FB7185;-fx-border-width:1.5;-fx-border-radius:10;-fx-background-radius:10;-fx-padding:10 20;-fx-font-size:13px;-fx-cursor:hand;";
+        String bM = "-fx-background-color:#1E293B;-fx-text-fill:#FBBF24;-fx-border-color:#FBBF24;-fx-border-width:1.5;-fx-border-radius:10;-fx-background-radius:10;-fx-padding:10 20;-fx-font-size:13px;-fx-cursor:hand;";
+        String bL = "-fx-background-color:#1E293B;-fx-text-fill:#34D399;-fx-border-color:#34D399;-fx-border-width:1.5;-fx-border-radius:10;-fx-background-radius:10;-fx-padding:10 20;-fx-font-size:13px;-fx-cursor:hand;";
+        btnPrioHaute.setStyle(bH); btnPrioMoyenne.setStyle(bM); btnPrioBasse.setStyle(bL);
+        switch (val) {
+            case "High"   -> btnPrioHaute  .setStyle("-fx-background-color:#F43F5E;-fx-text-fill:white;-fx-border-color:#F43F5E;-fx-border-width:1.5;-fx-border-radius:10;-fx-background-radius:10;-fx-padding:10 20;-fx-font-size:13px;-fx-cursor:hand;-fx-font-weight:700;");
+            case "Medium" -> btnPrioMoyenne.setStyle("-fx-background-color:#F59E0B;-fx-text-fill:white;-fx-border-color:#F59E0B;-fx-border-width:1.5;-fx-border-radius:10;-fx-background-radius:10;-fx-padding:10 20;-fx-font-size:13px;-fx-cursor:hand;-fx-font-weight:700;");
+            case "Low"    -> btnPrioBasse  .setStyle("-fx-background-color:#10B981;-fx-text-fill:white;-fx-border-color:#10B981;-fx-border-width:1.5;-fx-border-radius:10;-fx-background-radius:10;-fx-padding:10 20;-fx-font-size:13px;-fx-cursor:hand;-fx-font-weight:700;");
+        }
+    }
+
+    // ════════════════════════════════════════════════════════════
+    //  FILTERS & SORT
+    // ════════════════════════════════════════════════════════════
     @FXML private void filterAll()     { renderCards(allEvals); }
     @FXML private void filterBonne()   { renderCards(allEvals.filtered(e -> e.getScoreEval() >= 14)); }
     @FXML private void filterMoyenne() { renderCards(allEvals.filtered(e -> e.getScoreEval() >= 10 && e.getScoreEval() < 14)); }
     @FXML private void filterFaible()  { renderCards(allEvals.filtered(e -> e.getScoreEval() < 10)); }
-    @FXML private void filterHaute()   { renderCards(allEvals.filtered(e -> "High".equalsIgnoreCase(e.getPrioriteE()) || "Haute".equalsIgnoreCase(e.getPrioriteE()))); }
+    @FXML private void filterHaute()   { renderCards(allEvals.filtered(e -> "High".equalsIgnoreCase(e.getPrioriteE()))); }
 
     private void filterAndRender(String term) {
         if (term == null || term.isBlank()) { renderCards(allEvals); return; }
@@ -858,518 +1133,238 @@ public class CoursesController implements Initializable {
     }
 
     private void applySort() {
-        String sel = sortCombo.getValue();
-        if (sel == null) return;
+        String sel = sortCombo.getValue(); if (sel == null) return;
         List<EvaluationMatiere> sorted = new ArrayList<>(allEvals);
         switch (sel) {
-            case "Date ↓" -> sorted.sort(Comparator.comparing(EvaluationMatiere::getDateEvaluation, Comparator.nullsLast(Comparator.reverseOrder())));
-            case "Date ↑" -> sorted.sort(Comparator.comparing(EvaluationMatiere::getDateEvaluation, Comparator.nullsLast(Comparator.naturalOrder())));
-            case "Score ↓" -> sorted.sort(Comparator.comparingDouble(EvaluationMatiere::getScoreEval).reversed());
-            case "Score ↑" -> sorted.sort(Comparator.comparingDouble(EvaluationMatiere::getScoreEval));
-            case "Durée ↓" -> sorted.sort(Comparator.comparingInt(EvaluationMatiere::getDureeEvaluation).reversed());
-            case "Priority" -> sorted.sort(Comparator.comparing(e -> priorityOrder(e.getPrioriteE())));
+            case "Date ↓"   -> sorted.sort(Comparator.comparing(EvaluationMatiere::getDateEvaluation, Comparator.nullsLast(Comparator.reverseOrder())));
+            case "Date ↑"   -> sorted.sort(Comparator.comparing(EvaluationMatiere::getDateEvaluation, Comparator.nullsLast(Comparator.naturalOrder())));
+            case "Score ↓"  -> sorted.sort(Comparator.comparingDouble(EvaluationMatiere::getScoreEval).reversed());
+            case "Score ↑"  -> sorted.sort(Comparator.comparingDouble(EvaluationMatiere::getScoreEval));
+            case "Durée ↓"  -> sorted.sort(Comparator.comparingInt(EvaluationMatiere::getDureeEvaluation).reversed());
+            case "Priority" -> sorted.sort(Comparator.comparing(e -> prioOrder(e.getPrioriteE())));
         }
         renderCards(sorted);
     }
 
-    private int priorityOrder(String p) {
+    private int prioOrder(String p) {
         if (p == null) return 99;
         return switch (p) {
-            case "High", "Haute" -> 0;
-            case "Medium", "Moyenne" -> 1;
-            case "Low", "Basse" -> 2;
+            case "High","Haute"     -> 0;
+            case "Medium","Moyenne" -> 1;
+            case "Low","Basse"      -> 2;
             default -> 99;
         };
     }
 
-    // ══════════════════════════════════════════════════════════════════════════
-    //  STATISTICS — using native JavaFX charts (no WebView, no CDN)
-    // ══════════════════════════════════════════════════════════════════════════
-    @FXML private void handleShowStats() {
-        if (allEvals.isEmpty()) {
-            new Alert(Alert.AlertType.INFORMATION, "No assessments yet — add one first.", ButtonType.OK).showAndWait();
-            return;
-        }
-        populateStats();
-        showView("stats");
-    }
-
+    // ════════════════════════════════════════════════════════════
+    //  STATISTICS
+    // ════════════════════════════════════════════════════════════
     private void populateStats() {
         statsView.getChildren().clear();
         statsView.setSpacing(16);
-        statsView.setPadding(new Insets(0, 0, 24, 0));
-
-        // Row 1 — KPI cards
+        statsView.setPadding(new Insets(0,0,24,0));
         statsView.getChildren().add(buildKpiRow());
 
-        // Row 2 — Subject bars + Priority rings (pure JavaFX)
         HBox row2 = new HBox(16);
-        VBox subjectCard = buildSubjectBarsCard();
+        VBox subjectCard  = buildSubjectBarsCard();
         VBox priorityCard = buildPriorityRingsCard();
-        HBox.setHgrow(subjectCard, Priority.ALWAYS);
+        HBox.setHgrow(subjectCard,  Priority.ALWAYS);
         HBox.setHgrow(priorityCard, Priority.ALWAYS);
         row2.getChildren().addAll(subjectCard, priorityCard);
         statsView.getChildren().add(row2);
 
-        // Row 3 — Line chart + Bar chart (native JavaFX)
         HBox row3 = new HBox(16);
         VBox lineCard = buildLineChartCard();
         VBox barCard  = buildBarChartCard();
         HBox.setHgrow(lineCard, Priority.ALWAYS);
-        HBox.setHgrow(barCard, Priority.ALWAYS);
+        HBox.setHgrow(barCard,  Priority.ALWAYS);
         row3.getChildren().addAll(lineCard, barCard);
         statsView.getChildren().add(row3);
 
-        // Row 4 — Heatmap
-        statsView.getChildren().add(buildHeatmapCard());
-
-        // Row 5 — Insights
         statsView.getChildren().add(buildInsightsCard());
     }
 
-    // ── Native JavaFX Line Chart ───────────────────────────────────────────
     private VBox buildLineChartCard() {
-        VBox card = cardContainer("Score trend");
-
-        CategoryAxis xAxis = new CategoryAxis();
-        NumberAxis yAxis = new NumberAxis(0, 20, 2);
-        xAxis.setTickLabelFill(Color.web("#64748B"));
-        yAxis.setTickLabelFill(Color.web("#64748B"));
-        xAxis.setStyle("-fx-tick-label-fill:#64748B;");
-        yAxis.setStyle("-fx-tick-label-fill:#64748B;");
-
-        LineChart<String, Number> chart = new LineChart<>(xAxis, yAxis);
-        chart.setLegendVisible(false);
-        chart.setAnimated(true);
-        chart.setPrefHeight(240);
+        VBox card = cardBox("Score trend");
+        CategoryAxis xA = new CategoryAxis(); NumberAxis yA = new NumberAxis(0,20,2);
+        xA.setTickLabelFill(Color.web("#64748B")); yA.setTickLabelFill(Color.web("#64748B"));
+        LineChart<String,Number> chart = new LineChart<>(xA, yA);
+        chart.setLegendVisible(false); chart.setAnimated(true); chart.setPrefHeight(240);
         chart.setStyle("-fx-background-color:transparent;-fx-plot-background-color:#0F172A;");
-
-        XYChart.Series<String, Number> series = new XYChart.Series<>();
+        XYChart.Series<String,Number> series = new XYChart.Series<>();
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM");
-
-        allEvals.stream()
-                .filter(e -> e.getDateEvaluation() != null)
+        allEvals.stream().filter(e -> e.getDateEvaluation() != null)
                 .sorted(Comparator.comparing(EvaluationMatiere::getDateEvaluation))
                 .forEach(e -> series.getData().add(
-                        new XYChart.Data<>(e.getDateEvaluation().format(fmt), e.getScoreEval())
-                ));
-
+                        new XYChart.Data<>(e.getDateEvaluation().format(fmt), e.getScoreEval())));
         chart.getData().add(series);
-
-        // Style the line and dots purple
-        chart.setStyle(chart.getStyle() +
-                " -fx-stroke:#A78BFA; -fx-background-color:transparent;");
-
-        card.getChildren().add(chart);
-        return card;
+        card.getChildren().add(chart); return card;
     }
 
-    // ── Native JavaFX Bar Chart ────────────────────────────────────────────
     private VBox buildBarChartCard() {
-        VBox card = cardContainer("Avg by subject");
-
-        CategoryAxis xAxis = new CategoryAxis();
-        NumberAxis yAxis = new NumberAxis(0, 20, 2);
-        xAxis.setTickLabelFill(Color.web("#64748B"));
-        yAxis.setTickLabelFill(Color.web("#64748B"));
-
-        BarChart<String, Number> chart = new BarChart<>(xAxis, yAxis);
-        chart.setLegendVisible(false);
-        chart.setAnimated(true);
-        chart.setPrefHeight(240);
+        VBox card = cardBox("Avg by subject");
+        CategoryAxis xA = new CategoryAxis(); NumberAxis yA = new NumberAxis(0,20,2);
+        xA.setTickLabelFill(Color.web("#64748B")); yA.setTickLabelFill(Color.web("#64748B"));
+        BarChart<String,Number> chart = new BarChart<>(xA, yA);
+        chart.setLegendVisible(false); chart.setAnimated(true); chart.setPrefHeight(240);
         chart.setStyle("-fx-background-color:transparent;-fx-plot-background-color:#0F172A;");
-
-        XYChart.Series<String, Number> series = new XYChart.Series<>();
-
-        Map<Integer, Double> avgBySubject = allEvals.stream().collect(
+        XYChart.Series<String,Number> series = new XYChart.Series<>();
+        Map<Integer,Double> avg = allEvals.stream().collect(
                 Collectors.groupingBy(EvaluationMatiere::getMatiereId,
                         Collectors.averagingDouble(EvaluationMatiere::getScoreEval)));
-
-        avgBySubject.entrySet().stream()
-                .sorted(Map.Entry.<Integer, Double>comparingByValue().reversed())
-                .forEach(entry -> {
-                    String name = getNomMatiere(entry.getKey());
-                    if (name.length() > 10) name = name.substring(0, 9) + "…";
-                    series.getData().add(new XYChart.Data<>(name, entry.getValue()));
-                });
-
-        chart.getData().add(series);
-        card.getChildren().add(chart);
-        return card;
+        avg.entrySet().stream().sorted(Map.Entry.<Integer,Double>comparingByValue().reversed()).forEach(en -> {
+            String name = getNomMatiere(en.getKey());
+            if (name.length() > 10) name = name.substring(0, 9) + "…";
+            series.getData().add(new XYChart.Data<>(name, en.getValue()));
+        });
+        chart.getData().add(series); card.getChildren().add(chart); return card;
     }
 
-    // ── KPI Row ───────────────────────────────────────────────────────────────
     private HBox buildKpiRow() {
         HBox row = new HBox(12);
         double avg      = allEvals.stream().mapToDouble(EvaluationMatiere::getScoreEval).average().orElse(0);
         long   totalMin = allEvals.stream().mapToLong(EvaluationMatiere::getDureeEvaluation).sum();
         long   above14  = allEvals.stream().filter(e -> e.getScoreEval() >= 14).count();
-        LocalDate now      = LocalDate.now();
-        LocalDate monthAgo = now.minusMonths(1);
-        long thisMonth = allEvals.stream().filter(e -> e.getDateEvaluation() != null && e.getDateEvaluation().isAfter(monthAgo)).count();
-        long lastMonth = allEvals.stream().filter(e -> e.getDateEvaluation() != null && e.getDateEvaluation().isAfter(now.minusMonths(2)) && !e.getDateEvaluation().isAfter(monthAgo)).count();
-        String deltaStr = (thisMonth >= lastMonth) ? "+" + (thisMonth-lastMonth) + " vs last month" : "-"+(lastMonth-thisMonth)+" vs last month";
-
-        Map<Integer, Double> avgBySubject = allEvals.stream().collect(
-                Collectors.groupingBy(EvaluationMatiere::getMatiereId, Collectors.averagingDouble(EvaluationMatiere::getScoreEval)));
-        String bestSubj  = avgBySubject.entrySet().stream().max(Map.Entry.comparingByValue()).map(e -> getNomMatiere(e.getKey())).orElse("—");
-        String worstSubj = avgBySubject.entrySet().stream().min(Map.Entry.comparingByValue()).map(e -> getNomMatiere(e.getKey())).orElse("—");
-        double bestSubjAvg  = avgBySubject.values().stream().mapToDouble(d->d).max().orElse(0);
-        double worstSubjAvg = avgBySubject.values().stream().mapToDouble(d->d).min().orElse(0);
-
+        Map<Integer,Double> avgBySub = allEvals.stream().collect(
+                Collectors.groupingBy(EvaluationMatiere::getMatiereId,
+                        Collectors.averagingDouble(EvaluationMatiere::getScoreEval)));
+        String best  = avgBySub.entrySet().stream().max(Map.Entry.comparingByValue()).map(e -> getNomMatiere(e.getKey())).orElse("—");
+        String worst = avgBySub.entrySet().stream().min(Map.Entry.comparingByValue()).map(e -> getNomMatiere(e.getKey())).orElse("—");
+        double bestA  = avgBySub.values().stream().mapToDouble(d -> d).max().orElse(0);
+        double worstA = avgBySub.values().stream().mapToDouble(d -> d).min().orElse(0);
         row.getChildren().addAll(
-                buildKpiCard("Total assessments", String.valueOf(allEvals.size()), deltaStr, thisMonth >= lastMonth, "#A78BFA"),
-                buildKpiCard("Average score", String.format("%.1f / 20", avg), avg >= 10 ? "Passing average" : "Below passing", avg >= 10, "#34D399"),
-                buildKpiCard("Best subject", bestSubj, String.format("avg %.1f", bestSubjAvg), true, "#38BDF8"),
-                buildKpiCard("Weakest subject", worstSubj, String.format("avg %.1f — needs work", worstSubjAvg), false, "#FB7185"),
-                buildKpiCard("Study time", totalMin >= 60 ? String.format("%.1fh", totalMin/60.0) : totalMin+"min", above14+" assessments ≥14/20", true, "#FBBF24")
+                buildKpi("Total",        String.valueOf(allEvals.size()),                   "assessments",                  true,  "#A78BFA"),
+                buildKpi("Average",      String.format("%.1f/20", avg),                    avg >= 10 ? "Passing" : "Below passing", avg >= 10, "#34D399"),
+                buildKpi("Best subject", best,                                              String.format("avg %.1f", bestA),  true,  "#38BDF8"),
+                buildKpi("Weakest",      worst,                                             String.format("avg %.1f — focus here", worstA), false, "#FB7185"),
+                buildKpi("Study time",   totalMin >= 60 ? String.format("%.1fh",totalMin/60.0) : totalMin+"min", above14+" ≥14/20", true, "#FBBF24")
         );
         row.getChildren().forEach(n -> HBox.setHgrow(n, Priority.ALWAYS));
         return row;
     }
 
-    private VBox buildKpiCard(String label, String value, String delta, boolean positive, String accentColor) {
-        VBox card = new VBox(6);
-        card.setPadding(new Insets(16));
+    private VBox buildKpi(String label, String value, String delta, boolean pos, String color) {
+        VBox card = new VBox(6); card.setPadding(new Insets(16));
         card.setStyle("-fx-background-color:#0F172A;-fx-border-color:#1E293B;-fx-border-width:1;-fx-border-radius:14;-fx-background-radius:14;");
-        Region topBar = new Region();
-        topBar.setPrefHeight(3); topBar.setMaxWidth(40);
-        topBar.setStyle("-fx-background-color:"+accentColor+";-fx-background-radius:2;");
-        Label lbl = new Label(label);
-        lbl.setStyle("-fx-text-fill:#64748B;-fx-font-size:11px;-fx-font-weight:500;");
-        Label val = new Label(value);
-        val.setStyle("-fx-text-fill:#F8FAFC;-fx-font-size:20px;-fx-font-weight:700;");
-        val.setWrapText(true);
-        Label dlt = new Label(delta);
-        dlt.setStyle("-fx-text-fill:"+(positive?"#34D399":"#FB7185")+";-fx-font-size:11px;-fx-padding:3 8;-fx-background-radius:20;-fx-background-color:"+(positive?"#0D2C1F":"#2D0A0A")+";");
-        card.getChildren().addAll(topBar, lbl, val, dlt);
-        return card;
+        Region bar = new Region(); bar.setPrefHeight(3); bar.setMaxWidth(40);
+        bar.setStyle("-fx-background-color:"+color+";-fx-background-radius:2;");
+        Label lbl = new Label(label); lbl.setStyle("-fx-text-fill:#64748B;-fx-font-size:11px;");
+        Label val = new Label(value); val.setStyle("-fx-text-fill:#F8FAFC;-fx-font-size:20px;-fx-font-weight:700;"); val.setWrapText(true);
+        Label dlt = new Label(delta); dlt.setStyle("-fx-text-fill:"+(pos?"#34D399":"#FB7185")+";-fx-font-size:11px;-fx-padding:3 8;-fx-background-radius:20;-fx-background-color:"+(pos?"#0D2C1F":"#2D0A0A")+";");
+        card.getChildren().addAll(bar, lbl, val, dlt); return card;
     }
 
     private VBox buildSubjectBarsCard() {
-        VBox card = cardContainer("Score by subject (avg / 20)");
+        VBox card = cardBox("Score by subject (avg / 20)");
         VBox body = new VBox(10);
-        Map<Integer, Double> avgBySubject = allEvals.stream().collect(
-                Collectors.groupingBy(EvaluationMatiere::getMatiereId, Collectors.averagingDouble(EvaluationMatiere::getScoreEval)));
-        avgBySubject.entrySet().stream().sorted(Map.Entry.<Integer,Double>comparingByValue().reversed()).forEach(entry -> {
-            String name = getNomMatiere(entry.getKey());
-            double avg  = entry.getValue();
-            double pct  = (avg / 20.0) * 100;
-            String color = avg >= 14 ? "#10B981" : avg >= 10 ? "#F59E0B" : "#F43F5E";
+        Map<Integer,Double> avg = allEvals.stream().collect(
+                Collectors.groupingBy(EvaluationMatiere::getMatiereId,
+                        Collectors.averagingDouble(EvaluationMatiere::getScoreEval)));
+        avg.entrySet().stream().sorted(Map.Entry.<Integer,Double>comparingByValue().reversed()).forEach(en -> {
+            double a = en.getValue(); double pct = (a / 20.0) * 100;
+            String col = a >= 14 ? "#10B981" : a >= 10 ? "#F59E0B" : "#F43F5E";
+            String nm  = getNomMatiere(en.getKey()); if (nm.length() > 12) nm = nm.substring(0,11) + "…";
             HBox row = new HBox(10); row.setAlignment(Pos.CENTER_LEFT);
-            Label nameLbl = new Label(name.length() > 12 ? name.substring(0,11)+"…" : name);
-            nameLbl.setMinWidth(90);
-            nameLbl.setStyle("-fx-text-fill:#94A3B8;-fx-font-size:12px;");
-            StackPane track = new StackPane();
-            track.setMaxHeight(8); track.setPrefHeight(8);
+            Label nl = new Label(nm); nl.setMinWidth(90); nl.setStyle("-fx-text-fill:#94A3B8;-fx-font-size:12px;");
+            StackPane track = new StackPane(); track.setMaxHeight(8); track.setPrefHeight(8);
             HBox.setHgrow(track, Priority.ALWAYS);
-            Region bg = new Region(); bg.setPrefHeight(8); bg.setMaxWidth(Double.MAX_VALUE);
-            bg.setStyle("-fx-background-color:#1E293B;-fx-background-radius:4;");
-            Region fill = new Region(); fill.setPrefHeight(8);
-            fill.setStyle("-fx-background-color:"+color+";-fx-background-radius:4;");
+            Region bg   = new Region(); bg.setPrefHeight(8);   bg.setMaxWidth(Double.MAX_VALUE); bg.setStyle("-fx-background-color:#1E293B;-fx-background-radius:4;");
+            Region fill = new Region(); fill.setPrefHeight(8); fill.setStyle("-fx-background-color:"+col+";-fx-background-radius:4;");
             track.setMaxWidth(Double.MAX_VALUE);
             bg.prefWidthProperty().bind(track.widthProperty());
-            fill.prefWidthProperty().bind(track.widthProperty().multiply(pct/100.0));
+            fill.prefWidthProperty().bind(track.widthProperty().multiply(pct / 100.0));
             StackPane.setAlignment(fill, Pos.CENTER_LEFT);
             track.getChildren().addAll(bg, fill);
-            Label valLbl = new Label(String.format("%.1f", avg));
-            valLbl.setMinWidth(32);
-            valLbl.setStyle("-fx-text-fill:"+color+";-fx-font-size:12px;-fx-font-weight:700;");
-            row.getChildren().addAll(nameLbl, track, valLbl);
-            body.getChildren().add(row);
+            Label vl = new Label(String.format("%.1f", a)); vl.setMinWidth(32);
+            vl.setStyle("-fx-text-fill:"+col+";-fx-font-size:12px;-fx-font-weight:700;");
+            row.getChildren().addAll(nl, track, vl); body.getChildren().add(row);
         });
-        if (body.getChildren().isEmpty()) {
-            Label empty = new Label("No data yet");
-            empty.setStyle("-fx-text-fill:#475569;-fx-font-size:13px;");
-            body.getChildren().add(empty);
-        }
-        card.getChildren().add(body);
-        return card;
+        if (body.getChildren().isEmpty()) body.getChildren().add(new Label("No data"));
+        card.getChildren().add(body); return card;
     }
 
-    // ── Priority rings using JavaFX StackPane + ProgressIndicator ─────────
     private VBox buildPriorityRingsCard() {
-        VBox card = cardContainer("Score rings by priority");
-
-        Map<String, Double> avgByPrio = allEvals.stream().filter(e -> e.getPrioriteE() != null)
+        VBox card = cardBox("Score by priority");
+        Map<String,Double> avg = allEvals.stream().filter(e -> e.getPrioriteE() != null)
                 .collect(Collectors.groupingBy(EvaluationMatiere::getPrioriteE,
                         Collectors.averagingDouble(EvaluationMatiere::getScoreEval)));
-
-        double high   = avgByPrio.getOrDefault("High",   avgByPrio.getOrDefault("Haute",   0.0));
-        double medium = avgByPrio.getOrDefault("Medium", avgByPrio.getOrDefault("Moyenne", 0.0));
-        double low    = avgByPrio.getOrDefault("Low",    avgByPrio.getOrDefault("Basse",   0.0));
-
-        HBox ringsRow = new HBox(24);
-        ringsRow.setAlignment(Pos.CENTER);
-        ringsRow.setPadding(new Insets(12, 0, 0, 0));
-
-        ringsRow.getChildren().addAll(
-                buildRingWidget("HIGH",   high,   "#E24B4A"),
-                buildRingWidget("MEDIUM", medium, "#EF9F27"),
-                buildRingWidget("LOW",    low,    "#1D9E75")
+        HBox row = new HBox(24); row.setAlignment(Pos.CENTER); row.setPadding(new Insets(12,0,0,0));
+        row.getChildren().addAll(
+                buildRing("HIGH",   avg.getOrDefault("High",   avg.getOrDefault("Haute",   0.0)), "#E24B4A"),
+                buildRing("MEDIUM", avg.getOrDefault("Medium", avg.getOrDefault("Moyenne", 0.0)), "#EF9F27"),
+                buildRing("LOW",    avg.getOrDefault("Low",    avg.getOrDefault("Basse",   0.0)), "#1D9E75")
         );
-
-        card.getChildren().add(ringsRow);
-        return card;
+        card.getChildren().add(row); return card;
     }
 
-    private VBox buildRingWidget(String label, double avg, String color) {
-        VBox box = new VBox(8);
-        box.setAlignment(Pos.CENTER);
-
-        double progress = avg / 20.0;
-
-        StackPane ringStack = new StackPane();
-        ringStack.setPrefSize(90, 90);
-
-        ProgressIndicator ring = new ProgressIndicator(progress);
-        ring.setPrefSize(80, 80);
+    private VBox buildRing(String label, double avg, String color) {
+        VBox box = new VBox(8); box.setAlignment(Pos.CENTER);
+        StackPane stack = new StackPane(); stack.setPrefSize(90, 90);
+        ProgressIndicator ring = new ProgressIndicator(avg / 20.0); ring.setPrefSize(80, 80);
         ring.setStyle("-fx-accent:" + color + ";");
-
-        Label valueLabel = new Label(String.format("%.1f", avg));
-        valueLabel.setStyle("-fx-text-fill:#F8FAFC;-fx-font-size:14px;-fx-font-weight:700;");
-
-        ringStack.getChildren().addAll(ring, valueLabel);
-
-        Label nameLabel = new Label(label);
-        nameLabel.setStyle("-fx-text-fill:#94A3B8;-fx-font-size:11px;-fx-font-weight:600;");
-
-        box.getChildren().addAll(ringStack, nameLabel);
-        return box;
-    }
-
-    private VBox buildHeatmapCard() {
-        VBox card = cardContainer("Study activity — last 5 weeks");
-        Map<LocalDate, Long> countByDay = allEvals.stream().filter(e -> e.getDateEvaluation() != null)
-                .collect(Collectors.groupingBy(EvaluationMatiere::getDateEvaluation, Collectors.counting()));
-        long maxCount = countByDay.values().stream().mapToLong(l->l).max().orElse(1);
-
-        HBox legend = new HBox(6);
-        legend.setAlignment(Pos.CENTER_LEFT);
-        legend.setPadding(new Insets(0,0,8,0));
-        Label lessLbl = new Label("less"); lessLbl.setStyle("-fx-text-fill:#475569;-fx-font-size:11px;");
-        legend.getChildren().add(lessLbl);
-        for (String c : new String[]{"#1E293B","#1D4E89","#1E6FBF","#2196F3","#60B4FF"}) {
-            Region cell = new Region(); cell.setPrefSize(14,14);
-            cell.setStyle("-fx-background-color:"+c+";-fx-background-radius:3;");
-            legend.getChildren().add(cell);
-        }
-        Label moreLbl = new Label("more"); moreLbl.setStyle("-fx-text-fill:#475569;-fx-font-size:11px;");
-        legend.getChildren().add(moreLbl);
-
-        GridPane grid = new GridPane(); grid.setHgap(5); grid.setVgap(5);
-        LocalDate today = LocalDate.now();
-        LocalDate start = today.minusWeeks(4).with(java.time.DayOfWeek.MONDAY);
-
-        for (int week = 0; week < 5; week++) {
-            for (int day = 0; day < 7; day++) {
-                LocalDate d = start.plusDays((long)week*7+day);
-                long count = countByDay.getOrDefault(d, 0L);
-                double ratio = maxCount > 0 ? (double)count/maxCount : 0;
-                String cellColor = count == 0 ? "#1E293B" : ratio <= 0.25 ? "#1D4E89" : ratio <= 0.50 ? "#1E6FBF" : ratio <= 0.75 ? "#2196F3" : "#60B4FF";
-                Region cell = new Region(); cell.setPrefSize(18,18);
-                cell.setStyle("-fx-background-color:"+cellColor+";-fx-background-radius:3;-fx-cursor:hand;");
-                Tooltip.install(cell, new Tooltip(d.format(DateTimeFormatter.ofPattern("dd MMM")) + (count > 0 ? " — "+count+" eval(s)" : "")));
-                grid.add(cell, week, day);
-            }
-        }
-
-        String[] dayNames = {"Mon","Tue","Wed","Thu","Fri","Sat","Sun"};
-        VBox dayLabels = new VBox(5);
-        for (String dn : dayNames) {
-            Label dl = new Label(dn); dl.setPrefHeight(18);
-            dl.setStyle("-fx-text-fill:#475569;-fx-font-size:10px;");
-            dayLabels.getChildren().add(dl);
-        }
-
-        HBox heatmapRow = new HBox(10); heatmapRow.setAlignment(Pos.CENTER_LEFT);
-        heatmapRow.getChildren().addAll(dayLabels, grid);
-        card.getChildren().addAll(legend, heatmapRow);
-        return card;
+        Label val = new Label(String.format("%.1f", avg));
+        val.setStyle("-fx-text-fill:#F8FAFC;-fx-font-size:14px;-fx-font-weight:700;");
+        stack.getChildren().addAll(ring, val);
+        Label lbl = new Label(label); lbl.setStyle("-fx-text-fill:#94A3B8;-fx-font-size:11px;-fx-font-weight:600;");
+        box.getChildren().addAll(stack, lbl); return box;
     }
 
     private VBox buildInsightsCard() {
-        VBox card = cardContainer("Smart insights");
+        VBox card = cardBox("Smart insights");
         FlowPane flow = new FlowPane(10, 10);
-        double avg     = allEvals.stream().mapToDouble(EvaluationMatiere::getScoreEval).average().orElse(0);
-        long totalMin  = allEvals.stream().mapToLong(EvaluationMatiere::getDureeEvaluation).sum();
-        long above14   = allEvals.stream().filter(e -> e.getScoreEval() >= 14).count();
-        long below10   = allEvals.stream().filter(e -> e.getScoreEval() < 10).count();
-
-        if (avg >= 16)      addBadge(flow,"⭐  Excellent avg ≥ 16","#10B981","#0D2C1F");
+        double avg      = allEvals.stream().mapToDouble(EvaluationMatiere::getScoreEval).average().orElse(0);
+        long   above14  = allEvals.stream().filter(e -> e.getScoreEval() >= 14).count();
+        long   below10  = allEvals.stream().filter(e -> e.getScoreEval() < 10).count();
+        long   totalMin = allEvals.stream().mapToLong(EvaluationMatiere::getDureeEvaluation).sum();
+        if      (avg >= 16) addBadge(flow,"⭐  Excellent avg ≥ 16","#10B981","#0D2C1F");
         else if (avg >= 14) addBadge(flow,"✅  Good avg ≥ 14","#34D399","#0D2C1F");
         else if (avg >= 10) addBadge(flow,"🟡  Average 10–14","#F59E0B","#2C1E00");
         else                addBadge(flow,"🔴  Below avg — keep going!","#F43F5E","#2D0A0A");
-
-        if (above14 > 0) addBadge(flow, above14+" assessment"+(above14>1?"s":"")+" ≥ 14/20","#A78BFA","#1E1B4B");
-        if (below10 > 0) addBadge(flow, below10+" to revise (< 10)","#FB7185","#2D0A0A");
+        if (above14  > 0)  addBadge(flow, above14+" assessment(s) ≥ 14","#A78BFA","#1E1B4B");
+        if (below10  > 0)  addBadge(flow, below10+" to revise (< 10)","#FB7185","#2D0A0A");
         if (totalMin >= 60) addBadge(flow, String.format("⏱  %.1fh studied", totalMin/60.0),"#38BDF8","#0C2233");
-        else if (totalMin > 0) addBadge(flow,"⏱  "+totalMin+" min studied","#38BDF8","#0C2233");
-
-        int streak = computeStreak();
-        if (streak > 0) addBadge(flow,"🔥  "+streak+"-day streak","#FB923C","#2C1200");
-
-        String improved = findMostImproved();
-        if (improved != null) addBadge(flow,"📈  Most improved: "+improved,"#FBBF24","#2C1E00");
-
-        Map<Integer,Double> avgBySubject = allEvals.stream().collect(
-                Collectors.groupingBy(EvaluationMatiere::getMatiereId, Collectors.averagingDouble(EvaluationMatiere::getScoreEval)));
-        avgBySubject.entrySet().stream().max(Map.Entry.comparingByValue()).ifPresent(e ->
-                addBadge(flow,"🏆  Best: "+getNomMatiere(e.getKey())+" ("+String.format("%.1f",e.getValue())+")","#34D399","#0D2C1F"));
-        avgBySubject.entrySet().stream().min(Map.Entry.comparingByValue()).ifPresent(e -> {
-            if (e.getValue() < 10) addBadge(flow,"⚠  Focus on: "+getNomMatiere(e.getKey())+" ("+String.format("%.1f",e.getValue())+")","#FB7185","#2D0A0A");
-        });
-        card.getChildren().add(flow);
-        return card;
+        card.getChildren().add(flow); return card;
     }
 
-    private int computeStreak() {
-        if (allEvals.isEmpty()) return 0;
-        Set<LocalDate> evalDates = allEvals.stream().filter(e -> e.getDateEvaluation() != null)
-                .map(EvaluationMatiere::getDateEvaluation).collect(Collectors.toSet());
-        int streak = 0; LocalDate cursor = LocalDate.now();
-        while (evalDates.contains(cursor)) { streak++; cursor = cursor.minusDays(1); }
-        return streak;
-    }
-
-    private String findMostImproved() {
-        Map<Integer,List<EvaluationMatiere>> bySubject = allEvals.stream()
-                .filter(e -> e.getDateEvaluation() != null)
-                .collect(Collectors.groupingBy(EvaluationMatiere::getMatiereId));
-        int bestId = -1; double bestDiff = 0;
-        for (Map.Entry<Integer,List<EvaluationMatiere>> entry : bySubject.entrySet()) {
-            List<EvaluationMatiere> sortedList = entry.getValue().stream()
-                    .sorted(Comparator.comparing(EvaluationMatiere::getDateEvaluation)).collect(Collectors.toList());
-            if (sortedList.size() < 2) continue;
-            double diff = sortedList.get(sortedList.size()-1).getScoreEval() - sortedList.get(0).getScoreEval();
-            if (diff > bestDiff) { bestDiff = diff; bestId = entry.getKey(); }
-        }
-        return bestId >= 0 ? getNomMatiere(bestId)+" (+"+String.format("%.1f",bestDiff)+")" : null;
-    }
-
-    private VBox cardContainer(String title) {
-        VBox card = new VBox(12); card.setPadding(new Insets(16));
-        card.setStyle("-fx-background-color:#0F172A;-fx-border-color:#1E293B;-fx-border-width:1;-fx-border-radius:16;-fx-background-radius:16;");
-        Label titleLbl = new Label(title);
-        titleLbl.setStyle("-fx-text-fill:#F8FAFC;-fx-font-size:14px;-fx-font-weight:700;");
-        card.getChildren().add(titleLbl);
-        return card;
-    }
-
-    private void addBadge(FlowPane flow, String text, String textColor, String bgColor) {
-        Label badge = new Label(text);
-        badge.setStyle("-fx-text-fill:"+textColor+";-fx-background-color:"+bgColor+";-fx-font-size:12px;-fx-padding:6 12;-fx-background-radius:20;");
-        flow.getChildren().add(badge);
-    }
-
-    // ══════════════════════════════════════════════════════════════════════════
-    //  AI QUIZ GENERATION
-    // ══════════════════════════════════════════════════════════════════════════
-    @FXML private void handleGenerateAIQuiz() {
-        lblQuizSetupError.setText("");
-        if (cmbQuizSection.getValue() == null) { lblQuizSetupError.setText("⚠ Please select a section."); return; }
-        Matiere selected = cmbQuizMatiere.getValue();
-        if (selected == null) { lblQuizSetupError.setText("⚠ Please select a subject."); return; }
-
-        String matiere    = selected.getNomMatiere();
-        String section    = cmbQuizSection.getValue();
-        String difficulty = cmbQuizDifficulty.getValue() != null ? cmbQuizDifficulty.getValue() : "Medium";
-        int    count      = cmbQuizCount.getValue() != null ? cmbQuizCount.getValue() : 10;
-        String level      = detectLevel(getStudentGradeForSubject(selected.getId()));
-
-        showQuizLoading(true);
-        lblQuizLoadingStatus.setText("Claude AI is generating your questions...");
-
-        new Thread(() -> {
-            try {
-                AIQuizService service = new AIQuizService();
-                List<AIQuizService.ParsedQuestion> parsed = service.generateQuizQuestions(matiere, section, level, count);
-                Platform.runLater(() -> {
-                    showQuizLoading(false);
-                    if (parsed.isEmpty()) {
-                        lblQuizSetupError.setText("⚠ AI returned no questions. Check your API key.");
-                        showQuizSubView("setup"); return;
-                    }
-                    quizQuestions.clear();
-                    for (AIQuizService.ParsedQuestion pq : parsed) {
-                        quizQuestions.add(new QuizQuestion(pq.question, pq.options, pq.correct, pq.difficulty, pq.category));
-                    }
-                    quizCurrentIndex = 0; quizScore = 0; quizAnsweredCount = 0;
-                    startQuizSession();
-                });
-            } catch (Exception e) {
-                e.printStackTrace();
-                Platform.runLater(() -> {
-                    showQuizLoading(false);
-                    String msg = e.getMessage();
-                    if (msg != null && msg.contains("401")) lblQuizSetupError.setText("⚠ Invalid API key.");
-                    else if (msg != null && msg.contains("429")) lblQuizSetupError.setText("⚠ Rate limit. Wait and retry.");
-                    else lblQuizSetupError.setText("⚠ AI error: " + (msg != null ? msg : "Unknown"));
-                    showQuizSubView("setup");
-                });
-            }
-        }).start();
-    }
-
-    private void showQuizLoading(boolean show) {
-        if (btnGenerateAIQuiz != null) {
-            btnGenerateAIQuiz.setDisable(show);
-            btnGenerateAIQuiz.setText(show ? "⏳ AI is generating..." : "🤖  Generate AI Quiz with Claude");
-        }
-        if (show) showQuizSubView("loading");
-    }
-
-    private String detectLevel(double note) {
-        if (note < 10) return "easy";
-        else if (note < 14) return "medium";
-        else return "hard";
-    }
-
-    private double getStudentGradeForSubject(int matiereId) {
-        return allEvals.stream().filter(e -> e.getMatiereId() == matiereId)
-                .mapToDouble(EvaluationMatiere::getScoreEval).average().orElse(10.0);
-    }
-
-    // ══════════════════════════════════════════════════════════════════════════
+    // ════════════════════════════════════════════════════════════
     //  EXPORT PDF
-    // ══════════════════════════════════════════════════════════════════════════
+    // ════════════════════════════════════════════════════════════
     @FXML private void handleExportPdf() {
         if (allEvals.isEmpty()) {
-            new Alert(Alert.AlertType.INFORMATION, "Add at least one assessment before exporting.", ButtonType.OK).showAndWait();
-            return;
+            new Alert(Alert.AlertType.INFORMATION,
+                    "Add at least one assessment first.", ButtonType.OK).showAndWait(); return;
         }
-        FileChooser chooser = new FileChooser();
-        chooser.setTitle("Save PDF Report");
-        chooser.setInitialFileName("StudyFlow_Report_" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")) + ".pdf");
-        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("PDF Files", "*.pdf"));
+        FileChooser fc = new FileChooser();
+        fc.setTitle("Save PDF Report");
+        fc.setInitialFileName("StudyFlow_"
+                + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")) + ".pdf");
+        fc.getExtensionFilters().add(new FileChooser.ExtensionFilter("PDF Files","*.pdf"));
         Stage stage = (Stage) courseGrid.getScene().getWindow();
-        java.io.File file = chooser.showSaveDialog(stage);
+        java.io.File file = fc.showSaveDialog(stage);
         if (file == null) return;
         try {
             PdfExporter.export(new ArrayList<>(allEvals), this::getNomMatiere, file);
             Alert ok = new Alert(Alert.AlertType.INFORMATION);
-            ok.setTitle("Export successful"); ok.setHeaderText("PDF generated!");
-            ok.setContentText("Saved to:\n" + file.getAbsolutePath());
-            ok.showAndWait();
+            ok.setTitle("Export successful"); ok.setHeaderText("PDF saved!");
+            ok.setContentText(file.getAbsolutePath()); ok.showAndWait();
         } catch (Exception ex) {
             ex.printStackTrace();
-            new Alert(Alert.AlertType.ERROR, "Export failed: " + ex.getMessage(), ButtonType.OK).showAndWait();
+            new Alert(Alert.AlertType.ERROR,
+                    "Export failed: " + ex.getMessage(), ButtonType.OK).showAndWait();
         }
     }
 
-    // ══════════════════════════════════════════════════════════════════════════
+    // ════════════════════════════════════════════════════════════
     //  HELPERS
-    // ══════════════════════════════════════════════════════════════════════════
+    // ════════════════════════════════════════════════════════════
     private void clearForm() {
         editTarget = null; selectedPriorite = null;
-        cmbMatiere.setValue(null);
-        fldScore.clear(); fldNoteMax.clear(); fldDuree.clear();
+        cmbMatiere.setValue(null); fldScore.clear(); fldNoteMax.clear(); fldDuree.clear();
         dpDate.setValue(null); cmbPriorite.setValue(null);
-
-        btnPrioHaute.setStyle("-fx-background-color:#1E293B;-fx-text-fill:#FB7185;-fx-border-color:#FB7185;-fx-border-width:1.5;-fx-border-radius:10;-fx-background-radius:10;-fx-padding:10 20;-fx-font-size:13px;-fx-cursor:hand;");
-        btnPrioMoyenne.setStyle("-fx-background-color:#1E293B;-fx-text-fill:#FBBF24;-fx-border-color:#FBBF24;-fx-border-width:1.5;-fx-border-radius:10;-fx-background-radius:10;-fx-padding:10 20;-fx-font-size:13px;-fx-cursor:hand;");
-        btnPrioBasse.setStyle("-fx-background-color:#1E293B;-fx-text-fill:#34D399;-fx-border-color:#34D399;-fx-border-width:1.5;-fx-border-radius:10;-fx-background-radius:10;-fx-padding:10 20;-fx-font-size:13px;-fx-cursor:hand;");
-
+        String bH = "-fx-background-color:#1E293B;-fx-text-fill:#FB7185;-fx-border-color:#FB7185;-fx-border-width:1.5;-fx-border-radius:10;-fx-background-radius:10;-fx-padding:10 20;-fx-font-size:13px;-fx-cursor:hand;";
+        String bM = "-fx-background-color:#1E293B;-fx-text-fill:#FBBF24;-fx-border-color:#FBBF24;-fx-border-width:1.5;-fx-border-radius:10;-fx-background-radius:10;-fx-padding:10 20;-fx-font-size:13px;-fx-cursor:hand;";
+        String bL = "-fx-background-color:#1E293B;-fx-text-fill:#34D399;-fx-border-color:#34D399;-fx-border-width:1.5;-fx-border-radius:10;-fx-background-radius:10;-fx-padding:10 20;-fx-font-size:13px;-fx-cursor:hand;";
+        btnPrioHaute.setStyle(bH); btnPrioMoyenne.setStyle(bM); btnPrioBasse.setStyle(bL);
         cmbSection.setValue(null); errSection.setText("");
         cmbMatiere.setItems(FXCollections.observableArrayList());
         cmbMatiere.setPromptText("Select a section first…");
@@ -1380,77 +1375,163 @@ public class CoursesController implements Initializable {
         formError.setVisible(false);
         errMatiere.setText(""); errScore.setText(""); errNoteMax.setText("");
         errDuree.setText(""); errPriorite.setText(""); errDate.setText(""); errSection.setText("");
-        fldScore.setStyle(null); fldNoteMax.setStyle(null); fldDuree.setStyle(null);
-        cmbMatiere.setStyle(null); dpDate.setStyle(null);
     }
 
-    private void showGlobalError(String msg) { formError.setText("⚠ "+msg); formError.setVisible(true); }
+    private void showGlobalError(String msg) {
+        formError.setText("⚠ " + msg); formError.setVisible(true);
+    }
 
     private String getNomMatiere(int id) {
-        try { Matiere m = matService.findById(id); return m != null ? m.getNomMatiere() : "Matière #"+id; }
-        catch (Exception e) { return "Matière #"+id; }
+        try { Matiere m = matService.findById(id); return m != null ? m.getNomMatiere() : "Subject #" + id; }
+        catch (Exception e) { return "Subject #" + id; }
     }
 
-    private String getIconBg(String color) {
-        return switch (color) {
-            case "primary" -> "rgba(109,40,217,0.25)";
-            case "success" -> "rgba(4,120,87,0.25)";
-            case "warning" -> "rgba(217,119,6,0.25)";
-            case "accent"  -> "rgba(234,88,12,0.25)";
-            case "danger"  -> "rgba(225,29,72,0.25)";
-            default        -> "rgba(71,85,105,0.25)";
-        };
+    private VBox cardBox(String title) {
+        VBox card = new VBox(12); card.setPadding(new Insets(16));
+        card.setStyle("-fx-background-color:#0F172A;-fx-border-color:#1E293B;-fx-border-width:1;-fx-border-radius:16;-fx-background-radius:16;");
+        Label t = new Label(title); t.setStyle("-fx-text-fill:#F8FAFC;-fx-font-size:14px;-fx-font-weight:700;");
+        card.getChildren().add(t); return card;
     }
 
-    private HBox buildChip(String icon, String text, String hexColor) {
+    private void addBadge(FlowPane fp, String text, String fg, String bg) {
+        Label b = new Label(text);
+        b.setStyle("-fx-text-fill:"+fg+";-fx-background-color:"+bg+";-fx-font-size:12px;-fx-padding:6 12;-fx-background-radius:20;");
+        fp.getChildren().add(b);
+    }
+
+    private HBox buildChip(String icon, String text, String hex) {
         HBox chip = new HBox(6); chip.setAlignment(Pos.CENTER_LEFT);
         chip.setStyle("-fx-background-color:rgba(255,255,255,0.05);-fx-padding:4 10;-fx-background-radius:20;");
-        FontIcon ic = new FontIcon(icon); ic.setIconSize(12); ic.setIconColor(Color.web(hexColor));
-        Label lbl = new Label(text); lbl.setStyle("-fx-text-fill:"+hexColor+";-fx-font-size:12px;-fx-font-weight:500;");
-        chip.getChildren().addAll(ic, lbl);
-        return chip;
+        FontIcon ic = new FontIcon(icon); ic.setIconSize(12); ic.setIconColor(Color.web(hex));
+        Label lbl = new Label(text); lbl.setStyle("-fx-text-fill:"+hex+";-fx-font-size:12px;-fx-font-weight:500;");
+        chip.getChildren().addAll(ic, lbl); return chip;
     }
 
-    private String getPriorityColor(String p) {
+    private String getPrioColor(String p) {
         if (p == null) return "#94A3B8";
         return switch (p) {
-            case "High", "Haute" -> "#FB7185";
-            case "Medium", "Moyenne" -> "#FBBF24";
-            case "Low", "Basse" -> "#34D399";
+            case "High","Haute"     -> "#FB7185";
+            case "Medium","Moyenne" -> "#FBBF24";
+            case "Low","Basse"      -> "#34D399";
             default -> "#94A3B8";
         };
     }
 
-    private String getGradientForColor(String color) {
-        return switch (color) {
-            case "primary" -> "linear-gradient(to right, #6D28D9, #8B5CF6)";
-            case "success" -> "linear-gradient(to right, #047857, #10B981)";
-            case "warning" -> "linear-gradient(to right, #D97706, #F59E0B)";
-            case "accent"  -> "linear-gradient(to right, #EA580C, #F97316)";
-            case "danger"  -> "linear-gradient(to right, #E11D48, #F43F5E)";
-            default        -> "linear-gradient(to right, #475569, #64748B)";
+    private String getGradient(String c) {
+        return switch (c) {
+            case "primary" -> "linear-gradient(to right,#6D28D9,#8B5CF6)";
+            case "success" -> "linear-gradient(to right,#047857,#10B981)";
+            case "warning" -> "linear-gradient(to right,#D97706,#F59E0B)";
+            case "accent"  -> "linear-gradient(to right,#EA580C,#F97316)";
+            case "danger"  -> "linear-gradient(to right,#E11D48,#F43F5E)";
+            default        -> "linear-gradient(to right,#475569,#64748B)";
         };
     }
 
-    private String getColorHex(String color) {
-        return switch (color) {
-            case "primary" -> "#8B5CF6";
-            case "success" -> "#10B981";
-            case "warning" -> "#F59E0B";
-            case "accent"  -> "#F97316";
-            case "danger"  -> "#F43F5E";
-            default        -> "#64748B";
+    private String getIconBg(String c) {
+        return switch (c) {
+            case "primary" -> "rgba(109,40,217,0.25)"; case "success" -> "rgba(4,120,87,0.25)";
+            case "warning" -> "rgba(217,119,6,0.25)";  case "accent"  -> "rgba(234,88,12,0.25)";
+            case "danger"  -> "rgba(225,29,72,0.25)";  default        -> "rgba(71,85,105,0.25)";
         };
     }
 
-    private void updatePriorityButtons() {
-        resetPriorityButton(btnPrioHaute, "Haute", "High");
-        resetPriorityButton(btnPrioMoyenne, "Moyenne", "Medium");
-        resetPriorityButton(btnPrioBasse, "Basse", "Low");
+    private String getHex(String c) {
+        return switch (c) {
+            case "primary" -> "#8B5CF6"; case "success" -> "#10B981";
+            case "warning" -> "#F59E0B"; case "accent"  -> "#F97316";
+            case "danger"  -> "#F43F5E"; default        -> "#64748B";
+        };
     }
 
-    private void resetPriorityButton(Button button, String frenchValue, String englishValue) {
-        button.pseudoClassStateChanged(SELECTED,
-                frenchValue.equalsIgnoreCase(selectedPriorite) || englishValue.equalsIgnoreCase(selectedPriorite));
+    private VBox buildCard(EvaluationMatiere ev, String color) {
+        VBox card = new VBox(0);
+        card.getStyleClass().add("card");
+        card.setPrefWidth(380); card.setMaxWidth(380);
+        card.setStyle(
+                "-fx-background-color:#0F172A;-fx-border-color:#1E293B;-fx-border-width:1.5;" +
+                        "-fx-border-radius:16;-fx-background-radius:16;-fx-cursor:hand;" +
+                        "-fx-effect:dropshadow(gaussian,rgba(0,0,0,0.4),12,0,0,4);"
+        );
+
+        Region bar = new Region(); bar.setPrefHeight(4);
+        bar.setStyle("-fx-background-color:" + getGradient(color) + ";-fx-background-radius:16 16 0 0;");
+
+        VBox content = new VBox(14); content.setPadding(new Insets(18,20,18,20));
+
+        HBox header = new HBox(12); header.setAlignment(Pos.CENTER_LEFT);
+        StackPane iconBox = new StackPane();
+        iconBox.setPrefSize(46,46); iconBox.setMinSize(46,46); iconBox.setMaxSize(46,46);
+        iconBox.setStyle("-fx-background-color:" + getIconBg(color) + ";-fx-background-radius:12;");
+        FontIcon icon = new FontIcon("fth-clipboard");
+        icon.setIconSize(20); icon.setIconColor(Color.web(getHex(color)));
+        iconBox.getChildren().add(icon);
+
+        Region sp = new Region(); HBox.setHgrow(sp, Priority.ALWAYS);
+
+        Label badge = new Label(String.format("%.1f / %.0f", ev.getScoreEval(), ev.getNoteMaximaleEval()));
+        badge.setStyle(
+                "-fx-background-color:" + getHex(color) + ";-fx-text-fill:white;" +
+                        "-fx-font-size:13px;-fx-font-weight:700;-fx-padding:5 12;-fx-background-radius:20;"
+        );
+        header.getChildren().addAll(iconBox, sp, badge);
+
+        Label nom = new Label(getNomMatiere(ev.getMatiereId()));
+        nom.setStyle("-fx-text-fill:#F8FAFC;-fx-font-size:17px;-fx-font-weight:700;");
+        nom.setWrapText(true);
+
+        HBox dateRow = new HBox(6); dateRow.setAlignment(Pos.CENTER_LEFT);
+        FontIcon cal = new FontIcon("fth-calendar"); cal.setIconSize(12); cal.setIconColor(Color.web("#94A3B8"));
+        Label dateL = new Label(ev.getDateEvaluation() != null ? ev.getDateEvaluation().format(FMT) : "—");
+        dateL.setStyle("-fx-text-fill:#94A3B8;-fx-font-size:12px;");
+        dateRow.getChildren().addAll(cal, dateL);
+
+        HBox chips = new HBox(10); chips.setAlignment(Pos.CENTER_LEFT);
+        chips.getChildren().addAll(
+                buildChip("fth-clock", ev.getDureeEvaluation() + " min", "#94A3B8"),
+                buildChip("fth-alert-circle", ev.getPrioriteE() != null ? ev.getPrioriteE() : "—",
+                        getPrioColor(ev.getPrioriteE()))
+        );
+
+        double progress = ev.getNoteMaximaleEval() > 0
+                ? ev.getScoreEval() / ev.getNoteMaximaleEval() : 0;
+        VBox progSection = new VBox(6);
+        HBox ph = new HBox(); ph.setAlignment(Pos.CENTER_LEFT);
+        Label pl = new Label("Score"); pl.setStyle("-fx-text-fill:#64748B;-fx-font-size:12px;");
+        Region ps = new Region(); HBox.setHgrow(ps, Priority.ALWAYS);
+        Label pv = new Label((int)(progress*100) + "%");
+        pv.setStyle("-fx-text-fill:" + getHex(color) + ";-fx-font-size:13px;-fx-font-weight:700;");
+        ph.getChildren().addAll(pl, ps, pv);
+        ProgressBar pb = new ProgressBar(progress); pb.setMaxWidth(Double.MAX_VALUE);
+        pb.setStyle("-fx-accent:" + getHex(color) + ";-fx-background-color:#1E293B;" +
+                "-fx-background-radius:4;-fx-border-radius:4;");
+        progSection.getChildren().addAll(ph, pb);
+
+        Region div = new Region(); div.setPrefHeight(1);
+        div.setStyle("-fx-background-color:#1E293B;");
+
+        HBox actions = new HBox(8); actions.setAlignment(Pos.CENTER_RIGHT);
+        Button btnEdit = new Button("✏  Edit");
+        btnEdit.setStyle(
+                "-fx-background-color:transparent;-fx-text-fill:" + getHex(color) + ";" +
+                        "-fx-border-color:" + getHex(color) + ";-fx-border-width:1.5;" +
+                        "-fx-border-radius:8;-fx-background-radius:8;" +
+                        "-fx-font-size:12px;-fx-font-weight:600;-fx-padding:6 16;-fx-cursor:hand;"
+        );
+        btnEdit.setOnAction(e -> startEdit(ev));
+
+        Button btnDel = new Button("🗑  Delete");
+        btnDel.setStyle(
+                "-fx-background-color:transparent;-fx-text-fill:#FB7185;" +
+                        "-fx-border-color:#FB7185;-fx-border-width:1.5;" +
+                        "-fx-border-radius:8;-fx-background-radius:8;" +
+                        "-fx-font-size:12px;-fx-font-weight:600;-fx-padding:6 16;-fx-cursor:hand;"
+        );
+        btnDel.setOnAction(e -> deleteItem(ev));
+        actions.getChildren().addAll(btnEdit, btnDel);
+
+        content.getChildren().addAll(header, nom, dateRow, chips, progSection, div, actions);
+        card.getChildren().addAll(bar, content);
+        return card;
     }
 }

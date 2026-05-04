@@ -200,6 +200,22 @@
                     <Button text="Go to Breathing Tool" styleClass="btn-secondary, tools-highlight-btn" onAction="#handleStartBreathingTool"/>
                 </HBox>
 
+                <VBox spacing="0" styleClass="card, wellbeing-panel">
+                    <HBox alignment="CENTER_LEFT" spacing="10" styleClass="card-header, wellbeing-panel-header">
+                        <StackPane styleClass="wellbeing-tool-icon, tool-icon-mood_camera">
+                            <FontIcon iconLiteral="fth-video" iconSize="18"/>
+                        </StackPane>
+                        <VBox spacing="2" HBox.hgrow="ALWAYS">
+                            <Label text="Mood Camera" styleClass="card-title"/>
+                            <Label text="Detect your mood from webcam and apply it to daily check-in." styleClass="text-small" wrapText="true"/>
+                        </VBox>
+                        <Button text="Open Camera" styleClass="btn-secondary" onAction="#handleOpenMoodCameraTool"/>
+                    </HBox>
+                    <VBox spacing="6" styleClass="card-body">
+                        <Label fx:id="cameraMoodResultLabel" text="No mood detected yet." styleClass="text-small"/>
+                    </VBox>
+                </VBox>
+
                 <FlowPane fx:id="copingToolsPane" hgap="16" vgap="16" prefWrapLength="1250"/>
 
                 <VBox spacing="14" styleClass="tools-tips-shell">

@@ -1,14 +1,23 @@
 package com.studyflow.controllers;
 
 import com.studyflow.App;
+import com.studyflow.models.Assignment;
+import com.studyflow.models.Notification;
+import com.studyflow.models.Project;
 import com.studyflow.models.User;
+import com.studyflow.services.AssignmentService;
+import com.studyflow.services.NotificationService;
+import com.studyflow.services.ProjectService;
+import com.studyflow.services.UserCoinService;
 import com.studyflow.services.WellbeingAiService;
+import com.studyflow.utils.CrudViewContext;
 import com.studyflow.utils.UserSession;
 import javafx.animation.KeyFrame;
 import javafx.animation.PauseTransition;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
+import javafx.event.Event;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
@@ -17,14 +26,20 @@ import javafx.geometry.Point2D;
 import javafx.scene.Parent;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ContextMenu;
+import javafx.scene.control.CustomMenuItem;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
@@ -32,6 +47,7 @@ import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.io.IOException;
 import java.net.URL;
+import java.util.List;
 import java.util.Locale;
 import java.util.ResourceBundle;
 import java.util.prefs.PreferenceChangeEvent;
@@ -43,6 +59,8 @@ import java.util.prefs.Preferences;
  * Handles navigation, content switching, and window controls
  */
 public class MainController implements Initializable {
+    private static final long COIN_REWARD_INTERVAL_MILLIS = 60_000L;
+    private static final long ACTIVE_IDLE_TIMEOUT_MILLIS = 120_000L;
     private static MainController activeInstance;
 
     @FXML private StackPane contentArea;
@@ -77,6 +95,10 @@ public class MainController implements Initializable {
     @FXML private Pane quoteOverlayPane;
 
     private Button activeButton;
+    private final ProjectService projectService = new ProjectService();
+    private final AssignmentService assignmentService = new AssignmentService();
+    private final NotificationService notificationService = new NotificationService();
+    private final UserCoinService userCoinService = new UserCoinService();
     private final WellbeingAiService wellbeingAiService = new WellbeingAiService();
     private final Preferences preferences = Preferences.userNodeForPackage(MainController.class);
     private Timeline quoteTicker;
@@ -94,6 +116,10 @@ public class MainController implements Initializable {
     private double quoteDragStartY;
     private double quoteStartLayoutX;
     private double quoteStartLayoutY;
+    private Timeline usageCoinTimeline;
+    private long lastActivityAtMillis = System.currentTimeMillis();
+    private long lastUsageTickAtMillis = System.currentTimeMillis();
+    private long accruedActiveMillis = 0L;
 
     // Window dragging
     private double xOffset = 0;
@@ -132,8 +158,15 @@ public class MainController implements Initializable {
         if (userInfoBox != null) {
             userInfoBox.setOnMouseClicked(event -> showProfile());
         }
+        syncNotifications();
         setupGlobalQuoteDrag();
         setupGlobalQuoteWidget();
+        installActivityTracking();
+        startUsageCoinTracking();
+    }
+
+    public static MainController getInstance() {
+        return activeInstance;
     }
 
     // ============================================
@@ -196,6 +229,144 @@ public class MainController implements Initializable {
         Platform.exit();
     }
 
+    @FXML
+    private void showNotifications() {
+        User user = UserSession.getInstance().getCurrentUser();
+        if (user == null || notificationsButton == null) {
+            return;
+        }
+
+        syncNotifications();
+        List<Notification> notifications = notificationService.getRecentByUserId(user.getId(), 8);
+        ContextMenu menu = new ContextMenu();
+        menu.getStyleClass().add("notifications-menu");
+
+        if (notifications.isEmpty()) {
+            Label emptyLabel = new Label("No notifications yet.");
+            emptyLabel.getStyleClass().add("notification-empty-label");
+            menu.getItems().add(new CustomMenuItem(emptyLabel, false));
+        } else {
+            for (Notification notification : notifications) {
+                VBox box = new VBox(4);
+                box.getStyleClass().add("notification-item");
+
+                Label title = new Label(notification.getTitle());
+                title.getStyleClass().add("notification-title");
+                title.setWrapText(true);
+
+                Label message = new Label(notification.getMessage());
+                message.getStyleClass().add("notification-message");
+                message.setWrapText(true);
+
+                Label meta = new Label(notification.getCreatedAt());
+                meta.getStyleClass().add("notification-meta");
+
+                box.getChildren().addAll(title, message, meta);
+                CustomMenuItem item = new CustomMenuItem(box, true);
+                item.setOnAction(event -> {
+                    notificationService.markAsRead(notification.getId(), user.getId());
+                    updateNotificationsButton();
+                    menu.hide();
+                    openNotification(notification);
+                });
+                menu.getItems().add(item);
+            }
+
+            menu.getItems().add(new SeparatorMenuItem());
+            Button markReadButton = new Button("Mark all as read");
+            markReadButton.getStyleClass().add("btn-secondary");
+            markReadButton.setMaxWidth(Double.MAX_VALUE);
+            markReadButton.setOnAction(event -> {
+                notificationService.markAllAsRead(user.getId());
+                updateNotificationsButton();
+                menu.hide();
+            });
+
+            VBox footer = new VBox(markReadButton);
+            VBox.setVgrow(markReadButton, Priority.NEVER);
+            footer.getStyleClass().add("notification-footer");
+            menu.getItems().add(new CustomMenuItem(footer, false));
+        }
+
+        menu.show(notificationsButton, javafx.geometry.Side.BOTTOM, 0, 8);
+    }
+
+    private void openNotification(Notification notification) {
+        if (notification == null) {
+            return;
+        }
+        String link = notification.getLink() == null ? "" : notification.getLink().trim();
+        if (link.startsWith("project_meeting:")) {
+            Integer projectId = parseLinkedId(link, "project_meeting:");
+            if (projectId == null) {
+                return;
+            }
+            Project project = projectService.getProjectById(projectId);
+            if (project == null) {
+                return;
+            }
+            CrudViewContext.setProjectContext(project);
+            CrudViewContext.rememberProjectSelection(projectId);
+            loadContent("views/ProjectMeeting.fxml");
+            return;
+        }
+        if (link.startsWith("project:")) {
+            Integer projectId = parseLinkedId(link, "project:");
+            if (projectId == null) {
+                return;
+            }
+            CrudViewContext.rememberProjectSelection(projectId);
+            loadContent("views/Projects.fxml");
+            return;
+        }
+        if (link.startsWith("assignment:")) {
+            Integer assignmentId = parseLinkedId(link, "assignment:");
+            if (assignmentId == null) {
+                return;
+            }
+            CrudViewContext.rememberAssignmentSelection(assignmentId);
+            loadContent("views/Assignments.fxml");
+        }
+    }
+
+    private Integer parseLinkedId(String value, String prefix) {
+        try {
+            return Integer.parseInt(value.substring(prefix.length()).trim());
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private void syncNotifications() {
+        User user = UserSession.getInstance().getCurrentUser();
+        if (user == null || !projectService.isDatabaseAvailable() || !assignmentService.isDatabaseAvailable()
+                || !notificationService.isDatabaseAvailable()) {
+            updateNotificationsButton();
+            return;
+        }
+
+        List<Project> projects = projectService.getByUserId(user.getId());
+        List<Assignment> assignments = assignmentService.getByUserId(user.getId());
+        notificationService.syncDueDateNotifications(user.getId(), projects, assignments);
+        updateNotificationsButton();
+    }
+
+    private void updateNotificationsButton() {
+        if (notificationsButton == null) {
+            return;
+        }
+
+        User user = UserSession.getInstance().getCurrentUser();
+        int unread = user == null ? 0 : notificationService.countUnreadByUserId(user.getId());
+        notificationsButton.setText(unread > 0 ? String.valueOf(unread) : "");
+        notificationsButton.setAccessibleText(unread > 0 ? unread + " unread notifications" : "Notifications");
+    }
+
+    @FXML
+    private void toggleTheme() {
+        App.toggleTheme();
+        syncThemeToggleUi();
+    }
     // ============================================
     // NAVIGATION METHODS
     // ============================================
@@ -246,7 +417,8 @@ public class MainController implements Initializable {
             case "views/Planning.fxml" -> setActiveButton(btnPlanning);
             case "views/Revisions.fxml", "views/Flashcards.fxml" -> setActiveButton(btnRevisions);
             case "views/Projects.fxml" -> setActiveButton(btnProjects);
-            case "views/Notes.fxml" -> setActiveButton(btnNotes);
+            case "views/Notes.fxml" -> setActiveButton(btnRevisions);
+            case "views/MyPet.fxml", "views/PetMetaverse.fxml" -> setActiveButton(btnNotes);
             case "views/Wellbeing.fxml" -> setActiveButton(btnWellbeing);
             case "views/Statistics.fxml" -> setActiveButton(btnStats);
             default -> {
@@ -451,13 +623,15 @@ public class MainController implements Initializable {
         String type = safeQuoteType(preferences.get(PREF_QUOTE_TYPE, "motivation"));
         preferences.put(PREF_QUOTE_TYPE, type);
 
-        // Force-enable widget to recover from stale disabled state.
-        if (!preferences.getBoolean(PREF_QUOTE_ENABLED, true)) {
+        // Initialize once, but never override an explicit user choice.
+        if (preferences.get(PREF_QUOTE_ENABLED, null) == null) {
             preferences.putBoolean(PREF_QUOTE_ENABLED, true);
         }
 
-        // Always show quotes by default when app starts.
-        preferences.putLong(PREF_QUOTE_DISMISSED_UNTIL, 0L);
+        // Initialize dismissed state only if key is missing.
+        if (preferences.get(PREF_QUOTE_DISMISSED_UNTIL, null) == null) {
+            preferences.putLong(PREF_QUOTE_DISMISSED_UNTIL, 0L);
+        }
     }
 
     private void setupGlobalQuoteDrag() {
@@ -566,22 +740,6 @@ public class MainController implements Initializable {
         preferences.putDouble(PREF_QUOTE_POS_Y, globalQuoteCard.getLayoutY());
     }
 
-    @FXML
-    private void showNotifications() {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.initOwner(App.getPrimaryStage());
-        alert.setTitle("Notifications");
-        alert.setHeaderText("Notifications");
-        alert.setContentText("Notifications are not wired yet in this build.");
-        alert.showAndWait();
-    }
-
-    @FXML
-    private void toggleTheme() {
-        App.toggleTheme();
-        syncThemeToggleUi();
-    }
-
     private void syncThemeToggleUi() {
         if (themeToggleButton == null) {
             return;
@@ -591,6 +749,7 @@ public class MainController implements Initializable {
         if (themeToggleIcon != null) {
             themeToggleIcon.setIconLiteral(darkTheme ? "fth-sun" : "fth-moon");
         }
+        updateNotificationsButton();
     }
 
     /**
@@ -623,7 +782,7 @@ public class MainController implements Initializable {
     }
 
     @FXML
-    private void showPlanning() {
+    public void showPlanning() {
         setActiveButton(btnPlanning);
         loadContent("views/Planning.fxml");
     }
@@ -641,9 +800,9 @@ public class MainController implements Initializable {
     }
 
     @FXML
-    private void showNotes() {
+    private void showMyPet() {
         setActiveButton(btnNotes);
-        loadContent("views/Notes.fxml");
+        loadContent("views/MyPet.fxml");
     }
 
     @FXML
@@ -667,11 +826,89 @@ public class MainController implements Initializable {
 
     @FXML
     private void handleLogout() {
+        stopUsageCoinTracking();
         UserSession.getInstance().logout();
         try {
             App.setRoot("views/Landing");
         } catch (java.io.IOException e) {
             e.printStackTrace();
+        }
+    }
+
+    private void installActivityTracking() {
+        Platform.runLater(() -> {
+            if (contentArea == null || contentArea.getScene() == null) {
+                return;
+            }
+            contentArea.getScene().addEventFilter(MouseEvent.MOUSE_PRESSED, this::recordUserActivity);
+            contentArea.getScene().addEventFilter(MouseEvent.MOUSE_MOVED, this::recordUserActivity);
+            contentArea.getScene().addEventFilter(KeyEvent.KEY_PRESSED, this::recordUserActivity);
+            contentArea.getScene().addEventFilter(ScrollEvent.SCROLL, this::recordUserActivity);
+            Stage stage = App.getPrimaryStage();
+            if (stage != null) {
+                stage.focusedProperty().addListener((obs, oldValue, focused) -> {
+                    if (focused) {
+                        lastActivityAtMillis = System.currentTimeMillis();
+                        lastUsageTickAtMillis = lastActivityAtMillis;
+                    }
+                });
+            }
+        });
+    }
+
+    private void recordUserActivity(Event event) {
+        lastActivityAtMillis = System.currentTimeMillis();
+    }
+
+    private void startUsageCoinTracking() {
+        stopUsageCoinTracking();
+        lastActivityAtMillis = System.currentTimeMillis();
+        lastUsageTickAtMillis = lastActivityAtMillis;
+        accruedActiveMillis = 0L;
+        usageCoinTimeline = new Timeline(new KeyFrame(javafx.util.Duration.seconds(15), event -> rewardUsageCoinsIfNeeded()));
+        usageCoinTimeline.setCycleCount(Timeline.INDEFINITE);
+        usageCoinTimeline.play();
+    }
+
+    private void stopUsageCoinTracking() {
+        if (usageCoinTimeline != null) {
+            usageCoinTimeline.stop();
+            usageCoinTimeline = null;
+        }
+    }
+
+    private void rewardUsageCoinsIfNeeded() {
+        User currentUser = UserSession.getInstance().getCurrentUser();
+        long now = System.currentTimeMillis();
+        long elapsed = Math.max(0L, now - lastUsageTickAtMillis);
+        lastUsageTickAtMillis = now;
+
+        if (currentUser == null) {
+            accruedActiveMillis = 0L;
+            return;
+        }
+
+        Stage stage = App.getPrimaryStage();
+        boolean isActiveWindow = stage != null && stage.isFocused() && !stage.isIconified();
+        boolean isRecentlyActive = now - lastActivityAtMillis <= ACTIVE_IDLE_TIMEOUT_MILLIS;
+        if (!isActiveWindow || !isRecentlyActive) {
+            return;
+        }
+
+        accruedActiveMillis += elapsed;
+        int coinsToAward = (int) (accruedActiveMillis / COIN_REWARD_INTERVAL_MILLIS);
+        if (coinsToAward <= 0) {
+            return;
+        }
+
+        accruedActiveMillis %= COIN_REWARD_INTERVAL_MILLIS;
+        try {
+            int awardedCoins = userCoinService.addUsageCoins(currentUser.getId(), coinsToAward);
+            if (awardedCoins > 0) {
+                currentUser.setCoins(currentUser.getCoins() + awardedCoins);
+            }
+        } catch (RuntimeException ex) {
+            System.out.println("MainController.rewardUsageCoinsIfNeeded: " + ex.getMessage());
         }
     }
 }

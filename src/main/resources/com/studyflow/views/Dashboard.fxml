@@ -5,12 +5,13 @@
 <?import javafx.scene.text.*?>
 <?import javafx.scene.chart.*?>
 <?import javafx.geometry.Insets?>
+<?import javafx.scene.image.ImageView?>
 <?import org.kordamp.ikonli.javafx.FontIcon?>
 
 <VBox xmlns="http://javafx.com/javafx/21"
       xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="com.studyflow.controllers.DashboardController"
-      spacing="24" style="-fx-background-color: #020617;">
+      spacing="24">
 
     <padding>
         <Insets top="0" right="0" bottom="24" left="0"/>
@@ -38,6 +39,65 @@
     </HBox>
 
     <!-- ══ STAT CARDS ════════════════════════════════════════════════════════ -->
+    <VBox fx:id="petHeroCard" styleClass="card" spacing="0" visible="false" managed="false">
+        <HBox styleClass="card-header" alignment="CENTER_LEFT" spacing="12">
+            <VBox spacing="2" HBox.hgrow="ALWAYS">
+                <Label text="Your Pet Companion" styleClass="card-title"/>
+                <Label fx:id="petHeroSubLabel" text="Track mood, hunger, and progression from the dashboard." styleClass="text-small"/>
+            </VBox>
+            <Button fx:id="petManageButton" text="Manage Pet" styleClass="btn-secondary"/>
+            <Button fx:id="petMetaverseButton" text="Pet Metaverse" styleClass="btn-primary"/>
+        </HBox>
+        <HBox styleClass="card-body" spacing="20" alignment="CENTER_LEFT">
+            <StackPane styleClass="pet-hero-image-shell" prefWidth="240" maxWidth="240" prefHeight="240" maxHeight="240">
+                <StackPane fx:id="petHeroContainer"/>
+            </StackPane>
+            <VBox spacing="14" HBox.hgrow="ALWAYS">
+                <HBox alignment="CENTER_LEFT" spacing="8">
+                    <Label fx:id="petHeroNameLabel" text="Companion" styleClass="pet-display-name"/>
+                    <Label fx:id="petHeroRarityBadge" text="Common" styleClass="pet-rarity-badge"/>
+                </HBox>
+                <Label fx:id="petHeroMetaLabel" text="Level 1 - Good - Starter" styleClass="text-muted"/>
+                <HBox spacing="12">
+                    <VBox styleClass="stat-card" spacing="6" HBox.hgrow="ALWAYS">
+                        <Label text="Level" styleClass="text-small"/>
+                        <Label fx:id="petHeroLevelLabel" text="Lv. 1" styleClass="stat-value"/>
+                    </VBox>
+                    <VBox styleClass="stat-card" spacing="6" HBox.hgrow="ALWAYS">
+                        <Label text="Coins" styleClass="text-small"/>
+                        <Label fx:id="petHeroCoinsLabel" text="0" styleClass="stat-value"/>
+                    </VBox>
+                    <VBox styleClass="stat-card" spacing="6" HBox.hgrow="ALWAYS">
+                        <Label text="Type" styleClass="text-small"/>
+                        <Label fx:id="petHeroTypeLabel" text="Cat" styleClass="stat-value"/>
+                    </VBox>
+                    <VBox styleClass="stat-card" spacing="6" HBox.hgrow="ALWAYS">
+                        <Label text="Mood" styleClass="text-small"/>
+                        <Label fx:id="petHeroMoodLabel" text="Good" styleClass="stat-value"/>
+                    </VBox>
+                </HBox>
+                <VBox spacing="8">
+                    <HBox alignment="CENTER_LEFT" spacing="8">
+                        <Label text="Hunger Progress" styleClass="pet-stat-title"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Label fx:id="petHeroHungerLabel" text="0/100" styleClass="pet-stat-value"/>
+                    </HBox>
+                    <ProgressBar fx:id="petHeroHungerBar" progress="0" styleClass="pet-progress-hunger"/>
+                </VBox>
+            </VBox>
+        </HBox>
+    </VBox>
+
+    <VBox fx:id="petEmptyCard" styleClass="card" spacing="0" visible="false" managed="false">
+        <HBox styleClass="card-header" alignment="CENTER_LEFT" spacing="12">
+            <VBox spacing="2" HBox.hgrow="ALWAYS">
+                <Label text="Your Pet Companion" styleClass="card-title"/>
+                <Label text="Create a pet to earn coins, track mood, and stay motivated while studying." styleClass="text-small"/>
+            </VBox>
+            <Button fx:id="petCreateButton" text="Create Your Pet" styleClass="btn-primary"/>
+        </HBox>
+    </VBox>
+
     <HBox spacing="16">
 
         <!-- Total Assessments -->

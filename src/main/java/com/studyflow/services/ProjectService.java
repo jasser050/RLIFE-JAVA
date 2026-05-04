@@ -239,6 +239,37 @@ public class ProjectService implements IService<Project> {
         return false;
     }
 
+    public List<User> getSharedUsers(int projectId) {
+        List<User> sharedUsers = new ArrayList<>();
+        if (!ensureConnection("ProjectService.getSharedUsers")) {
+            return sharedUsers;
+        }
+
+        String sql = "SELECT u.id, u.email, u.first_name, u.last_name, u.username, u.phone_number, u.student_id " +
+                "FROM project_share ps " +
+                "INNER JOIN `user` u ON u.id = ps.shared_with_user_id " +
+                "WHERE ps.project_id = ? " +
+                "ORDER BY COALESCE(u.first_name, ''), COALESCE(u.last_name, ''), COALESCE(u.username, '')";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, projectId);
+            ResultSet rs = statement.executeQuery();
+            while (rs.next()) {
+                User user = new User();
+                user.setId(rs.getInt("id"));
+                user.setEmail(rs.getString("email"));
+                user.setFirstName(rs.getString("first_name"));
+                user.setLastName(rs.getString("last_name"));
+                user.setUsername(rs.getString("username"));
+                user.setPhoneNumber(rs.getString("phone_number"));
+                user.setStudentId(rs.getString("student_id"));
+                sharedUsers.add(user);
+            }
+        } catch (SQLException e) {
+            System.out.println("ProjectService.getSharedUsers: " + e.getMessage());
+        }
+        return sharedUsers;
+    }
+
     public boolean isOwnedByUser(int projectId, int userId) {
         if (!ensureConnection("ProjectService.isOwnedByUser")) {
             return false;

@@ -3,7 +3,9 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
 
 <VBox xmlns="http://javafx.com/javafx/21"
@@ -19,6 +21,10 @@
             <Label text="Users And Projects" styleClass="text-heading"/>
             <Label text="Browse each user and the projects they own in a card-based admin view." styleClass="text-muted"/>
         </VBox>
+        <TextField fx:id="adminSearchField"
+                   promptText="Search project"
+                   styleClass="search-field"
+                   prefWidth="340"/>
         <HBox spacing="10">
             <VBox styleClass="mini-stat-card, mini-stat-violet">
                 <Label fx:id="userCountLabel" text="0" styleClass="mini-stat-value"/>

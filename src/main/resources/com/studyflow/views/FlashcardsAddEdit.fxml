@@ -7,7 +7,7 @@
 <VBox xmlns="http://javafx.com/javafx/21"
       xmlns:fx="http://javafx.com/fxml/1"
       fx:id="formView" visible="false" managed="false"
-      style="-fx-background-color:#020617;">
+      >
 
     <!-- Form header -->
     <HBox alignment="CENTER_LEFT" spacing="16"

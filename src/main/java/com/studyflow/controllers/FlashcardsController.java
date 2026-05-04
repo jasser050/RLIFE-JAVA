@@ -1,6 +1,7 @@
 package com.studyflow.controllers;
 
 import com.studyflow.models.Flashcard;
+import com.studyflow.presentation.PresentationStudioView;
 import com.studyflow.services.AIFlashcardService;
 import com.studyflow.services.DeckQRCodeService;
 import javafx.animation.FadeTransition;
@@ -11,7 +12,9 @@ import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.geometry.Rectangle2D;
 import javafx.scene.control.*;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.HBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Popup;
@@ -19,10 +22,20 @@ import javafx.util.Duration;
 import javafx.fxml.FXMLLoader;
 
 import javafx.scene.Scene;
+import javafx.scene.layout.BorderPane;
+import javafx.stage.Screen;
+import javafx.scene.layout.Region;
+import javafx.scene.web.WebEngine;
+import javafx.scene.web.WebView;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.security.CodeSource;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -97,6 +110,129 @@ public class FlashcardsController extends FlashcardsFeaturesController {
 
         // Reset toutes les bordures
         resetAllBorders();
+    }
+
+    @FXML
+    public void openNotesWorkspace() {
+        MainController.loadContentInMainArea("views/Notes.fxml");
+    }
+
+    @FXML
+    public void openPresentationStudio() {
+        openCanvasSparkleStudio();
+    }
+
+    private void openCanvasSparkleStudio() {
+        File htmlFile = resolveCanvasSparkleIndexFile();
+        if (htmlFile == null || !htmlFile.exists()) {
+            showCanvasSparkleError(
+                    "Le studio Presentation n'a pas ete trouve.\n"
+                            + "Verifie que le build React existe dans canvas-sparkle-15-main/dist."
+            );
+            return;
+        }
+
+        WebView webView = new WebView();
+        webView.setContextMenuEnabled(true);
+        WebEngine engine = webView.getEngine();
+        engine.setJavaScriptEnabled(true);
+        engine.load(htmlFile.toURI().toString());
+
+        Label titleLabel = new Label("Canvas Sparkle Studio");
+        titleLabel.setStyle("-fx-text-fill:#F8FAFC;-fx-font-size:14px;-fx-font-weight:800;");
+
+        Button closeButton = new Button("Fermer");
+        closeButton.setStyle(
+                "-fx-background-color:#7F77DD;-fx-text-fill:white;-fx-font-size:12px;"
+                        + "-fx-font-weight:700;-fx-background-radius:10;-fx-cursor:hand;-fx-padding:8 14;"
+        );
+
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+
+        HBox topBar = new HBox(12, titleLabel, spacer, closeButton);
+        topBar.setAlignment(Pos.CENTER_LEFT);
+        topBar.setPadding(new Insets(12, 16, 12, 16));
+        topBar.setStyle("-fx-background-color:#111827;-fx-border-color:#1F2937;-fx-border-width:0 0 1 0;");
+
+        BorderPane root = new BorderPane(webView);
+        root.setTop(topBar);
+        root.setStyle("-fx-background-color:#0F172A;");
+
+        Rectangle2D bounds = Screen.getPrimary().getVisualBounds();
+        double width = Math.min(1400, Math.max(1100, bounds.getWidth() - 80));
+        double height = Math.min(860, Math.max(720, bounds.getHeight() - 80));
+
+        Scene scene = new Scene(root, width, height);
+        Stage stage = new Stage(StageStyle.DECORATED);
+        if (listView != null && listView.getScene() != null && listView.getScene().getWindow() != null) {
+            stage.initOwner(listView.getScene().getWindow());
+            stage.initModality(Modality.NONE);
+        }
+        stage.setTitle("RLife - Canvas Sparkle Studio");
+        stage.setScene(scene);
+        stage.setMinWidth(1000);
+        stage.setMinHeight(680);
+        stage.setWidth(width);
+        stage.setHeight(height);
+        stage.setMaxWidth(bounds.getWidth());
+        stage.setMaxHeight(bounds.getHeight());
+        stage.setX(bounds.getMinX() + (bounds.getWidth() - width) / 2.0);
+        stage.setY(bounds.getMinY() + (bounds.getHeight() - height) / 2.0);
+        stage.setResizable(true);
+        stage.setAlwaysOnTop(false);
+
+        closeButton.setOnAction(event -> stage.close());
+        stage.show();
+        stage.toFront();
+    }
+
+    private File resolveCanvasSparkleIndexFile() {
+        List<Path> candidates = new ArrayList<>();
+
+        Path userDir = Paths.get(System.getProperty("user.dir", ""));
+        if (!userDir.toString().isBlank()) {
+            candidates.add(userDir.resolve("src/main/java/com/studyflow/canvas-sparkle-15-main/dist/index.html"));
+            candidates.add(userDir.resolve("RLIFE-JAVA-main/src/main/java/com/studyflow/canvas-sparkle-15-main/dist/index.html"));
+        }
+
+        try {
+            CodeSource codeSource = FlashcardsController.class.getProtectionDomain().getCodeSource();
+            if (codeSource != null && codeSource.getLocation() != null) {
+                Path location = Paths.get(codeSource.getLocation().toURI());
+                Path root = Files.isDirectory(location) ? location : location.getParent();
+                if (root != null) {
+                    Path projectRoot = root;
+                    if (projectRoot.endsWith("classes") && projectRoot.getParent() != null) {
+                        projectRoot = projectRoot.getParent();
+                    }
+                    if (projectRoot.endsWith("target") && projectRoot.getParent() != null) {
+                        projectRoot = projectRoot.getParent();
+                    }
+                    candidates.add(projectRoot.resolve("src/main/java/com/studyflow/canvas-sparkle-15-main/dist/index.html"));
+                    if (projectRoot.getParent() != null) {
+                        candidates.add(projectRoot.getParent().resolve("RLIFE-JAVA-main/src/main/java/com/studyflow/canvas-sparkle-15-main/dist/index.html"));
+                    }
+                }
+            }
+        } catch (Exception ignored) {
+            // Ignore and try remaining candidates.
+        }
+
+        for (Path candidate : candidates) {
+            if (candidate != null && Files.exists(candidate)) {
+                return candidate.toFile();
+            }
+        }
+        return null;
+    }
+
+    private void showCanvasSparkleError(String message) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle("Canvas Sparkle indisponible");
+        alert.setHeaderText("Impossible d'ouvrir le studio");
+        alert.setContentText(message);
+        alert.showAndWait();
     }
 
     /* ══════════════════════════════════════════════════════════════════════
