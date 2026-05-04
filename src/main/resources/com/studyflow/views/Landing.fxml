@@ -2,6 +2,8 @@
 
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.control.*?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.image.Image?>
 <?import javafx.geometry.Insets?>
 <?import org.kordamp.ikonli.javafx.FontIcon?>
 
@@ -15,9 +17,9 @@
           onMousePressed="#onDragStart" onMouseDragged="#onDragged">
         <HBox alignment="CENTER_LEFT" spacing="10" HBox.hgrow="ALWAYS">
             <padding><Insets left="16"/></padding>
-            <StackPane styleClass="title-bar-logo">
-                <FontIcon iconLiteral="fth-layers" iconSize="14" iconColor="white"/>
-            </StackPane>
+            <ImageView fitWidth="28" fitHeight="28" preserveRatio="true">
+                <image><Image url="@../images/logo.png"/></image>
+            </ImageView>
             <Label text="RLife" styleClass="title-bar-title"/>
             <Label text="â€”" style="-fx-text-fill: #475569;"/>
             <Label text="Student Platform" styleClass="title-bar-subtitle"/>
@@ -41,177 +43,190 @@
 
         <VBox spacing="0" styleClass="landing-root">
 
-            <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-                 SECTION 1: HERO
-                 â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
-            <HBox spacing="0" minHeight="560">
+            <!-- ═══════════════════════════════════
+                 SECTION 1: HERO — Animated starfield background
+                 ═══════════════════════════════════ -->
+            <StackPane fx:id="heroPane" styleClass="landing-hero" minHeight="620">
 
-                <!-- Left: Hero Content -->
-                <VBox styleClass="landing-left" alignment="CENTER_LEFT"
-                      HBox.hgrow="SOMETIMES" minWidth="500" maxWidth="580">
-                    <padding><Insets top="40" left="60" right="48" bottom="40"/></padding>
+                <!-- Content overlay — centered layout -->
+                <VBox fx:id="heroContent" alignment="CENTER" spacing="0" opacity="0">
+                    <padding><Insets top="48" left="60" right="60" bottom="48"/></padding>
 
-                    <!-- Live badge -->
-                    <HBox>
-                        <HBox styleClass="landing-pill-badge" alignment="CENTER_LEFT" spacing="8">
-                            <StackPane styleClass="landing-pill-dot"/>
-                            <Label text="AI-Powered Platform  Â·  50,000+ students" styleClass="landing-pill-text"/>
-                        </HBox>
-                    </HBox>
-                    <VBox.margin><Insets bottom="28"/></VBox.margin>
+                    <HBox alignment="CENTER" spacing="56">
 
-                    <!-- Headline -->
-                    <Label text="Elevate your studies." styleClass="landing-h1"/>
-                    <VBox.margin><Insets bottom="4"/></VBox.margin>
-                    <Label text="Nurture your mind." styleClass="landing-h1-accent"/>
-                    <VBox.margin><Insets bottom="20"/></VBox.margin>
+                        <!-- Left: Text content -->
+                        <VBox alignment="CENTER_LEFT" spacing="0" HBox.hgrow="SOMETIMES"
+                              minWidth="480" maxWidth="560">
 
-                    <!-- Subtitle -->
-                    <Label styleClass="landing-subtitle" wrapText="true" maxWidth="440"
-                           text="All-in-one workspace for courses, flashcards, planning and wellbeing â€” built for the modern student."/>
-                    <VBox.margin><Insets bottom="36"/></VBox.margin>
+                            <!-- Live badge -->
+                            <HBox>
+                                <HBox styleClass="landing-pill-badge" alignment="CENTER_LEFT" spacing="8">
+                                    <StackPane styleClass="landing-pill-dot"/>
+                                    <Label text="AI-Powered Platform  ·  Join 50,000+ students" styleClass="landing-pill-text"/>
+                                </HBox>
+                            </HBox>
+                            <Region prefHeight="28"/>
 
-                    <!-- CTA Buttons -->
-                    <HBox spacing="14" alignment="CENTER_LEFT">
-                        <Button styleClass="landing-cta-primary" onAction="#goToRegister">
-                            <graphic><FontIcon iconLiteral="fth-arrow-right" iconSize="16" iconColor="white"/></graphic>
-                            <text>Get Started Free</text>
-                            <contentDisplay>RIGHT</contentDisplay>
-                        </Button>
-                        <Button styleClass="landing-cta-ghost" onAction="#goToLogin">
-                            <graphic><FontIcon iconLiteral="fth-log-in" iconSize="15"/></graphic>
-                            <text>Sign In</text>
-                        </Button>
-                    </HBox>
-                    <VBox.margin><Insets bottom="40"/></VBox.margin>
+                            <!-- Headline -->
+                            <Label text="Your Universe of" styleClass="landing-h1"/>
+                            <Region prefHeight="4"/>
+                            <Label text="Smart Learning." styleClass="landing-h1-accent"/>
+                            <Region prefHeight="22"/>
 
-                    <!-- Stats row -->
-                    <HBox styleClass="landing-stats-bar" alignment="CENTER_LEFT">
-                        <VBox styleClass="landing-stat-item" spacing="3" alignment="CENTER">
-                            <Label text="50K+" styleClass="landing-stat-num"/>
-                            <Label text="Students" styleClass="landing-stat-sub"/>
+                            <!-- Subtitle -->
+                            <Label styleClass="landing-subtitle" wrapText="true" maxWidth="460"
+                                   text="Courses, flashcards, AI planning, and wellbeing — everything you need to study smarter, in one beautiful space."/>
+                            <Region prefHeight="36"/>
+
+                            <!-- CTA Buttons -->
+                            <HBox spacing="14" alignment="CENTER_LEFT">
+                                <Button styleClass="landing-cta-primary" onAction="#goToRegister">
+                                    <graphic><FontIcon iconLiteral="fth-zap" iconSize="16" iconColor="white"/></graphic>
+                                    <text>Get Started Free</text>
+                                    <contentDisplay>RIGHT</contentDisplay>
+                                </Button>
+                                <Button styleClass="landing-cta-ghost" onAction="#goToLogin">
+                                    <graphic><FontIcon iconLiteral="fth-log-in" iconSize="15"/></graphic>
+                                    <text>Sign In</text>
+                                </Button>
+                            </HBox>
+                            <Region prefHeight="40"/>
+
+                            <!-- Stats row -->
+                            <HBox alignment="CENTER_LEFT">
+                                <HBox styleClass="landing-stats-bar" alignment="CENTER_LEFT" maxWidth="360">
+                                    <VBox styleClass="landing-stat-item" spacing="3" alignment="CENTER">
+                                        <Label text="50K+" styleClass="landing-stat-num"/>
+                                        <Label text="Students" styleClass="landing-stat-sub"/>
+                                    </VBox>
+                                    <StackPane styleClass="landing-stat-sep"/>
+                                    <VBox styleClass="landing-stat-item" spacing="3" alignment="CENTER">
+                                        <Label text="4.9 ★" styleClass="landing-stat-num-yellow"/>
+                                        <Label text="App Rating" styleClass="landing-stat-sub"/>
+                                    </VBox>
+                                    <StackPane styleClass="landing-stat-sep"/>
+                                    <VBox styleClass="landing-stat-item" spacing="3" alignment="CENTER">
+                                        <Label text="Free" styleClass="landing-stat-num-green"/>
+                                        <Label text="Forever" styleClass="landing-stat-sub"/>
+                                    </VBox>
+                                </HBox>
+                            </HBox>
                         </VBox>
-                        <StackPane styleClass="landing-stat-sep"/>
-                        <VBox styleClass="landing-stat-item" spacing="3" alignment="CENTER">
-                            <Label text="4.9 â˜…" styleClass="landing-stat-num-yellow"/>
-                            <Label text="App Rating" styleClass="landing-stat-sub"/>
-                        </VBox>
-                        <StackPane styleClass="landing-stat-sep"/>
-                        <VBox styleClass="landing-stat-item" spacing="3" alignment="CENTER">
-                            <Label text="Free" styleClass="landing-stat-num-green"/>
-                            <Label text="Forever" styleClass="landing-stat-sub"/>
+
+                        <!-- Right: Floating feature showcase -->
+                        <VBox fx:id="heroVisual" alignment="CENTER" spacing="16"
+                              HBox.hgrow="ALWAYS" opacity="0">
+
+                            <!-- Floating glass card 1 — Dashboard preview -->
+                            <VBox styleClass="landing-glass-card" spacing="10" maxWidth="340">
+                                <padding><Insets top="20" right="20" bottom="20" left="20"/></padding>
+                                <HBox alignment="CENTER_LEFT" spacing="10">
+                                    <StackPane styleClass="landing-glass-icon, landing-glass-icon-purple">
+                                        <FontIcon iconLiteral="fth-layout" iconSize="18" iconColor="#A78BFA"/>
+                                    </StackPane>
+                                    <VBox spacing="2">
+                                        <Label text="Smart Dashboard" styleClass="landing-glass-title"/>
+                                        <Label text="Track your courses, GPA, and study sessions" styleClass="landing-glass-sub"/>
+                                    </VBox>
+                                </HBox>
+                                <HBox spacing="8">
+                                    <VBox styleClass="landing-mini-stat" alignment="CENTER" spacing="2" HBox.hgrow="ALWAYS">
+                                        <Label text="8" style="-fx-text-fill: #A78BFA; -fx-font-size: 20px; -fx-font-weight: 800;"/>
+                                        <Label text="Courses" style="-fx-text-fill: #64748B; -fx-font-size: 10px;"/>
+                                    </VBox>
+                                    <VBox styleClass="landing-mini-stat" alignment="CENTER" spacing="2" HBox.hgrow="ALWAYS">
+                                        <Label text="3.8" style="-fx-text-fill: #34D399; -fx-font-size: 20px; -fx-font-weight: 800;"/>
+                                        <Label text="GPA" style="-fx-text-fill: #64748B; -fx-font-size: 10px;"/>
+                                    </VBox>
+                                    <VBox styleClass="landing-mini-stat" alignment="CENTER" spacing="2" HBox.hgrow="ALWAYS">
+                                        <Label text="92%" style="-fx-text-fill: #60A5FA; -fx-font-size: 20px; -fx-font-weight: 800;"/>
+                                        <Label text="Goals" style="-fx-text-fill: #64748B; -fx-font-size: 10px;"/>
+                                    </VBox>
+                                </HBox>
+                            </VBox>
+
+                            <!-- Floating glass card 2 �� AI Features -->
+                            <HBox spacing="14">
+                                <VBox styleClass="landing-glass-card-sm" spacing="8" HBox.hgrow="ALWAYS">
+                                    <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
+                                    <StackPane styleClass="landing-glass-icon, landing-glass-icon-blue">
+                                        <FontIcon iconLiteral="fth-cpu" iconSize="16" iconColor="#60A5FA"/>
+                                    </StackPane>
+                                    <Label text="AI Flashcards" styleClass="landing-glass-title-sm"/>
+                                    <Label text="Auto-generated from notes" styleClass="landing-glass-sub"/>
+                                    <HBox spacing="6" alignment="CENTER_LEFT">
+                                        <Label text="156" style="-fx-text-fill: #60A5FA; -fx-font-size: 14px; -fx-font-weight: 800;"/>
+                                        <Label text="cards created" style="-fx-text-fill: #475569; -fx-font-size: 10px;"/>
+                                    </HBox>
+                                    <StackPane styleClass="landing-mini-bar-bg" alignment="CENTER_LEFT">
+                                        <StackPane styleClass="landing-mini-bar-blue"/>
+                                    </StackPane>
+                                </VBox>
+                                <VBox styleClass="landing-glass-card-sm" spacing="8" HBox.hgrow="ALWAYS">
+                                    <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
+                                    <StackPane styleClass="landing-glass-icon, landing-glass-icon-green">
+                                        <FontIcon iconLiteral="fth-heart" iconSize="16" iconColor="#34D399"/>
+                                    </StackPane>
+                                    <Label text="Wellbeing" styleClass="landing-glass-title-sm"/>
+                                    <Label text="Today's mood check-in" styleClass="landing-glass-sub"/>
+                                    <HBox spacing="4" alignment="CENTER_LEFT">
+                                        <Label text="😊" style="-fx-font-size: 16px;"/>
+                                        <Label text="Feeling great" style="-fx-text-fill: #34D399; -fx-font-size: 11px; -fx-font-weight: 700;"/>
+                                    </HBox>
+                                    <StackPane styleClass="landing-mini-bar-bg" alignment="CENTER_LEFT">
+                                        <StackPane styleClass="landing-mini-bar-green"/>
+                                    </StackPane>
+                                </VBox>
+                            </HBox>
+
+                            <!-- Floating glass card 3 — Schedule -->
+                            <VBox styleClass="landing-glass-card" spacing="8" maxWidth="340">
+                                <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
+                                <HBox alignment="CENTER_LEFT" spacing="8">
+                                    <StackPane styleClass="landing-glass-icon, landing-glass-icon-pink">
+                                        <FontIcon iconLiteral="fth-calendar" iconSize="16" iconColor="#F472B6"/>
+                                    </StackPane>
+                                    <Label text="Today's Schedule" styleClass="landing-glass-title"/>
+                                </HBox>
+                                <HBox spacing="8" alignment="CENTER_LEFT">
+                                    <StackPane prefWidth="6" prefHeight="6" maxWidth="6" maxHeight="6"
+                                               style="-fx-background-color: #8B5CF6; -fx-background-radius: 3;"/>
+                                    <Label text="Mathematics — Chapter 7" style="-fx-text-fill: #CBD5E1; -fx-font-size: 11px;" HBox.hgrow="ALWAYS"/>
+                                    <Label text="09:00" style="-fx-text-fill: #64748B; -fx-font-size: 10px;"/>
+                                </HBox>
+                                <HBox spacing="8" alignment="CENTER_LEFT">
+                                    <StackPane prefWidth="6" prefHeight="6" maxWidth="6" maxHeight="6"
+                                               style="-fx-background-color: #FB7185; -fx-background-radius: 3;"/>
+                                    <Label text="Physics Lab Report" style="-fx-text-fill: #CBD5E1; -fx-font-size: 11px;" HBox.hgrow="ALWAYS"/>
+                                    <Label text="14:30" style="-fx-text-fill: #FB7185; -fx-font-size: 10px; -fx-font-weight: bold;"/>
+                                </HBox>
+                                <HBox spacing="8" alignment="CENTER_LEFT">
+                                    <StackPane prefWidth="6" prefHeight="6" maxWidth="6" maxHeight="6"
+                                               style="-fx-background-color: #34D399; -fx-background-radius: 3;"/>
+                                    <Label text="CS Group Meeting" style="-fx-text-fill: #CBD5E1; -fx-font-size: 11px;" HBox.hgrow="ALWAYS"/>
+                                    <Label text="17:00" style="-fx-text-fill: #64748B; -fx-font-size: 10px;"/>
+                                </HBox>
+                            </VBox>
                         </VBox>
                     </HBox>
                 </VBox>
-
-                <!-- Right: Mock App Preview -->
-                <VBox styleClass="landing-right" alignment="CENTER" HBox.hgrow="ALWAYS">
-                    <padding><Insets top="40" right="48" bottom="40" left="24"/></padding>
-
-                    <VBox styleClass="landing-mock-window" spacing="0" maxWidth="480">
-                        <!-- Window title bar -->
-                        <HBox styleClass="landing-mock-bar" alignment="CENTER_LEFT" spacing="8">
-                            <padding><Insets left="14" right="14"/></padding>
-                            <StackPane styleClass="landing-mock-dot, landing-mock-dot-red"/>
-                            <StackPane styleClass="landing-mock-dot, landing-mock-dot-yellow"/>
-                            <StackPane styleClass="landing-mock-dot, landing-mock-dot-green"/>
-                            <Region HBox.hgrow="ALWAYS"/>
-                            <Label text="RLife Dashboard" styleClass="landing-mock-title"/>
-                            <Region HBox.hgrow="ALWAYS"/>
-                        </HBox>
-
-                        <!-- Dashboard body -->
-                        <VBox styleClass="landing-mock-body" spacing="12">
-                            <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
-
-                            <!-- Greeting -->
-                            <HBox alignment="CENTER_LEFT" spacing="10">
-                                <VBox spacing="2" HBox.hgrow="ALWAYS">
-                                    <Label text="Good morning, Student" styleClass="landing-mock-greeting"/>
-                                    <Label text="3 tasks due today" styleClass="landing-mock-sub"/>
-                                </VBox>
-                                <StackPane styleClass="landing-mock-avatar">
-                                    <Label text="S" styleClass="landing-mock-avatar-text"/>
-                                </StackPane>
-                            </HBox>
-
-                            <!-- Stat chips -->
-                            <HBox spacing="8">
-                                <VBox styleClass="landing-chip, landing-chip-purple" HBox.hgrow="ALWAYS" alignment="CENTER" spacing="3">
-                                    <Label text="8" styleClass="landing-chip-num"/>
-                                    <Label text="Courses" styleClass="landing-chip-lbl"/>
-                                </VBox>
-                                <VBox styleClass="landing-chip, landing-chip-red" HBox.hgrow="ALWAYS" alignment="CENTER" spacing="3">
-                                    <Label text="3" styleClass="landing-chip-num"/>
-                                    <Label text="Due Today" styleClass="landing-chip-lbl"/>
-                                </VBox>
-                                <VBox styleClass="landing-chip, landing-chip-yellow" HBox.hgrow="ALWAYS" alignment="CENTER" spacing="3">
-                                    <Label text="3.8" styleClass="landing-chip-num"/>
-                                    <Label text="GPA" styleClass="landing-chip-lbl"/>
-                                </VBox>
-                                <VBox styleClass="landing-chip, landing-chip-green" HBox.hgrow="ALWAYS" alignment="CENTER" spacing="3">
-                                    <Label text="12" styleClass="landing-chip-num"/>
-                                    <Label text="Decks" styleClass="landing-chip-lbl"/>
-                                </VBox>
-                            </HBox>
-
-                            <!-- Progress card -->
-                            <VBox styleClass="landing-panel" spacing="8">
-                                <padding><Insets top="12" right="12" bottom="12" left="12"/></padding>
-                                <HBox alignment="CENTER_LEFT">
-                                    <Label text="Weekly Study Goal" styleClass="landing-panel-title" HBox.hgrow="ALWAYS"/>
-                                    <Label text="72%" styleClass="landing-panel-pct"/>
-                                </HBox>
-                                <StackPane styleClass="landing-bar-bg" alignment="CENTER_LEFT">
-                                    <StackPane styleClass="landing-bar-fill" StackPane.alignment="CENTER_LEFT"/>
-                                </StackPane>
-                                <Label text="18h studied of 25h goal this week" styleClass="landing-mock-sub"/>
-                            </VBox>
-
-                            <!-- Schedule -->
-                            <VBox styleClass="landing-panel" spacing="0">
-                                <padding><Insets top="12" right="12" bottom="10" left="12"/></padding>
-                                <Label text="Today's Schedule" styleClass="landing-panel-title"/>
-                                <VBox.margin><Insets bottom="8"/></VBox.margin>
-                                <HBox styleClass="landing-task" alignment="CENTER_LEFT" spacing="8">
-                                    <StackPane styleClass="landing-tdot, landing-tdot-purple"/>
-                                    <Label text="Mathematics â€” Chapter 7" styleClass="landing-task-text" HBox.hgrow="ALWAYS"/>
-                                    <Label text="09:00" styleClass="landing-task-time"/>
-                                </HBox>
-                                <HBox styleClass="landing-task" alignment="CENTER_LEFT" spacing="8">
-                                    <StackPane styleClass="landing-tdot, landing-tdot-red"/>
-                                    <Label text="Physics Lab Report â€” Due" styleClass="landing-task-text" HBox.hgrow="ALWAYS"/>
-                                    <Label text="14:30" styleClass="landing-time-danger"/>
-                                </HBox>
-                                <HBox styleClass="landing-task" alignment="CENTER_LEFT" spacing="8">
-                                    <StackPane styleClass="landing-tdot, landing-tdot-green"/>
-                                    <Label text="CS Group Project Meeting" styleClass="landing-task-text" HBox.hgrow="ALWAYS"/>
-                                    <Label text="17:00" styleClass="landing-task-time"/>
-                                </HBox>
-                            </VBox>
-                        </VBox>
-                    </VBox>
-                </VBox>
-            </HBox>
+            </StackPane>
 
             <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
                  SECTION 2: FEATURES GRID
-                 â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
-            <VBox styleClass="landing-features-section" alignment="CENTER" spacing="14">
-                <padding><Insets top="56" right="60" bottom="56" left="60"/></padding>
+                 ═══════════════════════════════════ -->
+            <VBox fx:id="featuresSection" styleClass="landing-features-section" alignment="CENTER" spacing="14" opacity="0">
+                <padding><Insets top="64" right="60" bottom="64" left="60"/></padding>
 
-                <!-- Section header -->
                 <Label text="Everything you need to succeed" styleClass="landing-section-title"/>
-                <VBox.margin><Insets bottom="4"/></VBox.margin>
+                <Region prefHeight="4"/>
                 <Label text="Powerful tools designed to help you study smarter, stay organized, and achieve your goals."
                        styleClass="landing-section-sub" wrapText="true" maxWidth="560"/>
-                <VBox.margin><Insets bottom="36"/></VBox.margin>
+                <Region prefHeight="40"/>
 
-                <!-- Feature cards row 1 -->
                 <HBox spacing="20" alignment="CENTER">
-                    <!-- Card 1: Courses -->
-                    <VBox styleClass="landing-feature-card" spacing="12" HBox.hgrow="ALWAYS">
-                        <padding><Insets top="28" right="24" bottom="28" left="24"/></padding>
+                    <VBox styleClass="landing-feature-card" spacing="14" HBox.hgrow="ALWAYS">
+                        <padding><Insets top="30" right="24" bottom="30" left="24"/></padding>
                         <StackPane styleClass="landing-feat-icon, landing-feat-icon-purple" alignment="CENTER">
                             <FontIcon iconLiteral="fth-book-open" iconSize="22" iconColor="#A78BFA"/>
                         </StackPane>
@@ -220,9 +235,8 @@
                                styleClass="landing-feat-desc" wrapText="true"/>
                     </VBox>
 
-                    <!-- Card 2: Flashcards -->
-                    <VBox styleClass="landing-feature-card" spacing="12" HBox.hgrow="ALWAYS">
-                        <padding><Insets top="28" right="24" bottom="28" left="24"/></padding>
+                    <VBox styleClass="landing-feature-card" spacing="14" HBox.hgrow="ALWAYS">
+                        <padding><Insets top="30" right="24" bottom="30" left="24"/></padding>
                         <StackPane styleClass="landing-feat-icon, landing-feat-icon-blue" alignment="CENTER">
                             <FontIcon iconLiteral="fth-layers" iconSize="22" iconColor="#60A5FA"/>
                         </StackPane>
@@ -231,9 +245,8 @@
                                styleClass="landing-feat-desc" wrapText="true"/>
                     </VBox>
 
-                    <!-- Card 3: Planner -->
-                    <VBox styleClass="landing-feature-card" spacing="12" HBox.hgrow="ALWAYS">
-                        <padding><Insets top="28" right="24" bottom="28" left="24"/></padding>
+                    <VBox styleClass="landing-feature-card" spacing="14" HBox.hgrow="ALWAYS">
+                        <padding><Insets top="30" right="24" bottom="30" left="24"/></padding>
                         <StackPane styleClass="landing-feat-icon, landing-feat-icon-green" alignment="CENTER">
                             <FontIcon iconLiteral="fth-calendar" iconSize="22" iconColor="#34D399"/>
                         </StackPane>
@@ -242,9 +255,8 @@
                                styleClass="landing-feat-desc" wrapText="true"/>
                     </VBox>
 
-                    <!-- Card 4: Wellbeing -->
-                    <VBox styleClass="landing-feature-card" spacing="12" HBox.hgrow="ALWAYS">
-                        <padding><Insets top="28" right="24" bottom="28" left="24"/></padding>
+                    <VBox styleClass="landing-feature-card" spacing="14" HBox.hgrow="ALWAYS">
+                        <padding><Insets top="30" right="24" bottom="30" left="24"/></padding>
                         <StackPane styleClass="landing-feat-icon, landing-feat-icon-pink" alignment="CENTER">
                             <FontIcon iconLiteral="fth-heart" iconSize="22" iconColor="#F472B6"/>
                         </StackPane>
@@ -255,21 +267,20 @@
                 </HBox>
             </VBox>
 
-            <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-                 SECTION 3: SOCIAL PROOF + HOW IT WORKS
-                 â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
-            <HBox spacing="0" styleClass="landing-proof-section">
+            <!-- ═══════════════════════════════════
+                 SECTION 3: HOW IT WORKS + TESTIMONIALS
+                 ═══════════════════════════════════ -->
+            <HBox fx:id="proofSection" spacing="0" styleClass="landing-proof-section" opacity="0">
 
                 <!-- Left: How It Works -->
                 <VBox alignment="CENTER_LEFT" spacing="0" HBox.hgrow="ALWAYS">
-                    <padding><Insets top="48" right="40" bottom="48" left="60"/></padding>
+                    <padding><Insets top="56" right="40" bottom="56" left="60"/></padding>
 
                     <Label text="How it works" styleClass="landing-section-title"/>
-                    <VBox.margin><Insets bottom="6"/></VBox.margin>
+                    <Region prefHeight="6"/>
                     <Label text="Get started in three simple steps" styleClass="landing-section-sub"/>
-                    <VBox.margin><Insets bottom="32"/></VBox.margin>
+                    <Region prefHeight="36"/>
 
-                    <!-- Step 1 -->
                     <HBox spacing="16" alignment="TOP_LEFT">
                         <StackPane styleClass="landing-step-num" alignment="CENTER">
                             <Label text="1" styleClass="landing-step-num-text"/>
@@ -280,9 +291,8 @@
                                    styleClass="landing-step-desc" wrapText="true"/>
                         </VBox>
                     </HBox>
-                    <VBox.margin><Insets bottom="24"/></VBox.margin>
+                    <Region prefHeight="24"/>
 
-                    <!-- Step 2 -->
                     <HBox spacing="16" alignment="TOP_LEFT">
                         <StackPane styleClass="landing-step-num" alignment="CENTER">
                             <Label text="2" styleClass="landing-step-num-text"/>
@@ -293,9 +303,8 @@
                                    styleClass="landing-step-desc" wrapText="true"/>
                         </VBox>
                     </HBox>
-                    <VBox.margin><Insets bottom="24"/></VBox.margin>
+                    <Region prefHeight="24"/>
 
-                    <!-- Step 3 -->
                     <HBox spacing="16" alignment="TOP_LEFT">
                         <StackPane styleClass="landing-step-num" alignment="CENTER">
                             <Label text="3" styleClass="landing-step-num-text"/>
@@ -310,17 +319,14 @@
 
                 <!-- Right: Testimonials -->
                 <VBox alignment="CENTER" spacing="16" HBox.hgrow="ALWAYS">
-                    <padding><Insets top="48" right="60" bottom="48" left="40"/></padding>
+                    <padding><Insets top="56" right="60" bottom="56" left="40"/></padding>
 
                     <Label text="Loved by students" styleClass="landing-section-title"/>
-                    <VBox.margin><Insets bottom="24"/></VBox.margin>
+                    <Region prefHeight="20"/>
 
-                    <!-- Testimonial 1 -->
                     <VBox styleClass="landing-testimonial" spacing="10">
                         <padding><Insets top="20" right="20" bottom="20" left="20"/></padding>
-                        <HBox spacing="4" alignment="CENTER_LEFT">
-                            <Label text="â˜…â˜…â˜…â˜…â˜…" styleClass="landing-stars"/>
-                        </HBox>
+                        <Label text="★★★★★" styleClass="landing-stars"/>
                         <Label text="&quot;This app completely changed how I study. My GPA went from 2.8 to 3.7 in one semester!&quot;"
                                styleClass="landing-testimonial-text" wrapText="true"/>
                         <HBox spacing="10" alignment="CENTER_LEFT">
@@ -334,12 +340,9 @@
                         </HBox>
                     </VBox>
 
-                    <!-- Testimonial 2 -->
                     <VBox styleClass="landing-testimonial" spacing="10">
                         <padding><Insets top="20" right="20" bottom="20" left="20"/></padding>
-                        <HBox spacing="4" alignment="CENTER_LEFT">
-                            <Label text="â˜…â˜…â˜…â˜…â˜…" styleClass="landing-stars"/>
-                        </HBox>
+                        <Label text="★★★★★" styleClass="landing-stars"/>
                         <Label text="&quot;The flashcard system with spaced repetition is incredible. I actually remember what I study now.&quot;"
                                styleClass="landing-testimonial-text" wrapText="true"/>
                         <HBox spacing="10" alignment="CENTER_LEFT">
@@ -359,19 +362,19 @@
                  SECTION 4: BOTTOM CTA
                  â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
             <VBox styleClass="landing-bottom-cta" alignment="CENTER" spacing="14">
-                <padding><Insets top="56" right="60" bottom="56" left="60"/></padding>
+                <padding><Insets top="64" right="60" bottom="56" left="60"/></padding>
 
                 <StackPane styleClass="landing-bottom-glow"/>
 
                 <Label text="Ready to transform your study life?" styleClass="landing-bottom-title"/>
-                <VBox.margin><Insets bottom="4"/></VBox.margin>
+                <Region prefHeight="4"/>
                 <Label text="Join thousands of students already studying smarter with RLife."
                        styleClass="landing-bottom-sub" wrapText="true" maxWidth="480"/>
-                <VBox.margin><Insets bottom="28"/></VBox.margin>
+                <Region prefHeight="28"/>
 
                 <HBox spacing="14" alignment="CENTER">
                     <Button styleClass="landing-cta-primary" onAction="#goToRegister">
-                        <graphic><FontIcon iconLiteral="fth-arrow-right" iconSize="16" iconColor="white"/></graphic>
+                        <graphic><FontIcon iconLiteral="fth-zap" iconSize="16" iconColor="white"/></graphic>
                         <text>Get Started Free</text>
                         <contentDisplay>RIGHT</contentDisplay>
                     </Button>
@@ -380,13 +383,12 @@
                         <text>Sign In</text>
                     </Button>
                 </HBox>
-                <VBox.margin><Insets bottom="12"/></VBox.margin>
+                <Region prefHeight="16"/>
 
-                <!-- Footer -->
                 <HBox alignment="CENTER" spacing="6">
-                    <StackPane styleClass="title-bar-logo">
-                        <FontIcon iconLiteral="fth-layers" iconSize="12" iconColor="white"/>
-                    </StackPane>
+                    <ImageView fitWidth="22" fitHeight="22" preserveRatio="true">
+                        <image><Image url="@../images/logo.png"/></image>
+                    </ImageView>
                     <Label text="RLife" style="-fx-text-fill: #475569; -fx-font-size: 13px; -fx-font-weight: bold;"/>
                     <Label text="â€” Built for students, by students."
                            style="-fx-text-fill: #334155; -fx-font-size: 12px;"/>

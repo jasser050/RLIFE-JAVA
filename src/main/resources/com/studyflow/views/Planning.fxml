@@ -6,9 +6,7 @@
 <?import javafx.scene.layout.*?>
 <?import org.kordamp.ikonli.javafx.*?>
 
-<StackPane xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.studyflow.controllers.PlanningController">
-
-<VBox fillWidth="true" spacing="24" styleClass="planning-root">
+<VBox fillWidth="true" spacing="24" styleClass="planning-root" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.studyflow.controllers.PlanningController">
 
     <padding>
         <Insets bottom="24" left="0" right="0" top="0" />
@@ -44,11 +42,6 @@
             <Button onAction="#handleViewSessions" styleClass="btn-secondary" text="View Sessions">
                 <graphic>
                     <FontIcon iconLiteral="fth-list" iconSize="16" />
-                </graphic>
-            </Button>
-            <Button onAction="#handleImportGoogleCalendar" styleClass="btn-secondary" text="Import Google">
-                <graphic>
-                    <FontIcon iconLiteral="fth-calendar" iconSize="16" />
                 </graphic>
             </Button>
             <Button onAction="#handleExportPlanningPdf" styleClass="btn-secondary" text="Export PDF">
@@ -140,7 +133,6 @@
                         <GridPane fx:id="calendarGrid" hgap="4" styleClass="planning-calendar-grid" vgap="8" />
                     </content>
                 </ScrollPane>
-
             </VBox>
 
             <VBox maxWidth="430" minWidth="340" prefWidth="390" spacing="20" styleClass="planning-side-column">
@@ -349,6 +341,206 @@
                     <Button onAction="#handleGenerateSmartPlanPreview" styleClass="btn-secondary" text="Generate Planning" />
                     <Button fx:id="smartPlanValidateButton" disable="true" onAction="#handleValidateSmartPlan" styleClass="btn-primary" text="Validate Planning" />
                 </HBox>
+            </VBox>
+        </VBox>
+
+        <VBox fx:id="planningFormPage" fillWidth="true" managed="false" maxWidth="860" spacing="0" styleClass="card" visible="false">
+            <HBox alignment="CENTER_LEFT" spacing="12" styleClass="card-header">
+                <StackPane prefHeight="36" prefWidth="36" styleClass="stat-icon-box, accent">
+                    <FontIcon iconLiteral="fth-edit-3" iconSize="16" />
+                </StackPane>
+                <VBox spacing="2" HBox.hgrow="ALWAYS">
+                    <Label fx:id="planningFormTitleLabel" styleClass="card-title" text="Add Planning" />
+                    <Label styleClass="text-small" text="Select a session, date, and time range" />
+                </VBox>
+            </HBox>
+
+            <VBox spacing="20" styleClass="card-body">
+                <Label fx:id="formMessageLabel" managed="false" visible="false" />
+
+                <GridPane hgap="18" vgap="14">
+                    <columnConstraints>
+                        <ColumnConstraints minWidth="140" />
+                        <ColumnConstraints hgrow="ALWAYS" />
+                    </columnConstraints>
+
+                    <Label styleClass="text-body" text="Session" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                    <VBox spacing="5" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                        <ComboBox fx:id="sessionComboBox" maxWidth="1.7976931348623157E308" promptText="Choose a session" />
+                        <Label styleClass="session-field-tip" text="Tip: selecting a session is required." />
+                        <Label fx:id="sessionErrorLabel" managed="false" styleClass="session-field-error" visible="false" />
+                    </VBox>
+
+                    <Label styleClass="text-body" text="Date" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+                    <VBox spacing="5" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                        <DatePicker fx:id="planningDatePicker" editable="false" maxWidth="1.7976931348623157E308" promptText="Select date" styleClass="planning-date-picker" />
+                        <Label styleClass="session-field-tip" text="Tip: choose the planning day." />
+                        <Label fx:id="dateErrorLabel" managed="false" styleClass="session-field-error" visible="false" />
+                    </VBox>
+
+                    <Label styleClass="text-body" text="Start Time" GridPane.columnIndex="0" GridPane.rowIndex="2" />
+                    <VBox spacing="5" GridPane.columnIndex="1" GridPane.rowIndex="2">
+                        <ComboBox fx:id="startTimeComboBox" maxWidth="1.7976931348623157E308" promptText="HH:mm" />
+                        <Label styleClass="session-field-tip" text="Tip: use 24h format (HH:mm)." />
+                        <Label fx:id="startTimeErrorLabel" managed="false" styleClass="session-field-error" visible="false" />
+                    </VBox>
+
+                    <Label styleClass="text-body" text="End Time" GridPane.columnIndex="0" GridPane.rowIndex="3" />
+                    <VBox spacing="5" GridPane.columnIndex="1" GridPane.rowIndex="3">
+                        <ComboBox fx:id="endTimeComboBox" maxWidth="1.7976931348623157E308" promptText="HH:mm" />
+                        <Label styleClass="session-field-tip" text="Tip: end time must be after start time." />
+                        <Label fx:id="endTimeErrorLabel" managed="false" styleClass="session-field-error" visible="false" />
+                    </VBox>
+
+                    <Label styleClass="text-body" text="Color" GridPane.columnIndex="0" GridPane.rowIndex="4" />
+                    <VBox spacing="5" GridPane.columnIndex="1" GridPane.rowIndex="4">
+                        <ColorPicker fx:id="colorPicker" maxWidth="1.7976931348623157E308" minHeight="44" prefHeight="44" styleClass="planning-color-picker" />
+                        <Label styleClass="session-field-tip" text="Tip: one color can be used once per day." />
+                        <Label fx:id="colorErrorLabel" managed="false" styleClass="session-field-error" visible="false" />
+                    </VBox>
+
+                    <Label styleClass="text-body" text="Feedback" GridPane.columnIndex="0" GridPane.rowIndex="5" />
+                    <VBox fx:id="planningEditFeedbackBox" managed="false" spacing="6" visible="false" GridPane.columnIndex="1" GridPane.rowIndex="5">
+                        <HBox alignment="CENTER_LEFT" spacing="8">
+                            <ComboBox fx:id="planningEditFeedbackComboBox" maxWidth="1.7976931348623157E308" promptText="Choose feedback" HBox.hgrow="ALWAYS" />
+                            <Button onAction="#handleClearPlanningFeedback" styleClass="btn-secondary" text="Remove" />
+                        </HBox>
+                        <Label styleClass="session-field-tip" text="You can update or remove existing feedback." />
+                    </VBox>
+
+                    <rowConstraints>
+                        <RowConstraints />
+                        <RowConstraints />
+                        <RowConstraints />
+                        <RowConstraints />
+                        <RowConstraints />
+                        <RowConstraints />
+                    </rowConstraints>
+
+                </GridPane>
+
+                <HBox alignment="CENTER_RIGHT" spacing="10">
+                    <Button onAction="#handleCancelPlanning" styleClass="btn-secondary" text="Back" />
+                    <Button fx:id="savePlanningButton" onAction="#handleSavePlanning" styleClass="btn-primary" text="Save Planning" />
+                </HBox>
+            </VBox>
+        </VBox>
+
+        <VBox fx:id="feedbackPage" fillWidth="true" managed="false" maxWidth="940" spacing="0" styleClass="card" visible="false">
+            <HBox alignment="CENTER_LEFT" spacing="12" styleClass="card-header">
+                <StackPane prefHeight="36" prefWidth="36" styleClass="stat-icon-box, warning">
+                    <FontIcon iconLiteral="fth-smile" iconSize="16" />
+                </StackPane>
+                <VBox spacing="2" HBox.hgrow="ALWAYS">
+                    <Label styleClass="card-title" text="Session Feedback" />
+                    <Label styleClass="text-small" text="Add or edit feedback for finished sessions" />
+                </VBox>
+            </HBox>
+
+            <VBox spacing="16" styleClass="card-body">
+                <VBox fx:id="feedbackPendingListContainer" spacing="0" VBox.vgrow="ALWAYS">
+                    <ListView fx:id="feedbackPendingListView" minHeight="180" prefHeight="230" styleClass="sessions-list-view planning-list-view planning-feedback-quick-list" VBox.vgrow="ALWAYS" />
+                </VBox>
+                <Label styleClass="text-muted" text="Select a session to open the emoji feedback page." />
+
+                <HBox alignment="CENTER_RIGHT" spacing="10">
+                    <Button onAction="#handleBackFromFeedback" styleClass="btn-secondary" text="Back" />
+                </HBox>
+            </VBox>
+        </VBox>
+
+        <VBox fx:id="feedbackPickerPage" fillWidth="true" managed="false" maxWidth="940" spacing="0" styleClass="card" visible="false">
+            <HBox alignment="CENTER_LEFT" spacing="12" styleClass="card-header">
+                <StackPane prefHeight="36" prefWidth="36" styleClass="stat-icon-box, warning">
+                    <FontIcon iconLiteral="fth-smile" iconSize="16" />
+                </StackPane>
+                <VBox spacing="2" HBox.hgrow="ALWAYS">
+                    <Label styleClass="card-title" text="Choose Feedback" />
+                    <Label styleClass="text-small" text="Rate your finished session with one emoji" />
+                </VBox>
+            </HBox>
+
+            <VBox spacing="16" styleClass="card-body">
+                <Label fx:id="feedbackSelectedSessionLabel" styleClass="text-muted" text="Select a finished session to add or edit feedback." />
+
+                <VBox spacing="10" styleClass="planning-feedback-picker-box">
+                    <Label styleClass="planning-feedback-picker-title" text="How was this session?" />
+                    <FlowPane alignment="CENTER_LEFT" hgap="10" styleClass="planning-feedback-chip-grid" vgap="10">
+                        <ToggleButton fx:id="feedbackVeryBadButton" styleClass="planning-feedback-chip-large" text="😡&#10;Very Bad" />
+                        <ToggleButton fx:id="feedbackBadButton" styleClass="planning-feedback-chip-large" text="😕&#10;Bad" />
+                        <ToggleButton fx:id="feedbackMediumButton" styleClass="planning-feedback-chip-large" text="😐&#10;Medium" />
+                        <ToggleButton fx:id="feedbackGoodButton" styleClass="planning-feedback-chip-large" text="🙂&#10;Good" />
+                        <ToggleButton fx:id="feedbackExcellentButton" styleClass="planning-feedback-chip-large" text="🤩&#10;Excellent" />
+                    </FlowPane>
+                </VBox>
+                <Label styleClass="session-field-tip" text="Tip: feedback can be updated later." />
+                <Label fx:id="feedbackErrorLabel" managed="false" styleClass="session-field-error" visible="false" />
+
+                <HBox alignment="CENTER_RIGHT" spacing="10">
+                    <Button onAction="#handleBackFromFeedbackPicker" styleClass="btn-secondary" text="Back to List" />
+                    <Button fx:id="saveFeedbackButton" onAction="#handleSaveFeedback" styleClass="btn-primary" text="Save Feedback" />
+                </HBox>
+            </VBox>
+        </VBox>
+    </StackPane>
+
+    <HBox spacing="14" styleClass="planning-kpi-row">
+        <VBox.margin>
+            <Insets top="18" />
+        </VBox.margin>
+        <VBox spacing="14" styleClass="stat-card" HBox.hgrow="ALWAYS">
+            <HBox alignment="CENTER_LEFT" spacing="10">
+                <StackPane prefHeight="40" prefWidth="40" styleClass="stat-icon-box, primary">
+                    <FontIcon iconLiteral="fth-clock" iconSize="16" />
+                </StackPane>
+                <Region HBox.hgrow="ALWAYS" />
+                <Label fx:id="planningHoursTrendLabel" styleClass="kpi-trend-chip, neutral" text="0h" />
+            </HBox>
+            <VBox spacing="2">
+                <Label fx:id="planningHoursValueLabel" styleClass="stat-value" text="0 h" />
+                <Label styleClass="stat-label" text="Focus time (last 7 days)" />
+            </VBox>
+        </VBox>
+
+        <VBox spacing="14" styleClass="stat-card" HBox.hgrow="ALWAYS">
+            <HBox alignment="CENTER_LEFT" spacing="10">
+                <StackPane prefHeight="40" prefWidth="40" styleClass="stat-icon-box, success">
+                    <FontIcon iconLiteral="fth-check-circle" iconSize="16" />
+                </StackPane>
+                <Region HBox.hgrow="ALWAYS" />
+                <Label fx:id="planningCompletionTrendLabel" styleClass="kpi-trend-chip, neutral" text="0%" />
+            </HBox>
+            <VBox spacing="2">
+                <Label fx:id="planningCompletionValueLabel" styleClass="stat-value" text="0%" />
+                <Label styleClass="stat-label" text="Completion rate" />
+            </VBox>
+        </VBox>
+
+        <VBox spacing="14" styleClass="stat-card" HBox.hgrow="ALWAYS">
+            <HBox alignment="CENTER_LEFT" spacing="10">
+                <StackPane prefHeight="40" prefWidth="40" styleClass="stat-icon-box, warning">
+                    <FontIcon iconLiteral="fth-smile" iconSize="16" />
+                </StackPane>
+                <Region HBox.hgrow="ALWAYS" />
+                <Label fx:id="planningFeedbackScoreTrendLabel" styleClass="kpi-trend-chip, neutral" text="0" />
+            </HBox>
+            <VBox spacing="2">
+                <Label fx:id="planningFeedbackScoreValueLabel" styleClass="stat-value" text="0.0 / 5" />
+                <Label styleClass="stat-label" text="Feedback quality score" />
+            </VBox>
+        </VBox>
+
+        <VBox spacing="14" styleClass="stat-card" HBox.hgrow="ALWAYS">
+            <HBox alignment="CENTER_LEFT" spacing="10">
+                <StackPane prefHeight="40" prefWidth="40" styleClass="stat-icon-box, accent">
+                    <FontIcon iconLiteral="fth-zap" iconSize="16" />
+                </StackPane>
+                <Region HBox.hgrow="ALWAYS" />
+                <Label fx:id="planningStreakTrendLabel" styleClass="kpi-trend-chip, neutral" text="best" />
+            </HBox>
+            <VBox spacing="2">
+                <Label fx:id="planningStreakValueLabel" styleClass="stat-value" text="0 days" />
+                <Label styleClass="stat-label" text="Planning streak" />
             </VBox>
         </VBox>
 

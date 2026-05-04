@@ -14,6 +14,9 @@ public class User {
     private String studentId;
     private String profilePic;
     private int coins;
+    private boolean banned;
+    private String banReason;
+    private String createdAt;
 
     public User() {}
 
@@ -56,6 +59,15 @@ public class User {
     public int getCoins() { return coins; }
     public void setCoins(int coins) { this.coins = coins; }
 
+    public boolean isBanned() { return banned; }
+    public void setBanned(boolean banned) { this.banned = banned; }
+
+    public String getBanReason() { return banReason; }
+    public void setBanReason(String banReason) { this.banReason = banReason; }
+
+    public String getCreatedAt() { return createdAt; }
+    public void setCreatedAt(String createdAt) { this.createdAt = createdAt; }
+
     public String getFullName() {
         return (firstName != null ? firstName : "") + " " + (lastName != null ? lastName : "");
     }
@@ -64,6 +76,14 @@ public class User {
         String f = (firstName != null && !firstName.isEmpty()) ? String.valueOf(firstName.charAt(0)) : "";
         String l = (lastName != null && !lastName.isEmpty()) ? String.valueOf(lastName.charAt(0)) : "";
         return (f + l).toUpperCase();
+    }
+
+    public boolean isAdmin() {
+        if (email == null) {
+            return false;
+        }
+        String normalizedEmail = email.trim().toLowerCase();
+        return "admin@rlife.com".equals(normalizedEmail) || "admin1@rlife.com".equals(normalizedEmail);
     }
 
     @Override

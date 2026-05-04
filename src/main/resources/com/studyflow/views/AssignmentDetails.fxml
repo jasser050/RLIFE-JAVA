@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<StackPane xmlns="http://javafx.com/javafx/21"
+           xmlns:fx="http://javafx.com/fxml/1"
+           fx:controller="com.studyflow.controllers.AssignmentDetailsController"
+           styleClass="page-section"
+           style="-fx-padding: 16; -fx-background-color: rgba(2, 6, 23, 0.35);">
+
+    <VBox maxWidth="1180" prefWidth="1180" spacing="0" styleClass="card, form-shell"
+          style="-fx-background-radius: 22; -fx-border-radius: 22; -fx-padding: 0;">
+        <HBox alignment="CENTER_LEFT" spacing="16"
+              style="-fx-padding: 18 22 14 22; -fx-border-color: transparent transparent rgba(148,163,184,0.15) transparent; -fx-border-width: 0 0 1 0;">
+            <VBox spacing="8" HBox.hgrow="ALWAYS">
+                <HBox fx:id="headerBadgesBox" spacing="8"/>
+                <Label fx:id="titleLabel" text="Assignment details" styleClass="text-heading" wrapText="true"/>
+                <Label fx:id="subtitleLabel" text="Card details" styleClass="text-muted" wrapText="true"/>
+            </VBox>
+            <Button text="Back" onAction="#handleBack" styleClass="btn-secondary"/>
+            <Button fx:id="editButton" text="Edit card" onAction="#handleEdit" styleClass="btn-primary"/>
+        </HBox>
+
+        <Label fx:id="feedbackLabel" managed="false" visible="false"
+               maxWidth="Infinity" styleClass="inline-alert, inline-alert-success"/>
+
+        <HBox spacing="0" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
+            <VBox spacing="18" HBox.hgrow="ALWAYS" style="-fx-padding: 22;">
+                <VBox spacing="10">
+                    <HBox alignment="CENTER_LEFT" spacing="10">
+                        <Label text="Description" styleClass="card-title"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Button fx:id="editDescriptionButton" text="Edit" onAction="#handleEditDescription" styleClass="btn-secondary"/>
+                        <Button fx:id="saveDescriptionButton" text="Save" onAction="#handleSaveDescription" styleClass="btn-primary" visible="false" managed="false"/>
+                    </HBox>
+                    <Label fx:id="descriptionValueLabel" text="-" styleClass="item-desc" wrapText="true"
+                           style="-fx-padding: 14; -fx-background-color: rgba(15,23,42,0.35); -fx-background-radius: 14; -fx-border-color: rgba(148,163,184,0.18); -fx-border-radius: 14;"/>
+                    <TextArea fx:id="descriptionEditorArea" visible="false" managed="false" wrapText="true" styleClass="form-textarea"
+                              promptText="Add a more detailed description..." prefRowCount="5"/>
+                </VBox>
+
+                <HBox spacing="16">
+                    <VBox spacing="8" HBox.hgrow="ALWAYS" styleClass="detail-row" style="-fx-padding: 14;">
+                        <Label text="Project" styleClass="text-muted"/>
+                        <Label fx:id="projectValueLabel" text="-" styleClass="card-title" wrapText="true"/>
+                    </VBox>
+                    <VBox spacing="8" HBox.hgrow="ALWAYS" styleClass="detail-row" style="-fx-padding: 14;">
+                        <Label text="Schedule" styleClass="text-muted"/>
+                        <Label fx:id="scheduleValueLabel" text="-" styleClass="card-title" wrapText="true"/>
+                    </VBox>
+                </HBox>
+
+                <GridPane hgap="16" vgap="16">
+                    <columnConstraints>
+                        <ColumnConstraints percentWidth="50"/>
+                        <ColumnConstraints percentWidth="50"/>
+                    </columnConstraints>
+
+                    <VBox spacing="6" styleClass="detail-row" style="-fx-padding: 14;" GridPane.rowIndex="0" GridPane.columnIndex="0">
+                        <Label text="Owner" styleClass="text-muted"/>
+                        <Label fx:id="ownerValueLabel" text="-" styleClass="card-title" wrapText="true"/>
+                    </VBox>
+                    <VBox spacing="6" styleClass="detail-row" style="-fx-padding: 14;" GridPane.rowIndex="0" GridPane.columnIndex="1">
+                        <Label text="Status" styleClass="text-muted"/>
+                        <Label fx:id="statusValueLabel" text="-" styleClass="card-title" wrapText="true"/>
+                    </VBox>
+                    <VBox spacing="6" styleClass="detail-row" style="-fx-padding: 14;" GridPane.rowIndex="1" GridPane.columnIndex="0">
+                        <Label text="Priority" styleClass="text-muted"/>
+                        <Label fx:id="priorityValueLabel" text="-" styleClass="card-title" wrapText="true"/>
+                    </VBox>
+                    <VBox spacing="6" styleClass="detail-row" style="-fx-padding: 14;" GridPane.rowIndex="1" GridPane.columnIndex="1">
+                        <Label text="Complexity" styleClass="text-muted"/>
+                        <Label fx:id="complexityValueLabel" text="-" styleClass="card-title" wrapText="true"/>
+                    </VBox>
+                    <VBox spacing="6" styleClass="detail-row" style="-fx-padding: 14;" GridPane.rowIndex="2" GridPane.columnIndex="0">
+                        <Label text="AI estimate" styleClass="text-muted"/>
+                        <Label fx:id="aiEstimateValueLabel" text="-" styleClass="card-title" wrapText="true"/>
+                    </VBox>
+                    <VBox spacing="6" styleClass="detail-row" style="-fx-padding: 14;" GridPane.rowIndex="2" GridPane.columnIndex="1">
+                        <Label text="AI due date" styleClass="text-muted"/>
+                        <Label fx:id="aiDueValueLabel" text="-" styleClass="card-title" wrapText="true"/>
+                    </VBox>
+                </GridPane>
+            </VBox>
+
+            <VBox prefWidth="360" minWidth="340" maxWidth="390" spacing="14"
+                  style="-fx-padding: 22; -fx-background-color: rgba(15, 23, 42, 0.38); -fx-border-color: rgba(148,163,184,0.15) transparent transparent rgba(148,163,184,0.15); -fx-border-width: 0 0 0 1;">
+                <HBox alignment="CENTER_LEFT">
+                    <Label text="Comments and activity" styleClass="card-title"/>
+                </HBox>
+
+                <TextArea fx:id="commentInputArea" styleClass="form-textarea" wrapText="true" prefRowCount="3"
+                          promptText="Write a comment..."/>
+                <Button fx:id="postCommentButton" text="Post comment" onAction="#handlePostComment" styleClass="btn-primary" maxWidth="Infinity"/>
+
+                <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS" styleClass="transparent-scroll">
+                    <VBox fx:id="activityList" spacing="10" style="-fx-padding: 0 4 0 0;"/>
+                </ScrollPane>
+            </VBox>
+        </HBox>
+    </VBox>
+
+    <padding>
+        <Insets top="0" right="0" bottom="0" left="0"/>
+    </padding>
+</StackPane>

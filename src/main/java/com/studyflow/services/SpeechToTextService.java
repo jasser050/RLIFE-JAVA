@@ -1,8 +1,5 @@
 package com.studyflow.services;
 
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
@@ -12,191 +9,32 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Objects;
-import java.util.UUID;
+import java.time.Duration;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class SpeechToTextService {
+    private static final String[] OPENAI_STT_MODELS = {"gpt-4o-mini-transcribe", "whisper-1"};
+    private static final String[] GROQ_STT_MODELS = {"whisper-large-v3-turbo", "whisper-large-v3"};
+    private static final String[] OPENROUTER_STT_MODELS = {"whisper-1", "gpt-4o-mini-transcribe"};
+    private static final Pattern TEXT_PATTERN =
+            Pattern.compile("\"text\"\\s*:\\s*\"((?:\\\\.|[^\"\\\\])*)\"");
+    private static final Pattern TRANSCRIPT_PATTERN =
+            Pattern.compile("\"transcript\"\\s*:\\s*\"((?:\\\\.|[^\"\\\\])*)\"");
+    private static final Pattern LANGUAGE_PATTERN =
+            Pattern.compile("\"language\"\\s*:\\s*\"([a-zA-Z\\-_]+)\"");
 
-    private static final String API_URL = "https://api.groq.com/openai/v1/audio/transcriptions";
-    private static final String MODEL = "whisper-large-v3-turbo";
-    private static final int MAX_RETRIES = 3;
-    private final HttpClient httpClient;
+    public record TranscriptionResult(String text, String languageCode) {}
 
-    public SpeechToTextService() {
-        this.httpClient = HttpClient.newHttpClient();
-    }
-
-    public TranscriptionResult transcribe(String apiKey, Path audioFile, String language) {
-        if (apiKey == null || apiKey.isBlank()) {
-            return TranscriptionResult.error("Missing GROQ_API_KEY environment variable.");
-        }
-        if (audioFile == null || !Files.exists(audioFile)) {
-            return TranscriptionResult.error("Audio file not found.");
-        }
-
-        try {
-            MultipartPayload payload = buildMultipartPayload(audioFile, language);
-
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(API_URL))
-                    .header("Authorization", "Bearer " + apiKey)
-                    .header("Content-Type", "multipart/form-data; boundary=" + payload.boundary())
-                    .POST(HttpRequest.BodyPublishers.ofByteArray(payload.body()))
-                    .build();
-
-            HttpResponse<String> response = null;
-            for (int attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-                response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-                int status = response.statusCode();
-                if (status != 429 && status != 503) {
-                    break;
-                }
-                if (attempt < MAX_RETRIES) {
-                    long waitMs = extractRetryAfterMillis(response);
-                    if (waitMs <= 0) {
-                        waitMs = (long) Math.pow(2, attempt - 1) * 1000L;
-                    }
-                    Thread.sleep(waitMs);
-                }
-            }
-
-            if (response == null) {
-                return TranscriptionResult.error("Speech-to-text API returned no response.");
-            }
-
-            if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                return TranscriptionResult.error(buildApiErrorMessage(response));
-            }
-
-            JsonObject root = JsonParser.parseString(response.body() == null ? "{}" : response.body()).getAsJsonObject();
-            String text = root.has("text") ? root.get("text").getAsString() : "";
-            if (text == null || text.isBlank()) {
-                return TranscriptionResult.error("No transcription text returned by API.");
-            }
-
-            return TranscriptionResult.success(text.trim());
-        } catch (InterruptedException exception) {
-            Thread.currentThread().interrupt();
-            return TranscriptionResult.error("Transcription interrupted: " + exception.getMessage());
-        } catch (Exception exception) {
-            return TranscriptionResult.error("Transcription failed: " + exception.getMessage());
-        }
-    }
-
-    private String buildApiErrorMessage(HttpResponse<String> response) {
-        int status = response.statusCode();
-        String body = response.body();
-        String details = extractJsonErrorMessage(body);
-        if (details == null || details.isBlank()) {
-            details = body == null ? "" : body.trim();
-        }
-        if (details == null || details.isBlank()) {
-            return "Speech-to-text API error (HTTP " + status + ").";
-        }
-        return "Speech-to-text API error (HTTP " + status + "): " + details;
-    }
-
-    private String extractJsonErrorMessage(String body) {
-        try {
-            if (body == null || body.isBlank()) {
-                return null;
-            }
-            JsonObject root = JsonParser.parseString(body).getAsJsonObject();
-            if (root.has("error") && root.get("error").isJsonObject()) {
-                JsonObject error = root.getAsJsonObject("error");
-                if (error.has("message")) {
-                    return error.get("message").getAsString();
-                }
-                if (error.has("type")) {
-                    return error.get("type").getAsString();
-                }
-            }
-            if (root.has("message")) {
-                return root.get("message").getAsString();
-            }
-        } catch (Exception ignored) {
-        }
-        return null;
-    }
-
-    private long extractRetryAfterMillis(HttpResponse<String> response) {
-        try {
-            return response.headers()
-                    .firstValue("retry-after")
-                    .map(String::trim)
-                    .map(value -> {
-                        try {
-                            return Long.parseLong(value) * 1000L;
-                        } catch (NumberFormatException ignored) {
-                            return -1L;
-                        }
-                    })
-                    .orElse(-1L);
-        } catch (Exception ignored) {
-            return -1L;
-        }
-    }
-
-    private MultipartPayload buildMultipartPayload(Path audioFile, String language) throws IOException {
-        String boundary = "----StudyFlowBoundary" + UUID.randomUUID();
-        byte[] fileBytes = Files.readAllBytes(audioFile);
-        String contentType = Files.probeContentType(audioFile);
-        if (contentType == null || contentType.isBlank()) {
-            contentType = "application/octet-stream";
-        }
-
-        ByteArrayOutputStream output = new ByteArrayOutputStream();
-        writeFormField(output, boundary, "model", MODEL);
-        if (language != null && !language.isBlank()) {
-            writeFormField(output, boundary, "language", language.trim());
-        }
-        writeFormField(output, boundary, "response_format", "json");
-        writeFileField(output, boundary, "file", audioFile.getFileName().toString(), contentType, fileBytes);
-        output.write(("--" + boundary + "--\r\n").getBytes(StandardCharsets.UTF_8));
-
-        return new MultipartPayload(boundary, output.toByteArray());
-    }
-
-    private void writeFormField(ByteArrayOutputStream output, String boundary, String name, String value) throws IOException {
-        output.write(("--" + boundary + "\r\n").getBytes(StandardCharsets.UTF_8));
-        output.write(("Content-Disposition: form-data; name=\"" + name + "\"\r\n\r\n")
-                .getBytes(StandardCharsets.UTF_8));
-        output.write((value + "\r\n").getBytes(StandardCharsets.UTF_8));
-    }
-
-    private void writeFileField(ByteArrayOutputStream output,
-                                String boundary,
-                                String fieldName,
-                                String fileName,
-                                String contentType,
-                                byte[] fileBytes) throws IOException {
-        output.write(("--" + boundary + "\r\n").getBytes(StandardCharsets.UTF_8));
-        output.write(("Content-Disposition: form-data; name=\"" + fieldName + "\"; filename=\"" + fileName + "\"\r\n")
-                .getBytes(StandardCharsets.UTF_8));
-        output.write(("Content-Type: " + contentType + "\r\n\r\n").getBytes(StandardCharsets.UTF_8));
-        output.write(fileBytes);
-        output.write("\r\n".getBytes(StandardCharsets.UTF_8));
-    }
-
-    private record MultipartPayload(String boundary, byte[] body) {}
-
-    public static final class TranscriptionResult {
+    public static final class TranscriptionCompatResult {
         private final boolean success;
         private final String text;
         private final String error;
 
-        private TranscriptionResult(boolean success, String text, String error) {
+        public TranscriptionCompatResult(boolean success, String text, String error) {
             this.success = success;
             this.text = text;
             this.error = error;
-        }
-
-        public static TranscriptionResult success(String text) {
-            return new TranscriptionResult(true, Objects.requireNonNull(text, "text"), null);
-        }
-
-        public static TranscriptionResult error(String error) {
-            return new TranscriptionResult(false, null, error);
         }
 
         public boolean isSuccess() {
@@ -210,5 +48,275 @@ public class SpeechToTextService {
         public String getError() {
             return error;
         }
+    }
+
+    private final HttpClient client;
+    private final String openAiApiKey;
+    private final String groqApiKey;
+    private final String openRouterApiKey;
+    private volatile String lastError;
+
+    public SpeechToTextService() {
+        this.client = HttpClient.newBuilder()
+                .connectTimeout(Duration.ofSeconds(15))
+                .build();
+        this.openAiApiKey = firstNonBlank(
+                System.getenv("OPENAI_API_KEY"),
+                System.getenv("OPENAI_KEY"),
+                System.getProperty("OPENAI_API_KEY"),
+                System.getProperty("openai.api.key")
+        );
+        this.groqApiKey = firstNonBlank(
+                System.getenv("GROQ_API_KEY"),
+                System.getenv("GROQ_KEY"),
+                System.getProperty("GROQ_API_KEY"),
+                System.getProperty("groq.api.key")
+        );
+        this.openRouterApiKey = firstNonBlank(
+                System.getenv("OPENROUTER_API_KEY"),
+                System.getenv("OPENROUTER_KEY"),
+                System.getProperty("OPENROUTER_API_KEY"),
+                System.getProperty("openrouter.api.key")
+        );
+    }
+
+    public boolean isConfigured() {
+        return isNonBlank(openAiApiKey) || isNonBlank(groqApiKey) || isNonBlank(openRouterApiKey);
+    }
+
+    public String transcribeWav(byte[] wavData, String languageCode) {
+        TranscriptionResult result = transcribeWavDetailed(wavData, languageCode);
+        return result == null ? null : result.text();
+    }
+
+    public TranscriptionCompatResult transcribe(String apiKeyIgnored, Path audioFile, String languageCode) {
+        if (audioFile == null || !Files.exists(audioFile)) {
+            return new TranscriptionCompatResult(false, null, "Audio file not found.");
+        }
+        try {
+            byte[] wavData = Files.readAllBytes(audioFile);
+            TranscriptionResult result = transcribeWavDetailed(wavData, languageCode);
+            if (result == null || !isNonBlank(result.text())) {
+                return new TranscriptionCompatResult(false, null, getLastError());
+            }
+            return new TranscriptionCompatResult(true, result.text(), null);
+        } catch (IOException e) {
+            return new TranscriptionCompatResult(false, null, "Failed to read audio file: " + e.getMessage());
+        }
+    }
+
+    public TranscriptionResult transcribeWavDetailed(byte[] wavData, String languageCode) {
+        lastError = null;
+        if (!isConfigured() || wavData == null || wavData.length == 0) {
+            if (!isConfigured()) {
+                lastError = "Speech API key is not configured.";
+            } else {
+                lastError = "No audio data captured from microphone.";
+            }
+            return null;
+        }
+
+        String endpoint;
+        String[] modelsToTry;
+        String provider;
+        if (isNonBlank(groqApiKey)) {
+            endpoint = "https://api.groq.com/openai/v1/audio/transcriptions";
+            modelsToTry = GROQ_STT_MODELS;
+            provider = "groq";
+        } else if (isNonBlank(openAiApiKey)) {
+            endpoint = "https://api.openai.com/v1/audio/transcriptions";
+            modelsToTry = OPENAI_STT_MODELS;
+            provider = "openai";
+        } else {
+            endpoint = "https://openrouter.ai/api/v1/audio/transcriptions";
+            modelsToTry = OPENROUTER_STT_MODELS;
+            provider = "openrouter";
+        }
+
+        for (String model : modelsToTry) {
+            String boundary = "----StudyFlowSpeechBoundary" + System.currentTimeMillis();
+            byte[] payload = buildMultipartPayload(boundary, wavData, languageCode, model);
+
+            HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
+                    .uri(URI.create(endpoint))
+                    .timeout(Duration.ofSeconds(45))
+                    .header("Content-Type", "multipart/form-data; boundary=" + boundary)
+                    .POST(HttpRequest.BodyPublishers.ofByteArray(payload));
+
+            if ("openai".equals(provider)) {
+                requestBuilder.header("Authorization", "Bearer " + openAiApiKey);
+            } else if ("groq".equals(provider)) {
+                requestBuilder.header("Authorization", "Bearer " + groqApiKey);
+            } else {
+                requestBuilder.header("Authorization", "Bearer " + openRouterApiKey);
+                requestBuilder.header("HTTP-Referer", "http://localhost");
+                requestBuilder.header("X-Title", "StudyFlow Wellbeing Voice Journal");
+            }
+
+            try {
+                HttpResponse<String> response = client.send(
+                        requestBuilder.build(),
+                        HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8)
+                );
+                if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                    lastError = "Speech API (" + model + ") HTTP " + response.statusCode() + ": " + shortBody(response.body());
+                    continue;
+                }
+                TranscriptionResult result = extractTranscription(response.body());
+                if (result == null || !isNonBlank(result.text())) {
+                    lastError = "Speech API (" + model + ") returned empty transcription.";
+                    continue;
+                }
+                return result;
+            } catch (IOException | InterruptedException e) {
+                if (e instanceof InterruptedException) {
+                    Thread.currentThread().interrupt();
+                    lastError = "Speech API request interrupted.";
+                    return null;
+                }
+                lastError = "Speech API request failed (" + model + "): " + e.getMessage();
+            }
+        }
+        return null;
+    }
+
+    public String getLastError() {
+        return lastError;
+    }
+
+    public String getConfiguredProviderLabel() {
+        if (isNonBlank(groqApiKey)) {
+            return "Groq";
+        }
+        if (isNonBlank(openAiApiKey)) {
+            return "OpenAI";
+        }
+        if (isNonBlank(openRouterApiKey)) {
+            return "OpenRouter";
+        }
+        return "none";
+    }
+
+    private byte[] buildMultipartPayload(String boundary, byte[] wavData, String languageCode, String model) {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        try {
+            appendTextPart(out, boundary, "model", isNonBlank(model) ? model : "whisper-1");
+            appendTextPart(out, boundary, "response_format", "verbose_json");
+
+            String lang = normalizeLanguage(languageCode);
+            if (lang != null) {
+                appendTextPart(out, boundary, "language", lang);
+            }
+
+            out.write(("--" + boundary + "\r\n").getBytes(StandardCharsets.UTF_8));
+            out.write("Content-Disposition: form-data; name=\"file\"; filename=\"voice.wav\"\r\n".getBytes(StandardCharsets.UTF_8));
+            out.write("Content-Type: audio/wav\r\n\r\n".getBytes(StandardCharsets.UTF_8));
+            out.write(wavData);
+            out.write("\r\n".getBytes(StandardCharsets.UTF_8));
+
+            out.write(("--" + boundary + "--\r\n").getBytes(StandardCharsets.UTF_8));
+            return out.toByteArray();
+        } catch (IOException e) {
+            return new byte[0];
+        }
+    }
+
+    private void appendTextPart(ByteArrayOutputStream out, String boundary, String name, String value) throws IOException {
+        out.write(("--" + boundary + "\r\n").getBytes(StandardCharsets.UTF_8));
+        out.write(("Content-Disposition: form-data; name=\"" + name + "\"\r\n\r\n").getBytes(StandardCharsets.UTF_8));
+        out.write((value == null ? "" : value).getBytes(StandardCharsets.UTF_8));
+        out.write("\r\n".getBytes(StandardCharsets.UTF_8));
+    }
+
+    private String normalizeLanguage(String languageCode) {
+        if (!isNonBlank(languageCode) || "auto".equalsIgnoreCase(languageCode)) {
+            return null;
+        }
+        if (languageCode.startsWith("en")) {
+            return "en";
+        }
+        if (languageCode.startsWith("fr")) {
+            return "fr";
+        }
+        if (languageCode.startsWith("ar")) {
+            return "ar";
+        }
+        return null;
+    }
+
+    private TranscriptionResult extractTranscription(String body) {
+        if (!isNonBlank(body)) {
+            return null;
+        }
+        String text = null;
+        Matcher matcher = TEXT_PATTERN.matcher(body);
+        if (matcher.find()) {
+            text = unescapeJson(matcher.group(1)).trim();
+        } else {
+            Matcher altMatcher = TRANSCRIPT_PATTERN.matcher(body);
+            if (altMatcher.find()) {
+                text = unescapeJson(altMatcher.group(1)).trim();
+            }
+        }
+        if (!isNonBlank(text)) {
+            return null;
+        }
+
+        String detectedLanguage = null;
+        Matcher languageMatcher = LANGUAGE_PATTERN.matcher(body);
+        if (languageMatcher.find()) {
+            detectedLanguage = normalizeDetectedLanguage(languageMatcher.group(1));
+        }
+        return new TranscriptionResult(text, detectedLanguage);
+    }
+
+    private String unescapeJson(String value) {
+        return value
+                .replace("\\n", "\n")
+                .replace("\\r", "\r")
+                .replace("\\t", "\t")
+                .replace("\\\"", "\"")
+                .replace("\\\\", "\\");
+    }
+
+    private static boolean isNonBlank(String value) {
+        return value != null && !value.isBlank();
+    }
+
+    private static String firstNonBlank(String... values) {
+        for (String value : values) {
+            if (isNonBlank(value)) {
+                return value.trim();
+            }
+        }
+        return null;
+    }
+
+    private String shortBody(String value) {
+        if (!isNonBlank(value)) {
+            return "(empty response)";
+        }
+        String normalized = value.replace('\n', ' ').replace('\r', ' ').trim();
+        return normalized.length() > 180 ? normalized.substring(0, 180) + "..." : normalized;
+    }
+
+    private String normalizeDetectedLanguage(String rawCode) {
+        if (!isNonBlank(rawCode)) {
+            return null;
+        }
+        String normalized = rawCode.trim().toLowerCase().replace('_', '-');
+        if (normalized.startsWith("fr")) {
+            return "fr-FR";
+        }
+        if (normalized.startsWith("ar-tn")) {
+            return "ar-TN";
+        }
+        if (normalized.startsWith("ar")) {
+            return "ar-SA";
+        }
+        if (normalized.startsWith("en")) {
+            return "en-US";
+        }
+        return null;
     }
 }

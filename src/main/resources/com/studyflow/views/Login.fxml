@@ -2,9 +2,11 @@
 
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.control.*?>
-<?import javafx.scene.web.*?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.image.Image?>
 <?import javafx.geometry.Insets?>
 <?import org.kordamp.ikonli.javafx.FontIcon?>
+<?import javafx.scene.web.WebView?>
 
 <VBox xmlns="http://javafx.com/javafx/17"
       xmlns:fx="http://javafx.com/fxml/1"
@@ -16,38 +18,46 @@
           onMousePressed="#onDragStart" onMouseDragged="#onDragged">
         <HBox alignment="CENTER_LEFT" spacing="10" HBox.hgrow="ALWAYS">
             <padding><Insets left="16"/></padding>
-            <StackPane styleClass="title-bar-logo">
-                <FontIcon iconLiteral="fth-layers" iconSize="14" iconColor="white"/>
-            </StackPane>
+            <ImageView fitWidth="28" fitHeight="28" preserveRatio="true">
+                <image><Image url="@../images/logo.png"/></image>
+            </ImageView>
             <Label text="RLife" styleClass="title-bar-title"/>
             <Label text="â€”" style="-fx-text-fill: #475569;"/>
             <Label text="Sign In" styleClass="title-bar-subtitle"/>
         </HBox>
-        <HBox alignment="CENTER_RIGHT" spacing="0" styleClass="window-controls">
-            <Button styleClass="window-btn, minimize-btn" onAction="#minimizeWindow">
-                <graphic><FontIcon iconLiteral="fth-minus" iconSize="14"/></graphic>
+        <HBox alignment="CENTER_RIGHT" spacing="0">
+            <Button fx:id="themeBtn" styleClass="theme-toggle-btn" onAction="#toggleTheme">
+                <graphic><FontIcon iconLiteral="fth-sun" iconSize="13"/></graphic>
             </Button>
-            <Button styleClass="window-btn, maximize-btn" onAction="#maximizeWindow">
-                <graphic><FontIcon iconLiteral="fth-square" iconSize="12"/></graphic>
-            </Button>
-            <Button styleClass="window-btn, close-btn" onAction="#closeWindow">
-                <graphic><FontIcon iconLiteral="fth-x" iconSize="14"/></graphic>
-            </Button>
+            <HBox styleClass="window-controls" spacing="0">
+                <Button styleClass="window-btn, minimize-btn" onAction="#minimizeWindow">
+                    <graphic><FontIcon iconLiteral="fth-minus" iconSize="14"/></graphic>
+                </Button>
+                <Button styleClass="window-btn, maximize-btn" onAction="#maximizeWindow">
+                    <graphic><FontIcon iconLiteral="fth-square" iconSize="12"/></graphic>
+                </Button>
+                <Button styleClass="window-btn, close-btn" onAction="#closeWindow">
+                    <graphic><FontIcon iconLiteral="fth-x" iconSize="14"/></graphic>
+                </Button>
+            </HBox>
         </HBox>
     </HBox>
 
     <!-- â•â•â•â•â•â•â•â•â•â• CONTENT â•â•â•â•â•â•â•â•â•â• -->
     <HBox VBox.vgrow="ALWAYS" spacing="0">
 
-        <!-- â”€â”€â”€ LEFT: Form â”€â”€â”€ -->
-        <VBox styleClass="auth-left-panel" HBox.hgrow="SOMETIMES" minWidth="440" maxWidth="480">
+        <!-- ─── LEFT: Form ─── -->
+        <VBox styleClass="auth-left-panel" HBox.hgrow="SOMETIMES" minWidth="520" maxWidth="580">
             <VBox VBox.vgrow="ALWAYS" alignment="CENTER" spacing="0">
                 <padding><Insets top="0" right="48" bottom="0" left="48"/></padding>
 
-                <StackPane styleClass="auth-icon-badge" alignment="CENTER">
-                    <FontIcon iconLiteral="fth-layers" iconSize="24" iconColor="#A78BFA"/>
-                </StackPane>
-                <VBox.margin><Insets bottom="22"/></VBox.margin>
+                <!-- RLife Logo image -->
+                <ImageView fitWidth="80" fitHeight="80" preserveRatio="true" styleClass="auth-logo-img">
+                    <image><Image url="@../images/logo.png"/></image>
+                </ImageView>
+                <VBox.margin><Insets bottom="8"/></VBox.margin>
+                <Label text="RLife" styleClass="auth-brand-label"/>
+                <VBox.margin><Insets bottom="30"/></VBox.margin>
 
                 <Label text="Welcome back" styleClass="auth-title"/>
                 <VBox.margin><Insets bottom="6"/></VBox.margin>
@@ -71,10 +81,12 @@
                     </HBox>
                     <PasswordField fx:id="passwordField" styleClass="auth-field" promptText="Enter your password"/>
                 </VBox>
-                <VBox.margin><Insets bottom="28"/></VBox.margin>
+                <VBox.margin><Insets bottom="40"/></VBox.margin>
 
                 <Button fx:id="loginBtn" text="Sign In" styleClass="auth-btn-primary"
-                        maxWidth="Infinity" onAction="#handleLogin"/>
+                        maxWidth="Infinity" onAction="#handleLogin">
+                    <VBox.margin><Insets top="16"/></VBox.margin>
+                </Button>
                 <VBox.margin><Insets bottom="24"/></VBox.margin>
 
                 <HBox alignment="CENTER" spacing="12">
@@ -82,7 +94,19 @@
                     <Label text="or" styleClass="auth-divider-text"/>
                     <Separator HBox.hgrow="ALWAYS"/>
                 </HBox>
-                <VBox.margin><Insets bottom="24"/></VBox.margin>
+                <VBox.margin><Insets bottom="16"/></VBox.margin>
+
+                <Button text="Sign in with Face ID" styleClass="auth-btn-secondary"
+                        maxWidth="Infinity" onAction="#handleFaceLogin">
+                    <graphic><FontIcon iconLiteral="fth-camera" iconSize="16"/></graphic>
+                    <VBox.margin><Insets bottom="14"/></VBox.margin>
+                </Button>
+
+                <Button text="Continue with Google" styleClass="auth-btn-google"
+                        maxWidth="Infinity" onAction="#handleGoogleLogin">
+                    <graphic><FontIcon iconLiteral="fth-globe" iconSize="16"/></graphic>
+                    <VBox.margin><Insets bottom="20"/></VBox.margin>
+                </Button>
 
                 <HBox alignment="CENTER" spacing="6">
                     <Label text="Don't have an account?" styleClass="auth-muted-text"/>
@@ -96,39 +120,9 @@
             </VBox>
         </VBox>
 
-        <!-- â”€â”€â”€ RIGHT: Spline 3D Robot â”€â”€â”€ -->
-        <StackPane styleClass="auth-right-panel" HBox.hgrow="ALWAYS">
-
-            <!-- 3D Robot via WebView -->
-            <WebView fx:id="splineView"/>
-
-            <!-- Top badge -->
-            <VBox alignment="TOP_CENTER" pickOnBounds="false">
-                <padding><Insets top="32"/></padding>
-                <Label text="â˜…  Rated #1 Student App Worldwide" styleClass="auth-award-badge"/>
-            </VBox>
-
-            <!-- Bottom overlay -->
-            <VBox alignment="BOTTOM_CENTER" spacing="14" pickOnBounds="false">
-                <padding><Insets bottom="36"/></padding>
-                <Label text="Study smarter. Live better." styleClass="auth-right-headline"/>
-                <HBox alignment="CENTER" spacing="12">
-                    <VBox styleClass="auth-stat-card" alignment="CENTER" spacing="4">
-                        <Label text="4.9 â˜…" styleClass="auth-stat-value"/>
-                        <Label text="Rating" styleClass="auth-stat-label"/>
-                    </VBox>
-                    <VBox styleClass="auth-stat-card" alignment="CENTER" spacing="4">
-                        <Label text="98%" styleClass="auth-stat-value"/>
-                        <Label text="Exam Success" styleClass="auth-stat-label"/>
-                    </VBox>
-                    <VBox styleClass="auth-stat-card" alignment="CENTER" spacing="4">
-                        <Label text="Free" styleClass="auth-stat-value"/>
-                        <Label text="Forever" styleClass="auth-stat-label"/>
-                    </VBox>
-                </HBox>
-            </VBox>
-
+        <!-- ─── RIGHT: 3D Robot Panel ─── -->
+        <StackPane fx:id="robotContainer" styleClass="auth-right-panel" HBox.hgrow="ALWAYS">
+            <WebView fx:id="splineWebView"/>
         </StackPane>
     </HBox>
 </VBox>
-

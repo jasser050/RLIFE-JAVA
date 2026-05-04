@@ -21,7 +21,6 @@ public class FootballDataService {
     private static final String API_BASE = "https://api.football-data.org/v4";
     private static final String API_KEY_ENV = "FOOTBALL_DATA_API_KEY";
     private static final String API_KEY_PROPERTY = "football.data.api.key";
-    private static final String FALLBACK_API_KEY = "99ae936a515249fd8f3e6af0e2c8c004";
 
     private final HttpClient httpClient = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(10))
@@ -121,12 +120,6 @@ public class FootballDataService {
 
         String homeName = homeTeam != null && homeTeam.has("name") ? homeTeam.get("name").getAsString() : "Home";
         String awayName = awayTeam != null && awayTeam.has("name") ? awayTeam.get("name").getAsString() : "Away";
-        String homeLogoUrl = homeTeam != null && homeTeam.has("crest") && !homeTeam.get("crest").isJsonNull()
-                ? homeTeam.get("crest").getAsString()
-                : "";
-        String awayLogoUrl = awayTeam != null && awayTeam.has("crest") && !awayTeam.get("crest").isJsonNull()
-                ? awayTeam.get("crest").getAsString()
-                : "";
 
         JsonObject competition = matchObject.has("competition") && matchObject.get("competition").isJsonObject()
                 ? matchObject.getAsJsonObject("competition")
@@ -145,8 +138,6 @@ public class FootballDataService {
                 team,
                 homeName,
                 awayName,
-                homeLogoUrl,
-                awayLogoUrl,
                 opponentName,
                 competitionName,
                 kickoffUtc,
@@ -166,7 +157,7 @@ public class FootballDataService {
             return fromEnv;
         }
 
-        return sanitize(FALLBACK_API_KEY);
+        return "";
     }
 
     private String sanitize(String value) {
@@ -188,14 +179,15 @@ public class FootballDataService {
             TeamOption team,
             String homeTeam,
             String awayTeam,
-            String homeLogoUrl,
-            String awayLogoUrl,
             String opponent,
             String competition,
             OffsetDateTime kickoffUtc,
             String summary,
             boolean favoriteIsHome
-    ) { }
+    ) {
+        public String homeLogoUrl() { return ""; }
+        public String awayLogoUrl() { return ""; }
+    }
 }
 
 

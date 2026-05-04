@@ -3,6 +3,7 @@ package com.studyflow.controllers;
 import com.studyflow.models.Seance;
 import com.studyflow.models.TypeSeance;
 import com.studyflow.models.User;
+import com.studyflow.services.PlanningPdfApiService;
 import com.studyflow.services.ServiceSeance;
 import com.studyflow.services.ServiceTypeSeance;
 import com.studyflow.utils.UserSession;
@@ -39,6 +40,7 @@ import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.font.PDType1Font;
+import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
 import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
 import org.apache.poi.ss.usermodel.BorderStyle;
 import org.apache.poi.ss.usermodel.Cell;
@@ -74,6 +76,8 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class SessionsController implements Initializable {
+    private static final PDType1Font PDF_FONT_REGULAR = new PDType1Font(Standard14Fonts.FontName.HELVETICA);
+    private static final PDType1Font PDF_FONT_BOLD = new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD);
 
     private static final String[] LOGO_RESOURCES = {
             "/com/studyflow/assets/logo.png",
@@ -115,6 +119,7 @@ public class SessionsController implements Initializable {
 
     private final ServiceSeance serviceSeance = new ServiceSeance();
     private final ServiceTypeSeance serviceTypeSeance = new ServiceTypeSeance();
+    private final PlanningPdfApiService planningPdfApiService = new PlanningPdfApiService();
     private final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd MMM yyyy HH:mm");
     private final ObservableList<Seance> masterSessions = FXCollections.observableArrayList();
 
@@ -256,37 +261,43 @@ public class SessionsController implements Initializable {
             return;
         }
 
-        try (PDDocument document = new PDDocument()) {
-            float margin = 50f;
-            PDImageXObject logo = loadPdfLogo(document);
-            PDPage page = null;
-            PDPageContentStream contentStream = null;
-            float y = 0f;
+        try {
+            planningPdfApiService.exportSessionsPdf(sessionsToExport, selectedPath);
+            showSuccess("PDF file exported successfully via aPDF.io.");
+        } catch (Exception apiException) {
+            // Fallback to local export if API is unavailable.
+            try (PDDocument document = new PDDocument()) {
+                float margin = 50f;
+                PDImageXObject logo = loadPdfLogo(document);
+                PDPage page = null;
+                PDPageContentStream contentStream = null;
+                float y = 0f;
 
-            try {
-                for (Seance seance : sessionsToExport) {
-                    float estimatedHeight = estimatePdfHeight(seance);
-                    if (contentStream == null || y - estimatedHeight < 70) {
-                        if (contentStream != null) {
-                            contentStream.close();
+                try {
+                    for (Seance seance : sessionsToExport) {
+                        float estimatedHeight = estimatePdfHeight(seance);
+                        if (contentStream == null || y - estimatedHeight < 70) {
+                            if (contentStream != null) {
+                                contentStream.close();
+                            }
+                            page = new PDPage(PDRectangle.A4);
+                            document.addPage(page);
+                            contentStream = new PDPageContentStream(document, page);
+                            y = writePdfHeader(contentStream, margin, page.getMediaBox().getHeight() - margin, logo);
                         }
-                        page = new PDPage(PDRectangle.A4);
-                        document.addPage(page);
-                        contentStream = new PDPageContentStream(document, page);
-                        y = writePdfHeader(contentStream, margin, page.getMediaBox().getHeight() - margin, logo);
+                        y = writePdfSession(contentStream, margin, y, seance);
                     }
-                    y = writePdfSession(contentStream, margin, y, seance);
+                } finally {
+                    if (contentStream != null) {
+                        contentStream.close();
+                    }
                 }
-            } finally {
-                if (contentStream != null) {
-                    contentStream.close();
-                }
-            }
 
-            document.save(selectedPath.toFile());
-            showSuccess("PDF file exported successfully.");
-        } catch (IOException exception) {
-            showErrorOn(pageMessageLabel, "PDF export failed: " + exception.getMessage());
+                document.save(selectedPath.toFile());
+                showSuccess("PDF exported locally (aPDF.io unavailable): " + apiException.getMessage());
+            } catch (IOException localException) {
+                showErrorOn(pageMessageLabel, "PDF export failed: " + localException.getMessage());
+            }
         }
     }
 
@@ -891,7 +902,7 @@ public class SessionsController implements Initializable {
     private float writePdfLine(PDPageContentStream contentStream, float x, float y, String text, boolean title) throws IOException {
         contentStream.beginText();
         contentStream.setNonStrokingColor(title ? new Color(248, 250, 252) : new Color(203, 213, 225));
-        contentStream.setFont(title ? PDType1Font.HELVETICA_BOLD : PDType1Font.HELVETICA, title ? 13 : 11);
+        contentStream.setFont(title ? PDF_FONT_BOLD : PDF_FONT_REGULAR, title ? 13 : 11);
         contentStream.newLineAtOffset(x, y);
         contentStream.showText(sanitizePdfText(text));
         contentStream.endText();
@@ -916,14 +927,14 @@ public class SessionsController implements Initializable {
 
         contentStream.beginText();
         contentStream.setNonStrokingColor(new Color(248, 250, 252));
-        contentStream.setFont(PDType1Font.HELVETICA_BOLD, 18);
+        contentStream.setFont(PDF_FONT_BOLD, 18);
         contentStream.newLineAtOffset(margin + (logo == null ? 0 : 52), y - 18);
         contentStream.showText("StudyFlow Sessions Export");
         contentStream.endText();
 
         contentStream.beginText();
         contentStream.setNonStrokingColor(new Color(148, 163, 184));
-        contentStream.setFont(PDType1Font.HELVETICA, 10);
+        contentStream.setFont(PDF_FONT_REGULAR, 10);
         contentStream.newLineAtOffset(margin + (logo == null ? 0 : 52), y - 34);
         contentStream.showText("Elegant export generated from the StudyFlow dark workspace");
         contentStream.endText();

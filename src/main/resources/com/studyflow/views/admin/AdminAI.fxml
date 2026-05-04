@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.geometry.Insets?>
+<?import org.kordamp.ikonli.javafx.FontIcon?>
+
+<VBox xmlns="http://javafx.com/javafx/21"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.studyflow.controllers.AdminAIController"
+      spacing="0" VBox.vgrow="ALWAYS">
+
+    <!-- Header -->
+    <HBox alignment="CENTER_LEFT" spacing="14" style="-fx-padding: 20 24;">
+        <StackPane styleClass="ai-header-icon">
+            <FontIcon iconLiteral="fth-cpu" iconSize="22" iconColor="white"/>
+        </StackPane>
+        <VBox spacing="3" HBox.hgrow="ALWAYS">
+            <Label text="AI Admin Agent" styleClass="text-heading" style="-fx-font-size: 20px;"/>
+            <Label text="Manage users with natural language commands" styleClass="text-muted" style="-fx-font-size: 12px;"/>
+        </VBox>
+        <HBox spacing="6" alignment="CENTER_RIGHT">
+            <StackPane styleClass="ai-status-dot"/>
+            <Label text="Gemini Connected" style="-fx-text-fill: #34D399; -fx-font-size: 11px; -fx-font-weight: bold;"/>
+        </HBox>
+    </HBox>
+
+    <!-- Chat Area -->
+    <ScrollPane fx:id="chatScroll" fitToWidth="true" hbarPolicy="NEVER"
+                VBox.vgrow="ALWAYS" styleClass="chat-scroll">
+        <VBox fx:id="chatContainer" spacing="8" styleClass="chat-container">
+            <padding><Insets top="16" right="24" bottom="16" left="24"/></padding>
+        </VBox>
+    </ScrollPane>
+
+    <!-- Input Area -->
+    <HBox spacing="12" alignment="CENTER_LEFT" styleClass="chat-input-bar">
+        <padding><Insets top="16" right="24" bottom="16" left="24"/></padding>
+        <TextField fx:id="messageField" HBox.hgrow="ALWAYS"
+                   styleClass="chat-input"
+                   promptText="Type a command... e.g. 'Add user Ahmed with email ahmed@esprit.tn'"/>
+        <Button fx:id="sendBtn" styleClass="chat-send-btn" onAction="#handleSend">
+            <graphic>
+                <FontIcon iconLiteral="fth-send" iconSize="18" iconColor="white"/>
+            </graphic>
+        </Button>
+    </HBox>
+</VBox>

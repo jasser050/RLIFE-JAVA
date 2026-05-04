@@ -67,7 +67,7 @@ public class PlanningGameController implements Initializable {
     }
 
     private void loadGameDashboard() {
-        List<PlanningEntry> entries = planningService.getAll();
+        List<PlanningEntry> entries = new ArrayList<>(planningService.getAll());
         entries.sort(Comparator.comparing(PlanningEntry::getPlanningDate).thenComparing(PlanningEntry::getStartTime));
 
         long totalSessions = entries.size();

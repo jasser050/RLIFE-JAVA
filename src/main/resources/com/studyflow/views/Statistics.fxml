@@ -9,7 +9,7 @@
 <VBox xmlns="http://javafx.com/javafx/17"
       xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="com.studyflow.controllers.StatisticsController"
-      spacing="24" style="-fx-background-color: #020617;">
+      spacing="24">
 
     <padding>
         <Insets top="0" right="0" bottom="24" left="0"/>

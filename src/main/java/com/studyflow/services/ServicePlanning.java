@@ -1,6 +1,8 @@
 package com.studyflow.services;
 
 import com.studyflow.interfaces.IService;
+import com.studyflow.models.Planning;
+import com.studyflow.models.PlanningEntry;
 import com.studyflow.models.User;
 import com.studyflow.utils.MyDataBase;
 import com.studyflow.utils.UserSession;
@@ -19,7 +21,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ServicePlanning implements IService<PlanningEntry> {
+public class ServicePlanning implements IService<Planning> {
 
     private final Connection cnx;
 
@@ -29,7 +31,7 @@ public class ServicePlanning implements IService<PlanningEntry> {
     }
 
     @Override
-    public void add(PlanningEntry planningEntry) {
+    public void add(Planning planningEntry) {
         String req = "INSERT INTO planning (user_id, seance_id, date_debut, date_fin, color, feedback, created_at, updated_at) " +
                 "VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())";
 
@@ -48,7 +50,7 @@ public class ServicePlanning implements IService<PlanningEntry> {
     }
 
     @Override
-    public void update(PlanningEntry planningEntry) {
+    public void update(Planning planningEntry) {
         String req = "UPDATE planning SET seance_id = ?, date_debut = ?, date_fin = ?, color = ?, feedback = ?, updated_at = NOW() " +
                 "WHERE id = ? AND user_id = ?";
 
@@ -67,7 +69,7 @@ public class ServicePlanning implements IService<PlanningEntry> {
     }
 
     @Override
-    public void delete(PlanningEntry planningEntry) {
+    public void delete(Planning planningEntry) {
         String req = "DELETE FROM planning WHERE id = ? AND user_id = ?";
         try (PreparedStatement pstm = cnx.prepareStatement(req)) {
             pstm.setInt(1, planningEntry.getId());
@@ -79,8 +81,8 @@ public class ServicePlanning implements IService<PlanningEntry> {
     }
 
     @Override
-    public List<PlanningEntry> getAll() {
-        List<PlanningEntry> planningEntries = new ArrayList<>();
+    public List<Planning> getAll() {
+        List<Planning> planningEntries = new ArrayList<>();
         Integer userId = resolveCurrentUserId();
         if (userId == null) {
             return planningEntries;
@@ -159,8 +161,8 @@ public class ServicePlanning implements IService<PlanningEntry> {
         pstm.setString(6, planningEntry.getFeedback());
     }
 
-    private PlanningEntry mapPlanningEntry(ResultSet rs) throws SQLException {
-        PlanningEntry planningEntry = new PlanningEntry();
+    private Planning mapPlanningEntry(ResultSet rs) throws SQLException {
+        Planning planningEntry = new Planning();
         planningEntry.setId(rs.getInt("id"));
         planningEntry.setUserId(rs.getInt("user_id"));
         planningEntry.setSeanceId(rs.getInt("seance_id"));

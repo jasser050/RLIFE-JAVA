@@ -1,5 +1,8 @@
 package com.studyflow;
 
+import com.studyflow.models.User;
+import com.studyflow.services.ServiceUser;
+import com.studyflow.utils.UserSession;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -12,10 +15,11 @@ import java.io.IOException;
 import java.util.Objects;
 
 /**
- * StudyFlow - Modern Student Productivity Dashboard
- * A beautiful, elegant JavaFX application with dark theme
+ * StudyFlow - Modern Student Productivity Dashboard.
  */
 public class App extends Application {
+    private static final String DARK_THEME = "styles/dark-theme.css";
+    private static final String LIGHT_THEME = "styles/light-theme.css";
 
     public enum Theme {
         DARK,
@@ -24,60 +28,88 @@ public class App extends Application {
 
     private static Scene scene;
     private static Stage primaryStage;
-    private static Theme currentTheme = Theme.DARK;
+    private static boolean darkTheme = true;
 
-    private static final String DARK_THEME_CSS = "styles/dark-theme.css";
-    private static final String LIGHT_THEME_CSS = "styles/light-theme.css";
+    public enum Theme {
+        DARK,
+        LIGHT
+    }
 
     @Override
     public void start(Stage stage) throws IOException {
         primaryStage = stage;
+        LocalServer.start();
 
-        // Load the main layout
-        Parent root = loadFXML("views/Landing");
 
-        // Create scene with dark background
+        // Check for saved session — auto-login if token exists
+        String startView = "views/Landing";
+        String savedEmail = UserSession.getInstance().loadSession();
+        if (savedEmail != null) {
+            try {
+                ServiceUser serviceUser = new ServiceUser();
+                User user = serviceUser.findByEmail(savedEmail);
+                if (user != null && !user.isBanned()) {
+                    UserSession.getInstance().setCurrentUser(user);
+                    startView = "admin@rlife.com".equalsIgnoreCase(user.getEmail())
+                            ? "views/AdminLayout" : "views/MainLayout";
+                } else {
+                    UserSession.getInstance().clearSession();
+                }
+            } catch (Exception e) {
+                System.out.println("Auto-login failed: " + e.getMessage());
+                UserSession.getInstance().clearSession();
+            }
+        }
+
+        Parent root = loadFXML(startView);
+
         scene = new Scene(root, 1400, 900);
         scene.setFill(Color.TRANSPARENT);
+        applyTheme();
 
-        applyTheme(currentTheme);
-
-        // Configure stage - UNDECORATED for custom title bar
         stage.initStyle(StageStyle.TRANSPARENT);
         stage.setTitle("StudyFlow - Student Dashboard");
         stage.setScene(scene);
         stage.setMinWidth(1200);
         stage.setMinHeight(700);
-
-        // Show the stage
         stage.show();
     }
 
-    /**
-     * Load an FXML file
-     */
     public static Parent loadFXML(String fxml) throws IOException {
         FXMLLoader fxmlLoader = new FXMLLoader(App.class.getResource(fxml + ".fxml"));
         return fxmlLoader.load();
     }
 
-    /**
-     * Set the root of the scene
-     */
     public static void setRoot(String fxml) throws IOException {
         scene.setRoot(loadFXML(fxml));
+        applyTheme();
     }
 
-    /**
-     * Get the primary stage
-     */
+    public static void toggleTheme() {
+        darkTheme = !darkTheme;
+        applyTheme();
+    }
+
+    public static boolean isDarkTheme() {
+        return darkTheme;
+    }
+
+    public static Theme getCurrentTheme() {
+        return darkTheme ? Theme.DARK : Theme.LIGHT;
+    }
+
+    private static void applyTheme() {
+        if (scene == null) {
+            return;
+        }
+        scene.getStylesheets().clear();
+        scene.getStylesheets().add(App.class.getResource(darkTheme ? DARK_THEME : LIGHT_THEME).toExternalForm());
+    }
+
     public static Stage getPrimaryStage() {
         return primaryStage;
     }
 
-    /**
-     * Get the current scene
-     */
     public static Scene getScene() {
         return scene;
     }
@@ -109,6 +141,8 @@ public class App extends Application {
     }
 
     public static void main(String[] args) {
+        System.setProperty("prism.forceGPU", "true");
+        System.setProperty("prism.vsync", "false");
         launch(args);
     }
 }
