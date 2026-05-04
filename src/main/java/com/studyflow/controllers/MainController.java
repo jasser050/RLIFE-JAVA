@@ -425,7 +425,7 @@ public class MainController implements Initializable {
             case "views/Planning.fxml" -> setActiveButton(btnPlanning);
             case "views/Revisions.fxml", "views/Flashcards.fxml" -> setActiveButton(btnRevisions);
             case "views/Projects.fxml" -> setActiveButton(btnProjects);
-            case "views/Notes.fxml" -> setActiveButton(btnNotes);
+            case "views/Notes.fxml", "views/MyPet.fxml" -> setActiveButton(btnNotes);
             case "views/Wellbeing.fxml" -> setActiveButton(btnWellbeing);
             case "views/Statistics.fxml" -> setActiveButton(btnStats);
             default -> {
@@ -846,6 +846,12 @@ public class MainController implements Initializable {
     private void showNotes() {
         setActiveButton(btnNotes);
         loadContent("views/Notes.fxml");
+    }
+
+    @FXML
+    private void showMyPet() {
+        setActiveButton(btnNotes);
+        loadContent("views/MyPet.fxml");
     }
 
     @FXML
