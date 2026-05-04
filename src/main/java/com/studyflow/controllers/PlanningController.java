@@ -1,6 +1,7 @@
 package com.studyflow.controllers;
 
 import com.studyflow.App;
+import games.GeoGamesHub;
 import com.studyflow.models.Planning;
 import com.studyflow.models.Seance;
 import com.studyflow.models.TypeSeance;
@@ -16,6 +17,9 @@ import com.studyflow.services.SpeechToTextService;
 import com.studyflow.services.SmartPlanService;
 import com.studyflow.services.ServiceTypeSeance;
 import com.studyflow.utils.UserSession;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import javafx.application.Platform;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
@@ -79,13 +83,18 @@ import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
 import javafx.scene.effect.DropShadow;
 import javafx.stage.FileChooser;
+import javafx.stage.Stage;
 import javafx.stage.Window;
 import javafx.util.Duration;
 import javafx.util.StringConverter;
 import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.io.IOException;
+import java.net.URI;
 import java.net.URL;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.file.Path;
 import java.text.Normalizer;
 import java.time.DayOfWeek;
@@ -163,6 +172,9 @@ public class PlanningController implements Initializable {
     private static final String SESSION_TYPE_DAYOFF = "dayoff";
     private static final String SESSION_TYPE_GOOGLE_IMPORTED = "google imported";
     private static final String GOOGLE_IMPORTED_COLOR_HEX = "#3B82F6";
+    private static final String WEATHER_GEOCODING_ENDPOINT = "https://geocoding-api.open-meteo.com/v1/search";
+    private static final String WEATHER_FORECAST_ENDPOINT = "https://api.open-meteo.com/v1/forecast";
+    private static final String WEATHER_DEFAULT_CITY = "Tunis";
     private static final Map<String, String> KNOWN_TEAM_ACRONYMS = Map.ofEntries(
             Map.entry("atletico madrid", "ATM"),
             Map.entry("bayern munich", "FCB"),
@@ -286,6 +298,8 @@ public class PlanningController implements Initializable {
     @FXML private Button matchPrefillButton;
     @FXML private ImageView mascotStateImage;
     @FXML private ImageView mascotOverlayEmojiImage;
+    @FXML private ImageView mascotWeatherAccessoryImage;
+    @FXML private Label mascotWeatherAccessoryFallbackLabel;
     @FXML private Label mascotOverlayFxLabel;
     @FXML private Label mascotNameLabel;
     @FXML private Label mascotMoodLabel;
@@ -310,6 +324,7 @@ public class PlanningController implements Initializable {
     private final FootballDataService footballDataService = new FootballDataService();
     private final SmartPlanService smartPlanService = new SmartPlanService();
     private final SpeechToTextService speechToTextService = new SpeechToTextService();
+    private final HttpClient httpClient = HttpClient.newHttpClient();
     private final Preferences planningPreferences = Preferences.userNodeForPackage(PlanningController.class);
     private final DateTimeFormatter monthFormatter = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ENGLISH);
     private final DateTimeFormatter fullDateFormatter = DateTimeFormatter.ofPattern("EEEE, MMM d", Locale.ENGLISH);
@@ -325,6 +340,10 @@ public class PlanningController implements Initializable {
     private Planning editingPlanning;
     private List<Planning> allPlanningEntries = new ArrayList<>();
     private Map<LocalDate, List<Planning>> planningByDate = new HashMap<>();
+    private Map<LocalDate, String> calendarWeatherByDate = new HashMap<>();
+    private final Map<String, Image> calendarWeatherImageCache = new HashMap<>();
+    private YearMonth calendarWeatherLoadedMonth;
+    private boolean calendarWeatherLoading;
     private final Map<Label, PauseTransition> messageTimers = new HashMap<>();
     private final List<String> assistantUserHistory = new ArrayList<>();
     private final Set<Integer> aiGeneratedPlanningIds = new HashSet<>();
@@ -376,6 +395,7 @@ public class PlanningController implements Initializable {
         configureAssistantControls();
         configureLiveClock();
         configureMascotVisibility();
+        updateWeatherAccessory();
         Platform.runLater(() -> {
             positionMascotNearClock();
             installMascotViewportPinning();
@@ -581,6 +601,172 @@ public class PlanningController implements Initializable {
     }
 
     // ── Force explicit day-number colors to keep DatePicker readable in both themes ──
+
+    private void updateWeatherAccessory() {
+        if (mascotWeatherAccessoryImage == null) {
+            return;
+        }
+        CompletableFuture
+                .supplyAsync(this::resolveWeatherAccessory)
+                .thenAccept(accessoryKey -> Platform.runLater(() -> applyWeatherAccessory(accessoryKey)));
+    }
+
+    private String resolveWeatherAccessory() {
+        try {
+            String geocodingUrl = WEATHER_GEOCODING_ENDPOINT + "?name=" + WEATHER_DEFAULT_CITY + "&count=1&language=en&format=json";
+            HttpRequest geocodingRequest = HttpRequest.newBuilder()
+                    .uri(URI.create(geocodingUrl))
+                    .GET()
+                    .build();
+            HttpResponse<String> geocodingResponse = httpClient.send(geocodingRequest, HttpResponse.BodyHandlers.ofString());
+            if (geocodingResponse.statusCode() < 200 || geocodingResponse.statusCode() >= 300) {
+                return "";
+            }
+
+            JsonObject geoRoot = JsonParser.parseString(geocodingResponse.body()).getAsJsonObject();
+            JsonArray results = geoRoot.has("results") && geoRoot.get("results").isJsonArray()
+                    ? geoRoot.getAsJsonArray("results")
+                    : null;
+            if (results == null || results.isEmpty()) {
+                return "";
+            }
+
+            JsonObject first = results.get(0).getAsJsonObject();
+            if (!first.has("latitude") || !first.has("longitude")) {
+                return "";
+            }
+            double latitude = first.get("latitude").getAsDouble();
+            double longitude = first.get("longitude").getAsDouble();
+
+            String forecastUrl = WEATHER_FORECAST_ENDPOINT
+                    + "?latitude=" + latitude
+                    + "&longitude=" + longitude
+                    + "&current=temperature_2m,weather_code,wind_speed_10m"
+                    + "&timezone=auto";
+            HttpRequest forecastRequest = HttpRequest.newBuilder()
+                    .uri(URI.create(forecastUrl))
+                    .GET()
+                    .build();
+            HttpResponse<String> forecastResponse = httpClient.send(forecastRequest, HttpResponse.BodyHandlers.ofString());
+            if (forecastResponse.statusCode() < 200 || forecastResponse.statusCode() >= 300) {
+                return "";
+            }
+
+            JsonObject forecastRoot = JsonParser.parseString(forecastResponse.body()).getAsJsonObject();
+            JsonObject current = forecastRoot.has("current") && forecastRoot.get("current").isJsonObject()
+                    ? forecastRoot.getAsJsonObject("current")
+                    : null;
+            if (current == null) {
+                return "";
+            }
+
+            int weatherCode = current.has("weather_code") ? current.get("weather_code").getAsInt() : -1;
+            double temperature = current.has("temperature_2m") ? current.get("temperature_2m").getAsDouble() : 20;
+            double windSpeed = current.has("wind_speed_10m") ? current.get("wind_speed_10m").getAsDouble() : 0;
+
+            if (weatherCode == 95 || weatherCode == 96 || weatherCode == 99) {
+                return "storm";
+            }
+            if (weatherCode == 71 || weatherCode == 73 || weatherCode == 75 || weatherCode == 77 || weatherCode == 85 || weatherCode == 86) {
+                return "snow";
+            }
+            if (weatherCode == 45 || weatherCode == 48) {
+                return "fog";
+            }
+            if (isRainyCode(weatherCode)) {
+                return "rain";
+            }
+            if (temperature <= 8) {
+                return "cold";
+            }
+            if (windSpeed >= 30) {
+                return "windy";
+            }
+            if (weatherCode == 2) {
+                return "partly";
+            }
+            if (weatherCode == 3) {
+                return "cloudy";
+            }
+            if (weatherCode == 0 || weatherCode == 1) {
+                return "sunny";
+            }
+            return "sunny";
+        } catch (Exception exception) {
+            return "sunny";
+        }
+    }
+
+    private boolean isRainyCode(int code) {
+        return code == 51 || code == 53 || code == 55
+                || code == 56 || code == 57
+                || code == 61 || code == 63 || code == 65
+                || code == 66 || code == 67
+                || code == 80 || code == 81 || code == 82
+                || code == 95 || code == 96 || code == 99;
+    }
+
+    private void applyWeatherAccessory(String accessoryKey) {
+        if (mascotWeatherAccessoryImage == null) {
+            return;
+        }
+
+        String resource = switch (accessoryKey == null ? "" : accessoryKey) {
+            case "sunny", "partly" -> "/com/studyflow/images/weather/sunglasses.png";
+            case "rain", "storm" -> "/com/studyflow/images/weather/umbrella.png";
+            case "cold", "snow" -> "/com/studyflow/images/weather/scarf.png";
+            case "windy", "fog", "cloudy" -> "/com/studyflow/images/weather/wind.png";
+            default -> "";
+        };
+
+        if (resource.isBlank()) {
+            mascotWeatherAccessoryImage.setImage(null);
+            mascotWeatherAccessoryImage.setVisible(false);
+            mascotWeatherAccessoryImage.setManaged(false);
+            if (mascotWeatherAccessoryFallbackLabel != null) {
+                String forcedEmoji = switch (accessoryKey == null ? "" : accessoryKey) {
+                    case "sunny", "partly" -> "\uD83D\uDD76";
+                    case "rain", "storm" -> "\u2602";
+                    case "cold", "snow" -> "\uD83E\uDDE3";
+                    case "windy", "fog", "cloudy" -> "\uD83C\uDF2C";
+                    default -> "";
+                };
+                mascotWeatherAccessoryFallbackLabel.setStyle("-fx-font-family: 'Segoe UI Emoji'; -fx-font-size: 20px; -fx-font-weight: 700;");
+                mascotWeatherAccessoryFallbackLabel.setText(forcedEmoji);
+                mascotWeatherAccessoryFallbackLabel.setVisible(!forcedEmoji.isBlank());
+                mascotWeatherAccessoryFallbackLabel.setManaged(!forcedEmoji.isBlank());
+            }
+            return;
+        }
+
+        try {
+            Image accessory = new Image(getClass().getResourceAsStream(resource));
+            mascotWeatherAccessoryImage.setImage(accessory);
+            mascotWeatherAccessoryImage.setVisible(true);
+            mascotWeatherAccessoryImage.setManaged(true);
+            if (mascotWeatherAccessoryFallbackLabel != null) {
+                mascotWeatherAccessoryFallbackLabel.setText("");
+                mascotWeatherAccessoryFallbackLabel.setVisible(false);
+                mascotWeatherAccessoryFallbackLabel.setManaged(false);
+            }
+        } catch (Exception exception) {
+            mascotWeatherAccessoryImage.setImage(null);
+            mascotWeatherAccessoryImage.setVisible(false);
+            mascotWeatherAccessoryImage.setManaged(false);
+            if (mascotWeatherAccessoryFallbackLabel != null) {
+                String emoji = switch (accessoryKey == null ? "" : accessoryKey) {
+                    case "rainy" -> "☔";
+                    case "sunny" -> "🕶";
+                    case "cold" -> "🧣";
+                    case "windy" -> "🌬";
+                    default -> "";
+                };
+                mascotWeatherAccessoryFallbackLabel.setText("");
+                mascotWeatherAccessoryFallbackLabel.setVisible(false);
+                mascotWeatherAccessoryFallbackLabel.setManaged(false);
+            }
+        }
+    }
 
     private void configurePlanningDatePickerReadability() {
         if (planningDatePicker == null) {
@@ -1479,11 +1665,7 @@ public class PlanningController implements Initializable {
 
     @FXML
     private void handleOpenPlanningGame() {
-        try {
-            App.setRoot("views/PlanningGame");
-        } catch (IOException exception) {
-            showErrorOn(pageMessageLabel, "Unable to open planning game: " + exception.getMessage());
-        }
+        GeoGamesHub.open(App.getPrimaryStage());
     }
 
     @FXML
@@ -4339,6 +4521,7 @@ public class PlanningController implements Initializable {
     }
 
     private void updateCalendar() {
+        ensureCalendarWeatherLoaded();
         calendarGrid.getChildren().clear();
         calendarGrid.getColumnConstraints().clear();
         calendarGrid.getRowConstraints().clear();
@@ -4402,7 +4585,28 @@ public class PlanningController implements Initializable {
         if (isToday) {
             dayLabel.getStyleClass().add("planning-calendar-day-label-today");
         }
-        cell.getChildren().add(dayLabel);
+
+        HBox dayHeader = new HBox(6);
+        dayHeader.setAlignment(Pos.CENTER_LEFT);
+        String weatherKey = resolveCalendarWeatherKeyForDate(date);
+        ImageView weatherIconImage = createCalendarWeatherIconImage(weatherKey);
+        Label weatherIconFallback = new Label(resolveCalendarWeatherEmoji(weatherKey));
+        weatherIconFallback.getStyleClass().add("planning-calendar-weather-label");
+
+        if (weatherIconImage != null) {
+            weatherIconFallback.setManaged(false);
+            weatherIconFallback.setVisible(false);
+        } else if (weatherIconFallback.getText().isBlank()) {
+            weatherIconFallback.setManaged(false);
+            weatherIconFallback.setVisible(false);
+        }
+        dayHeader.getChildren().add(dayLabel);
+        if (weatherIconImage != null) {
+            dayHeader.getChildren().add(weatherIconImage);
+        } else {
+            dayHeader.getChildren().add(weatherIconFallback);
+        }
+        cell.getChildren().add(dayHeader);
 
         List<Planning> entries = planningByDate.getOrDefault(date, List.of()).stream()
                 .sorted(Comparator.comparing(Planning::getStartTime))
@@ -4450,6 +4654,227 @@ public class PlanningController implements Initializable {
         GridPane.setHgrow(cell, Priority.ALWAYS);
         GridPane.setVgrow(cell, Priority.ALWAYS);
         return cell;
+    }
+
+    private void ensureCalendarWeatherLoaded() {
+        if (calendarWeatherLoading || currentYearMonth == null || currentYearMonth.equals(calendarWeatherLoadedMonth)) {
+            return;
+        }
+
+        LocalDate firstOfMonth = currentYearMonth.atDay(1);
+        int dayOfWeek = firstOfMonth.getDayOfWeek().getValue() % 7;
+        LocalDate gridStart = firstOfMonth.minusDays(dayOfWeek);
+        LocalDate gridEnd = gridStart.plusDays(41);
+        YearMonth targetMonth = currentYearMonth;
+
+        calendarWeatherLoading = true;
+        CompletableFuture
+                .supplyAsync(() -> fetchCalendarWeatherIcons(gridStart, gridEnd))
+                .thenAccept(iconMap -> Platform.runLater(() -> {
+                    calendarWeatherLoading = false;
+                    if (!targetMonth.equals(currentYearMonth)) {
+                        return;
+                    }
+                    calendarWeatherByDate = iconMap;
+                    calendarWeatherLoadedMonth = targetMonth;
+                    updateCalendar();
+                }))
+                .exceptionally(throwable -> {
+                    Platform.runLater(() -> calendarWeatherLoading = false);
+                    return null;
+                });
+    }
+
+    private Map<LocalDate, String> fetchCalendarWeatherIcons(LocalDate startDate, LocalDate endDate) {
+        Map<LocalDate, String> weatherIcons = new HashMap<>();
+        try {
+            String geocodingUrl = WEATHER_GEOCODING_ENDPOINT + "?name=" + WEATHER_DEFAULT_CITY + "&count=1&language=en&format=json";
+            HttpRequest geocodingRequest = HttpRequest.newBuilder()
+                    .uri(URI.create(geocodingUrl))
+                    .GET()
+                    .build();
+            HttpResponse<String> geocodingResponse = httpClient.send(geocodingRequest, HttpResponse.BodyHandlers.ofString());
+            if (geocodingResponse.statusCode() < 200 || geocodingResponse.statusCode() >= 300) {
+                return weatherIcons;
+            }
+
+            JsonObject geoRoot = JsonParser.parseString(geocodingResponse.body()).getAsJsonObject();
+            JsonArray results = geoRoot.has("results") && geoRoot.get("results").isJsonArray()
+                    ? geoRoot.getAsJsonArray("results")
+                    : null;
+            if (results == null || results.isEmpty()) {
+                return weatherIcons;
+            }
+
+            JsonObject first = results.get(0).getAsJsonObject();
+            if (!first.has("latitude") || !first.has("longitude")) {
+                return weatherIcons;
+            }
+            double latitude = first.get("latitude").getAsDouble();
+            double longitude = first.get("longitude").getAsDouble();
+
+            LocalDate today = LocalDate.now();
+            LocalDate allowedStart = today.minusDays(92);
+            LocalDate allowedEnd = today.plusDays(15);
+            LocalDate clampedStart = startDate.isBefore(allowedStart) ? allowedStart : startDate;
+            LocalDate clampedEnd = endDate.isAfter(allowedEnd) ? allowedEnd : endDate;
+
+            HttpResponse<String> forecastResponse;
+            String forecastUrl = WEATHER_FORECAST_ENDPOINT
+                    + "?latitude=" + latitude
+                    + "&longitude=" + longitude
+                    + "&daily=weather_code,temperature_2m_min,wind_speed_10m_max"
+                    + "&start_date=" + clampedStart
+                    + "&end_date=" + clampedEnd
+                    + "&timezone=auto";
+            HttpRequest forecastRequest = HttpRequest.newBuilder()
+                    .uri(URI.create(forecastUrl))
+                    .GET()
+                    .build();
+            forecastResponse = httpClient.send(forecastRequest, HttpResponse.BodyHandlers.ofString());
+            if (forecastResponse.statusCode() < 200 || forecastResponse.statusCode() >= 300) {
+                String fallbackForecastUrl = WEATHER_FORECAST_ENDPOINT
+                        + "?latitude=" + latitude
+                        + "&longitude=" + longitude
+                        + "&daily=weather_code,temperature_2m_min,wind_speed_10m_max"
+                        + "&past_days=14"
+                        + "&forecast_days=16"
+                        + "&timezone=auto";
+                HttpRequest fallbackRequest = HttpRequest.newBuilder()
+                        .uri(URI.create(fallbackForecastUrl))
+                        .GET()
+                        .build();
+                forecastResponse = httpClient.send(fallbackRequest, HttpResponse.BodyHandlers.ofString());
+                if (forecastResponse.statusCode() < 200 || forecastResponse.statusCode() >= 300) {
+                    return weatherIcons;
+                }
+            }
+
+            JsonObject forecastRoot = JsonParser.parseString(forecastResponse.body()).getAsJsonObject();
+            JsonObject daily = forecastRoot.has("daily") && forecastRoot.get("daily").isJsonObject()
+                    ? forecastRoot.getAsJsonObject("daily")
+                    : null;
+            if (daily == null || !daily.has("time") || !daily.has("weather_code")) {
+                return weatherIcons;
+            }
+
+            JsonArray timeArray = daily.getAsJsonArray("time");
+            JsonArray codeArray = daily.getAsJsonArray("weather_code");
+            JsonArray minTempArray = daily.has("temperature_2m_min") ? daily.getAsJsonArray("temperature_2m_min") : null;
+            JsonArray maxWindArray = daily.has("wind_speed_10m_max") ? daily.getAsJsonArray("wind_speed_10m_max") : null;
+            int size = Math.min(timeArray.size(), codeArray.size());
+            for (int i = 0; i < size; i++) {
+                String dateValue = timeArray.get(i).getAsString();
+                int weatherCode = codeArray.get(i).getAsInt();
+                double minTemp = (minTempArray != null && i < minTempArray.size()) ? minTempArray.get(i).getAsDouble() : 20;
+                double maxWind = (maxWindArray != null && i < maxWindArray.size()) ? maxWindArray.get(i).getAsDouble() : 0;
+                LocalDate date = LocalDate.parse(dateValue);
+                weatherIcons.put(date, mapWeatherToCalendarKey(weatherCode, minTemp, maxWind));
+            }
+        } catch (Exception exception) {
+            return weatherIcons;
+        }
+        return weatherIcons;
+    }
+
+    private String resolveCalendarWeatherKeyForDate(LocalDate date) {
+        String direct = calendarWeatherByDate.get(date);
+        if (direct != null && !direct.isBlank()) {
+            return direct;
+        }
+        if (date.equals(LocalDate.now())) {
+            return "sunny";
+        }
+        return "";
+    }
+
+    private String mapWeatherToCalendarKey(int weatherCode, double minTemp, double maxWind) {
+        if (weatherCode == 95 || weatherCode == 96 || weatherCode == 99) {
+            return "storm";
+        }
+        if (weatherCode == 71 || weatherCode == 73 || weatherCode == 75 || weatherCode == 77 || weatherCode == 85 || weatherCode == 86) {
+            return "snow";
+        }
+        if (weatherCode == 45 || weatherCode == 48) {
+            return "fog";
+        }
+        if (isRainyCode(weatherCode)) {
+            return "rain";
+        }
+        if (minTemp <= 8) {
+            return "cold";
+        }
+        if (maxWind >= 30) {
+            return "windy";
+        }
+        if (weatherCode == 0 || weatherCode == 1) {
+            return "sunny";
+        }
+        if (weatherCode == 2) {
+            return "partly";
+        }
+        if (weatherCode == 3) {
+            return "cloudy";
+        }
+        return "sunny";
+    }
+
+    private ImageView createCalendarWeatherIconImage(String weatherKey) {
+        String resource = resolveCalendarWeatherResource(weatherKey);
+        if (resource.isBlank()) {
+            return null;
+        }
+        try {
+            Image image = calendarWeatherImageCache.computeIfAbsent(resource, key -> new Image(getClass().getResourceAsStream(key)));
+            ImageView icon = new ImageView(image);
+            icon.setFitWidth(24);
+            icon.setFitHeight(24);
+            icon.setPreserveRatio(true);
+            icon.getStyleClass().add("planning-calendar-weather-icon");
+            return icon;
+        } catch (Exception exception) {
+            return null;
+        }
+    }
+
+    private String resolveCalendarWeatherResource(String weatherKey) {
+        return switch (weatherKey == null ? "" : weatherKey) {
+            case "sunny" -> "/com/studyflow/images/weather/sunny.png";
+            case "partly" -> "/com/studyflow/images/weather/partly.png";
+            case "cloudy" -> "/com/studyflow/images/weather/cloudy.png";
+            case "fog" -> "/com/studyflow/images/weather/fog.png";
+            case "rain" -> "/com/studyflow/images/weather/rain.png";
+            case "storm" -> "/com/studyflow/images/weather/storm.png";
+            case "snow" -> "/com/studyflow/images/weather/snow.png";
+            case "windy" -> "/com/studyflow/images/weather/windy.png";
+            case "cold" -> "/com/studyflow/images/weather/cold.png";
+            default -> "";
+        };
+    }
+
+    private String resolveWeatherAccessoryResource(String accessoryKey) {
+        return switch (accessoryKey == null ? "" : accessoryKey) {
+            case "rainy" -> "/com/studyflow/images/weather/umbrella.png";
+            case "sunny" -> "/com/studyflow/images/weather/sunglasses.png";
+            case "cold" -> "/com/studyflow/images/weather/scarf.png";
+            case "windy" -> "/com/studyflow/images/weather/wind.png";
+            default -> "";
+        };
+    }
+
+    private String resolveCalendarWeatherEmoji(String accessoryKey) {
+        return switch (accessoryKey == null ? "" : accessoryKey) {
+            case "rain" -> "\uD83C\uDF27";
+            case "sunny" -> "\u2600";
+            case "partly" -> "\u26C5";
+            case "cloudy" -> "\u2601";
+            case "fog" -> "\uD83C\uDF2B";
+            case "storm" -> "\u26C8";
+            case "snow" -> "\u2744";
+            case "cold" -> "\u2744";
+            case "windy" -> "\uD83C\uDF2C";
+            default -> "";
+        };
     }
 
     private double computeCalendarRowHeight(LocalDate gridStart, int rowIndex) {
@@ -4786,7 +5211,7 @@ public class PlanningController implements Initializable {
 
     private String cleanTeamPrefix(String teamName) {
         if (teamName == null) {
-            return "";
+        return "sunny";
         }
         String cleaned = teamName.trim();
         String normalized = normalizeAssistant(cleaned);
@@ -4984,6 +5409,12 @@ public class PlanningController implements Initializable {
         todayDateLabel.setText(today.format(fullDateFormatter));
         List<Planning> todayEntries = planningByDate.getOrDefault(today, List.of());
         todayEventsListView.setItems(FXCollections.observableArrayList(todayEntries));
+        Platform.runLater(() -> {
+            todayEventsListView.getSelectionModel().clearSelection();
+            if (!todayEntries.isEmpty()) {
+                todayEventsListView.scrollTo(0);
+            }
+        });
     }
 
     private void updateUpcomingPanel() {
@@ -5001,6 +5432,12 @@ public class PlanningController implements Initializable {
                 .sorted(resolveUpcomingComparator(sortOption))
                 .toList();
         upcomingEventsListView.setItems(FXCollections.observableArrayList(upcomingEntries));
+        Platform.runLater(() -> {
+            upcomingEventsListView.getSelectionModel().clearSelection();
+            if (!upcomingEntries.isEmpty()) {
+                upcomingEventsListView.scrollTo(0);
+            }
+        });
     }
 
     private String resolveSearchScopeFromMode(String selectedMode) {

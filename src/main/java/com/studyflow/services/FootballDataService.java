@@ -121,6 +121,12 @@ public class FootballDataService {
 
         String homeName = homeTeam != null && homeTeam.has("name") ? homeTeam.get("name").getAsString() : "Home";
         String awayName = awayTeam != null && awayTeam.has("name") ? awayTeam.get("name").getAsString() : "Away";
+        String homeLogoUrl = homeTeam != null && homeTeam.has("crest") && !homeTeam.get("crest").isJsonNull()
+                ? homeTeam.get("crest").getAsString()
+                : "";
+        String awayLogoUrl = awayTeam != null && awayTeam.has("crest") && !awayTeam.get("crest").isJsonNull()
+                ? awayTeam.get("crest").getAsString()
+                : "";
 
         JsonObject competition = matchObject.has("competition") && matchObject.get("competition").isJsonObject()
                 ? matchObject.getAsJsonObject("competition")
@@ -139,6 +145,8 @@ public class FootballDataService {
                 team,
                 homeName,
                 awayName,
+                homeLogoUrl,
+                awayLogoUrl,
                 opponentName,
                 competitionName,
                 kickoffUtc,
@@ -180,13 +188,14 @@ public class FootballDataService {
             TeamOption team,
             String homeTeam,
             String awayTeam,
+            String homeLogoUrl,
+            String awayLogoUrl,
             String opponent,
             String competition,
             OffsetDateTime kickoffUtc,
             String summary,
             boolean favoriteIsHome
-    ) {
-    }
+    ) { }
 }
 
 

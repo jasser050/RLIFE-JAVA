@@ -563,12 +563,12 @@
     <VBox fx:id="mascotOverlayCard"
           alignment="CENTER"
           managed="false"
-          maxWidth="112"
-          minWidth="92"
+          maxWidth="126"
+          minWidth="104"
           onMouseDragged="#handleMascotDragged"
           onMousePressed="#handleMascotDragStart"
           onMouseReleased="#handleMascotDragEnd"
-          prefWidth="100"
+          prefWidth="114"
           spacing="6"
           style="-fx-background-color: -color-surface;
                  -fx-background-radius: 999;
@@ -580,8 +580,30 @@
         <StackPane.margin>
             <Insets right="0" top="0" />
         </StackPane.margin>
-        <StackPane>
-            <ImageView fx:id="mascotOverlayEmojiImage" fitHeight="54.0" fitWidth="54.0" pickOnBounds="true" preserveRatio="true" />
+        <StackPane prefHeight="76.0" prefWidth="76.0">
+            <ImageView fx:id="mascotOverlayEmojiImage"
+                       fitHeight="62.0"
+                       fitWidth="62.0"
+                       pickOnBounds="true"
+                       preserveRatio="true"
+                       translateY="8" />
+            <ImageView fx:id="mascotWeatherAccessoryImage"
+                       fitHeight="26.0"
+                       fitWidth="26.0"
+                       managed="false"
+                       mouseTransparent="true"
+                       preserveRatio="true"
+                       translateX="0"
+                       translateY="-30"
+                       visible="false" />
+            <Label fx:id="mascotWeatherAccessoryFallbackLabel"
+                   managed="false"
+                   mouseTransparent="true"
+                   style="-fx-font-size: 20px; -fx-font-weight: 800;"
+                   text=""
+                   translateX="0"
+                   translateY="-30"
+                   visible="false" />
             <Label fx:id="mascotOverlayFxLabel"
                    mouseTransparent="true"
                    style="-fx-font-size: 16px; -fx-font-weight: 700; -fx-text-fill: #FACC15;"
