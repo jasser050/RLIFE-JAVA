@@ -29,7 +29,8 @@ import java.util.function.Consumer;
 
 public class VoiceAssistantService {
     private static final String GROQ_BASE = "https://api.groq.com/openai/v1";
-    private static final String DEFAULT_GROQ_API_KEY = "APLI KEY ";
+    private static final String DEFAULT_GROQ_API_KEY = "api key" +
+            "";
 
     private static final String GROQ_CHAT_MODEL = "llama-3.3-70b-versatile";
 
