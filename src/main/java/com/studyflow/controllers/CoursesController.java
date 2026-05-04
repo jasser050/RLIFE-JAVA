@@ -63,6 +63,7 @@ public class CoursesController implements Initializable {
     @FXML private Button           btnHeaderAction;
     @FXML private FontIcon         btnHeaderIcon;
     @FXML private Button           btnVoiceAssistant;
+    @FXML private ComboBox<String> cmbLanguage;
 
     // ── Voice Assistant UI ─────────────────────────────────────
     @FXML private VBox              voiceBar;
@@ -72,6 +73,9 @@ public class CoursesController implements Initializable {
     @FXML private ProgressIndicator voiceProgress;
     @FXML private Button            btnVoiceMic;
     @FXML private Button            btnVoiceCancel;
+    @FXML private Button            btnVoiceStopAudio;
+    @FXML private Button            btnVoicePlayAudio;
+    @FXML private CheckBox          voiceReadAloudToggle;
 
     // ── Vues ───────────────────────────────────────────────────
     @FXML private VBox     listView;
@@ -182,6 +186,7 @@ public class CoursesController implements Initializable {
     private static final PseudoClass SELECTED   = PseudoClass.getPseudoClass("selected");
 
     private boolean isRecordingVoice = false;
+    private String lastVoiceResponse = "";
 
     // ════════════════════════════════════════════════════════════
     //  QUIZ MODEL
@@ -249,6 +254,8 @@ public class CoursesController implements Initializable {
         } catch (Exception e) { e.printStackTrace(); }
 
         setupVoiceAssistant();
+        setupVoiceLanguageSelector();
+        setupVoiceAudioControls();
         setupAntiFraud();
 
         showView("list");
@@ -381,7 +388,7 @@ public class CoursesController implements Initializable {
     private void setupVoiceAssistant() {
         if (!voiceService.hasApiKey()) {
             Platform.runLater(() -> {
-                voiceStatusLabel.setText("GROQ_API_KEY required for real voice detection");
+                voiceStatusLabel.setText("Click Start Speaking to configure your Groq API key");
                 voiceProgress.setVisible(false);
             });
         }
@@ -393,8 +400,12 @@ public class CoursesController implements Initializable {
         });
 
         voiceService.onAIResponse = response -> Platform.runLater(() -> {
+            lastVoiceResponse = response == null ? "" : response;
             voiceResponseLabel.setText("🤖 Assistant: " + response);
             voiceStatusLabel.setText("💬 Assistant responded");
+            if (btnVoicePlayAudio != null) {
+                btnVoicePlayAudio.setDisable(lastVoiceResponse.isBlank());
+            }
         });
 
         voiceService.onStatus = status -> Platform.runLater(() -> {
@@ -419,6 +430,9 @@ public class CoursesController implements Initializable {
         voiceService.onAudioStart = () -> Platform.runLater(() -> {
             voiceStatusLabel.setText("🔊 Speaking…");
             voiceProgress.setVisible(true);
+            if (btnVoiceStopAudio != null) {
+                btnVoiceStopAudio.setDisable(false);
+            }
         });
 
         voiceService.onAudioDone = () -> Platform.runLater(() -> {
@@ -427,6 +441,9 @@ public class CoursesController implements Initializable {
             btnVoiceMic.setText("Start Speaking");
             btnVoiceMic.setStyle("-fx-background-color:#7C3AED;-fx-text-fill:white;-fx-border-radius:12;-fx-background-radius:12;-fx-padding:12 24;-fx-font-size:14px;-fx-font-weight:900;-fx-cursor:hand;");
             voiceProgress.setVisible(false);
+            if (btnVoiceStopAudio != null) {
+                btnVoiceStopAudio.setDisable(true);
+            }
             isRecordingVoice = false;
         });
     }
@@ -435,22 +452,78 @@ public class CoursesController implements Initializable {
     private void handleShowVoicePage() {
         showView("voice");
         if (!voiceService.hasApiKey()) {
-            voiceStatusLabel.setText("GROQ_API_KEY required for real voice detection");
+            voiceStatusLabel.setText("Click Start Speaking to configure your Groq API key");
             voiceProgress.setVisible(false);
         } else if (!isRecordingVoice) {
-            voiceStatusLabel.setText("Ready - click Start Speaking");
+            voiceStatusLabel.setText("Ready with " + voiceService.getConfiguredProviderLabel() + " - click Start Speaking");
             voiceProgress.setVisible(false);
         }
     }
 
     @FXML
     private void handleVoiceAssistant() {
-        if (!voiceService.hasApiKey()) {
-            showVoiceError("GROQ_API_KEY is required for real speech-to-text and AI answers");
+        if (!ensureGroqConfigured()) {
             return;
         }
         if (isRecordingVoice) stopVoiceRecording();
         else startVoiceRecording();
+    }
+
+    private void setupVoiceLanguageSelector() {
+        if (cmbLanguage == null) return;
+        cmbLanguage.setItems(FXCollections.observableArrayList(
+                "Auto", "Francais", "English", "Arabic", "Spanish", "German",
+                "Italian", "Portuguese", "Turkish"
+        ));
+        cmbLanguage.getSelectionModel().select("Auto");
+        voiceService.setLanguage("auto");
+        cmbLanguage.setOnAction(event -> {
+            String selected = cmbLanguage.getValue();
+            voiceService.setLanguage(selected);
+            if (voiceStatusLabel != null && voiceBar != null && voiceBar.isVisible() && !isRecordingVoice) {
+                voiceStatusLabel.setText("Language set to " + selected);
+            }
+        });
+    }
+
+    private void setupVoiceAudioControls() {
+        if (voiceReadAloudToggle != null) {
+            voiceReadAloudToggle.setSelected(true);
+            voiceService.setSpeakResponses(true);
+            voiceReadAloudToggle.selectedProperty().addListener((obs, oldValue, selected) ->
+                    voiceService.setSpeakResponses(selected));
+        }
+        if (btnVoiceStopAudio != null) {
+            btnVoiceStopAudio.setDisable(true);
+        }
+        if (btnVoicePlayAudio != null) {
+            btnVoicePlayAudio.setDisable(true);
+        }
+    }
+
+    private boolean ensureGroqConfigured() {
+        if (voiceService.hasApiKey()) {
+            return true;
+        }
+
+        TextInputDialog dialog = new TextInputDialog();
+        dialog.setTitle("Groq API Key");
+        dialog.setHeaderText("Configure Groq for the voice assistant");
+        dialog.setContentText("GROQ_API_KEY:");
+        Optional<String> result = dialog.showAndWait();
+        if (result.isEmpty() || result.get().trim().isBlank()) {
+            showVoiceError("Groq API key is required before recording");
+            return false;
+        }
+
+        if (!voiceService.configureGroqApiKey(result.get(), true)) {
+            showVoiceError("Invalid Groq API key");
+            return false;
+        }
+
+        voiceStatusLabel.setText("Groq configured - click Start Speaking");
+        voiceProgress.setVisible(false);
+        return true;
     }
 
     private void startVoiceRecording() {
@@ -463,6 +536,10 @@ public class CoursesController implements Initializable {
             voiceStatusLabel.setText("🎙️ Recording… click Stop when done");
             voiceTranscriptionLabel.setText("");
             voiceResponseLabel.setText("");
+            lastVoiceResponse = "";
+            if (btnVoicePlayAudio != null) {
+                btnVoicePlayAudio.setDisable(true);
+            }
             voiceProgress.setVisible(true);
             new Thread(() -> {
                 try { Thread.sleep(30_000); } catch (InterruptedException ignored) {}
@@ -497,6 +574,25 @@ public class CoursesController implements Initializable {
         btnVoiceMic.setText("Start Speaking");
         btnVoiceMic.setStyle("-fx-background-color:#7C3AED;-fx-text-fill:white;-fx-border-radius:12;-fx-background-radius:12;-fx-padding:12 24;-fx-font-size:14px;-fx-font-weight:900;-fx-cursor:hand;");
         voiceStatusLabel.setText("🎤 Voice assistant ready");
+    }
+
+    @FXML
+    private void handleStopVoiceReading() {
+        voiceService.stopSpeaking();
+        if (btnVoiceStopAudio != null) {
+            btnVoiceStopAudio.setDisable(true);
+        }
+        voiceProgress.setVisible(false);
+        voiceStatusLabel.setText("Audio stopped");
+    }
+
+    @FXML
+    private void handlePlayVoiceResponse() {
+        if (lastVoiceResponse == null || lastVoiceResponse.isBlank()) {
+            showVoiceError("No assistant answer to read yet");
+            return;
+        }
+        voiceService.speakAsync(lastVoiceResponse);
     }
 
     private void showVoiceBar(boolean show) {

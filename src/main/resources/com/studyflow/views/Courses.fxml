@@ -840,6 +840,24 @@
             <ProgressIndicator fx:id="voiceProgress" prefHeight="20" prefWidth="20" visible="false"
                                style="-fx-accent:#7C3AED;"/>
 
+            <CheckBox fx:id="voiceReadAloudToggle" selected="true"
+                      style="-fx-text-fill:#CBD5E1;-fx-font-size:12px;-fx-font-weight:700;"
+                      text="Read aloud"/>
+
+            <Button fx:id="btnVoicePlayAudio" onAction="#handlePlayVoiceResponse"
+                    disable="true"
+                    style="-fx-background-color:#1E293B;-fx-text-fill:#CBD5E1;-fx-border-color:#334155;
+                           -fx-border-radius:8;-fx-background-radius:8;-fx-padding:7 12;
+                           -fx-font-size:11px;-fx-font-weight:700;-fx-cursor:hand;"
+                    text="Play Answer"/>
+
+            <Button fx:id="btnVoiceStopAudio" onAction="#handleStopVoiceReading"
+                    disable="true"
+                    style="-fx-background-color:#7F1D1D;-fx-text-fill:white;-fx-font-size:11px;
+                           -fx-padding:7 12;-fx-background-radius:8;-fx-cursor:hand;
+                           -fx-font-weight:700;"
+                    text="Stop Reading"/>
+
             <Region HBox.hgrow="ALWAYS"/>
 
             <!-- Bouton cancel -->
