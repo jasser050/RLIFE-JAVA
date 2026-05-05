@@ -1,7 +1,6 @@
 package com.studyflow.utils;
 
 import javafx.application.Platform;
-import javafx.embed.swing.SwingNode;
 import me.friwi.jcefmaven.CefAppBuilder;
 import me.friwi.jcefmaven.CefInitializationException;
 import me.friwi.jcefmaven.UnsupportedPlatformException;
@@ -15,11 +14,16 @@ import org.cef.handler.CefLifeSpanHandlerAdapter;
 import org.cef.handler.CefLoadHandler;
 import org.cef.handler.CefLoadHandlerAdapter;
 
+import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 import java.awt.BorderLayout;
+import java.awt.Dimension;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CountDownLatch;
@@ -33,13 +37,14 @@ public final class EmbeddedMeetingBrowser {
     private static final ExecutorService INIT_EXECUTOR = Executors.newSingleThreadExecutor(new BrowserThreadFactory());
     private static final Object APP_LOCK = new Object();
     private static CompletableFuture<CefApp> appFuture;
+    private static int openSessionCount;
 
     private EmbeddedMeetingBrowser() {
     }
 
-    public static CompletableFuture<BrowserSession> attach(SwingNode target, String url, Consumer<String> statusConsumer) {
-        updateStatus(statusConsumer, "Starting embedded meeting...");
-        return app().thenCompose(app -> createSession(app, target, url, statusConsumer));
+    public static CompletableFuture<BrowserSession> openWindow(String title, String url, Consumer<String> statusConsumer) {
+        updateStatus(statusConsumer, "Starting meeting window...");
+        return app().thenCompose(app -> createWindowSession(app, title, url, statusConsumer));
     }
 
     private static CompletableFuture<CefApp> app() {
@@ -61,15 +66,32 @@ public final class EmbeddedMeetingBrowser {
             CefAppBuilder builder = new CefAppBuilder();
             builder.setInstallDir(installDir);
             builder.addJcefArgs(
+                    "--no-first-run",
+                    "--no-default-browser-check",
+                    "--disable-background-networking",
+                    "--disable-component-update",
+                    "--disable-sync",
+                    "--disable-push-api",
+                    "--disable-notifications",
+                    "--suppress-message-center-popups",
+                    "--disable-breakpad",
+                    "--disable-domain-reliability",
+                    "--disable-client-side-phishing-detection",
+                    "--disable-features=HardwareMediaKeyHandling,MediaRouter,PushMessaging,NotificationTriggers",
                     "--autoplay-policy=no-user-gesture-required",
                     "--enable-media-stream",
-                    "--disable-features=HardwareMediaKeyHandling"
+                    "--disable-session-crashed-bubble",
+                    "--disable-restore-session-state",
+                    "--metrics-recording-only"
             );
 
             CefSettings settings = builder.getCefSettings();
             settings.windowless_rendering_enabled = false;
-            settings.persist_session_cookies = true;
-            settings.cache_path = new File(installDir, "cache").getAbsolutePath();
+            settings.persist_session_cookies = false;
+            settings.log_severity = CefSettings.LogSeverity.LOGSEVERITY_DISABLE;
+            File cacheDir = Files.createTempDirectory("rlife-meeting-jcef").toFile();
+            cacheDir.deleteOnExit();
+            settings.cache_path = cacheDir.getAbsolutePath();
             settings.root_cache_path = settings.cache_path;
 
             return builder.build();
@@ -78,7 +100,7 @@ public final class EmbeddedMeetingBrowser {
         }
     }
 
-    private static CompletableFuture<BrowserSession> createSession(CefApp app, SwingNode target, String url, Consumer<String> statusConsumer) {
+    private static CompletableFuture<BrowserSession> createWindowSession(CefApp app, String title, String url, Consumer<String> statusConsumer) {
         CompletableFuture<BrowserSession> future = new CompletableFuture<>();
         SwingUtilities.invokeLater(() -> {
             try {
@@ -123,13 +145,31 @@ public final class EmbeddedMeetingBrowser {
 
                 CefBrowser browser = client.createBrowser(url, false, false);
                 browser.createImmediately();
+
                 JPanel panel = new JPanel(new BorderLayout());
                 panel.add(browser.getUIComponent(), BorderLayout.CENTER);
-                panel.revalidate();
-                panel.repaint();
 
-                BrowserSession session = new BrowserSession(client, browser, panel);
-                Platform.runLater(() -> target.setContent(panel));
+                JFrame frame = new JFrame(safe(title).isBlank() ? "Project Meeting" : title);
+                frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+                frame.setPreferredSize(new Dimension(1320, 860));
+                frame.setMinimumSize(new Dimension(1080, 720));
+                frame.setLayout(new BorderLayout());
+                frame.add(panel, BorderLayout.CENTER);
+
+                BrowserSession session = new BrowserSession(client, browser, panel, frame, statusConsumer);
+                frame.addWindowListener(new WindowAdapter() {
+                    @Override
+                    public void windowClosing(WindowEvent e) {
+                        session.dispose();
+                    }
+                });
+
+                frame.pack();
+                frame.setLocationRelativeTo(null);
+                frame.setVisible(true);
+                synchronized (APP_LOCK) {
+                    openSessionCount++;
+                }
                 future.complete(session);
             } catch (RuntimeException ex) {
                 future.completeExceptionally(ex);
@@ -160,6 +200,39 @@ public final class EmbeddedMeetingBrowser {
                             try { window.meetApi.dispose(); } catch (e) {}
                             window.meetApi = null;
                         }
+                        try {
+                            const stopTracks = (stream) => {
+                                if (!stream || !stream.getTracks) return;
+                                stream.getTracks().forEach(track => {
+                                    try { track.stop(); } catch (e) {}
+                                });
+                            };
+                            if (window.streams && Array.isArray(window.streams)) {
+                                window.streams.forEach(stopTracks);
+                                window.streams = [];
+                            }
+                            try {
+                                document.querySelectorAll('video, audio').forEach(node => {
+                                    try {
+                                        stopTracks(node.srcObject);
+                                        node.srcObject = null;
+                                    } catch (e) {}
+                                });
+                            } catch (e) {}
+                            try {
+                                if (window.APP && window.APP.conference && window.APP.conference._room) {
+                                    const localTracks = window.APP.conference._room.localTracks || [];
+                                    localTracks.forEach(track => {
+                                        try { track.dispose(); } catch (e) {}
+                                        try {
+                                            if (track.stream) {
+                                                stopTracks(track.stream);
+                                            }
+                                        } catch (e) {}
+                                    });
+                                }
+                            } catch (e) {}
+                        } catch (e) {}
                     } catch (e) {}
                 })();
                 """;
@@ -167,18 +240,46 @@ public final class EmbeddedMeetingBrowser {
         private final CefClient client;
         private final CefBrowser browser;
         private final JPanel panel;
+        private final JFrame frame;
+        private final Consumer<String> statusConsumer;
+        private volatile boolean disposed;
 
-        private BrowserSession(CefClient client, CefBrowser browser, JPanel panel) {
+        private BrowserSession(CefClient client, CefBrowser browser, JPanel panel, JFrame frame, Consumer<String> statusConsumer) {
             this.client = client;
             this.browser = browser;
             this.panel = panel;
+            this.frame = frame;
+            this.statusConsumer = statusConsumer;
         }
 
         public void reload() {
+            if (disposed) {
+                return;
+            }
             SwingUtilities.invokeLater(browser::reload);
         }
 
-        public void dispose(SwingNode target) {
+        public void focus() {
+            if (disposed) {
+                return;
+            }
+            SwingUtilities.invokeLater(() -> {
+                frame.setVisible(true);
+                frame.setState(JFrame.NORMAL);
+                frame.toFront();
+                frame.requestFocus();
+            });
+        }
+
+        public boolean isClosed() {
+            return disposed;
+        }
+
+        public void dispose() {
+            if (disposed) {
+                return;
+            }
+            disposed = true;
             CountDownLatch cleanupLatch = new CountDownLatch(1);
             SwingUtilities.invokeLater(() -> {
                 try {
@@ -199,11 +300,37 @@ public final class EmbeddedMeetingBrowser {
             }
             SwingUtilities.invokeLater(() -> {
                 panel.removeAll();
+                frame.setVisible(false);
+                frame.dispose();
                 browser.close(true);
                 client.dispose();
+                releaseAppIfUnused();
             });
-            Platform.runLater(() -> target.setContent(null));
+            updateStatus(statusConsumer, "Meeting window closed.");
         }
+    }
+
+    private static void releaseAppIfUnused() {
+        CompletableFuture<CefApp> futureToDispose = null;
+        synchronized (APP_LOCK) {
+            if (openSessionCount > 0) {
+                openSessionCount--;
+            }
+            if (openSessionCount == 0) {
+                futureToDispose = appFuture;
+                appFuture = null;
+            }
+        }
+        if (futureToDispose == null) {
+            return;
+        }
+        futureToDispose.thenAccept(app -> {
+            try {
+                app.dispose();
+            } catch (RuntimeException ignored) {
+                // Best effort shutdown to release camera/mic owned by the browser process.
+            }
+        });
     }
 
     private static final class BrowserThreadFactory implements ThreadFactory {

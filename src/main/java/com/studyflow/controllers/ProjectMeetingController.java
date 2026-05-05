@@ -1,6 +1,5 @@
 package com.studyflow.controllers;
 
-import com.studyflow.LocalServer;
 import com.studyflow.models.Project;
 import com.studyflow.models.User;
 import com.studyflow.services.ActivityLogService;
@@ -9,12 +8,11 @@ import com.studyflow.services.ProjectService;
 import com.studyflow.utils.CrudViewContext;
 import com.studyflow.utils.EmbeddedMeetingBrowser;
 import com.studyflow.utils.UserSession;
-import javafx.embed.swing.SwingNode;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 
 import java.net.URLEncoder;
 import java.net.URL;
@@ -32,8 +30,7 @@ public class ProjectMeetingController implements Initializable {
     @FXML private Button backToProjectsButton;
     @FXML private Button reloadMeetingButton;
     @FXML private Button shareMeetingButton;
-    @FXML private SwingNode meetingBrowserNode;
-    @FXML private StackPane meetingBrowserOverlay;
+    @FXML private VBox meetingWindowCard;
 
     private final ProjectService projectService = new ProjectService();
     private final NotificationService notificationService = new NotificationService();
@@ -42,6 +39,7 @@ public class ProjectMeetingController implements Initializable {
     private String meetingUrl;
     private User currentUser;
     private EmbeddedMeetingBrowser.BrowserSession browserSession;
+    private boolean meetingStarted;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -72,15 +70,12 @@ public class ProjectMeetingController implements Initializable {
         if (meetingHintLabel != null) {
             meetingHintLabel.setText("Anyone with access to this project joins the same Jitsi room.");
         }
-        activityLogService.addActivity("project", project.getId(), currentUser.getId(), "meeting_joined", "Joined the project meeting room.");
         updateShareButtonState();
-
-        loadMeeting();
+        initializeMeetingState();
     }
 
     @FXML
     private void handleBackToProjects() {
-        disposeMeeting();
         if (project != null) {
             CrudViewContext.rememberProjectSelection(project.getId());
         }
@@ -89,11 +84,18 @@ public class ProjectMeetingController implements Initializable {
 
     @FXML
     private void handleReloadMeeting() {
-        if (browserSession != null) {
-            setMeetingStatus("Reloading meeting...");
-            browserSession.reload();
+        if (!meetingStarted) {
+            setMeetingStatus(project != null && project.isOwnedByCurrentUser()
+                    ? "Share the meeting to start the room."
+                    : "The meeting has not started yet.");
             return;
         }
+        if (browserSession != null && !browserSession.isClosed()) {
+            setMeetingStatus("Bringing meeting window to front...");
+            browserSession.focus();
+            return;
+        }
+        browserSession = null;
         loadMeeting();
     }
 
@@ -139,18 +141,48 @@ public class ProjectMeetingController implements Initializable {
         }
         activityLogService.addActivity("project", project.getId(), currentUser.getId(), "meeting_started", "Started the project meeting room and notified the team.");
         setShareStatus("Meeting shared with " + sentCount + " project member" + (sentCount == 1 ? "" : "s") + ".", false);
+        startMeetingIfNeeded();
+    }
+
+    private void initializeMeetingState() {
+        if (project == null || currentUser == null) {
+            return;
+        }
+        if (project.isOwnedByCurrentUser()) {
+            meetingStarted = false;
+            setMeetingStatus("Share the meeting to start the room.");
+            return;
+        }
+        startMeetingIfNeeded();
+    }
+
+    private void startMeetingIfNeeded() {
+        if (meetingStarted && browserSession != null && !browserSession.isClosed()) {
+            return;
+        }
+        boolean firstStart = !meetingStarted;
+        meetingStarted = true;
+        if (firstStart) {
+            activityLogService.addActivity("project", project.getId(), currentUser.getId(), "meeting_joined", "Joined the project meeting room.");
+        }
+        loadMeeting();
     }
 
     private void loadMeeting() {
-        if (meetingBrowserNode == null || meetingUrl == null || meetingUrl.isBlank()) {
+        if (meetingUrl == null || meetingUrl.isBlank()) {
             return;
         }
-        disposeMeeting();
-        setMeetingStatus("Starting embedded meeting...");
-        EmbeddedMeetingBrowser.attach(meetingBrowserNode, meetingUrl, this::setMeetingStatus)
+        if (browserSession != null && !browserSession.isClosed()) {
+            browserSession.focus();
+            setMeetingStatus("Meeting window is already open.");
+            return;
+        }
+        browserSession = null;
+        setMeetingStatus("Opening meeting window...");
+        EmbeddedMeetingBrowser.openWindow(project == null ? "Project Meeting" : project.getTitle() + " Meeting", meetingUrl, this::setMeetingStatus)
                 .thenAccept(session -> browserSession = session)
                 .exceptionally(ex -> {
-                    setMeetingStatus("Embedded meeting failed to start: " + rootMessage(ex));
+                    setMeetingStatus("Meeting window failed to start: " + rootMessage(ex));
                     return null;
                 });
     }
@@ -176,10 +208,17 @@ public class ProjectMeetingController implements Initializable {
 
     private String buildMeetingUrl(String roomName, User user) {
         String displayName = safe(user.getFullName()).isBlank() ? safe(user.getUsername()) : safe(user.getFullName());
-        return LocalServer.url("/meeting/jitsi-room.html")
-                + "?room=" + encode(roomName)
-                + "&name=" + encode(displayName)
-                + "&subject=" + encode(safe(project.getTitle()));
+        String roomPath = encode(roomName).replace("+", "%20");
+        String quotedName = "%22" + encode(displayName).replace("+", "%20") + "%22";
+        String quotedSubject = "%22" + encode(safe(project.getTitle())).replace("+", "%20") + "%22";
+        return "https://meet.jit.si/" + roomPath
+                + "#config.prejoinPageEnabled=false"
+                + "&config.disableDeepLinking=true"
+                + "&config.startWithAudioMuted=true"
+                + "&config.startWithVideoMuted=true"
+                + "&interfaceConfig.MOBILE_APP_PROMO=false"
+                + "&userInfo.displayName=" + quotedName
+                + "&config.subject=" + quotedSubject;
     }
 
     private void updateShareButtonState() {
@@ -237,22 +276,15 @@ public class ProjectMeetingController implements Initializable {
         if (meetingEmbedStatusLabel != null) {
             meetingEmbedStatusLabel.setText(safe(message));
         }
-        if (meetingBrowserOverlay != null) {
-            boolean visible = message != null && !message.isBlank();
-            meetingBrowserOverlay.setVisible(visible);
-            meetingBrowserOverlay.setManaged(visible);
+        if (meetingWindowCard != null) {
+            meetingWindowCard.setDisable(false);
         }
-    }
-
-    private void disposeMeeting() {
-        if (browserSession == null || meetingBrowserNode == null) {
-            return;
-        }
-        browserSession.dispose(meetingBrowserNode);
-        browserSession = null;
     }
 
     private String rootMessage(Throwable throwable) {
+        if (throwable == null) {
+            return "Unknown error";
+        }
         Throwable current = throwable;
         while (current.getCause() != null) {
             current = current.getCause();

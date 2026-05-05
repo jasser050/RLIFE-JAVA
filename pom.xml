@@ -204,12 +204,18 @@
                         <option>-Dprism.order=sw</option>
                         <option>-Dprism.forceGPU=false</option>
                         <option>-Dprism.vsync=false</option>
+                        <option>--add-exports</option>
+                        <option>java.base/java.lang=ALL-UNNAMED</option>
                         <option>--add-opens</option>
                         <option>java.base/java.lang=ALL-UNNAMED</option>
+                        <option>--add-exports</option>
+                        <option>java.desktop/sun.awt=ALL-UNNAMED</option>
                         <option>--add-opens</option>
                         <option>java.base/java.lang.reflect=ALL-UNNAMED</option>
                         <option>--add-opens</option>
                         <option>java.desktop/sun.awt=ALL-UNNAMED</option>
+                        <option>--add-exports</option>
+                        <option>java.desktop/sun.java2d=ALL-UNNAMED</option>
                     </options>
                 </configuration>
             </plugin>
