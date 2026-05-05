@@ -201,8 +201,6 @@
                         <option>-Xmx2048m</option>
                         <option>-XX:+UseG1GC</option>
                         <option>-Dfile.encoding=UTF-8</option>
-                        <option>-Dprism.order=sw</option>
-                        <option>-Dprism.forceGPU=false</option>
                         <option>-Dprism.vsync=false</option>
                         <option>--add-exports</option>
                         <option>java.base/java.lang=ALL-UNNAMED</option>

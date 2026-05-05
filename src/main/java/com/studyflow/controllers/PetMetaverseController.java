@@ -63,7 +63,7 @@ public class PetMetaverseController implements Initializable {
 
     @FXML
     private void handleBackToPet() {
-        MainController.loadContentInMainArea("views/Notes.fxml");
+        MainController.loadContentInMainArea("views/MyPet.fxml");
     }
 
     @FXML

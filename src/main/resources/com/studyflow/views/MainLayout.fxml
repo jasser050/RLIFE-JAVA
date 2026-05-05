@@ -165,15 +165,7 @@
         <center>
             <VBox styleClass="main-content">
                 <HBox styleClass="topbar" alignment="CENTER_LEFT">
-                    <HBox alignment="CENTER_LEFT" spacing="16" HBox.hgrow="ALWAYS">
-                        <StackPane>
-                            <TextField fx:id="searchField" styleClass="search-field" promptText="Search courses, assignments..."/>
-                            <FontIcon iconLiteral="fth-search" iconSize="18"
-                                      style="-fx-icon-color: #64748B;"
-                                      StackPane.alignment="CENTER_LEFT"
-                                      translateX="12"/>
-                        </StackPane>
-                    </HBox>
+                    <Region HBox.hgrow="ALWAYS"/>
 
                     <HBox alignment="CENTER_RIGHT" spacing="8">
                         <Button fx:id="notificationsButton" styleClass="topbar-button, notifications-button" onAction="#showNotifications">
