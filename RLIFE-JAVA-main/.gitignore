@@ -1,9 +1,0 @@
-target/
-.idea/
-.ai/
-target/
-logs/
-hs_err_pid*.log
-replay_pid*.log
-node_modules/
-**/node_modules/
