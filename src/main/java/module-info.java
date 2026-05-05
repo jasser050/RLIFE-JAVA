@@ -4,6 +4,7 @@ module com.studyflow {
     requires javafx.graphics;
     requires javafx.web;
     requires javafx.swing;
+    requires javafx.media;
 
     requires org.kordamp.ikonli.javafx;
     requires org.kordamp.ikonli.feather;
@@ -15,6 +16,7 @@ module com.studyflow {
     requires jdk.httpserver;
     requires jdk.jsobject;
     requires webcam.capture;
+    requires jcefmaven;
 
     requires mysql.connector.j;
     requires kernel;

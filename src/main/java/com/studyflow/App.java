@@ -2,6 +2,7 @@ package com.studyflow;
 
 import com.studyflow.api.WellbeingRecommendationsApiServer;
 import javafx.application.Application;
+import javafx.application.HostServices;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -20,11 +21,13 @@ public class App extends Application {
 
     private static Scene scene;
     private static Stage primaryStage;
+    private static HostServices hostServices;
     private static final WellbeingRecommendationsApiServer recommendationsApiServer = new WellbeingRecommendationsApiServer();
 
     @Override
     public void start(Stage stage) throws IOException {
         primaryStage = stage;
+        hostServices = getHostServices();
 
         // Load the main layout
         Parent root = loadFXML("views/Landing");
@@ -82,6 +85,10 @@ public class App extends Application {
      */
     public static Scene getScene() {
         return scene;
+    }
+
+    public static HostServices getAppHostServices() {
+        return hostServices;
     }
 
     public static void main(String[] args) {

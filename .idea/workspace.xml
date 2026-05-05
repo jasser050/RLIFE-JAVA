@@ -4,7 +4,40 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="7b68f978-c4c0-4a44-9cfc-1043bf121c68" name="Changes" comment="" />
+    <list default="true" id="7b68f978-c4c0-4a44-9cfc-1043bf121c68" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/.idea/RLIFE-JAVA.iml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/resources/com/studyflow/audio/nature.mp3" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/studyflow/App.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/studyflow/App.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/studyflow/controllers/MainController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/studyflow/controllers/MainController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/studyflow/controllers/WellbeingController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/studyflow/controllers/WellbeingController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/studyflow/services/WellbeingAiService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/studyflow/services/WellbeingAiService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/module-info.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/module-info.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/com/studyflow/styles/dark-theme.css" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/com/studyflow/styles/dark-theme.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/com/studyflow/views/MainLayout.fxml" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/com/studyflow/views/MainLayout.fxml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/App.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/App.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/MainController$1.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/MainController$1.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/MainController.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/MainController.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/WellbeingController$1.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/WellbeingController$1.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/WellbeingController$2.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/WellbeingController$2.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/WellbeingController$AiSuggestionItem.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/WellbeingController$AiSuggestionItem.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/WellbeingController$CopingToolDef.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/WellbeingController$CopingToolDef.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/WellbeingController$HabitData.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/WellbeingController$HabitData.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/WellbeingController$MindfulnessSession.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/WellbeingController$MindfulnessSession.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/WellbeingController$MoodEntry.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/WellbeingController$MoodEntry.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/WellbeingController$QuizMode.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/WellbeingController$QuizMode.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/WellbeingController$SleepEntry.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/WellbeingController$SleepEntry.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/WellbeingController.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/controllers/WellbeingController.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/services/WellbeingAiService.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/services/WellbeingAiService.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/styles/dark-theme.css" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/styles/dark-theme.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/utils/UserSession.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/utils/UserSession.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/views/MainLayout.fxml" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/views/MainLayout.fxml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/studyflow/views/Wellbeing.fxml" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/studyflow/views/Wellbeing.fxml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/module-info.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/module-info.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/maven-status/maven-compiler-plugin/compile/default-compile/createdFiles.lst" beforeDir="false" afterPath="$PROJECT_DIR$/target/maven-status/maven-compiler-plugin/compile/default-compile/createdFiles.lst" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/maven-status/maven-compiler-plugin/compile/default-compile/inputFiles.lst" beforeDir="false" afterPath="$PROJECT_DIR$/target/maven-status/maven-compiler-plugin/compile/default-compile/inputFiles.lst" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -14,10 +47,11 @@
     <persistenceIdMap>
       <entry key="_C:/xampp/htdocs/RLIFE-JAVA-main fin/RLIFE-JAVA-main/RLIFE-JAVA-main/RLIFE-JAVA" value="3Cjl1CPItPrEn612UvvbGyNNJns" />
       <entry key="_C:/xampp/htdocs/RLIFE-JAVA-main fin_1/RLIFE-JAVA-main fin/RLIFE-JAVA-main/RLIFE-JAVA-main/RLIFE-JAVA" value="3CoVP5Oy7IyU34y8Hasas6YbM2P" />
+      <entry key="_C:/xampp/htdocs/RLIFE-JAVA-main fin_1_spot2/RLIFE-JAVA-main fin_1/RLIFE-JAVA-main fin/RLIFE-JAVA-main/RLIFE-JAVA-main/RLIFE-JAVA" value="3DGP4BDEehy0uGfPgILkS7LWpLh" />
     </persistenceIdMap>
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="223" />
+    <option name="cachedIndexableFilesCount" value="508" />
   </component>
   <component name="Git.Settings">
     <option name="RECENT_BRANCH_BY_REPOSITORY">
@@ -42,17 +76,25 @@
   </component>
   <component name="PropertiesComponent">{
   &quot;keyToString&quot;: {
+    &quot;Maven.StudyFlow.executor&quot;: &quot;Run&quot;,
     &quot;Maven.studyflow-javafx [org.openjfx:javafx-maven-plugin:0.0.8:run].executor&quot;: &quot;Run&quot;,
     &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
     &quot;git-widget-placeholder&quot;: &quot;wellbeing&quot;,
+    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
     &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/xampp/htdocs/RLIFE-JAVA-main fin/RLIFE-JAVA-main/RLIFE-JAVA-main/RLIFE-JAVA&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/xampp/htdocs/RLIFE-JAVA-main fin_1_spot2/RLIFE-JAVA-main fin_1/RLIFE-JAVA-main fin/RLIFE-JAVA-main/RLIFE-JAVA-main/RLIFE-JAVA&quot;,
     &quot;settings.editor.selected.configurable&quot;: &quot;ml.llm.LLMThirdPartyAiProvidersConfigurable&quot;
   }
 }</component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\xampp\htdocs\RLIFE-JAVA-main fin_1\RLIFE-JAVA-main fin\RLIFE-JAVA-main\RLIFE-JAVA-main\RLIFE-JAVA\src\main\resources\com\studyflow\audio" />
+    </key>
+  </component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>

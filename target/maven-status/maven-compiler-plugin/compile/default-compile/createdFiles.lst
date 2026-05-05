@@ -4,6 +4,8 @@ com\studyflow\controllers\admin\AdminUsersController.class
 com\studyflow\models\Assignment.class
 com\studyflow\controllers\PlanningController.class
 com\studyflow\api\WellbeingRecommendationsApiServer.class
+com\studyflow\controllers\WellbeingController$DownloadedYogaImage.class
+com\studyflow\controllers\WellbeingController$YogaExercise.class
 com\studyflow\controllers\DashboardController.class
 com\studyflow\controllers\ProfileController.class
 com\studyflow\services\ServiceUser.class
@@ -18,9 +20,12 @@ com\studyflow\controllers\ProjectsController.class
 com\studyflow\controllers\ProjectsController$TaskData.class
 com\studyflow\models\Course.class
 com\studyflow\controllers\WellbeingController$MoodEntry.class
+com\studyflow\controllers\WellbeingController$3.class
 com\studyflow\controllers\NotesController$FolderData.class
 com\studyflow\services\WellbeingAiService.class
 module-info.class
+com\studyflow\controllers\MainController$ResizeDirection.class
+com\studyflow\controllers\MainController$2.class
 com\studyflow\controllers\WellbeingController$MindfulnessSession.class
 com\studyflow\controllers\WellbeingController$QuizMode.class
 com\studyflow\models\WellbeingJournalEntry.class
@@ -31,18 +36,22 @@ com\studyflow\controllers\WellbeingController$AiSuggestionItem.class
 com\studyflow\controllers\admin\AdminStatsController.class
 com\studyflow\models\QuestionStress.class
 com\studyflow\services\WellbeingAiService$ChatTurn.class
+com\studyflow\controllers\MainController$3.class
 com\studyflow\controllers\admin\AdminRecommendationsController.class
+com\studyflow\services\GroqTtsService.class
 com\studyflow\controllers\WellbeingController$1.class
 com\studyflow\controllers\admin\AdminMatieresController.class
 com\studyflow\models\RecommendationStress.class
 com\studyflow\controllers\AssignmentsController.class
 com\studyflow\controllers\LoginController.class
 com\studyflow\utils\MyDataBase.class
+com\studyflow\controllers\MainController$SpotifyChoice.class
 com\studyflow\services\SpeechToTextService.class
 com\studyflow\controllers\MainController$1.class
 com\studyflow\controllers\admin\AdminDashboardController.class
 com\studyflow\controllers\CourseCardController.class
 com\studyflow\models\Assignment$Priority.class
+com\studyflow\services\GroqMoodService$MoodDetectionResult.class
 com\studyflow\models\WellBeing.class
 com\studyflow\services\WellbeingAiService$RecommendationItem.class
 com\studyflow\services\OpenRouterService$ChatMessage.class
@@ -54,6 +63,7 @@ com\studyflow\services\OpenRouterService.class
 com\studyflow\services\SpeechToTextService$TranscriptionResult.class
 com\studyflow\services\ServiceRecommendationStress.class
 com\studyflow\controllers\NotesController$NoteData.class
+com\studyflow\services\MoodCameraAnalysisService.class
 com\studyflow\models\QuizStress.class
 com\studyflow\controllers\MainController.class
 com\studyflow\models\Assignment$Status.class
@@ -65,6 +75,7 @@ com\studyflow\controllers\ProjectsController$ProjectData.class
 com\studyflow\controllers\LandingController.class
 com\studyflow\services\ServiceWellbeingJournalEntry.class
 com\studyflow\controllers\RegisterController.class
+com\studyflow\services\GroqMoodService.class
 com\studyflow\controllers\WellbeingController$SleepEntry.class
 com\studyflow\controllers\WellbeingController$CopingToolDef.class
 com\studyflow\utils\EmojiUtils.class
@@ -72,5 +83,6 @@ com\studyflow\models\CopingSession.class
 com\studyflow\controllers\admin\AdminMainController.class
 com\studyflow\controllers\WellbeingController.class
 com\studyflow\services\ServiceWellBeing.class
+com\studyflow\controllers\WellbeingController$YogaAssistantProfile.class
 com\studyflow\services\WellbeingAiService$QuoteResult.class
 com\studyflow\controllers\WellbeingController$HabitData.class

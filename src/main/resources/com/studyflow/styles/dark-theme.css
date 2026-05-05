@@ -4863,19 +4863,19 @@
     -fx-alignment: center;
     -fx-background-color: #0A0F1D;
     -fx-background-radius: 999;
-    -fx-border-color: #1ED760;
+    -fx-border-color: #c084fc;
     -fx-border-width: 3;
     -fx-border-radius: 999;
-    -fx-effect: dropshadow(gaussian, rgba(30,215,96,0.45), 18, 0.45, 0, 0);
+    -fx-effect: dropshadow(gaussian, rgba(192,132,252,0.45), 18, 0.45, 0, 0);
     -fx-cursor: hand;
 }
 
 .spotify-float-btn:hover {
-    -fx-effect: dropshadow(gaussian, rgba(30,215,96,0.75), 24, 0.55, 0, 0);
+    -fx-effect: dropshadow(gaussian, rgba(236,72,153,0.75), 24, 0.55, 0, 0);
 }
 
 .spotify-float-icon {
-    -fx-text-fill: #1ED760;
+    -fx-text-fill: #e879f9;
     -fx-font-size: 24px;
     -fx-font-weight: 800;
 }
@@ -4929,9 +4929,9 @@
 }
 
 .spotify-chip.active {
-    -fx-background-color: #22c55e;
-    -fx-text-fill: #041016;
-    -fx-border-color: #16a34a;
+    -fx-background-color: linear-gradient(to right, #8b5cf6, #ec4899);
+    -fx-text-fill: #ffffff;
+    -fx-border-color: #c084fc;
 }
 
 .spotify-panel-foot {

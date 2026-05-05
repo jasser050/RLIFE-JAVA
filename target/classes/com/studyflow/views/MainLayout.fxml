@@ -250,6 +250,19 @@
           AnchorPane.rightAnchor="0.0"
           AnchorPane.bottomAnchor="0.0"
           AnchorPane.leftAnchor="0.0">
+        <StackPane fx:id="spotifyFloatingButton" styleClass="spotify-float-btn"
+                   layoutX="335" layoutY="16"
+                   onMousePressed="#onSpotifyWidgetPressed"
+                   onMouseDragged="#onSpotifyWidgetDragged"
+                   onMouseReleased="#onSpotifyWidgetReleased"
+                   onMouseClicked="#openSpotifyPlayer"
+                   pickOnBounds="true">
+            <Label text="&#9835;" styleClass="spotify-float-icon"/>
+        </StackPane>
+
+        <VBox fx:id="spotifyPanel" styleClass="spotify-panel" spacing="10"
+              visible="false" managed="false" layoutX="335" layoutY="82"/>
+
         <VBox fx:id="globalQuoteCard" styleClass="global-quote-card" spacing="6"
               visible="false" managed="false" layoutX="16" layoutY="16">
             <HBox alignment="CENTER_LEFT" spacing="8">

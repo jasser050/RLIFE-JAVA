@@ -16,12 +16,14 @@ import javafx.fxml.Initializable;
 import javafx.geometry.Bounds;
 import javafx.geometry.Point2D;
 import javafx.scene.Parent;
+import javafx.scene.Cursor;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.TextField;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.control.ToggleGroup;
+import javafx.scene.control.OverrunStyle;
 import javafx.scene.control.Tooltip;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -34,6 +36,8 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
+import javafx.scene.shape.Circle;
+import javafx.scene.shape.Rectangle;
 import javafx.embed.swing.SwingNode;
 import javafx.scene.web.WebEngine;
 import javafx.scene.web.WebView;
@@ -57,6 +61,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.net.URL;
 import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
@@ -124,10 +131,25 @@ public class MainController implements Initializable {
     private Label spotifyNowTitle;
     private Label spotifyNowMeta;
     private ImageView spotifyNowCover;
+    private WebView soundCloudPlayerWebView;
     private SwingNode spotifyBrowserNode;
     private javafx.scene.control.ListView<String> spotifyChoiceList;
+    private TextField spotifySearchField;
     private String currentSpotifyChoiceUri;
+    private List<SpotifyChoice> visibleSpotifyChoices = List.of();
+    private final Map<String, String> choiceArtworkByLabel = new HashMap<>();
+    private final Map<String, String> choiceArtistByLabel = new HashMap<>();
+    private final Map<String, String> choiceMoodByLabel = new HashMap<>();
+    private final Map<String, String> soundCloudMoodByUri = new HashMap<>();
+    private javafx.scene.control.Slider spotifyVolumeSlider;
+    private javafx.scene.control.Slider spotifySeekSlider;
+    private Label spotifyTimeLabel;
+    private boolean isSeeking;
+    private boolean userStoppedPlayback;
+    private int currentChoiceIndex = -1;
     private WebView soundCloudView;
+    private ImageView soundMusicPreviewImage;
+    private final HttpClient httpClient = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build();
     private String currentAudioSource = "soundcloud";
     private String lastLoadedSoundCloudUrl;
     private String lastPreparedSoundCloudUrl;
@@ -162,6 +184,9 @@ public class MainController implements Initializable {
     private static final String PREF_SPOTIFY_EXPANDED = "global.spotify.expanded";
     private static final String PREF_SPOTIFY_PRESET = "global.spotify.preset";
     private static final double SPOTIFY_MARGIN = 16.0;
+    private static final double SPOTIFY_MIN_WIDTH = 300.0;
+    private static final double SPOTIFY_MIN_HEIGHT = 400.0;
+    private static final double SPOTIFY_RESIZE_MARGIN = 8.0;
     private double quoteDragStartX;
     private double quoteDragStartY;
     private double quoteStartLayoutX;
@@ -171,6 +196,20 @@ public class MainController implements Initializable {
     private double spotifyStartLayoutX;
     private double spotifyStartLayoutY;
     private boolean spotifyDragging;
+    private double spotifyResizeStartX;
+    private double spotifyResizeStartY;
+    private double spotifyResizeStartW;
+    private double spotifyResizeStartH;
+    private double spotifyResizeStartLayoutX;
+    private double spotifyResizeStartLayoutY;
+    private ResizeDirection spotifyResizeDirection = ResizeDirection.NONE;
+    private boolean spotifyResizing;
+
+    private enum ResizeDirection {
+        NONE,
+        N, S, E, W,
+        NE, NW, SE, SW
+    }
     private final Map<String, String> spotifyEmbeds = Map.of(
             "nature", "https://open.spotify.com/embed/playlist/37i9dQZF1DX4PP3DA4J0N8?utm_source=generator&theme=0",
             "quran", "https://open.spotify.com/embed/playlist/2mIXv4QFfQbcNv89QmT6XQ?utm_source=generator&theme=0",
@@ -332,6 +371,7 @@ public class MainController implements Initializable {
         }
         setupGlobalQuoteDrag();
         setupGlobalQuoteWidget();
+        buildSoundCloudMoodIndex();
         setupSpotifyWidget();
     }
 
@@ -667,8 +707,12 @@ public class MainController implements Initializable {
         preferences.putBoolean(PREF_SPOTIFY_VISIBLE, false);
         preferences.putBoolean(PREF_SPOTIFY_EXPANDED, false);
 
-        Tooltip.install(spotifyFloatingButton, new Tooltip("Spotify"));
+        Tooltip.install(spotifyFloatingButton, new Tooltip("Sound Music"));
         buildSpotifyMockCardIfNeeded();
+        if (spotifyPanel != null) {
+            spotifyPanel.setStyle("-fx-background-color: linear-gradient(to bottom,#0d0d18,#050512); -fx-border-color: #2b2350; -fx-border-radius: 20; -fx-background-radius: 20; -fx-padding: 0;");
+            setupSpotifyResizeHandlers();
+        }
         applySpotifyVisibility();
         applySpotifyExpanded();
         applySpotifyPreset(preferences.get(PREF_SPOTIFY_PRESET, "nature"));
@@ -694,6 +738,7 @@ public class MainController implements Initializable {
             return;
         }
         boolean visible = preferences.getBoolean(PREF_SPOTIFY_VISIBLE, false);
+        // Keep small floating icon visible.
         spotifyFloatingButton.setVisible(visible);
         spotifyFloatingButton.setManaged(visible);
         if (!visible && spotifyPanel != null) {
@@ -712,6 +757,160 @@ public class MainController implements Initializable {
         spotifyPanel.setManaged(visible && expanded);
         spotifyPanel.setLayoutX(spotifyFloatingButton.getLayoutX());
         spotifyPanel.setLayoutY(spotifyFloatingButton.getLayoutY() + 66);
+        // Hide floating icon while panel is open.
+        spotifyFloatingButton.setVisible(visible);
+        spotifyFloatingButton.setManaged(visible);
+    }
+
+    private void setupSpotifyResizeHandlers() {
+        if (spotifyPanel == null) {
+            return;
+        }
+        Rectangle panelClip = new Rectangle();
+        panelClip.widthProperty().bind(spotifyPanel.widthProperty());
+        panelClip.heightProperty().bind(spotifyPanel.heightProperty());
+        spotifyPanel.setClip(panelClip);
+        spotifyPanel.setMinWidth(SPOTIFY_MIN_WIDTH);
+        spotifyPanel.setMinHeight(SPOTIFY_MIN_HEIGHT);
+        spotifyPanel.setOnMouseMoved(event -> {
+            if (spotifyResizing) {
+                return;
+            }
+            ResizeDirection dir = detectResizeDirection(event.getX(), event.getY());
+            spotifyPanel.setCursor(cursorForResizeDirection(dir));
+        });
+        spotifyPanel.setOnMouseExited(event -> {
+            if (!spotifyResizing) {
+                spotifyPanel.setCursor(Cursor.DEFAULT);
+            }
+        });
+        spotifyPanel.setOnMousePressed(event -> {
+            ResizeDirection dir = detectResizeDirection(event.getX(), event.getY());
+            if (dir == ResizeDirection.NONE) {
+                return;
+            }
+            spotifyResizing = true;
+            spotifyResizeDirection = dir;
+            spotifyResizeStartX = event.getScreenX();
+            spotifyResizeStartY = event.getScreenY();
+            spotifyResizeStartW = spotifyPanel.getWidth() > 0 ? spotifyPanel.getWidth() : spotifyPanel.getPrefWidth();
+            spotifyResizeStartH = spotifyPanel.getHeight() > 0 ? spotifyPanel.getHeight() : spotifyPanel.getPrefHeight();
+            spotifyResizeStartLayoutX = spotifyPanel.getLayoutX();
+            spotifyResizeStartLayoutY = spotifyPanel.getLayoutY();
+            event.consume();
+        });
+        spotifyPanel.setOnMouseDragged(event -> {
+            if (!spotifyResizing || spotifyResizeDirection == ResizeDirection.NONE) {
+                return;
+            }
+            resizeSpotifyPanel(event.getScreenX() - spotifyResizeStartX, event.getScreenY() - spotifyResizeStartY);
+            event.consume();
+        });
+        spotifyPanel.setOnMouseReleased(event -> {
+            if (spotifyResizing) {
+                spotifyResizing = false;
+                spotifyResizeDirection = ResizeDirection.NONE;
+                spotifyPanel.setCursor(Cursor.DEFAULT);
+            }
+        });
+    }
+
+    private ResizeDirection detectResizeDirection(double localX, double localY) {
+        if (spotifyPanel == null) {
+            return ResizeDirection.NONE;
+        }
+        double w = spotifyPanel.getWidth() > 0 ? spotifyPanel.getWidth() : spotifyPanel.getPrefWidth();
+        double h = spotifyPanel.getHeight() > 0 ? spotifyPanel.getHeight() : spotifyPanel.getPrefHeight();
+        boolean left = localX <= SPOTIFY_RESIZE_MARGIN;
+        boolean right = localX >= w - SPOTIFY_RESIZE_MARGIN;
+        boolean top = localY <= SPOTIFY_RESIZE_MARGIN;
+        boolean bottom = localY >= h - SPOTIFY_RESIZE_MARGIN;
+        if (top && left) return ResizeDirection.NW;
+        if (top && right) return ResizeDirection.NE;
+        if (bottom && left) return ResizeDirection.SW;
+        if (bottom && right) return ResizeDirection.SE;
+        if (top) return ResizeDirection.N;
+        if (bottom) return ResizeDirection.S;
+        if (left) return ResizeDirection.W;
+        if (right) return ResizeDirection.E;
+        return ResizeDirection.NONE;
+    }
+
+    private Cursor cursorForResizeDirection(ResizeDirection dir) {
+        return switch (dir) {
+            case N -> Cursor.N_RESIZE;
+            case S -> Cursor.S_RESIZE;
+            case E -> Cursor.E_RESIZE;
+            case W -> Cursor.W_RESIZE;
+            case NE -> Cursor.NE_RESIZE;
+            case NW -> Cursor.NW_RESIZE;
+            case SE -> Cursor.SE_RESIZE;
+            case SW -> Cursor.SW_RESIZE;
+            default -> Cursor.DEFAULT;
+        };
+    }
+
+    private void resizeSpotifyPanel(double deltaX, double deltaY) {
+        if (spotifyPanel == null || quoteOverlayPane == null) {
+            return;
+        }
+        double newW = spotifyResizeStartW;
+        double newH = spotifyResizeStartH;
+        double newX = spotifyResizeStartLayoutX;
+        double newY = spotifyResizeStartLayoutY;
+
+        if (spotifyResizeDirection == ResizeDirection.E || spotifyResizeDirection == ResizeDirection.NE || spotifyResizeDirection == ResizeDirection.SE) {
+            newW = spotifyResizeStartW + deltaX;
+        }
+        if (spotifyResizeDirection == ResizeDirection.S || spotifyResizeDirection == ResizeDirection.SE || spotifyResizeDirection == ResizeDirection.SW) {
+            newH = spotifyResizeStartH + deltaY;
+        }
+        if (spotifyResizeDirection == ResizeDirection.W || spotifyResizeDirection == ResizeDirection.NW || spotifyResizeDirection == ResizeDirection.SW) {
+            newW = spotifyResizeStartW - deltaX;
+            newX = spotifyResizeStartLayoutX + deltaX;
+        }
+        if (spotifyResizeDirection == ResizeDirection.N || spotifyResizeDirection == ResizeDirection.NE || spotifyResizeDirection == ResizeDirection.NW) {
+            newH = spotifyResizeStartH - deltaY;
+            newY = spotifyResizeStartLayoutY + deltaY;
+        }
+
+        if (newW < SPOTIFY_MIN_WIDTH) {
+            if (spotifyResizeDirection == ResizeDirection.W || spotifyResizeDirection == ResizeDirection.NW || spotifyResizeDirection == ResizeDirection.SW) {
+                newX -= (SPOTIFY_MIN_WIDTH - newW);
+            }
+            newW = SPOTIFY_MIN_WIDTH;
+        }
+        if (newH < SPOTIFY_MIN_HEIGHT) {
+            if (spotifyResizeDirection == ResizeDirection.N || spotifyResizeDirection == ResizeDirection.NE || spotifyResizeDirection == ResizeDirection.NW) {
+                newY -= (SPOTIFY_MIN_HEIGHT - newH);
+            }
+            newH = SPOTIFY_MIN_HEIGHT;
+        }
+
+        double overlayW = quoteOverlayPane.getWidth();
+        double overlayH = quoteOverlayPane.getHeight();
+        if (overlayW > 0) {
+            newX = Math.max(SPOTIFY_MARGIN, Math.min(newX, overlayW - newW - SPOTIFY_MARGIN));
+            newW = Math.min(newW, overlayW - (SPOTIFY_MARGIN * 2));
+            newW = Math.max(newW, SPOTIFY_MIN_WIDTH);
+        }
+        if (overlayH > 0) {
+            newY = Math.max(SPOTIFY_MARGIN, Math.min(newY, overlayH - newH - SPOTIFY_MARGIN));
+            newH = Math.min(newH, overlayH - (SPOTIFY_MARGIN * 2));
+            newH = Math.max(newH, SPOTIFY_MIN_HEIGHT);
+        }
+
+        spotifyPanel.setLayoutX(newX);
+        spotifyPanel.setLayoutY(newY);
+        spotifyPanel.setMinWidth(SPOTIFY_MIN_WIDTH);
+        spotifyPanel.setMinHeight(SPOTIFY_MIN_HEIGHT);
+        spotifyPanel.setPrefWidth(newW);
+        spotifyPanel.setPrefHeight(newH);
+        if (spotifyMockCard != null) {
+            spotifyMockCard.setPrefWidth(newW);
+            spotifyMockCard.setPrefHeight(newH);
+        }
+        clampSpotifyCardToContainer();
     }
 
     @FXML
@@ -847,50 +1046,36 @@ public class MainController implements Initializable {
 
     @FXML
     private void openSpotifyCurrentPreset() {
-        String preset = preferences.get(PREF_SPOTIFY_PRESET, "nature");
-        String safePreset = spotifyEmbeds.containsKey(preset) ? preset : "nature";
-        playPreset(safePreset);
+        playCurrentInApp();
     }
 
     private void playPreset(String preset) {
         String safePreset = spotifyEmbeds.containsKey(preset) ? preset : "nature";
         String chosenUri = (currentSpotifyChoiceUri == null || currentSpotifyChoiceUri.isBlank())
-                ? (isSoundCloudSource()
-                    ? soundCloudPresetChoices.getOrDefault(safePreset, List.of()).stream().findFirst().map(SpotifyChoice::uri).orElse("")
-                    : spotifyAppUris.getOrDefault(safePreset, spotifyAppUris.get("nature")))
+                ? soundCloudPresetChoices.getOrDefault(safePreset, List.of()).stream().findFirst().map(SpotifyChoice::uri).orElse("")
                 : currentSpotifyChoiceUri;
-        if (isSoundCloudSource()) {
-            playSoundCloudInWidget(chosenUri);
-        } else {
-            openSpotifyUri(chosenUri);
-            sendWindowsMediaKey(0xB3); // Play/Pause
-        }
+        currentSpotifyChoiceUri = chosenUri;
+        playCurrentInApp();
         audioPlaybackActive = true;
         updateNowPlayingCard(spotifyChoiceList == null ? null : spotifyChoiceList.getSelectionModel().getSelectedItem());
         currentSpotifyPresetLoaded = safePreset;
         if (spotifyNowPlayingDynamic != null) {
-            spotifyNowPlayingDynamic.setText(isSoundCloudSource() ? "SoundCloud playing in widget" : "Spotify background play");
+            spotifyNowPlayingDynamic.setText("Playing in app");
         }
     }
 
     private void playPreviousSpotifyTrack() {
-        if (isSoundCloudSource()) {
-            shiftSoundCloudSelection(-1);
-            return;
-        }
-        sendWindowsMediaKey(0xB1); // Previous track
+        shiftSoundCloudSelection(-1);
+        playCurrentInApp();
     }
 
     private void playNextSpotifyTrack() {
-        if (isSoundCloudSource()) {
-            shiftSoundCloudSelection(1);
-            return;
-        }
-        sendWindowsMediaKey(0xB0); // Next track
+        shiftSoundCloudSelection(1);
+        playCurrentInApp();
     }
 
     private boolean isSoundCloudSource() {
-        return "soundcloud".equalsIgnoreCase(currentAudioSource);
+        return true;
     }
 
     private void shiftSoundCloudSelection(int delta) {
@@ -905,7 +1090,7 @@ public class MainController implements Initializable {
             idx = (idx + delta + size) % size;
         }
         spotifyChoiceList.getSelectionModel().select(idx);
-        openSpotifyCurrentPreset();
+        currentChoiceIndex = idx;
     }
 
     private void sendMediaKey(String sendKeysToken) {
@@ -1270,57 +1455,113 @@ public class MainController implements Initializable {
         }
         spotifyMockCard = new VBox(10);
         spotifyMockCard.getStyleClass().add("spotify-player-card");
-        spotifyNowPlayingDynamic = new Label("Spotify controls");
+        // Use parent panel as the only frame to avoid double-card look.
+        spotifyMockCard.setStyle("-fx-background-color:linear-gradient(to bottom,#0d0d18,#050512);-fx-border-color:#2b2350;-fx-border-radius:20;-fx-background-radius:20;-fx-padding:12 12 10 12;");
+        spotifyMockCard.setMinWidth(SPOTIFY_MIN_WIDTH);
+        spotifyMockCard.setPrefWidth(390);
+        spotifyMockCard.setMaxWidth(Double.MAX_VALUE);
+        spotifyMockCard.setMinHeight(SPOTIFY_MIN_HEIGHT);
+        spotifyMockCard.setPrefHeight(640);
+        spotifyMockCard.setMaxHeight(Double.MAX_VALUE);
+        spotifyNowPlayingDynamic = new Label("LIVE");
         spotifyNowPlayingDynamic.getStyleClass().add("spotify-now-playing");
+        spotifyNowPlayingDynamic.setStyle("-fx-text-fill:#f0abfc;-fx-font-family:Monospaced;-fx-font-size:10px;-fx-background-color:#03060f;-fx-padding:3 10;-fx-background-radius:999;-fx-border-color:#c084fc;-fx-border-radius:999;");
         spotifyNowTitle = new Label("Select a track");
-        spotifyNowTitle.setStyle("-fx-text-fill:#f8fafc;-fx-font-size:20px;-fx-font-weight:800;");
+        spotifyNowTitle.setStyle("-fx-text-fill:#f3f4ff;-fx-font-size:36px;-fx-font-weight:800;");
         spotifyNowMeta = new Label("SoundCloud");
-        spotifyNowMeta.setStyle("-fx-text-fill:#cbd5e1;-fx-font-size:12px;");
+        spotifyNowMeta.setStyle("-fx-text-fill:#b5b0cf;-fx-font-size:18px;");
         spotifyNowCover = new ImageView(moodGoodImg);
-        spotifyNowCover.setFitWidth(110);
-        spotifyNowCover.setFitHeight(110);
+        spotifyNowCover.setFitWidth(330);
+        spotifyNowCover.setFitHeight(160);
         spotifyNowCover.setPreserveRatio(true);
         StackPane coverBox = new StackPane(spotifyNowCover);
-        coverBox.setStyle("-fx-background-color:#0f172a;-fx-background-radius:12;-fx-padding:6;");
-        VBox nowInfo = new VBox(6, spotifyNowTitle, spotifyNowMeta);
-        nowInfo.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
-        HBox nowPlayingCard = new HBox(14, coverBox, nowInfo);
-        nowPlayingCard.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
-        nowPlayingCard.setStyle("-fx-background-color: rgba(15,23,42,0.72); -fx-background-radius: 12; -fx-padding: 10;");
+        coverBox.setStyle("-fx-background-color:#120f2b;-fx-background-radius:18;-fx-border-color:#3e2d75;-fx-border-radius:18;-fx-padding:8;");
 
-        Label statusHint = new Label("Choose source and track");
-        statusHint.getStyleClass().add("spotify-time");
+        Label statusHint = new Label("UP NEXT");
+        statusHint.setStyle("-fx-text-fill:#6b6b8f;-fx-font-family:Monospaced;-fx-font-size:10px;");
+        Region divider = new Region();
+        divider.setMinHeight(1);
+        divider.setPrefHeight(1);
+        divider.setStyle("-fx-background-color:#ffffff10;");
 
-        ToggleButton sourceSpotifyBtn = new ToggleButton("Spotify");
-        ToggleButton sourceSoundCloudBtn = new ToggleButton("SoundCloud");
-        ToggleGroup sourceGroup = new ToggleGroup();
-        sourceSpotifyBtn.setToggleGroup(sourceGroup);
-        sourceSoundCloudBtn.setToggleGroup(sourceGroup);
-        sourceSoundCloudBtn.setSelected(true);
-        sourceSpotifyBtn.setStyle("-fx-background-color:#1f2937;-fx-text-fill:#cbd5e1;-fx-font-weight:700;-fx-background-radius:999;");
-        sourceSoundCloudBtn.setStyle("-fx-background-color:#ea580c;-fx-text-fill:#fff7ed;-fx-font-weight:700;-fx-background-radius:999;");
-        HBox sourceRow = new HBox(8, sourceSpotifyBtn, sourceSoundCloudBtn);
-        sourceGroup.selectedToggleProperty().addListener((obs, oldV, newV) -> {
-            currentAudioSource = (newV == sourceSoundCloudBtn) ? "soundcloud" : "spotify";
-            sourceSpotifyBtn.setStyle((newV == sourceSpotifyBtn)
-                    ? "-fx-background-color:#1d4ed8;-fx-text-fill:#dbeafe;-fx-font-weight:700;-fx-background-radius:999;"
-                    : "-fx-background-color:#1f2937;-fx-text-fill:#cbd5e1;-fx-font-weight:700;-fx-background-radius:999;");
-            sourceSoundCloudBtn.setStyle((newV == sourceSoundCloudBtn)
-                    ? "-fx-background-color:#ea580c;-fx-text-fill:#fff7ed;-fx-font-weight:700;-fx-background-radius:999;"
-                    : "-fx-background-color:#1f2937;-fx-text-fill:#cbd5e1;-fx-font-weight:700;-fx-background-radius:999;");
+        Circle logoCircle = new Circle(16);
+        logoCircle.setFill(javafx.scene.paint.Color.web("#a78bfa"));
+        Label logoTxt = new Label("\u266A");
+        logoTxt.setStyle("-fx-text-fill:white;-fx-font-size:12px;");
+        StackPane logo = new StackPane(logoCircle, logoTxt);
+        Label appName = new Label("Soundflow");
+        appName.setStyle("-fx-text-fill:#f0f0ff;-fx-font-weight:700;-fx-font-size:13px;");
+        HBox leftHdr = new HBox(8, logo, appName);
+        leftHdr.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+        Label closeBadge = new Label("\u00D7");
+        closeBadge.setStyle("-fx-text-fill:#6b6b8f;-fx-font-size:14px;-fx-background-color:#16162a;-fx-border-color:#ffffff20;-fx-border-radius:999;-fx-background-radius:999;-fx-padding:3 8;");
+        closeBadge.setOnMouseClicked(e -> hideSpotifyPanel());
+        HBox headerRow = new HBox();
+        HBox.setHgrow(leftHdr, Priority.ALWAYS);
+        headerRow.getChildren().addAll(leftHdr, closeBadge);
+        headerRow.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+
+        ToggleButton chipNature = new ToggleButton("Nature");
+        ToggleButton chipQuran = new ToggleButton("Quran");
+        ToggleButton chipRelax = new ToggleButton("Relax");
+        ToggleButton chipFocus = new ToggleButton("Focus");
+        ToggleButton chipLofi = new ToggleButton("Lofi");
+        ToggleGroup chipGroup = new ToggleGroup();
+        chipNature.setToggleGroup(chipGroup);
+        chipQuran.setToggleGroup(chipGroup);
+        chipRelax.setToggleGroup(chipGroup);
+        chipFocus.setToggleGroup(chipGroup);
+        chipLofi.setToggleGroup(chipGroup);
+        for (ToggleButton chip : List.of(chipNature, chipQuran, chipRelax, chipFocus, chipLofi)) {
+            chip.setMinWidth(0);
+            chip.setPrefWidth(70);
+            chip.setMaxWidth(Double.MAX_VALUE);
+            chip.setTextOverrun(OverrunStyle.CLIP);
+        }
+        chipNature.setSelected(true);
+        String chipOff = "-fx-background-color:linear-gradient(to bottom,#1a1b34,#111227);-fx-text-fill:#9ea0be;-fx-background-radius:999;-fx-padding:6 16;-fx-border-color:#3a3458;-fx-border-radius:999;";
+        String chipOn = "-fx-background-color:linear-gradient(to right,#8b5cf6,#ec4899);-fx-text-fill:white;-fx-background-radius:999;-fx-padding:6 16;-fx-font-weight:700;";
+        chipNature.setStyle(chipOn); chipQuran.setStyle(chipOff); chipRelax.setStyle(chipOff); chipFocus.setStyle(chipOff); chipLofi.setStyle(chipOff);
+        HBox sourceRow = new HBox(6, chipNature, chipQuran, chipRelax, chipFocus, chipLofi);
+        sourceRow.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+        HBox.setHgrow(chipNature, Priority.ALWAYS);
+        HBox.setHgrow(chipQuran, Priority.ALWAYS);
+        HBox.setHgrow(chipRelax, Priority.ALWAYS);
+        HBox.setHgrow(chipFocus, Priority.ALWAYS);
+        HBox.setHgrow(chipLofi, Priority.ALWAYS);
+        chipNature.prefWidthProperty().bind(sourceRow.widthProperty().subtract(24).divide(5));
+        chipQuran.prefWidthProperty().bind(sourceRow.widthProperty().subtract(24).divide(5));
+        chipRelax.prefWidthProperty().bind(sourceRow.widthProperty().subtract(24).divide(5));
+        chipFocus.prefWidthProperty().bind(sourceRow.widthProperty().subtract(24).divide(5));
+        chipLofi.prefWidthProperty().bind(sourceRow.widthProperty().subtract(24).divide(5));
+        chipGroup.selectedToggleProperty().addListener((obs, ov, nv) -> {
+            chipNature.setStyle(nv == chipNature ? chipOn : chipOff);
+            chipQuran.setStyle(nv == chipQuran ? chipOn : chipOff);
+            chipRelax.setStyle(nv == chipRelax ? chipOn : chipOff);
+            chipFocus.setStyle(nv == chipFocus ? chipOn : chipOff);
+            chipLofi.setStyle(nv == chipLofi ? chipOn : chipOff);
+            if (nv == chipQuran) {
+                preferences.put(PREF_SPOTIFY_PRESET, "quran");
+            } else if (nv == chipRelax) {
+                preferences.put(PREF_SPOTIFY_PRESET, "relax");
+            } else if (nv == chipFocus || nv == chipLofi) {
+                preferences.put(PREF_SPOTIFY_PRESET, "motivation");
+            } else {
+                preferences.put(PREF_SPOTIFY_PRESET, "nature");
+            }
             refreshSpotifyChoices(preferences.get(PREF_SPOTIFY_PRESET, "nature"));
         });
 
         spotifyChoiceList = new javafx.scene.control.ListView<>();
-        spotifyChoiceList.setPrefHeight(150);
-        spotifyChoiceList.setMaxHeight(150);
+        spotifyChoiceList.setPrefHeight(145);
+        spotifyChoiceList.setMaxHeight(145);
         spotifyChoiceList.setStyle(
-                "-fx-control-inner-background: #111827;" +
-                "-fx-background-color: #111827;" +
-                "-fx-text-fill: #e2e8f0;" +
-                "-fx-border-color: #334155;" +
-                "-fx-border-radius: 8;" +
-                "-fx-background-radius: 8;"
+                "-fx-control-inner-background: #070716;" +
+                "-fx-background-color: #070716;" +
+                "-fx-text-fill: #f0f0ff;" +
+                "-fx-border-color: #2f2951;" +
+                "-fx-border-radius: 12;" +
+                "-fx-background-radius: 12;"
         );
         spotifyChoiceList.setCellFactory(lv -> new ListCell<>() {
             private final ImageView iv = new ImageView();
@@ -1332,8 +1573,8 @@ public class MainController implements Initializable {
                 iv.setFitWidth(40);
                 iv.setFitHeight(40);
                 iv.setPreserveRatio(true);
-                txt.setStyle("-fx-text-fill:#e2e8f0;-fx-font-size:12px;-fx-font-weight:600;");
-                sub.setStyle("-fx-text-fill:#94a3b8;-fx-font-size:10px;");
+                txt.setStyle("-fx-text-fill:#f0f0ff;-fx-font-size:12px;-fx-font-weight:600;");
+                sub.setStyle("-fx-text-fill:#9898b8;-fx-font-size:10px;");
                 row.setStyle("-fx-padding:6 4 6 2;");
             }
             @Override
@@ -1345,28 +1586,29 @@ public class MainController implements Initializable {
                     return;
                 }
                 txt.setText(item);
-                sub.setText(isSoundCloudSource() ? "SoundCloud" : "Spotify");
-                String preset = preferences.get(PREF_SPOTIFY_PRESET, "nature");
-                iv.setImage(resolveThumbForPreset(preset));
+                String artist = choiceArtistByLabel.get(item);
+                sub.setText((artist == null || artist.isBlank()) ? (isSoundCloudSource() ? "SoundCloud" : "Spotify") : artist);
+                String artworkUrl = choiceArtworkByLabel.get(item);
+                if (artworkUrl != null && !artworkUrl.isBlank()) {
+                    iv.setImage(new Image(artworkUrl, true));
+                } else {
+                    String preset = preferences.get(PREF_SPOTIFY_PRESET, "nature");
+                    iv.setImage(resolveThumbForPreset(preset));
+                }
                 setText(null);
                 setGraphic(row);
-                setStyle(isSelected()
-                        ? "-fx-background-color: rgba(59,130,246,0.20); -fx-background-radius: 8;"
+                    setStyle(isSelected()
+                        ? "-fx-background-color: rgba(168,85,247,0.20); -fx-border-color: rgba(236,72,153,0.45); -fx-border-radius: 12; -fx-background-radius: 12;"
                         : "-fx-background-color: transparent;");
             }
         });
         spotifyChoiceList.getSelectionModel().selectedIndexProperty().addListener((obs, oldV, newV) -> {
             int idx = newV == null ? -1 : newV.intValue();
-            String preset = preferences.get(PREF_SPOTIFY_PRESET, "nature");
-            List<SpotifyChoice> choices = (isSoundCloudSource() ? soundCloudPresetChoices : spotifyPresetChoices)
-                    .getOrDefault(preset, List.of());
+            List<SpotifyChoice> choices = visibleSpotifyChoices;
             if (idx >= 0 && idx < choices.size()) {
                 currentSpotifyChoiceUri = choices.get(idx).uri();
                 updateNowPlayingCard(choices.get(idx).label());
-                if (isSoundCloudSource()) {
-                    playSoundCloudInWidget(currentSpotifyChoiceUri);
-                    audioPlaybackActive = true;
-                }
+                currentChoiceIndex = idx;
                 if (spotifyNowPlayingDynamic != null) {
                     spotifyNowPlayingDynamic.setText("Selected: " + choices.get(idx).label());
                 }
@@ -1375,52 +1617,214 @@ public class MainController implements Initializable {
         spotifyChoiceList.setOnMouseClicked(e -> {
             int idx = spotifyChoiceList.getSelectionModel().getSelectedIndex();
             if (idx >= 0) {
-                String preset = preferences.get(PREF_SPOTIFY_PRESET, "nature");
-                List<SpotifyChoice> choices = (isSoundCloudSource() ? soundCloudPresetChoices : spotifyPresetChoices)
-                        .getOrDefault(preset, List.of());
+                List<SpotifyChoice> choices = visibleSpotifyChoices;
                 if (idx < choices.size()) {
                     currentSpotifyChoiceUri = choices.get(idx).uri();
                     updateNowPlayingCard(choices.get(idx).label());
-                    if (isSoundCloudSource()) {
-                        playSoundCloudInWidget(currentSpotifyChoiceUri);
-                        audioPlaybackActive = true;
-                    }
+                    currentChoiceIndex = idx;
                 }
             }
         });
 
-        soundCloudView = new WebView();
-        soundCloudView.setContextMenuEnabled(false);
-        soundCloudView.setPrefHeight(120);
-        soundCloudView.setStyle("-fx-background-color:#0b1220;-fx-border-color:#334155;-fx-border-radius:8;-fx-background-radius:8;");
+        soundMusicPreviewImage = new ImageView(resolveThumbForPreset(preferences.get(PREF_SPOTIFY_PRESET, "nature")));
+        soundMusicPreviewImage.setFitHeight(155);
+        soundMusicPreviewImage.setFitWidth(340);
+        soundMusicPreviewImage.setPreserveRatio(true);
+        StackPane previewPane = new StackPane(soundMusicPreviewImage);
+        previewPane.setMinHeight(168);
+        previewPane.setPrefHeight(168);
+        previewPane.setMaxHeight(168);
+        previewPane.setStyle("-fx-background-color:#110d27;-fx-border-color:#4b2e82;-fx-border-radius:18;-fx-background-radius:18;-fx-padding:10;");
+        soundCloudPlayerWebView = new WebView();
+        soundCloudPlayerWebView.setPrefSize(1, 1);
+        soundCloudPlayerWebView.setMinSize(1, 1);
+        soundCloudPlayerWebView.setMaxSize(1, 1);
+        soundCloudPlayerWebView.setOpacity(0.01);
+        soundCloudPlayerWebView.setVisible(true);
 
-        HBox controls = new HBox(10);
-        controls.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
-        Button prev = new Button("\u23ee");
-        Button play = new Button("\u25b6 Play");
-        Button plus = new Button("\u23ed");
-        Button stop = new Button("\u25a0 Stop");
-        Button dots = new Button("\u2197");
+        HBox searchRow = new HBox(10);
+        searchRow.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+        spotifySearchField = new TextField();
+        spotifySearchField.setPromptText("Search music...");
+        spotifySearchField.setStyle(
+                "-fx-background-color:linear-gradient(to right,#2a2a2a,#363636);" +
+                "-fx-text-fill:#f0f0ff;" +
+                "-fx-prompt-text-fill:#6b6b8f;" +
+                "-fx-background-radius:12;" +
+                "-fx-border-color:#4a4a4a;" +
+                "-fx-border-radius:12;" +
+                "-fx-padding:9 12 9 12;"
+        );
+        HBox.setHgrow(spotifySearchField, Priority.ALWAYS);
+        Button searchBtn = new Button("Search");
+        searchBtn.getStyleClass().add("spotify-control-btn");
+        searchBtn.setVisible(false);
+        searchBtn.setManaged(false);
+        searchBtn.setOnAction(e -> applyAudioSearch());
+        spotifySearchField.setOnAction(e -> applyAudioSearch());
+        searchRow.getChildren().addAll(spotifySearchField, searchBtn);
+
+        HBox transportRow = new HBox(8);
+        transportRow.setAlignment(javafx.geometry.Pos.CENTER);
+        Button shuffle = new Button("\u21C4");
+        Button prev = new Button("\u23EE");
+        Button play = new Button("\u275A\u275A");
+        Button plus = new Button("\u23ED");
+        Button repeat = new Button("\u21BA");
+        play.setUserData("pause");
+        play.setText("\u275A\u275A");
+        play.setOnAction(e -> {
+            if (spotifyPlayer == null) {
+                playCurrentInApp();
+                play.setText("\u275A\u275A");
+                play.setUserData("pause");
+                return;
+            }
+            MediaPlayer.Status status = spotifyPlayer.getStatus();
+            if (status == MediaPlayer.Status.PLAYING) {
+                spotifyPlayer.pause();
+                play.setText("\u25B6");
+                play.setUserData("play");
+            } else {
+                spotifyPlayer.play();
+                play.setText("\u275A\u275A");
+                play.setUserData("pause");
+            }
+        });
+        shuffle.setOnAction(e -> {
+            if (spotifyChoiceList == null || spotifyChoiceList.getItems().isEmpty()) {
+                return;
+            }
+            int size = spotifyChoiceList.getItems().size();
+            int idx = java.util.concurrent.ThreadLocalRandom.current().nextInt(size);
+            spotifyChoiceList.getSelectionModel().select(idx);
+            currentChoiceIndex = idx;
+            playCurrentInApp();
+            play.setText("\u275A\u275A");
+            play.setUserData("pause");
+        });
         prev.getStyleClass().add("spotify-control-btn");
         play.getStyleClass().add("spotify-control-btn");
         plus.getStyleClass().add("spotify-control-btn");
-        stop.getStyleClass().add("spotify-control-btn");
-        dots.getStyleClass().add("spotify-control-btn");
+        repeat.getStyleClass().add("spotify-control-btn");
+        shuffle.getStyleClass().add("spotify-control-btn");
+        String controlBtnStyle = "-fx-background-color:#090a18;-fx-border-color:#3d3f5f;-fx-border-radius:10;-fx-background-radius:10;-fx-text-fill:#f0f0ff;-fx-padding:7 10;-fx-font-weight:700;-fx-font-size:12px;";
+        shuffle.setStyle(controlBtnStyle);
+        prev.setStyle(controlBtnStyle);
+        play.setStyle(controlBtnStyle);
+        plus.setStyle(controlBtnStyle);
+        repeat.setStyle(controlBtnStyle);
+        shuffle.setPrefWidth(46); prev.setPrefWidth(46); play.setPrefWidth(78); plus.setPrefWidth(46); repeat.setPrefWidth(46);
+        play.setStyle("-fx-background-color:#121326;-fx-border-color:#f472b6;-fx-border-radius:999;-fx-background-radius:999;-fx-text-fill:white;-fx-font-size:18px;-fx-font-weight:700;-fx-padding:12 18;-fx-effect:dropshadow(gaussian, rgba(244,114,182,0.35), 10, 0.4, 0, 0);");
+        shuffle.setTooltip(new Tooltip("Shuffle"));
+        prev.setTooltip(new Tooltip("Previous"));
+        play.setTooltip(new Tooltip("Play/Pause"));
+        plus.setTooltip(new Tooltip("Next"));
+        repeat.setTooltip(new Tooltip("Replay"));
+        repeat.setOnAction(e -> {
+            if (spotifyPlayer != null) {
+                spotifyPlayer.seek(javafx.util.Duration.ZERO);
+                spotifyPlayer.play();
+            } else {
+                playCurrentInApp();
+            }
+            play.setText("\u275A\u275A");
+            play.setUserData("pause");
+        });
         prev.setOnAction(e -> playPreviousSpotifyTrack());
-        play.setOnAction(e -> openSpotifyCurrentPreset());
         plus.setOnAction(e -> playNextSpotifyTrack());
-        stop.setOnAction(e -> stopAudioPlayback());
-        dots.setOnAction(e -> openSpotifyCurrentPreset());
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-        controls.getChildren().addAll(prev, spacer, play, plus, stop, dots);
+        spotifyVolumeSlider = new javafx.scene.control.Slider(0, 100, 70);
+        spotifyVolumeSlider.setPrefWidth(96);
+        spotifyVolumeSlider.setStyle("-fx-accent:#e879f9;");
+        spotifyVolumeSlider.valueProperty().addListener((obs, o, n) -> {
+            if (spotifyPlayer != null) {
+                spotifyPlayer.setVolume(n.doubleValue() / 100.0);
+            }
+        });
+        spotifySeekSlider = new javafx.scene.control.Slider(0, 100, 0);
+        spotifySeekSlider.setPrefWidth(160);
+        spotifySeekSlider.valueChangingProperty().addListener((obs, was, changing) -> {
+            if (!changing) {
+                seekToPercent(spotifySeekSlider.getValue());
+            }
+        });
+        spotifySeekSlider.setOnMousePressed(e -> isSeeking = true);
+        spotifySeekSlider.setOnMouseReleased(e -> {
+            isSeeking = false;
+            seekToPercent(spotifySeekSlider.getValue());
+        });
+        spotifyTimeLabel = new Label("00:00 / 00:00");
+        spotifyTimeLabel.setStyle("-fx-text-fill:#6b6b8f;-fx-font-size:10px;-fx-font-family:Monospaced;");
+        Label seekLabel = new Label("Seek");
+        seekLabel.setStyle("-fx-text-fill:#6b6b8f;-fx-font-size:10px;");
+        Label volLabel = new Label("Vol");
+        volLabel.setStyle("-fx-text-fill:#6b6b8f;-fx-font-size:10px;");
+        transportRow.getChildren().addAll(shuffle, prev, play, plus, repeat);
+        HBox slidersRow = new HBox(8, seekLabel, spotifySeekSlider, spotifyTimeLabel, volLabel, spotifyVolumeSlider);
+        slidersRow.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+        HBox.setHgrow(spotifySeekSlider, Priority.ALWAYS);
+        VBox controls = new VBox(8, transportRow, slidersRow);
+        controls.setStyle("-fx-padding:4 0 0 0;");
 
         // Visual order like reference: player card on top, list under it.
-        spotifyMockCard.getChildren().addAll(sourceRow, spotifyNowPlayingDynamic, statusHint, soundCloudView, spotifyChoiceList, controls);
+        VBox titleBlock = new VBox(3, spotifyNowTitle, spotifyNowMeta);
+        titleBlock.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+        titleBlock.setStyle("-fx-padding:2 2 0 2;");
+        HBox liveRow = new HBox(spotifyNowPlayingDynamic);
+        liveRow.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+
+        spotifyMockCard.getChildren().addAll(headerRow, sourceRow, searchRow, previewPane, liveRow, titleBlock, controls, divider, statusHint, spotifyChoiceList, soundCloudPlayerWebView);
 
         int footIndex = Math.max(spotifyPanel.getChildren().size() - 1, 0);
         spotifyPanel.getChildren().add(footIndex, spotifyMockCard);
         refreshSpotifyChoices(preferences.get(PREF_SPOTIFY_PRESET, "nature"));
+        adjustSpotifyCardSizing(640);
+    }
+
+    private void clampSpotifyCardToContainer() {
+        if (spotifyMockCard == null) {
+            return;
+        }
+        double w = clamp(spotifyMockCard.getPrefWidth(), SPOTIFY_MIN_WIDTH, getSpotifyCardMaxWidth());
+        double h = clamp(spotifyMockCard.getPrefHeight(), SPOTIFY_MIN_HEIGHT, getSpotifyCardMaxHeight());
+        spotifyMockCard.setPrefWidth(w);
+        spotifyMockCard.setPrefHeight(h);
+        adjustSpotifyCardSizing(h);
+    }
+
+    private double getSpotifyCardMaxWidth() {
+        if (spotifyPanel == null) {
+            return 900;
+        }
+        double available = spotifyPanel.getWidth() - 24;
+        return Math.max(SPOTIFY_MIN_WIDTH, Math.min(900, available));
+    }
+
+    private double getSpotifyCardMaxHeight() {
+        if (spotifyPanel == null) {
+            return 980;
+        }
+        // Card should grow with panel; only keep a small inner padding margin.
+        double available = spotifyPanel.getHeight() - 24;
+        return Math.max(SPOTIFY_MIN_HEIGHT, Math.min(980, available));
+    }
+
+    private void adjustSpotifyCardSizing(double cardHeight) {
+        if (spotifyChoiceList == null || soundMusicPreviewImage == null || spotifyNowCover == null) {
+            return;
+        }
+        double previewH = clamp(cardHeight * 0.28, 140, 240);
+        soundMusicPreviewImage.setFitHeight(previewH);
+        soundMusicPreviewImage.setFitWidth(previewH * 1.55);
+        spotifyNowCover.setFitHeight(previewH);
+        spotifyNowCover.setFitWidth(previewH * 1.55);
+        double listH = clamp(cardHeight * 0.44, 170, 560);
+        spotifyChoiceList.setPrefHeight(listH);
+        spotifyChoiceList.setMaxHeight(listH);
+    }
+
+    private double clamp(double v, double min, double max) {
+        return Math.max(min, Math.min(max, v));
     }
 
     private void refreshSpotifyChoices(String preset) {
@@ -1428,21 +1832,295 @@ public class MainController implements Initializable {
             return;
         }
         String safePreset = spotifyPresetChoices.containsKey(preset) ? preset : "nature";
-        Map<String, List<SpotifyChoice>> sourceMap = isSoundCloudSource() ? soundCloudPresetChoices : spotifyPresetChoices;
-        List<SpotifyChoice> choices = sourceMap.getOrDefault(safePreset, List.of());
+        Map<String, List<SpotifyChoice>> sourceMap = soundCloudPresetChoices;
+        List<SpotifyChoice> allChoices = sourceMap.values().stream().flatMap(List::stream).distinct().toList();
+        List<SpotifyChoice> choices = filterChoicesByMood(allChoices, safePreset);
+        visibleSpotifyChoices = choices;
+        choiceArtworkByLabel.clear();
+        choiceArtistByLabel.clear();
+        choiceMoodByLabel.clear();
+        for (SpotifyChoice choice : choices) {
+            choiceMoodByLabel.put(choice.label(), resolveChoiceMood(choice));
+        }
         spotifyChoiceList.setItems(FXCollections.observableArrayList(
                 choices.stream().map(SpotifyChoice::label).toList()
         ));
         if (!choices.isEmpty()) {
             spotifyChoiceList.getSelectionModel().select(0);
             currentSpotifyChoiceUri = choices.get(0).uri();
+            currentChoiceIndex = 0;
             updateNowPlayingCard(choices.get(0).label());
-            if (isSoundCloudSource()) {
-                prepareSoundCloudTrack(currentSpotifyChoiceUri);
+            if (spotifySearchField != null) {
+                spotifySearchField.clear();
             }
         } else {
+            visibleSpotifyChoices = List.of();
+            currentChoiceIndex = -1;
             currentSpotifyChoiceUri = spotifyAppUris.getOrDefault(safePreset, spotifyAppUris.get("nature"));
         }
+    }
+
+    private void applyAudioSearch() {
+        if (spotifySearchField == null) {
+            return;
+        }
+        String query = spotifySearchField.getText() == null ? "" : spotifySearchField.getText().trim();
+        if (query.isBlank()) {
+            refreshSpotifyChoices(preferences.get(PREF_SPOTIFY_PRESET, "nature"));
+            return;
+        }
+        if (spotifyNowPlayingDynamic != null) {
+            spotifyNowPlayingDynamic.setText("Searching: " + query);
+        }
+        List<SpotifyChoice> results = buildSearchChoices(query);
+        visibleSpotifyChoices = results;
+        spotifyChoiceList.setItems(FXCollections.observableArrayList(
+                results.stream().map(SpotifyChoice::label).toList()
+        ));
+        if (results.isEmpty()) {
+            currentChoiceIndex = -1;
+            if (spotifyNowPlayingDynamic != null) {
+                spotifyNowPlayingDynamic.setText("No result found");
+            }
+            spotifyChoiceList.getSelectionModel().clearSelection();
+            return;
+        }
+        spotifyChoiceList.getSelectionModel().select(0);
+        currentSpotifyChoiceUri = results.get(0).uri();
+        currentChoiceIndex = 0;
+        updateNowPlayingCard(results.get(0).label());
+        if (spotifyNowPlayingDynamic != null) {
+            spotifyNowPlayingDynamic.setText("Search results: " + query);
+        }
+    }
+
+    private String buildSearchUri(String query) {
+        String encoded = URLEncoder.encode(query, StandardCharsets.UTF_8);
+        if (isSoundCloudSource()) {
+            return "https://soundcloud.com/search/sounds?q=" + encoded;
+        }
+        return "spotify:search:" + encoded;
+    }
+
+    private List<SpotifyChoice> buildSearchChoices(String query) {
+        String q = query == null ? "" : query.toLowerCase(Locale.ROOT).trim();
+        if (q.isBlank()) {
+            return List.of();
+        }
+        List<String> tokens = List.of(q.replaceAll("[^\\p{L}\\p{N}\\s]", " ").split("\\s+"));
+        List<SpotifyChoice> localMatches = soundCloudPresetChoices.values().stream()
+                .flatMap(List::stream)
+                .filter(choice -> {
+                    String haystack = (choice.label() + " " + choice.uri()).toLowerCase(Locale.ROOT);
+                    for (String token : tokens) {
+                        if (!token.isBlank() && !haystack.contains(token)) {
+                            return false;
+                        }
+                    }
+                    return true;
+                })
+                .distinct()
+                .toList();
+        if (!localMatches.isEmpty()) {
+            return localMatches;
+        }
+        // Fallback: show online results when local catalog has no match.
+        return fetchSearchChoices(query);
+    }
+
+    private List<SpotifyChoice> fetchSearchChoices(String query) {
+        try {
+            String endpoint = "https://itunes.apple.com/search?term="
+                    + URLEncoder.encode(query, StandardCharsets.UTF_8)
+                    + "&entity=song&limit=20";
+            HttpRequest req = HttpRequest.newBuilder(URI.create(endpoint)).GET().build();
+            String body = httpClient.send(req, HttpResponse.BodyHandlers.ofString()).body();
+            List<SpotifyChoice> list = new java.util.ArrayList<>();
+            choiceArtworkByLabel.clear();
+            choiceArtistByLabel.clear();
+            java.util.regex.Pattern p = java.util.regex.Pattern.compile(
+                    "\"trackName\":\"(.*?)\".*?\"artistName\":\"(.*?)\".*?\"artworkUrl100\":\"(.*?)\".*?\"previewUrl\":\"(.*?)\"",
+                    java.util.regex.Pattern.DOTALL
+            );
+            java.util.regex.Matcher m = p.matcher(body);
+            while (m.find() && list.size() < 20) {
+                String track = unescapeJson(m.group(1));
+                String artist = unescapeJson(m.group(2));
+                String artwork = unescapeJson(m.group(3)).replace("\\/", "/");
+                String preview = unescapeJson(m.group(4)).replace("\\/", "/");
+                String label = track + " - " + artist;
+                list.add(new SpotifyChoice(label, preview));
+                choiceArtworkByLabel.put(label, artwork);
+                choiceArtistByLabel.put(label, artist);
+                choiceMoodByLabel.put(label, preferences.get(PREF_SPOTIFY_PRESET, "nature"));
+            }
+            return list;
+        } catch (Exception ex) {
+            return List.of();
+        }
+    }
+
+    private String unescapeJson(String raw) {
+        if (raw == null) {
+            return "";
+        }
+        return raw
+                .replace("\\\"", "\"")
+                .replace("\\n", " ")
+                .replace("\\r", " ")
+                .replace("\\t", " ")
+                .replace("\\\\", "\\");
+    }
+
+    private void playCurrentInApp() {
+        if (currentSpotifyChoiceUri == null || currentSpotifyChoiceUri.isBlank()) {
+            return;
+        }
+        try {
+            // Always stop any currently playing source before starting the new one.
+            stopAudioPlayback();
+            String playable = currentSpotifyChoiceUri;
+            if (isSoundCloudUrl(playable)) {
+                playSoundCloudEmbedded(playable);
+                userStoppedPlayback = false;
+                audioPlaybackActive = true;
+                if (spotifyNowPlayingDynamic != null) {
+                    spotifyNowPlayingDynamic.setText("Playing full track");
+                }
+                return;
+            }
+            String selectedLabel = spotifyChoiceList == null ? null : spotifyChoiceList.getSelectionModel().getSelectedItem();
+            String fallbackQuery = (selectedLabel == null || selectedLabel.isBlank()) ? playable : selectedLabel;
+            if (requiresPreviewResolution(playable)) {
+                String resolved = fetchFirstPreviewUrl(fallbackQuery);
+                if (resolved != null && !resolved.isBlank()) {
+                    playable = resolved;
+                }
+            }
+            if (requiresPreviewResolution(playable)) {
+                if (spotifyNowPlayingDynamic != null) {
+                    spotifyNowPlayingDynamic.setText("Cannot play this item");
+                }
+                return;
+            }
+            if (spotifyPlayer != null) {
+                spotifyPlayer.stop();
+                spotifyPlayer.dispose();
+            }
+            Media media = new Media(playable);
+            spotifyPlayer = new MediaPlayer(media);
+            spotifyPlayer.setVolume(spotifyVolumeSlider == null ? 0.7 : spotifyVolumeSlider.getValue() / 100.0);
+            userStoppedPlayback = false;
+            spotifyPlayer.currentTimeProperty().addListener((obs, oldT, newT) -> {
+                if (spotifyPlayer == null || isSeeking) {
+                    return;
+                }
+                javafx.util.Duration total = spotifyPlayer.getTotalDuration();
+                if (total != null && total.toMillis() > 0) {
+                    double pct = (newT.toMillis() / total.toMillis()) * 100.0;
+                    if (spotifySeekSlider != null) {
+                        spotifySeekSlider.setValue(Math.max(0, Math.min(100, pct)));
+                    }
+                    if (spotifyTimeLabel != null) {
+                        spotifyTimeLabel.setText(formatTime(newT) + " / " + formatTime(total));
+                    }
+                }
+            });
+            spotifyPlayer.setOnReady(() -> {
+                if (spotifySeekSlider != null) {
+                    spotifySeekSlider.setValue(0);
+                }
+                if (spotifyTimeLabel != null) {
+                    spotifyTimeLabel.setText("00:00 / " + formatTime(spotifyPlayer.getTotalDuration()));
+                }
+            });
+            spotifyPlayer.setOnEndOfMedia(() -> {
+                if (!userStoppedPlayback) {
+                    playNextSpotifyTrack();
+                }
+            });
+            spotifyPlayer.play();
+            audioPlaybackActive = true;
+            if (spotifyNowPlayingDynamic != null) {
+                spotifyNowPlayingDynamic.setText("Playing in app");
+            }
+        } catch (Exception ex) {
+            if (spotifyNowPlayingDynamic != null) {
+                spotifyNowPlayingDynamic.setText("Cannot play this item");
+            }
+        }
+    }
+
+    private boolean isSoundCloudUrl(String uri) {
+        return uri != null && uri.toLowerCase(Locale.ROOT).contains("soundcloud.com");
+    }
+
+    private void playSoundCloudEmbedded(String trackUrl) {
+        if (soundCloudPlayerWebView == null || trackUrl == null || trackUrl.isBlank()) {
+            return;
+        }
+        String embed = "https://w.soundcloud.com/player/?url="
+                + URLEncoder.encode(trackUrl, StandardCharsets.UTF_8)
+                + "&auto_play=true&hide_related=true&show_comments=false&show_user=true&visual=false";
+        soundCloudPlayerWebView.getEngine().load(embed);
+    }
+
+    private boolean requiresPreviewResolution(String uri) {
+        if (uri == null || uri.isBlank()) {
+            return true;
+        }
+        String lower = uri.toLowerCase(Locale.ROOT);
+        if (!lower.startsWith("http")) {
+            return true;
+        }
+        if (lower.contains("soundcloud.com")) {
+            return true;
+        }
+        return !(lower.endsWith(".mp3")
+                || lower.endsWith(".m4a")
+                || lower.endsWith(".aac")
+                || lower.endsWith(".wav")
+                || lower.contains("preview")
+                || lower.contains("audio"));
+    }
+
+    private void buildSoundCloudMoodIndex() {
+        soundCloudMoodByUri.clear();
+        soundCloudPresetChoices.forEach((mood, choices) -> {
+            for (SpotifyChoice choice : choices) {
+                soundCloudMoodByUri.put(choice.uri(), mood);
+            }
+        });
+    }
+
+    private String resolveChoiceMood(SpotifyChoice choice) {
+        if (choice == null) {
+            return "nature";
+        }
+        return soundCloudMoodByUri.getOrDefault(choice.uri(), preferences.get(PREF_SPOTIFY_PRESET, "nature"));
+    }
+
+    private List<SpotifyChoice> filterChoicesByMood(List<SpotifyChoice> choices, String mood) {
+        String targetMood = (mood == null || mood.isBlank()) ? "nature" : mood.toLowerCase(Locale.ROOT);
+        return choices.stream()
+                .filter(choice -> targetMood.equals(resolveChoiceMood(choice)))
+                .toList();
+    }
+
+    private String fetchFirstPreviewUrl(String query) {
+        try {
+            String endpoint = "https://itunes.apple.com/search?term="
+                    + URLEncoder.encode(query, StandardCharsets.UTF_8)
+                    + "&entity=song&limit=1";
+            HttpRequest req = HttpRequest.newBuilder(URI.create(endpoint)).GET().build();
+            String body = httpClient.send(req, HttpResponse.BodyHandlers.ofString()).body();
+            java.util.regex.Matcher m = java.util.regex.Pattern.compile("\"previewUrl\":\"(.*?)\"").matcher(body);
+            if (m.find()) {
+                return unescapeJson(m.group(1)).replace("\\/", "/");
+            }
+        } catch (Exception ignored) {
+        }
+        return null;
     }
 
     private void updateNowPlayingCard(String label) {
@@ -1451,14 +2129,22 @@ public class MainController implements Initializable {
         }
         String preset = preferences.get(PREF_SPOTIFY_PRESET, "nature");
         spotifyNowTitle.setText(label == null || label.isBlank() ? "Select a track" : label);
-        spotifyNowMeta.setText((isSoundCloudSource() ? "SoundCloud" : "Spotify") + " • " + preset.substring(0, 1).toUpperCase(Locale.ROOT) + preset.substring(1));
+        spotifyNowMeta.setText("Sound Music • " + preset.substring(0, 1).toUpperCase(Locale.ROOT) + preset.substring(1));
         Image img = switch (preset) {
             case "quran" -> resolveThumbForPreset("quran");
             case "relax" -> resolveThumbForPreset("relax");
             case "motivation" -> resolveThumbForPreset("motivation");
             default -> resolveThumbForPreset("nature");
         };
+        String selected = spotifyChoiceList == null ? null : spotifyChoiceList.getSelectionModel().getSelectedItem();
+        String artworkUrl = selected == null ? null : choiceArtworkByLabel.get(selected);
+        if (artworkUrl != null && !artworkUrl.isBlank()) {
+            img = new Image(artworkUrl, true);
+        }
         spotifyNowCover.setImage(img);
+        if (soundMusicPreviewImage != null) {
+            soundMusicPreviewImage.setImage(img);
+        }
     }
 
     private Image resolveThumbForPreset(String preset) {
@@ -1480,51 +2166,83 @@ public class MainController implements Initializable {
     }
 
     private void playSoundCloudInWidget(String targetUrl) {
-        if (soundCloudView == null || targetUrl == null || targetUrl.isBlank()) {
+        if (targetUrl == null || targetUrl.isBlank()) {
             return;
         }
-        String embed = "https://w.soundcloud.com/player/?url="
-                + URLEncoder.encode(targetUrl, StandardCharsets.UTF_8)
-                + "&auto_play=true&hide_related=true&show_comments=false&show_user=true&show_reposts=false&show_teaser=false&visual=false";
-        soundCloudView.getEngine().load(embed);
+        openSpotifyUri(targetUrl);
         lastLoadedSoundCloudUrl = targetUrl;
         lastPreparedSoundCloudUrl = targetUrl;
         if (spotifyNowPlayingDynamic != null) {
-            spotifyNowPlayingDynamic.setText("SoundCloud playing");
+            spotifyNowPlayingDynamic.setText("Opened in browser");
         }
     }
 
     private void prepareSoundCloudTrack(String targetUrl) {
-        if (soundCloudView == null || targetUrl == null || targetUrl.isBlank()) {
+        if (targetUrl == null || targetUrl.isBlank()) {
             return;
         }
-        if (targetUrl.equals(lastPreparedSoundCloudUrl)) {
-            return;
-        }
-        String embed = "https://w.soundcloud.com/player/?url="
-                + URLEncoder.encode(targetUrl, StandardCharsets.UTF_8)
-                + "&auto_play=false&hide_related=true&show_comments=false&show_user=true&show_reposts=false&show_teaser=false&visual=false";
-        WebEngine engine = soundCloudView.getEngine();
-        engine.load(embed);
         lastPreparedSoundCloudUrl = targetUrl;
     }
 
     private void stopAudioPlayback() {
-        if (!audioPlaybackActive) {
-            return;
-        }
-        if (isSoundCloudSource()) {
-            if (soundCloudView != null) {
-                soundCloudView.getEngine().load("about:blank");
+        userStoppedPlayback = true;
+        if (spotifyPlayer != null) {
+            try {
+                spotifyPlayer.stop();
+            } catch (Exception ignored) {
             }
-        } else {
-            // Best effort pause for Spotify desktop
-            sendWindowsMediaKey(0xB3);
+        }
+        if (soundCloudPlayerWebView != null) {
+            try {
+                soundCloudPlayerWebView.getEngine().load("about:blank");
+            } catch (Exception ignored) {
+            }
         }
         audioPlaybackActive = false;
         if (spotifyNowPlayingDynamic != null) {
             spotifyNowPlayingDynamic.setText("Playback stopped");
         }
+    }
+
+    private void seekBySeconds(int deltaSeconds) {
+        if (spotifyPlayer == null) {
+            return;
+        }
+        javafx.util.Duration current = spotifyPlayer.getCurrentTime();
+        javafx.util.Duration total = spotifyPlayer.getTotalDuration();
+        if (total == null || total.lessThanOrEqualTo(javafx.util.Duration.ZERO)) {
+            return;
+        }
+        javafx.util.Duration target = current.add(javafx.util.Duration.seconds(deltaSeconds));
+        if (target.lessThan(javafx.util.Duration.ZERO)) {
+            target = javafx.util.Duration.ZERO;
+        }
+        if (target.greaterThan(total)) {
+            target = total;
+        }
+        spotifyPlayer.seek(target);
+    }
+
+    private void seekToPercent(double percent) {
+        if (spotifyPlayer == null) {
+            return;
+        }
+        javafx.util.Duration total = spotifyPlayer.getTotalDuration();
+        if (total == null || total.lessThanOrEqualTo(javafx.util.Duration.ZERO)) {
+            return;
+        }
+        double p = Math.max(0, Math.min(100, percent));
+        spotifyPlayer.seek(total.multiply(p / 100.0));
+    }
+
+    private String formatTime(javafx.util.Duration d) {
+        if (d == null || d.isUnknown() || d.lessThanOrEqualTo(javafx.util.Duration.ZERO)) {
+            return "00:00";
+        }
+        int s = (int) Math.floor(d.toSeconds());
+        int mm = s / 60;
+        int ss = s % 60;
+        return String.format("%02d:%02d", mm, ss);
     }
 
     private void applySpotifyCardTheme(String preset) {
@@ -1533,9 +2251,9 @@ public class MainController implements Initializable {
         }
         String style;
         switch (preset) {
-            case "quran" -> style = "-fx-background-color: #c20f1f; -fx-background-radius: 12; -fx-padding: 8;";
+            case "quran" -> style = "-fx-background-color: #6a1b6d; -fx-background-radius: 12; -fx-padding: 8;";
             case "relax" -> style = "-fx-background-color: #4a413f; -fx-background-radius: 12; -fx-padding: 8;";
-            case "motivation" -> style = "-fx-background-color: #3c4fca; -fx-background-radius: 12; -fx-padding: 8;";
+            case "motivation" -> style = "-fx-background-color: #2b1d5a; -fx-background-radius: 12; -fx-padding: 8;";
             default -> style = "-fx-background-color: #2f2f31; -fx-background-radius: 12; -fx-padding: 8;";
         }
         spotifyMockCard.setStyle(style);
@@ -1774,3 +2492,4 @@ public class MainController implements Initializable {
         }
     }
 }
+

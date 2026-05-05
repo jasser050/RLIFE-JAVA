@@ -142,9 +142,9 @@ public class WellbeingAiService {
             );
         }
 
-        String languageCode = normalizeLanguageCode(preferredLanguageCode, safeMessage);
+        String languageCode = "en-US";
         String intent = detectIntent(safeMessage);
-        String languageInstruction = languageInstructionFromCode(languageCode);
+        String languageInstruction = "English";
         String safeMode = mode == null || mode.isBlank() ? "general" : mode.trim().toLowerCase(Locale.ROOT);
         String safeStyle = style == null || style.isBlank() ? "direct" : style.trim().toLowerCase(Locale.ROOT);
         String safeLevel = level == null || level.isBlank() ? "professional" : level.trim().toLowerCase(Locale.ROOT);
@@ -154,16 +154,18 @@ public class WellbeingAiService {
             payload.add(new OpenRouterService.ChatMessage(
                     "system",
                     """
-                    You are RLIFE AI Assistant for students.
+                    You are a calm breathing coach assistant.
+                    Guide the user through a stress-relief breathing exercise
+                    with a soft, slow, and reassuring voice. Speak in English only.
+                    Example script:
+                    "Hello, I am here to help you relax.
+                    Breathe in slowly for 4 seconds... hold...
+                    and breathe out gently for 8 seconds.
+                    You are doing great, stay calm."
                     Rules:
-                    - You can answer both general questions and wellbeing questions.
-                    - Be warm, practical, and supportive.
                     - Reply ONLY in %s.
-                    - Use the student's last message explicitly and respond directly.
-                    - Avoid repetitive generic openings.
-                    - Provide concise advice with 2 to 5 bullet points.
-                    - Ask at most one clarifying question, only if needed.
-                    - Do not pretend to be a doctor.
+                    - Keep responses calming, concise, and supportive.
+                    - Use simple breathing guidance such as inhale, hold, and exhale timing.
                     - If user mentions self-harm/suicide/danger: show empathy and strongly urge immediate emergency/crisis help.
                     Context:
                     - Detected intent: %s
