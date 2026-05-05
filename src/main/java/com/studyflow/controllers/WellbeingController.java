@@ -76,12 +76,14 @@ import javax.sound.sampled.DataLine;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.TargetDataLine;
 import javax.imageio.ImageIO;
+import java.awt.Desktop;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.awt.Dimension;
 import java.awt.image.BufferedImage;
+import java.net.URI;
 import java.net.URL;
 import java.time.LocalDateTime;
 import java.time.Duration;
@@ -2795,6 +2797,12 @@ public class WellbeingController implements Initializable {
     }
 
     private void openNatureSoundsTool(CopingSession session) {
+        // Route legacy nature-sounds panel to the Spotify widget implementation.
+        if (preferences != null) {
+            openNatureSoundsSpotifyTool(session);
+            return;
+        }
+
         VBox root = new VBox(14);
         root.setStyle("-fx-background-color: linear-gradient(to bottom right, #040b19, #07122a, #0a1633);");
 
@@ -2802,10 +2810,10 @@ public class WellbeingController implements Initializable {
         shell.setPadding(new Insets(12));
         shell.setStyle(
                 "-fx-background-color: rgba(8, 12, 24, 0.92);" +
-                        "-fx-background-radius: 18;" +
-                        "-fx-border-color: #1f2937;" +
-                        "-fx-border-width: 1;" +
-                        "-fx-border-radius: 18;"
+                "-fx-background-radius: 18;" +
+                "-fx-border-color: #1f2937;" +
+                "-fx-border-width: 1;" +
+                "-fx-border-radius: 18;"
         );
 
         Label eyebrow = new Label("NATURE SOUND DECK");
@@ -2824,12 +2832,12 @@ public class WellbeingController implements Initializable {
             b.setToggleGroup(sizeGroup);
             b.setStyle(
                     "-fx-background-color: #111827;" +
-                            "-fx-text-fill: #94a3b8;" +
-                            "-fx-background-radius: 8;" +
-                            "-fx-border-color: #1f2937;" +
-                            "-fx-border-radius: 8;" +
-                            "-fx-padding: 4 10;" +
-                            "-fx-font-weight: 700;"
+                    "-fx-text-fill: #94a3b8;" +
+                    "-fx-background-radius: 8;" +
+                    "-fx-border-color: #1f2937;" +
+                    "-fx-border-radius: 8;" +
+                    "-fx-padding: 4 10;" +
+                    "-fx-font-weight: 700;"
             );
         }
         mBtn.setSelected(true);
@@ -2837,13 +2845,13 @@ public class WellbeingController implements Initializable {
         Button collapseBtn = new Button("x");
         collapseBtn.setStyle(
                 "-fx-background-color: #1f2937;" +
-                        "-fx-text-fill: #cbd5e1;" +
-                        "-fx-background-radius: 999;" +
-                        "-fx-min-width: 24;" +
-                        "-fx-min-height: 24;" +
-                        "-fx-max-width: 24;" +
-                        "-fx-max-height: 24;" +
-                        "-fx-font-weight: 800;"
+                "-fx-text-fill: #cbd5e1;" +
+                "-fx-background-radius: 999;" +
+                "-fx-min-width: 24;" +
+                "-fx-min-height: 24;" +
+                "-fx-max-width: 24;" +
+                "-fx-max-height: 24;" +
+                "-fx-font-weight: 800;"
         );
         HBox topRow = new HBox(10, new VBox(2, eyebrow, title, subtitle), new Region(), sBtn, mBtn, lBtn, xlBtn, collapseBtn);
         HBox.setHgrow(topRow.getChildren().get(1), Priority.ALWAYS);
@@ -2859,12 +2867,12 @@ public class WellbeingController implements Initializable {
             b.setToggleGroup(categoryGroup);
             b.setStyle(
                     "-fx-background-color: #161b22;" +
-                            "-fx-text-fill: #cbd5e1;" +
-                            "-fx-background-radius: 16;" +
-                            "-fx-border-color: #334155;" +
-                            "-fx-border-radius: 16;" +
-                            "-fx-padding: 8 16;" +
-                            "-fx-font-weight: 700;"
+                    "-fx-text-fill: #cbd5e1;" +
+                    "-fx-background-radius: 16;" +
+                    "-fx-border-color: #334155;" +
+                    "-fx-border-radius: 16;" +
+                    "-fx-padding: 8 16;" +
+                    "-fx-font-weight: 700;"
             );
         }
         natureBtn.setSelected(true);
@@ -2874,9 +2882,9 @@ public class WellbeingController implements Initializable {
         playlistCard.setPadding(new Insets(14));
         playlistCard.setStyle(
                 "-fx-background-color: #111111;" +
-                        "-fx-background-radius: 14;" +
-                        "-fx-border-color: #232323;" +
-                        "-fx-border-radius: 14;"
+                "-fx-background-radius: 14;" +
+                "-fx-border-color: #232323;" +
+                "-fx-border-radius: 14;"
         );
 
         HBox coverAndTracks = new HBox(12);
@@ -2884,9 +2892,9 @@ public class WellbeingController implements Initializable {
         cover.setPrefSize(120, 120);
         cover.setStyle(
                 "-fx-background-color: linear-gradient(to bottom right, #0f5132, #052e16, #14532d);" +
-                        "-fx-background-radius: 12;" +
-                        "-fx-border-color: #166534;" +
-                        "-fx-border-radius: 12;"
+                "-fx-background-radius: 12;" +
+                "-fx-border-color: #166534;" +
+                "-fx-border-radius: 12;"
         );
         Label coverLabel = new Label("Nature\nSounds");
         coverLabel.setStyle("-fx-text-fill: #d1fae5; -fx-font-size: 24px; -fx-font-weight: 800;");
@@ -2896,11 +2904,11 @@ public class WellbeingController implements Initializable {
         tracksList.setPrefHeight(120);
         tracksList.setStyle(
                 "-fx-control-inner-background: #1f2937;" +
-                        "-fx-background-color: #1f2937;" +
-                        "-fx-text-fill: #e5e7eb;" +
-                        "-fx-border-color: #374151;" +
-                        "-fx-border-radius: 10;" +
-                        "-fx-background-radius: 10;"
+                "-fx-background-color: #1f2937;" +
+                "-fx-text-fill: #e5e7eb;" +
+                "-fx-border-color: #374151;" +
+                "-fx-border-radius: 10;" +
+                "-fx-background-radius: 10;"
         );
 
         coverAndTracks.getChildren().addAll(cover, tracksList);
@@ -2967,12 +2975,12 @@ public class WellbeingController implements Initializable {
                 boolean active = b.isSelected();
                 b.setStyle(
                         "-fx-background-color: " + (active ? accent : "#161b22") + ";" +
-                                "-fx-text-fill: " + (active ? "#041016" : "#cbd5e1") + ";" +
-                                "-fx-background-radius: 16;" +
-                                "-fx-border-color: " + (active ? accent : "#334155") + ";" +
-                                "-fx-border-radius: 16;" +
-                                "-fx-padding: 8 16;" +
-                                "-fx-font-weight: 700;"
+                        "-fx-text-fill: " + (active ? "#041016" : "#cbd5e1") + ";" +
+                        "-fx-background-radius: 16;" +
+                        "-fx-border-color: " + (active ? accent : "#334155") + ";" +
+                        "-fx-border-radius: 16;" +
+                        "-fx-padding: 8 16;" +
+                        "-fx-font-weight: 700;"
                 );
             }
             playlistTitle.setText(key + " Sounds · Spotify");
@@ -3027,10 +3035,10 @@ public class WellbeingController implements Initializable {
         Button start = new Button("Start");
         start.setStyle(
                 "-fx-background-color: #16a34a;" +
-                        "-fx-text-fill: #ecfdf5;" +
-                        "-fx-background-radius: 24;" +
-                        "-fx-padding: 10 22;" +
-                        "-fx-font-weight: 800;"
+                "-fx-text-fill: #ecfdf5;" +
+                "-fx-background-radius: 24;" +
+                "-fx-padding: 10 22;" +
+                "-fx-font-weight: 800;"
         );
         start.setOnAction(e -> {
             completed[0] = false;
@@ -3042,10 +3050,10 @@ public class WellbeingController implements Initializable {
         Button pause = new Button("Pause");
         pause.setStyle(
                 "-fx-background-color: #334155;" +
-                        "-fx-text-fill: #f1f5f9;" +
-                        "-fx-background-radius: 24;" +
-                        "-fx-padding: 10 22;" +
-                        "-fx-font-weight: 700;"
+                "-fx-text-fill: #f1f5f9;" +
+                "-fx-background-radius: 24;" +
+                "-fx-padding: 10 22;" +
+                "-fx-font-weight: 700;"
         );
         pause.setOnAction(e -> {
             timeline[0].stop();
@@ -3055,10 +3063,10 @@ public class WellbeingController implements Initializable {
         Button reset = new Button("Reset");
         reset.setStyle(
                 "-fx-background-color: #1e293b;" +
-                        "-fx-text-fill: #cbd5e1;" +
-                        "-fx-background-radius: 24;" +
-                        "-fx-padding: 10 22;" +
-                        "-fx-font-weight: 700;"
+                "-fx-text-fill: #cbd5e1;" +
+                "-fx-background-radius: 24;" +
+                "-fx-padding: 10 22;" +
+                "-fx-font-weight: 700;"
         );
         reset.setOnAction(e -> {
             timeline[0].stop();
@@ -3069,12 +3077,12 @@ public class WellbeingController implements Initializable {
         Button close = new Button("Back");
         close.setStyle(
                 "-fx-background-color: transparent;" +
-                        "-fx-text-fill: #94a3b8;" +
-                        "-fx-border-color: #334155;" +
-                        "-fx-border-radius: 24;" +
-                        "-fx-background-radius: 24;" +
-                        "-fx-padding: 10 22;" +
-                        "-fx-font-weight: 700;"
+                "-fx-text-fill: #94a3b8;" +
+                "-fx-border-color: #334155;" +
+                "-fx-border-radius: 24;" +
+                "-fx-background-radius: 24;" +
+                "-fx-padding: 10 22;" +
+                "-fx-font-weight: 700;"
         );
 
         HBox controls = new HBox(10, start, pause, reset, close, new Region(), timer);
@@ -3089,16 +3097,16 @@ public class WellbeingController implements Initializable {
         Button bubbleButton = new Button("♫");
         bubbleButton.setStyle(
                 "-fx-background-color: linear-gradient(to bottom right, #1ed760, #1db954);" +
-                        "-fx-text-fill: #041016;" +
-                        "-fx-font-size: 24px;" +
-                        "-fx-font-weight: 800;" +
-                        "-fx-background-radius: 999;" +
-                        "-fx-min-width: 62;" +
-                        "-fx-min-height: 62;" +
-                        "-fx-max-width: 62;" +
-                        "-fx-max-height: 62;" +
-                        "-fx-cursor: hand;" +
-                        "-fx-effect: dropshadow(gaussian, rgba(29,185,84,0.45), 18, 0.35, 0, 6);"
+                "-fx-text-fill: #041016;" +
+                "-fx-font-size: 24px;" +
+                "-fx-font-weight: 800;" +
+                "-fx-background-radius: 999;" +
+                "-fx-min-width: 62;" +
+                "-fx-min-height: 62;" +
+                "-fx-max-width: 62;" +
+                "-fx-max-height: 62;" +
+                "-fx-cursor: hand;" +
+                "-fx-effect: dropshadow(gaussian, rgba(29,185,84,0.45), 18, 0.35, 0, 6);"
         );
         bubbleButton.setText("SP");
         Label bubbleHint = new Label("Nature Sounds");
@@ -3188,10 +3196,10 @@ public class WellbeingController implements Initializable {
         widget.setPadding(new Insets(12));
         widget.setStyle(
                 "-fx-background-color: rgba(8, 12, 24, 0.94);" +
-                        "-fx-background-radius: 16;" +
-                        "-fx-border-color: rgba(51, 65, 85, 0.85);" +
-                        "-fx-border-width: 1;" +
-                        "-fx-border-radius: 16;"
+                "-fx-background-radius: 16;" +
+                "-fx-border-color: rgba(51, 65, 85, 0.85);" +
+                "-fx-border-width: 1;" +
+                "-fx-border-radius: 16;"
         );
 
         HBox topBar = new HBox(8);
@@ -3215,13 +3223,13 @@ public class WellbeingController implements Initializable {
             b.setToggleGroup(sizeGroup);
             b.setStyle(
                     "-fx-background-color: #111827;" +
-                            "-fx-text-fill: #cbd5e1;" +
-                            "-fx-font-size: 11px;" +
-                            "-fx-font-weight: 700;" +
-                            "-fx-padding: 4 8;" +
-                            "-fx-background-radius: 8;" +
-                            "-fx-border-color: #334155;" +
-                            "-fx-border-radius: 8;"
+                    "-fx-text-fill: #cbd5e1;" +
+                    "-fx-font-size: 11px;" +
+                    "-fx-font-weight: 700;" +
+                    "-fx-padding: 4 8;" +
+                    "-fx-background-radius: 8;" +
+                    "-fx-border-color: #334155;" +
+                    "-fx-border-radius: 8;"
             );
         }
         sBtn.setSelected(true);
@@ -3229,24 +3237,24 @@ public class WellbeingController implements Initializable {
         Button collapseBtn = new Button("-");
         collapseBtn.setStyle(
                 "-fx-background-color: #1f2937;" +
-                        "-fx-text-fill: #cbd5e1;" +
-                        "-fx-font-weight: 800;" +
-                        "-fx-background-radius: 999;" +
-                        "-fx-min-width: 24;" +
-                        "-fx-min-height: 24;" +
-                        "-fx-max-width: 24;" +
-                        "-fx-max-height: 24;"
+                "-fx-text-fill: #cbd5e1;" +
+                "-fx-font-weight: 800;" +
+                "-fx-background-radius: 999;" +
+                "-fx-min-width: 24;" +
+                "-fx-min-height: 24;" +
+                "-fx-max-width: 24;" +
+                "-fx-max-height: 24;"
         );
         Button closeBtn = new Button("x");
         closeBtn.setStyle(
                 "-fx-background-color: #1f2937;" +
-                        "-fx-text-fill: #cbd5e1;" +
-                        "-fx-font-weight: 800;" +
-                        "-fx-background-radius: 999;" +
-                        "-fx-min-width: 24;" +
-                        "-fx-min-height: 24;" +
-                        "-fx-max-width: 24;" +
-                        "-fx-max-height: 24;"
+                "-fx-text-fill: #cbd5e1;" +
+                "-fx-font-weight: 800;" +
+                "-fx-background-radius: 999;" +
+                "-fx-min-width: 24;" +
+                "-fx-min-height: 24;" +
+                "-fx-max-width: 24;" +
+                "-fx-max-height: 24;"
         );
         topBar.getChildren().addAll(label, topSpacer, sBtn, mBtn, lBtn, xlBtn, collapseBtn, closeBtn);
 
@@ -3260,13 +3268,13 @@ public class WellbeingController implements Initializable {
             b.setToggleGroup(presetGroup);
             b.setStyle(
                     "-fx-background-color: #161b22;" +
-                            "-fx-text-fill: #cbd5e1;" +
-                            "-fx-font-size: 12px;" +
-                            "-fx-font-weight: 700;" +
-                            "-fx-padding: 6 12;" +
-                            "-fx-background-radius: 999;" +
-                            "-fx-border-color: #334155;" +
-                            "-fx-border-radius: 999;"
+                    "-fx-text-fill: #cbd5e1;" +
+                    "-fx-font-size: 12px;" +
+                    "-fx-font-weight: 700;" +
+                    "-fx-padding: 6 12;" +
+                    "-fx-background-radius: 999;" +
+                    "-fx-border-color: #334155;" +
+                    "-fx-border-radius: 999;"
             );
             presetButtons.add(b);
             presetRow.getChildren().add(b);
@@ -3281,21 +3289,28 @@ public class WellbeingController implements Initializable {
         customUrlField.setPromptText("Paste Spotify embed URL...");
         customUrlField.setStyle(
                 "-fx-background-color: #0f172a;" +
-                        "-fx-text-fill: #e2e8f0;" +
-                        "-fx-prompt-text-fill: #64748b;" +
-                        "-fx-border-color: #334155;" +
-                        "-fx-border-radius: 8;" +
-                        "-fx-background-radius: 8;"
+                "-fx-text-fill: #e2e8f0;" +
+                "-fx-prompt-text-fill: #64748b;" +
+                "-fx-border-color: #334155;" +
+                "-fx-border-radius: 8;" +
+                "-fx-background-radius: 8;"
         );
         HBox.setHgrow(customUrlField, Priority.ALWAYS);
         Button loadCustomBtn = new Button("Load URL");
         loadCustomBtn.setStyle(
                 "-fx-background-color: #2563eb;" +
-                        "-fx-text-fill: #dbeafe;" +
-                        "-fx-font-weight: 700;" +
-                        "-fx-background-radius: 8;"
+                "-fx-text-fill: #dbeafe;" +
+                "-fx-font-weight: 700;" +
+                "-fx-background-radius: 8;"
         );
-        customUrlRow.getChildren().addAll(customUrlField, loadCustomBtn);
+        Button openExternalBtn = new Button("Open in Spotify");
+        openExternalBtn.setStyle(
+                "-fx-background-color: #16a34a;" +
+                "-fx-text-fill: #dcfce7;" +
+                "-fx-font-weight: 700;" +
+                "-fx-background-radius: 8;"
+        );
+        customUrlRow.getChildren().addAll(customUrlField, loadCustomBtn, openExternalBtn);
 
         Label loadingLabel = new Label("Loading Spotify...");
         loadingLabel.setStyle("-fx-text-fill: #94a3b8; -fx-font-size: 12px;");
@@ -3308,9 +3323,9 @@ public class WellbeingController implements Initializable {
         spotifyView.setPrefHeight(152);
         spotifyView.setStyle(
                 "-fx-background-color: #0b1220;" +
-                        "-fx-border-color: #1f2937;" +
-                        "-fx-border-radius: 10;" +
-                        "-fx-background-radius: 10;"
+                "-fx-border-color: #1f2937;" +
+                "-fx-border-radius: 10;" +
+                "-fx-background-radius: 10;"
         );
 
         VBox iframeWrap = new VBox(loadingLabel, spotifyView);
@@ -3322,15 +3337,15 @@ public class WellbeingController implements Initializable {
         Button bubbleButton = new Button("SP");
         bubbleButton.setStyle(
                 "-fx-background-color: linear-gradient(to bottom right, #1ed760, #1db954);" +
-                        "-fx-text-fill: #041016;" +
-                        "-fx-font-size: 16px;" +
-                        "-fx-font-weight: 800;" +
-                        "-fx-background-radius: 999;" +
-                        "-fx-min-width: 58;" +
-                        "-fx-min-height: 58;" +
-                        "-fx-max-width: 58;" +
-                        "-fx-max-height: 58;" +
-                        "-fx-effect: dropshadow(gaussian, rgba(29,185,84,0.45), 16, 0.3, 0, 4);"
+                "-fx-text-fill: #041016;" +
+                "-fx-font-size: 16px;" +
+                "-fx-font-weight: 800;" +
+                "-fx-background-radius: 999;" +
+                "-fx-min-width: 58;" +
+                "-fx-min-height: 58;" +
+                "-fx-max-width: 58;" +
+                "-fx-max-height: 58;" +
+                "-fx-effect: dropshadow(gaussian, rgba(29,185,84,0.45), 16, 0.3, 0, 4);"
         );
         Label bubbleHint = new Label("Nature Sounds");
         bubbleHint.setStyle("-fx-text-fill: #cbd5e1; -fx-font-size: 11px; -fx-font-weight: 700;");
@@ -3345,6 +3360,7 @@ public class WellbeingController implements Initializable {
 
         final String[] currentPreset = {"nature"};
         final String[] currentSize = {"sm"};
+        final String[] currentSourceUrl = {spotifyPlaylists.get("nature")};
         final double[] dragAnchor = {0, 0};
         final double[] dragTranslate = {0, 0};
 
@@ -3353,13 +3369,13 @@ public class WellbeingController implements Initializable {
                 boolean selected = b.isSelected();
                 b.setStyle(
                         "-fx-background-color: " + (selected ? "#1d4ed8" : "#161b22") + ";" +
-                                "-fx-text-fill: " + (selected ? "#dbeafe" : "#cbd5e1") + ";" +
-                                "-fx-font-size: 12px;" +
-                                "-fx-font-weight: 700;" +
-                                "-fx-padding: 6 12;" +
-                                "-fx-background-radius: 999;" +
-                                "-fx-border-color: " + (selected ? "#3b82f6" : "#334155") + ";" +
-                                "-fx-border-radius: 999;"
+                        "-fx-text-fill: " + (selected ? "#dbeafe" : "#cbd5e1") + ";" +
+                        "-fx-font-size: 12px;" +
+                        "-fx-font-weight: 700;" +
+                        "-fx-padding: 6 12;" +
+                        "-fx-background-radius: 999;" +
+                        "-fx-border-color: " + (selected ? "#3b82f6" : "#334155") + ";" +
+                        "-fx-border-radius: 999;"
                 );
             }
         };
@@ -3370,13 +3386,13 @@ public class WellbeingController implements Initializable {
                 boolean selected = b.isSelected();
                 b.setStyle(
                         "-fx-background-color: " + (selected ? "#0f3a2a" : "#111827") + ";" +
-                                "-fx-text-fill: " + (selected ? "#86efac" : "#cbd5e1") + ";" +
-                                "-fx-font-size: 11px;" +
-                                "-fx-font-weight: 700;" +
-                                "-fx-padding: 4 8;" +
-                                "-fx-background-radius: 8;" +
-                                "-fx-border-color: " + (selected ? "#16a34a" : "#334155") + ";" +
-                                "-fx-border-radius: 8;"
+                        "-fx-text-fill: " + (selected ? "#86efac" : "#cbd5e1") + ";" +
+                        "-fx-font-size: 11px;" +
+                        "-fx-font-weight: 700;" +
+                        "-fx-padding: 4 8;" +
+                        "-fx-background-radius: 8;" +
+                        "-fx-border-color: " + (selected ? "#16a34a" : "#334155") + ";" +
+                        "-fx-border-radius: 8;"
                 );
             }
         };
@@ -3392,6 +3408,7 @@ public class WellbeingController implements Initializable {
             String key = spotifyPlaylists.containsKey(preset) ? preset : "nature";
             currentPreset[0] = key;
             String src = (forcedUrl != null && !forcedUrl.isBlank()) ? forcedUrl.trim() : spotifyPlaylists.get(key);
+            currentSourceUrl[0] = src;
             label.setText(spotifyLabels.getOrDefault(key, "Nature Sounds"));
             loadingLabel.setVisible(true);
             loadingLabel.setManaged(true);
@@ -3424,6 +3441,7 @@ public class WellbeingController implements Initializable {
 
         loadCustomBtn.setOnAction(e -> loadSpotify.accept(currentPreset[0], customUrlField.getText()));
         customUrlField.setOnAction(e -> loadSpotify.accept(currentPreset[0], customUrlField.getText()));
+        openExternalBtn.setOnAction(e -> openSpotifyExternally(currentSourceUrl[0]));
 
         widget.setOnMousePressed(e -> {
             dragAnchor[0] = e.getSceneX();
@@ -3457,7 +3475,6 @@ public class WellbeingController implements Initializable {
         });
         collapseBtn.setOnAction(e -> hidePanel.run());
 
-        Stage stage = createToolStage("Nature Sounds", root, 1040, 700);
         LocalDateTime openedAt = LocalDateTime.now();
         AtomicBoolean sessionClosed = new AtomicBoolean(false);
         AtomicBoolean loadedAnyPlaylist = new AtomicBoolean(false);
@@ -3468,11 +3485,7 @@ public class WellbeingController implements Initializable {
             }
             closeSession(session, openedAt, completed);
         };
-        closeBtn.setOnAction(e -> {
-            closeAndSave.accept(loadedAnyPlaylist.get());
-            stage.close();
-        });
-        stage.setOnCloseRequest(e -> closeAndSave.accept(loadedAnyPlaylist.get()));
+        closeBtn.setOnAction(e -> handleCloseInlineTool());
 
         loadSpotify.accept("nature", "");
         loadedAnyPlaylist.set(true);
@@ -3480,7 +3493,29 @@ public class WellbeingController implements Initializable {
         refreshSizeStyles.run();
         applySize.run();
         showPanel.run();
-        stage.show();
+        showInlineTool("Nature Sounds", root, () -> closeAndSave.accept(loadedAnyPlaylist.get()));
+    }
+
+    private void openSpotifyExternally(String spotifyUrl) {
+        if (spotifyUrl == null || spotifyUrl.isBlank()) {
+            showGlobalMessage("No Spotify URL selected.", true);
+            return;
+        }
+        if (!Desktop.isDesktopSupported() || !Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+            showGlobalMessage("Cannot open browser on this system.", true);
+            return;
+        }
+        try {
+            String externalUrl = spotifyUrl.trim().replace("://open.spotify.com/embed/", "://open.spotify.com/");
+            int queryStart = externalUrl.indexOf('?');
+            if (queryStart >= 0) {
+                externalUrl = externalUrl.substring(0, queryStart);
+            }
+            Desktop.getDesktop().browse(URI.create(externalUrl));
+            showGlobalMessage("Opened Spotify externally.", false);
+        } catch (Exception ex) {
+            showGlobalMessage("Failed to open Spotify URL.", true);
+        }
     }
 
     private void closeSession(CopingSession session, LocalDateTime openedAt, boolean completed) {
@@ -5121,3 +5156,5 @@ public class WellbeingController implements Initializable {
         return "#EF4444";
     }
 }
+
+
