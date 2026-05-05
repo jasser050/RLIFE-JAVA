@@ -12,34 +12,7 @@ public class WellbeingAiService {
     public record ChatTurn(String role, String content) {}
     public record CoachReply(String reply, String source, String languageCode) {}
     public record RecommendationItem(String title, String description) {}
-    public record QuoteResult(String quote, String type, String source) {}
-
-    public QuoteResult generateMotivationQuote(String type) {
-        String safeType = normalizeQuoteType(type);
-
-        if (openRouterService.isConfigured()) {
-            List<OpenRouterService.ChatMessage> payload = new ArrayList<>();
-            payload.add(new OpenRouterService.ChatMessage(
-                    "system",
-                    """
-                    You generate one short quote for a student dashboard.
-                    Return only the quote text.
-                    Keep it under 18 words.
-                    No quotation marks, no author, no markdown.
-                    """
-            ));
-            payload.add(new OpenRouterService.ChatMessage(
-                    "user",
-                    "Quote type: " + safeType + ". Make it practical and student-friendly."
-            ));
-            String response = openRouterService.chat(payload, "anthropic/claude-3-haiku", 0.55, 80);
-            if (response != null && !response.isBlank()) {
-                return new QuoteResult(limit(response.replace("\n", " ").trim(), 140), safeType, "ai");
-            }
-        }
-
-        return new QuoteResult(fallbackQuote(safeType), safeType, "fallback");
-    }
+    public record QuoteResult(String quote, String source, String type) {}
 
     public List<RecommendationItem> generateRecommendations(int stressLevel10, String mood, List<String> signals) {
         int safeStress = Math.max(1, Math.min(10, stressLevel10));
@@ -78,6 +51,80 @@ public class WellbeingAiService {
         return fallbackRecommendations(safeStress, safeMood);
     }
 
+    public QuoteResult generateMotivationQuote(String type) {
+        String normalizedType = normalizeQuoteType(type);
+
+        Map<String, List<String>> fallbackByType = Map.of(
+                "motivation", List.of(
+                        "Small progress every day beats perfect plans.",
+                        "Breathe. Focus on the next step, not the whole mountain.",
+                        "You do not need to finish everything today. Keep moving.",
+                        "Rest is part of performance, not the opposite of it.",
+                        "Your effort today is building tomorrow's confidence."
+                ),
+                "funny", List.of(
+                        "If stress had homework, we would both ignore it tonight.",
+                        "Deep breath. You are not a robot, even on deadline mode.",
+                        "Your brain is buffering. Hydrate and press refresh.",
+                        "Study plan: tea, tiny steps, dramatic success later.",
+                        "Even Wi-Fi drops. You can pause and reconnect too."
+                ),
+                "calm", List.of(
+                        "Slow breath in, slower breath out. You are safe now.",
+                        "Soft shoulders, relaxed jaw, one quiet moment at a time.",
+                        "Let today be gentle. Peace grows in small pauses.",
+                        "Calm is a skill. Practice one breath at a time.",
+                        "Be kind to yourself. Recovery is productive too."
+                ),
+                "focus", List.of(
+                        "One task. One timer. One win. Repeat.",
+                        "Start small, stay steady, finish strong.",
+                        "Close distractions. Open your next step.",
+                        "Progress loves consistency more than intensity.",
+                        "Done is built from focused minutes, not perfect hours."
+                )
+        );
+
+        List<String> fallbackQuotes = fallbackByType.getOrDefault(normalizedType, fallbackByType.get("motivation"));
+
+        if (!openRouterService.isConfigured()) {
+            return new QuoteResult(pickRandom(fallbackQuotes), "fallback", normalizedType);
+        }
+
+        try {
+            String style = switch (normalizedType) {
+                case "funny" -> "lightly funny";
+                case "calm" -> "calming";
+                case "focus" -> "focus-oriented";
+                default -> "motivational";
+            };
+
+            List<OpenRouterService.ChatMessage> payload = List.of(
+                    new OpenRouterService.ChatMessage(
+                            "system",
+                            "Return one short " + style + " quote for stressed students. 8 to 18 words."
+                    ),
+                    new OpenRouterService.ChatMessage(
+                            "user",
+                            "Type: " + normalizedType + ". Give one quote only, no hashtags, no emojis."
+                    )
+            );
+
+            String aiQuote = openRouterService.chat(payload, "anthropic/claude-3-haiku", 0.9, 60);
+            if (aiQuote == null || aiQuote.isBlank()) {
+                return new QuoteResult(pickRandom(fallbackQuotes), "fallback", normalizedType);
+            }
+
+            String cleaned = aiQuote.trim().replaceAll("^\"|\"$", "");
+            if (cleaned.isBlank()) {
+                return new QuoteResult(pickRandom(fallbackQuotes), "fallback", normalizedType);
+            }
+            return new QuoteResult(cleaned, "ai", normalizedType);
+        } catch (Exception ignored) {
+            return new QuoteResult(pickRandom(fallbackQuotes), "fallback", normalizedType);
+        }
+    }
+
     public CoachReply coachReply(
             String message,
             List<ChatTurn> history,
@@ -95,9 +142,9 @@ public class WellbeingAiService {
             );
         }
 
-        String languageCode = normalizeLanguageCode(preferredLanguageCode, safeMessage);
+        String languageCode = "en-US";
         String intent = detectIntent(safeMessage);
-        String languageInstruction = languageInstructionFromCode(languageCode);
+        String languageInstruction = "English";
         String safeMode = mode == null || mode.isBlank() ? "general" : mode.trim().toLowerCase(Locale.ROOT);
         String safeStyle = style == null || style.isBlank() ? "direct" : style.trim().toLowerCase(Locale.ROOT);
         String safeLevel = level == null || level.isBlank() ? "professional" : level.trim().toLowerCase(Locale.ROOT);
@@ -107,16 +154,18 @@ public class WellbeingAiService {
             payload.add(new OpenRouterService.ChatMessage(
                     "system",
                     """
-                    You are RLIFE AI Assistant for students.
+                    You are a calm breathing coach assistant.
+                    Guide the user through a stress-relief breathing exercise
+                    with a soft, slow, and reassuring voice. Speak in English only.
+                    Example script:
+                    "Hello, I am here to help you relax.
+                    Breathe in slowly for 4 seconds... hold...
+                    and breathe out gently for 8 seconds.
+                    You are doing great, stay calm."
                     Rules:
-                    - You can answer both general questions and wellbeing questions.
-                    - Be warm, practical, and supportive.
                     - Reply ONLY in %s.
-                    - Use the student's last message explicitly and respond directly.
-                    - Avoid repetitive generic openings.
-                    - Provide concise advice with 2 to 5 bullet points.
-                    - Ask at most one clarifying question, only if needed.
-                    - Do not pretend to be a doctor.
+                    - Keep responses calming, concise, and supportive.
+                    - Use simple breathing guidance such as inhale, hold, and exhale timing.
                     - If user mentions self-harm/suicide/danger: show empathy and strongly urge immediate emergency/crisis help.
                     Context:
                     - Detected intent: %s
@@ -578,6 +627,30 @@ public class WellbeingAiService {
         return items;
     }
 
+    private String normalizeQuoteType(String type) {
+        String value = type == null ? "motivation" : type.trim().toLowerCase(Locale.ROOT);
+        Map<String, String> aliases = Map.of(
+                "fanny", "funny",
+                "fun", "funny",
+                "motivational", "motivation",
+                "relax", "calm",
+                "calme", "calm",
+                "study", "focus"
+        );
+        value = aliases.getOrDefault(value, value);
+        if (!List.of("motivation", "funny", "calm", "focus").contains(value)) {
+            return "motivation";
+        }
+        return value;
+    }
+
+    private String pickRandom(List<String> values) {
+        if (values == null || values.isEmpty()) {
+            return "Keep going.";
+        }
+        return values.get(ThreadLocalRandom.current().nextInt(values.size()));
+    }
+
     private List<RecommendationItem> fallbackRecommendations(int stressLevel10, String mood) {
         List<RecommendationItem> high = List.of(
                 new RecommendationItem("Breathing Reset", "Try 4-7-8 breathing for 3 rounds before your next task."),
@@ -616,39 +689,5 @@ public class WellbeingAiService {
 
         int count = Math.min(3, source.size());
         return new ArrayList<>(source.subList(0, count));
-    }
-
-    private String normalizeQuoteType(String value) {
-        String type = value == null ? "motivation" : value.trim().toLowerCase(Locale.ROOT);
-        if (!containsAny(type, "motivation", "focus", "calm", "funny")) {
-            return "motivation";
-        }
-        return type;
-    }
-
-    private String fallbackQuote(String type) {
-        List<String> quotes = switch (type) {
-            case "focus" -> List.of(
-                    "One clear task beats ten vague intentions.",
-                    "Protect your focus before you protect your speed.",
-                    "Start with the next step, not the whole mountain."
-            );
-            case "calm" -> List.of(
-                    "Slow breathing is still progress.",
-                    "Calm decisions usually create better days.",
-                    "You do not need to solve everything tonight."
-            );
-            case "funny" -> List.of(
-                    "Your to-do list is loud, but you are still in charge.",
-                    "Surviving one tab at a time still counts as productivity.",
-                    "Even your deadlines want you to drink water."
-            );
-            default -> List.of(
-                    "Small progress every day beats perfect plans.",
-                    "Start before you feel fully ready.",
-                    "Consistency makes hard things look easy later."
-            );
-        };
-        return quotes.get(ThreadLocalRandom.current().nextInt(quotes.size()));
     }
 }

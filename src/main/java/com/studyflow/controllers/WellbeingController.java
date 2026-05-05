@@ -9,6 +9,7 @@ import com.studyflow.models.QuizStress;
 import com.studyflow.models.RecommendationStress;
 import com.studyflow.models.WellbeingJournalEntry;
 import com.studyflow.services.GroqMoodService;
+import com.studyflow.services.GroqTtsService;
 import com.studyflow.services.MoodCameraAnalysisService;
 import com.studyflow.services.ServiceCopingSession;
 import com.studyflow.services.ServiceQuestionStress;
@@ -21,6 +22,10 @@ import com.studyflow.services.WellbeingAiService;
 import com.studyflow.utils.UserSession;
 import com.studyflow.utils.EmojiUtils;
 import javafx.animation.KeyFrame;
+import javafx.animation.KeyValue;
+import javafx.animation.FadeTransition;
+import javafx.animation.Interpolator;
+import javafx.animation.ScaleTransition;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
@@ -36,6 +41,8 @@ import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.chart.BarChart;
 import javafx.scene.chart.XYChart;
+import javafx.scene.canvas.Canvas;
+import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
@@ -53,6 +60,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.control.Toggle;
 import javafx.scene.control.ToggleGroup;
+import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
@@ -61,7 +69,14 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.media.Media;
+import javafx.scene.media.MediaPlayer;
+import javafx.scene.paint.CycleMethod;
+import javafx.scene.paint.RadialGradient;
 import javafx.scene.paint.Color;
+import javafx.scene.paint.Stop;
+import javafx.scene.shape.Circle;
+import javafx.scene.shape.Ellipse;
 import javafx.scene.web.WebEngine;
 import javafx.scene.web.WebView;
 import javafx.stage.Modality;
@@ -72,15 +87,18 @@ import javax.sound.sampled.AudioFileFormat;
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Clip;
 import javax.sound.sampled.DataLine;
 import javax.sound.sampled.LineUnavailableException;
+import javax.sound.sampled.SourceDataLine;
 import javax.sound.sampled.TargetDataLine;
 import javax.imageio.ImageIO;
-import java.awt.Desktop;
 import java.io.ByteArrayInputStream;
+import java.security.MessageDigest;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.image.BufferedImage;
 import java.net.URI;
@@ -105,9 +123,19 @@ import java.util.Base64;
 import java.util.Collections;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.prefs.Preferences;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.io.ByteArrayInputStream;
+import java.net.URLDecoder;
 
 public class WellbeingController implements Initializable {
     private enum QuizMode {
@@ -199,6 +227,7 @@ public class WellbeingController implements Initializable {
     private final SpeechToTextService speechToTextService = new SpeechToTextService();
     private final WellbeingAiService wellbeingAiService = new WellbeingAiService();
     private final GroqMoodService groqMoodService = new GroqMoodService();
+    private final GroqTtsService groqTtsService = new GroqTtsService();
     private final MoodCameraAnalysisService moodCameraAnalysisService = new MoodCameraAnalysisService();
     private final ObservableList<WellBeing> allCheckins = FXCollections.observableArrayList();
     private final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("MMM d, yyyy");
@@ -223,43 +252,66 @@ public class WellbeingController implements Initializable {
     private static final String PREF_QUOTE_DISMISSED_UNTIL = "global.quote.dismissed.until";
     private static final String PREF_QUOTE_POS_X = "global.quote.position.x";
     private static final String PREF_QUOTE_POS_Y = "global.quote.position.y";
+    private static final String PREF_SPOTIFY_VISIBLE = "global.spotify.visible";
+    private static final String PREF_SPOTIFY_EXPANDED = "global.spotify.expanded";
+    private static final String PREF_SPOTIFY_PRESET = "global.spotify.preset";
     private static final int MOOD_EMOJI_SIZE = 56;
     private static final int MOOD_EMOJI_FALLBACK_FONT_SIZE = 50;
     private static final int MOOD_CAMERA_SAMPLE_COUNT = 3;
     private static final double MOOD_CAMERA_MIN_CONFIDENCE_TO_SAVE = 0.45;
+    private static final int YOGA_IMAGE_WIDTH = 768;
+    private static final int YOGA_IMAGE_HEIGHT = 448;
+    private static final int YOGA_MAX_ATTEMPTS = 5;
+    private static final double YOGA_RETRY_SECONDS = 0.8;
     private final Preferences preferences = Preferences.userNodeForPackage(MainController.class);
     private Runnable activeInlineToolCloser;
     private Timeline globalMessageTimer;
+    private StackPane breathingOverlayLayer;
+    private Runnable breathingOverlayCloser;
+    private volatile Thread breathingSpeechThread;
+    private volatile Clip breathingClip;
+    private volatile SourceDataLine breathingSpeechLine;
+    private volatile MediaPlayer breathingMusicPlayer;
+    private volatile MediaPlayer breathingAssistantVoicePlayer;
+    private volatile Label breathingAssistantStatusLabel;
+    private volatile Circle breathingAssistantStatusDot;
+    private final AtomicLong breathingSpeechSeq = new AtomicLong(0);
+    private static final String ASSISTANT_GROQ_VOICE_RESOURCE = "/com/studyflow/audio/assistant_groq.wav";
     private String journalAutoCandidateCode = "";
     private int journalAutoCandidateHits = 0;
     private final AtomicBoolean moodDetectionInProgress = new AtomicBoolean(false);
     private final AtomicBoolean moodCameraRunning = new AtomicBoolean(false);
+    private final AtomicInteger yogaImageRequestSeq = new AtomicInteger(0);
+    private final Map<String, Image> yogaImageCache = new HashMap<>();
+    private final Map<String, String> yogaImageHashByExercise = new HashMap<>();
+    private String lastYogaImageHash = "";
+    private String lastYogaExerciseTitle = "";
+    private final String hfToken = System.getenv("HF_TOKEN");
+    private final HttpClient yogaImageHttpClient = HttpClient.newBuilder()
+            .connectTimeout(Duration.ofSeconds(12))
+            .build();
+    private record DownloadedYogaImage(Image image, String hash) {}
     private Webcam activeMoodWebcam;
     private Thread activeMoodCameraThread;
     private record CopingToolDef(String key, String title, String durationLabel, int durationSeconds, String description) {}
+    private record YogaExercise(String title, String description, String imagePrompt, String howTo) {}
     private record MoodEntry(String day, String mood, String icon, String color) {}
     private record HabitData(String name, String icon, String color, boolean[] weekProgress) {}
     private record MindfulnessSession(String title, String duration, String icon, String color) {}
     private record SleepEntry(String day, double hours, String quality) {}
     private record AiSuggestionItem(String title, String content) {}
+    private record YogaAssistantProfile(String key) {}
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         hideGlobalMessage();
-        try {
-            setupFilters();
-            setupForm();
-            setupQuoteControls();
-            loadData();
-            showOverviewMode();
-            syncCameraMoodLabelFromSession();
-            tryDetectMoodFromFaceIdSnapshot();
-        } catch (Exception e) {
-            allCheckins.clear();
-            showOverviewMode();
-            showError("Wellbeing data could not be loaded right now. Check the database connection and try again.");
-            e.printStackTrace();
-        }
+        setupFilters();
+        setupForm();
+        setupQuoteControls();
+        loadData();
+        showOverviewMode();
+        syncCameraMoodLabelFromSession();
+        tryDetectMoodFromFaceIdSnapshot();
     }
 
     private void setupQuoteControls() {
@@ -759,7 +811,13 @@ public class WellbeingController implements Initializable {
             case "gratitude_journal" -> openJournalTool(session);
             case "yoga_coach" -> openYogaTool(session);
             case "ai_chat_coach" -> openAiChatTool(session);
-            case "nature_sounds" -> openNatureSoundsTool(session);
+            case "nature_sounds" -> {
+                preferences.putBoolean(PREF_SPOTIFY_VISIBLE, true);
+                preferences.putBoolean(PREF_SPOTIFY_EXPANDED, true);
+                preferences.put(PREF_SPOTIFY_PRESET, "nature");
+                showGlobalMessage("Spotify widget opened.", false);
+                closeSession(session, LocalDateTime.now(), true);
+            }
             case "mood_camera" -> openMoodCameraTool(session);
             default -> openBreathingTool(session);
         }
@@ -830,6 +888,7 @@ public class WellbeingController implements Initializable {
     @FXML
     private void handleCloseInlineTool() {
         stopActiveMoodCamera();
+        hideBreathingOverlay();
         if (activeInlineToolCloser != null) {
             activeInlineToolCloser.run();
             activeInlineToolCloser = null;
@@ -844,79 +903,354 @@ public class WellbeingController implements Initializable {
     }
 
     private void openBreathingTool(CopingSession session) {
-        Label phaseLabel = new Label("Ready to breathe");
-        phaseLabel.getStyleClass().add("text-heading");
-        phaseLabel.setStyle("-fx-font-size: 22px;");
+        final String[] phases = {"Breathe in slowly...", "Hold gently...", "Exhale with ease..."};
+        final int[] phaseDurations = {4, 7, 8};
+        final double[] fromScale = {0.80, 1.05, 1.05};
+        final double[] toScale = {1.05, 1.05, 0.80};
+        final int[] phaseIndex = {1};
+        final int[] roundsDone = {0};
+        final boolean[] running = {false};
+        final boolean[] voiceMode = {true};
+        final boolean[] completed = {false};
+        final Timeline[] phaseSwitch = new Timeline[1];
+        final Timeline[] progressTimeline = new Timeline[1];
+        final ScaleTransition[] orbScale = new ScaleTransition[1];
 
-        Label statusLabel = new Label("Pattern: Inhale 4s - Hold 7s - Exhale 8s");
-        statusLabel.getStyleClass().add("text-small");
-        Label roundLabel = new Label("Round 0/3");
-        roundLabel.getStyleClass().add("text-body");
+        StackPane sceneRoot = new StackPane();
+        sceneRoot.setStyle("-fx-background-color: #050d1a;");
 
-        int[] phaseIndex = {0};
-        int[] phaseSecondsLeft = {4};
-        int[] round = {0};
-        String[] phases = {"Inhale slowly...", "Hold gently...", "Exhale softly..."};
-        int[] phaseDurations = {4, 7, 8};
-        boolean[] completed = {false};
+        Canvas starCanvas = new Canvas(520, 760);
+        GraphicsContext gc = starCanvas.getGraphicsContext2D();
+        for (int i = 0; i < 130; i++) {
+            double x = ThreadLocalRandom.current().nextDouble(0, 520);
+            double y = ThreadLocalRandom.current().nextDouble(0, 760);
+            double r = ThreadLocalRandom.current().nextDouble(0.4, 1.6);
+            double a = ThreadLocalRandom.current().nextDouble(0.1, 0.5);
+            gc.setFill(Color.color(0.70, 0.86, 1.0, a));
+            gc.fillOval(x - r, y - r, r * 2, r * 2);
+        }
 
-        Timeline[] timeline = new Timeline[1];
-        timeline[0] = new Timeline(new KeyFrame(javafx.util.Duration.seconds(1), e -> {
-            if (round[0] >= 3) {
-                return;
-            }
+        VBox card = new VBox(0);
+        card.setAlignment(Pos.TOP_CENTER);
+        card.setMaxWidth(460);
+        card.setPadding(new Insets(30, 24, 24, 24));
+        card.setStyle(
+                "-fx-background-color: rgba(255,255,255,0.03);" +
+                "-fx-border-color: rgba(120,200,255,0.15);" +
+                "-fx-border-width: 0.5;" +
+                "-fx-border-radius: 24;" +
+                "-fx-background-radius: 24;"
+        );
 
-            phaseSecondsLeft[0]--;
-            if (phaseSecondsLeft[0] > 0) {
-                phaseLabel.setText(phases[phaseIndex[0]] + " (" + phaseSecondsLeft[0] + "s)");
-                return;
-            }
+        Label eyebrow = new Label("RELAX SESSION");
+        eyebrow.setStyle("-fx-text-fill: #4ab8d8; -fx-font-size: 10px; -fx-font-weight: 700;");
+        VBox.setMargin(eyebrow, new Insets(0, 0, 10, 0));
 
-            phaseIndex[0]++;
-            if (phaseIndex[0] >= phases.length) {
-                phaseIndex[0] = 0;
-                round[0]++;
-                roundLabel.setText("Round " + Math.min(round[0], 3) + "/3");
-                if (round[0] >= 3) {
-                    completed[0] = true;
-                    timeline[0].stop();
-                    phaseLabel.setText("Session complete");
-                    statusLabel.setText("Great job. You completed all breathing rounds.");
-                    return;
+        Label title = new Label("Assistant Respiration");
+        title.setStyle("-fx-text-fill: #ddf0ff; -fx-font-size: 42px;");
+        VBox.setMargin(title, new Insets(0, 0, 4, 0));
+
+        Label tagline = new Label("Soft voice and slow breathing guidance to calm stress.");
+        tagline.setStyle("-fx-text-fill: #5f89a2; -fx-font-size: 12px; -fx-font-style: italic;");
+        VBox.setMargin(tagline, new Insets(0, 0, 22, 0));
+
+        StackPane orbStage = new StackPane();
+        orbStage.setStyle(
+                "-fx-background-color: rgba(0,0,0,0.35);" +
+                "-fx-border-color: rgba(80,180,220,0.08);" +
+                "-fx-border-width: 0.5;" +
+                "-fx-border-radius: 18;" +
+                "-fx-background-radius: 18;"
+        );
+        orbStage.setPadding(new Insets(32, 20, 24, 20));
+        orbStage.setMinHeight(320);
+        VBox.setMargin(orbStage, new Insets(0, 0, 16, 0));
+
+        for (int i = 0; i < 3; i++) {
+            Circle ring = new Circle(60);
+            ring.setFill(Color.TRANSPARENT);
+            ring.setStroke(Color.web("#3cb4f0", 0.06));
+            ring.setStrokeWidth(1);
+            ScaleTransition rippleScale = new ScaleTransition(javafx.util.Duration.seconds(6), ring);
+            rippleScale.setFromX(1);
+            rippleScale.setFromY(1);
+            rippleScale.setToX(2.5);
+            rippleScale.setToY(2.5);
+            rippleScale.setCycleCount(Timeline.INDEFINITE);
+            FadeTransition rippleFade = new FadeTransition(javafx.util.Duration.seconds(6), ring);
+            rippleFade.setFromValue(0.5);
+            rippleFade.setToValue(0.0);
+            rippleFade.setCycleCount(Timeline.INDEFINITE);
+            rippleScale.setDelay(javafx.util.Duration.seconds(i * 2));
+            rippleFade.setDelay(javafx.util.Duration.seconds(i * 2));
+            rippleScale.play();
+            rippleFade.play();
+            orbStage.getChildren().add(ring);
+        }
+
+        Circle halo = new Circle(80);
+        halo.setFill(new RadialGradient(
+                0, 0, 0.5, 0.5, 0.8, true, CycleMethod.NO_CYCLE,
+                new Stop(0, Color.web("#1ea0f0", 0.22)),
+                new Stop(1, Color.TRANSPARENT)
+        ));
+        ScaleTransition haloScale = new ScaleTransition(javafx.util.Duration.seconds(4), halo);
+        haloScale.setFromX(0.9);
+        haloScale.setFromY(0.9);
+        haloScale.setToX(1.1);
+        haloScale.setToY(1.1);
+        haloScale.setAutoReverse(true);
+        haloScale.setCycleCount(Timeline.INDEFINITE);
+        haloScale.play();
+
+        Circle orb = new Circle(64);
+        orb.setFill(new RadialGradient(
+                -20, -20, 0.38, 0.32, 0.7, true, CycleMethod.NO_CYCLE,
+                new Stop(0.00, Color.web("#b8eaff", 0.80)),
+                new Stop(0.20, Color.web("#1a8cc4", 0.70)),
+                new Stop(0.55, Color.web("#0a4070", 0.90)),
+                new Stop(1.00, Color.web("#020f23", 1.00))
+        ));
+        orb.setStroke(Color.web("#2de8f0", 0.18));
+        orb.setStrokeWidth(1);
+
+        Ellipse shine = new Ellipse(18, 11);
+        shine.setFill(Color.web("#ffffff", 0.22));
+        shine.setTranslateX(-22);
+        shine.setTranslateY(-22);
+        shine.setRotate(-20);
+
+        StackPane orbGroup = new StackPane(halo, orb, shine);
+
+        Label phaseLabel = new Label(phases[1]);
+        phaseLabel.setStyle("-fx-text-fill: #6dd4f5; -fx-font-size: 29px; -fx-font-style: italic;");
+
+        Label patternLabel = new Label("PATTERN: INHALE 4S - HOLD 7S - EXHALE 8S");
+        patternLabel.setStyle("-fx-text-fill: #406b80; -fx-font-size: 10px;");
+
+        StackPane progressTrack = new StackPane();
+        progressTrack.setStyle("-fx-background-color: rgba(255,255,255,0.06); -fx-background-radius: 2;");
+        progressTrack.setPrefHeight(3);
+        progressTrack.setMaxWidth(220);
+        progressTrack.setAlignment(Pos.CENTER_LEFT);
+        Region progressFill = new Region();
+        progressFill.setPrefHeight(3);
+        progressFill.setMaxWidth(0);
+        progressFill.setStyle("-fx-background-color: linear-gradient(to right, #1a8cc4, #2de8f0); -fx-background-radius: 2;");
+        progressTrack.getChildren().add(progressFill);
+
+        VBox orbInfo = new VBox(8, phaseLabel, patternLabel, progressTrack);
+        orbInfo.setAlignment(Pos.CENTER);
+        VBox orbContent = new VBox(18, orbGroup, orbInfo);
+        orbContent.setAlignment(Pos.CENTER);
+        orbStage.getChildren().add(orbContent);
+
+        HBox dotRow = new HBox(8);
+        dotRow.setAlignment(Pos.CENTER);
+        Region[] dots = {new Region(), new Region(), new Region()};
+        for (Region dot : dots) {
+            dot.setPrefHeight(4);
+            dot.setPrefWidth(28);
+            dot.setStyle("-fx-background-color: rgba(255,255,255,0.08); -fx-background-radius: 2;");
+            dotRow.getChildren().add(dot);
+        }
+        VBox.setMargin(dotRow, new Insets(0, 0, 16, 0));
+
+        Runnable updateDots = () -> {
+            for (int i = 0; i < dots.length; i++) {
+                if (i == phaseIndex[0]) {
+                    dots[i].setPrefWidth(40);
+                    dots[i].setStyle("-fx-background-color: #1ab8e0; -fx-background-radius: 2;");
+                } else {
+                    dots[i].setPrefWidth(28);
+                    dots[i].setStyle("-fx-background-color: rgba(255,255,255,0.08); -fx-background-radius: 2;");
                 }
             }
-            phaseSecondsLeft[0] = phaseDurations[phaseIndex[0]];
-            phaseLabel.setText(phases[phaseIndex[0]] + " (" + phaseSecondsLeft[0] + "s)");
-        }));
-        timeline[0].setCycleCount(Timeline.INDEFINITE);
+        };
+        updateDots.run();
 
-        Button startBtn = new Button("Start");
-        startBtn.getStyleClass().add("btn-primary");
-        startBtn.setOnAction(e -> {
-            round[0] = 0;
-            phaseIndex[0] = 0;
-            phaseSecondsLeft[0] = phaseDurations[0];
-            completed[0] = false;
-            roundLabel.setText("Round 0/3");
-            phaseLabel.setText(phases[0] + " (" + phaseSecondsLeft[0] + "s)");
-            statusLabel.setText("Breathing session running...");
-            timeline[0].playFromStart();
-        });
+        Label statusLabel = new Label("Assistant status: speaking with soft voice");
+        statusLabel.setStyle("-fx-text-fill: #2a566e; -fx-font-size: 11px; -fx-font-style: italic;");
+        Circle statusDot = new Circle(3.5, Color.web("#1ab8e0"));
+        FadeTransition statusBlink = new FadeTransition(javafx.util.Duration.seconds(2.4), statusDot);
+        statusBlink.setFromValue(1.0);
+        statusBlink.setToValue(0.25);
+        statusBlink.setAutoReverse(true);
+        statusBlink.setCycleCount(Timeline.INDEFINITE);
+        statusBlink.play();
 
-        Button stopBtn = new Button("Stop");
-        stopBtn.getStyleClass().add("btn-danger");
-        stopBtn.setOnAction(e -> {
-            timeline[0].stop();
-            phaseLabel.setText("Session stopped");
-            statusLabel.setText("You can restart anytime.");
-        });
+        Runnable stopAnimations = () -> {
+            if (phaseSwitch[0] != null) phaseSwitch[0].stop();
+            if (progressTimeline[0] != null) progressTimeline[0].stop();
+            if (orbScale[0] != null) orbScale[0].stop();
+            progressFill.setMaxWidth(0);
+        };
 
+        Runnable[] startCycle = new Runnable[1];
+        startCycle[0] = () -> {
+            if (!running[0]) return;
+
+            updateDots.run();
+            double durationSec = phaseDurations[phaseIndex[0]];
+            phaseLabel.setOpacity(0);
+            phaseLabel.setText(phases[phaseIndex[0]]);
+            FadeTransition phaseFade = new FadeTransition(javafx.util.Duration.millis(350), phaseLabel);
+            phaseFade.setFromValue(0);
+            phaseFade.setToValue(1);
+            phaseFade.play();
+
+            if (orbScale[0] != null) orbScale[0].stop();
+            orbScale[0] = new ScaleTransition(javafx.util.Duration.seconds(durationSec), orb);
+            orbScale[0].setFromX(fromScale[phaseIndex[0]]);
+            orbScale[0].setFromY(fromScale[phaseIndex[0]]);
+            orbScale[0].setToX(toScale[phaseIndex[0]]);
+            orbScale[0].setToY(toScale[phaseIndex[0]]);
+            orbScale[0].setInterpolator(
+                    phaseIndex[0] == 0 ? Interpolator.EASE_IN : (phaseIndex[0] == 2 ? Interpolator.EASE_OUT : Interpolator.LINEAR)
+            );
+            orbScale[0].play();
+
+            if (progressTimeline[0] != null) progressTimeline[0].stop();
+            progressFill.setMaxWidth(0);
+            progressTimeline[0] = new Timeline(
+                    new KeyFrame(javafx.util.Duration.ZERO, new KeyValue(progressFill.maxWidthProperty(), 0)),
+                    new KeyFrame(javafx.util.Duration.seconds(durationSec), new KeyValue(progressFill.maxWidthProperty(), 220, Interpolator.LINEAR))
+            );
+            progressTimeline[0].play();
+
+            if (phaseSwitch[0] != null) phaseSwitch[0].stop();
+            phaseSwitch[0] = new Timeline(new KeyFrame(javafx.util.Duration.seconds(durationSec), e -> {
+                phaseIndex[0] = (phaseIndex[0] + 1) % 3;
+                if (phaseIndex[0] == 0) {
+                    roundsDone[0]++;
+                    if (roundsDone[0] >= 3) {
+                        running[0] = false;
+                        completed[0] = true;
+                        stopAnimations.run();
+                        phaseLabel.setText("Session complete");
+                        statusDot.setFill(Color.web("#1ab8e0"));
+                        statusLabel.setStyle("-fx-text-fill: #2a566e; -fx-font-size: 11px; -fx-font-style: italic;");
+                        statusLabel.setText("Great job. You completed all breathing rounds.");
+                        if (voiceMode[0]) {
+                            speakBreathingText("Great job. You completed all breathing rounds.");
+                        }
+                        return;
+                    }
+                }
+                startCycle[0].run();
+            }));
+            phaseSwitch[0].play();
+
+            if (voiceMode[0]) {
+                speakBreathingText(phases[phaseIndex[0]]);
+            }
+        };
+
+        String primaryStyle =
+                "-fx-background-color: linear-gradient(to bottom right, #0d8ec4, #06b4d6);" +
+                "-fx-text-fill: #e8f8ff;" +
+                "-fx-font-size: 13;" +
+                "-fx-font-weight: 700;" +
+                "-fx-background-radius: 14;" +
+                "-fx-cursor: hand;";
+        String dangerStyle =
+                "-fx-background-color: rgba(140,30,55,0.7);" +
+                "-fx-text-fill: #f08aaa;" +
+                "-fx-font-size: 13;" +
+                "-fx-background-radius: 14;" +
+                "-fx-border-color: rgba(200,50,85,0.25);" +
+                "-fx-border-width: 0.5;" +
+                "-fx-border-radius: 14;" +
+                "-fx-cursor: hand;";
+        String ghostStyle =
+                "-fx-background-color: rgba(255,255,255,0.04);" +
+                "-fx-text-fill: #7ab2cc;" +
+                "-fx-font-size: 13;" +
+                "-fx-background-radius: 14;" +
+                "-fx-border-color: rgba(255,255,255,0.09);" +
+                "-fx-border-width: 0.5;" +
+                "-fx-border-radius: 14;" +
+                "-fx-cursor: hand;";
+
+        Button startVoiceBtn = new Button("Start Voice Assistant");
+        startVoiceBtn.setStyle(primaryStyle);
+        startVoiceBtn.setPadding(new Insets(13, 10, 13, 10));
+        Button stopVoiceBtn = new Button("Stop Voice");
+        stopVoiceBtn.setStyle(dangerStyle);
+        stopVoiceBtn.setPadding(new Insets(13, 10, 13, 10));
+        Button startVisualBtn = new Button("Start Visual Only");
+        startVisualBtn.setStyle(ghostStyle);
+        startVisualBtn.setPadding(new Insets(13, 10, 13, 10));
         Button closeBtn = new Button("Close");
-        closeBtn.getStyleClass().add("btn-secondary");
+        closeBtn.setStyle(ghostStyle);
+        closeBtn.setPadding(new Insets(13, 10, 13, 10));
 
-        HBox controls = new HBox(10, startBtn, stopBtn, closeBtn);
-        VBox root = new VBox(12, phaseLabel, statusLabel, roundLabel, controls);
-        Stage stage = createToolStage("Breathing Exercise", root, 520, 280);
+        HBox primaryButtons = new HBox(10, startVoiceBtn, stopVoiceBtn);
+        HBox secondaryButtons = new HBox(10, startVisualBtn, closeBtn);
+        HBox.setHgrow(startVoiceBtn, Priority.ALWAYS);
+        HBox.setHgrow(stopVoiceBtn, Priority.ALWAYS);
+        HBox.setHgrow(startVisualBtn, Priority.ALWAYS);
+        HBox.setHgrow(closeBtn, Priority.ALWAYS);
+        startVoiceBtn.setMaxWidth(Double.MAX_VALUE);
+        stopVoiceBtn.setMaxWidth(Double.MAX_VALUE);
+        startVisualBtn.setMaxWidth(Double.MAX_VALUE);
+        closeBtn.setMaxWidth(Double.MAX_VALUE);
+        VBox.setMargin(primaryButtons, new Insets(0, 0, 10, 0));
+
+        HBox statusBar = new HBox(8, statusDot, statusLabel);
+        statusBar.setAlignment(Pos.CENTER);
+        VBox.setMargin(statusBar, new Insets(14, 0, 0, 0));
+        breathingAssistantStatusLabel = statusLabel;
+        breathingAssistantStatusDot = statusDot;
+
+        Runnable startSession = () -> {
+            running[0] = true;
+            voiceMode[0] = true;
+            completed[0] = false;
+            phaseIndex[0] = 0;
+            roundsDone[0] = 0;
+            statusDot.setFill(Color.web("#1ab8e0"));
+            statusLabel.setStyle("-fx-text-fill: #2a566e; -fx-font-size: 11px; -fx-font-style: italic;");
+            statusLabel.setText("Assistant status: speaking with soft voice");
+            startBreathingBackgroundMusic();
+            startAssistantVoiceTrack();
+            stopAnimations.run();
+            startCycle[0].run();
+        };
+        startVoiceBtn.setOnAction(e -> startSession.run());
+
+        stopVoiceBtn.setOnAction(e -> {
+            running[0] = false;
+            stopAnimations.run();
+            stopBreathingSpeech();
+            stopAssistantVoiceTrack();
+            stopBreathingBackgroundMusic();
+            phaseLabel.setText("Session paused");
+            statusDot.setFill(Color.web("#e05a7a"));
+            statusLabel.setStyle("-fx-text-fill: #e05a7a; -fx-font-size: 11px; -fx-font-style: italic;");
+            statusLabel.setText("Assistant status: voice paused");
+        });
+
+        startVisualBtn.setOnAction(e -> {
+            running[0] = true;
+            voiceMode[0] = false;
+            completed[0] = false;
+            phaseIndex[0] = 0;
+            roundsDone[0] = 0;
+            stopBreathingSpeech();
+            stopAssistantVoiceTrack();
+            startBreathingBackgroundMusic();
+            statusDot.setFill(Color.web("#5bc8e8"));
+            statusLabel.setStyle("-fx-text-fill: #2a566e; -fx-font-size: 11px; -fx-font-style: italic;");
+            statusLabel.setText("Assistant status: visual guide only");
+            stopAnimations.run();
+            startCycle[0].run();
+        });
+
+        card.getChildren().addAll(
+                eyebrow, title, tagline, orbStage, dotRow, primaryButtons, secondaryButtons, statusBar
+        );
+        sceneRoot.getChildren().addAll(starCanvas, card);
 
         LocalDateTime openedAt = LocalDateTime.now();
         AtomicBoolean sessionClosed = new AtomicBoolean(false);
@@ -924,15 +1258,77 @@ public class WellbeingController implements Initializable {
             if (sessionClosed.getAndSet(true)) {
                 return;
             }
-            timeline[0].stop();
+            running[0] = false;
+            stopAnimations.run();
+            stopBreathingSpeech();
+            stopAssistantVoiceTrack();
+            stopBreathingBackgroundMusic();
             closeSession(session, openedAt, completed[0]);
         };
         closeBtn.setOnAction(e -> {
             closer.run();
-            stage.close();
+            hideBreathingOverlay();
         });
-        stage.setOnCloseRequest(e -> closer.run());
-        stage.show();
+        showBreathingOverlay(sceneRoot, closer);
+
+        startSession.run();
+    }
+
+    private void showBreathingOverlay(Node content, Runnable closer) {
+        if (content == null || moodLabel == null || moodLabel.getScene() == null) {
+            return;
+        }
+        hideBreathingOverlay();
+        Node rootNode = moodLabel.getScene().getRoot();
+        if (!(rootNode instanceof Pane host)) {
+            return;
+        }
+
+        breathingOverlayCloser = closer;
+        StackPane overlay = new StackPane();
+        overlay.setStyle("-fx-background-color: rgba(2, 6, 23, 0.62);");
+        overlay.setPickOnBounds(true);
+        overlay.prefWidthProperty().bind(host.widthProperty());
+        overlay.prefHeightProperty().bind(host.heightProperty());
+
+        StackPane modalShell = new StackPane(content);
+        modalShell.setMaxWidth(560);
+        modalShell.setMaxHeight(820);
+        modalShell.setStyle(
+                "-fx-background-color: rgba(15, 23, 42, 0.72);" +
+                "-fx-border-color: rgba(148,163,184,0.28);" +
+                "-fx-border-width: 1;" +
+                "-fx-border-radius: 16;" +
+                "-fx-background-radius: 16;" +
+                "-fx-padding: 18;"
+        );
+        overlay.getChildren().add(modalShell);
+        StackPane.setAlignment(modalShell, Pos.CENTER);
+        overlay.setOnMouseClicked(e -> {
+            if (e.getTarget() == overlay) {
+                hideBreathingOverlay();
+            }
+        });
+
+        breathingOverlayLayer = overlay;
+        host.getChildren().add(overlay);
+        overlay.toFront();
+    }
+
+    private void hideBreathingOverlay() {
+        if (breathingOverlayCloser != null) {
+            Runnable closer = breathingOverlayCloser;
+            breathingOverlayCloser = null;
+            closer.run();
+        }
+        if (breathingOverlayLayer == null) {
+            return;
+        }
+        Node rootNode = moodLabel != null && moodLabel.getScene() != null ? moodLabel.getScene().getRoot() : null;
+        if (rootNode instanceof Pane host) {
+            host.getChildren().remove(breathingOverlayLayer);
+        }
+        breathingOverlayLayer = null;
     }
 
     private void openMoodCameraTool(CopingSession session) {
@@ -1585,31 +1981,81 @@ public class WellbeingController implements Initializable {
     }
 
     private void openYogaTool(CopingSession session) {
-        List<String[]> exercises = List.of(
-                new String[]{"Neck Release", "Tilt head gently left and right. Keep shoulders relaxed."},
-                new String[]{"Shoulder Rolls", "Roll shoulders forward then backward with slow breaths."},
-                new String[]{"Seated Twist", "Sit tall and twist softly to each side, no force."},
-                new String[]{"Cat-Cow Stretch", "Alternate arching and rounding your back with your breath."},
-                new String[]{"Child Pose", "Kneel, stretch your arms forward, and breathe deeply."}
-        );
+        String moodKey = resolveCurrentMoodForYoga();
+        YogaAssistantProfile assistantProfile = resolveYogaAssistantProfile();
+        List<YogaExercise> exercises = yogaExercisesForMood(moodKey);
+        int perExerciseSeconds = "stressed".equals(moodKey) || "tired".equals(moodKey) ? 25 : 20;
 
-        Label titleLabel = new Label(exercises.get(0)[0]);
+        Label titleLabel = new Label(exercises.get(0).title());
         titleLabel.getStyleClass().add("text-heading");
-        titleLabel.setStyle("-fx-font-size: 22px;");
-        Label descLabel = new Label(exercises.get(0)[1]);
+        titleLabel.setStyle("-fx-font-size: 34px; -fx-text-fill: #F8FAFC; -fx-font-weight: 800;");
+        Label descLabel = new Label(exercises.get(0).description());
         descLabel.getStyleClass().add("text-body");
         descLabel.setWrapText(true);
-        Label timerLabel = new Label("20s");
+        descLabel.setStyle("-fx-text-fill: #E2E8F0; -fx-font-size: 16px;");
+        Label howToLabel = new Label();
+        howToLabel.setWrapText(true);
+        howToLabel.setStyle("-fx-text-fill: #CBD5E1; -fx-font-size: 14px;");
+        Label timerLabel = new Label(perExerciseSeconds + "s");
         timerLabel.getStyleClass().add("text-subheading");
+        timerLabel.setStyle("-fx-text-fill: #F8FAFC; -fx-font-size: 38px; -fx-font-weight: 800;");
         Label stepLabel = new Label("1/" + exercises.size());
         stepLabel.getStyleClass().add("text-small");
-        Label statusLabel = new Label("Click Start Yoga to begin.");
+        stepLabel.setStyle("-fx-text-fill: #C4B5FD; -fx-font-size: 13px; -fx-font-weight: 700;");
+        Label statusLabel = new Label("Mood: " + capitalize(moodKey) + " • Click Start Yoga to begin.");
         statusLabel.getStyleClass().add("text-small");
+        statusLabel.setStyle("-fx-text-fill: #94A3B8;");
+
+        Label focusLabel = new Label("FOCUS SESSION");
+        focusLabel.setStyle("-fx-text-fill: #A78BFA; -fx-font-size: 11px; -fx-font-weight: 700;");
+        Label coachLabel = new Label("Yoga Coach");
+        coachLabel.setStyle("-fx-text-fill: #F8FAFC; -fx-font-size: 26px; -fx-font-weight: 800;");
+        Label helperLabel = new Label("Exercises adapt to your mood for better relaxation.");
+        helperLabel.setStyle("-fx-text-fill: #CBD5E1; -fx-font-size: 14px;");
+        HBox badges = new HBox(8);
+        Label durationBadge = new Label(perExerciseSeconds + " sec");
+        durationBadge.setStyle("-fx-background-color: rgba(59,130,246,0.25); -fx-text-fill: #BFDBFE; -fx-padding: 4 10; -fx-background-radius: 10; -fx-font-weight: 700;");
+        Label stepsBadge = new Label(exercises.size() + " exercises");
+        stepsBadge.setStyle("-fx-background-color: rgba(129,140,248,0.25); -fx-text-fill: #C7D2FE; -fx-padding: 4 10; -fx-background-radius: 10; -fx-font-weight: 700;");
+        badges.getChildren().addAll(durationBadge, stepsBadge);
+        Region badgeSpacer = new Region();
+        HBox.setHgrow(badgeSpacer, Priority.ALWAYS);
+        VBox titleBlock = new VBox(3, focusLabel, coachLabel, helperLabel);
+        HBox topHeader = new HBox(10, titleBlock, badgeSpacer, badges);
+        topHeader.setAlignment(Pos.CENTER_LEFT);
+
+        VBox exerciseCard = new VBox(10);
+        exerciseCard.setPadding(new Insets(16));
+        exerciseCard.setStyle("-fx-background-color: linear-gradient(to bottom right, #0F172A, #1E293B); -fx-background-radius: 14; -fx-border-color: #334155; -fx-border-radius: 14; -fx-border-width: 1;");
+        HBox exerciseHead = new HBox(10, new VBox(4, titleLabel, descLabel), new Region(), new VBox(2, new Label("Time left"), timerLabel));
+        ((Region) exerciseHead.getChildren().get(1)).setMinWidth(10);
+        HBox.setHgrow(exerciseHead.getChildren().get(1), Priority.ALWAYS);
+        ((Label) ((VBox) exerciseHead.getChildren().get(2)).getChildren().get(0)).setStyle("-fx-text-fill: #CBD5E1; -fx-font-size: 14px; -fx-font-weight: 700;");
+
+        ImageView demoImage = new ImageView();
+        demoImage.setFitWidth(520);
+        demoImage.setFitHeight(300);
+        demoImage.setPreserveRatio(true);
+        StackPane demoImageWrap = new StackPane(demoImage);
+        demoImageWrap.setPadding(new Insets(10));
+        demoImageWrap.setStyle("-fx-background-color: linear-gradient(to bottom right, #1E293B, #334155); -fx-background-radius: 10; -fx-border-color: #64748B; -fx-border-radius: 10;");
+
+        exerciseCard.getChildren().addAll(exerciseHead, demoImageWrap, howToLabel);
 
         int[] index = {0};
-        int[] seconds = {20};
+        int[] seconds = {perExerciseSeconds};
         boolean[] running = {false};
         boolean[] completed = {false};
+
+        Runnable refreshExerciseVisual = () -> {
+            YogaExercise current = exercises.get(index[0]);
+            titleLabel.setText(current.title());
+            descLabel.setText(current.description());
+            howToLabel.setText("How to do it:\n" + current.howTo());
+            stepLabel.setText((index[0] + 1) + "/" + exercises.size());
+            loadYogaImage(demoImage, current.title(), current.imagePrompt(), current.howTo(), assistantProfile.key(), statusLabel);
+        };
+        refreshExerciseVisual.run();
 
         Timeline[] timeline = new Timeline[1];
         timeline[0] = new Timeline(new KeyFrame(javafx.util.Duration.seconds(1), e -> {
@@ -1628,13 +2074,12 @@ public class WellbeingController implements Initializable {
                 titleLabel.setText("Session Complete");
                 descLabel.setText("Great job. You completed all yoga exercises.");
                 statusLabel.setText("Yoga Coach: all exercises completed.");
+                timerLabel.setText("0s");
                 return;
             }
             index[0]++;
-            seconds[0] = 20;
-            titleLabel.setText(exercises.get(index[0])[0]);
-            descLabel.setText(exercises.get(index[0])[1]);
-            stepLabel.setText((index[0] + 1) + "/" + exercises.size());
+            seconds[0] = perExerciseSeconds;
+            refreshExerciseVisual.run();
             timerLabel.setText(seconds[0] + "s");
             statusLabel.setText("Exercise " + (index[0] + 1) + " of " + exercises.size());
         }));
@@ -1645,11 +2090,9 @@ public class WellbeingController implements Initializable {
         startBtn.setOnAction(e -> {
             if (completed[0]) {
                 index[0] = 0;
-                seconds[0] = 20;
+                seconds[0] = perExerciseSeconds;
                 completed[0] = false;
-                titleLabel.setText(exercises.get(0)[0]);
-                descLabel.setText(exercises.get(0)[1]);
-                stepLabel.setText("1/" + exercises.size());
+                refreshExerciseVisual.run();
             }
             running[0] = true;
             timerLabel.setText(seconds[0] + "s");
@@ -1664,10 +2107,8 @@ public class WellbeingController implements Initializable {
                 return;
             }
             index[0]++;
-            seconds[0] = 20;
-            titleLabel.setText(exercises.get(index[0])[0]);
-            descLabel.setText(exercises.get(index[0])[1]);
-            stepLabel.setText((index[0] + 1) + "/" + exercises.size());
+            seconds[0] = perExerciseSeconds;
+            refreshExerciseVisual.run();
             timerLabel.setText(seconds[0] + "s");
             statusLabel.setText("Exercise " + (index[0] + 1) + " of " + exercises.size());
         });
@@ -1675,8 +2116,9 @@ public class WellbeingController implements Initializable {
         Button closeBtn = new Button("Back to Coping Tools");
         closeBtn.getStyleClass().add("btn-secondary");
         HBox controls = new HBox(10, startBtn, nextBtn, closeBtn);
-        VBox root = new VBox(10, titleLabel, descLabel, timerLabel, stepLabel, statusLabel, controls);
-        Stage stage = createToolStage("Yoga Coach", root, 650, 320);
+        VBox root = new VBox(14, topHeader, exerciseCard, stepLabel, statusLabel, controls);
+        root.setPadding(new Insets(16));
+        root.setStyle("-fx-background-color: transparent;");
 
         LocalDateTime openedAt = LocalDateTime.now();
         AtomicBoolean sessionClosed = new AtomicBoolean(false);
@@ -1689,10 +2131,391 @@ public class WellbeingController implements Initializable {
         };
         closeBtn.setOnAction(e -> {
             closer.run();
-            stage.close();
+            handleCloseInlineTool();
         });
-        stage.setOnCloseRequest(e -> closer.run());
-        stage.show();
+        showInlineTool("Yoga Coach", root, closer);
+    }
+
+    private String resolveCurrentMoodForYoga() {
+        String mood = selectedMood;
+        if (!allCheckins.isEmpty()) {
+            WellBeing latest = allCheckins.stream()
+                    .max(Comparator.comparing(WellBeing::getEntryDate))
+                    .orElse(null);
+            if (latest != null && latest.getMood() != null && !latest.getMood().isBlank()) {
+                mood = latest.getMood();
+            }
+        }
+        if (mood == null || mood.isBlank()) {
+            return "good";
+        }
+        return mood.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private List<YogaExercise> yogaExercisesForMood(String mood) {
+        return switch (mood == null ? "" : mood.toLowerCase(Locale.ROOT)) {
+            case "stressed" -> List.of(
+                    new YogaExercise("Neck Release", "Tilt your head left and right very slowly while breathing deeply.", "neck release yoga stretch, seated or standing", "1) Sit or stand tall.\n2) Tilt ear toward shoulder slowly.\n3) Hold 5 seconds each side and repeat."),
+                    new YogaExercise("Shoulder Rolls", "Roll shoulders forward and backward to release neck tension.", "shoulder rolls yoga warm-up", "1) Lift shoulders up.\n2) Roll backward in circles.\n3) Repeat forward then backward 8 times."),
+                    new YogaExercise("Cat-Cow Stretch", "Alternate arching and rounding your spine with your breath.", "cat cow yoga pose on mat", "1) Hands under shoulders, knees under hips.\n2) Inhale: arch chest up.\n3) Exhale: round back and tuck chin."),
+                    new YogaExercise("Child Pose", "Kneel and rest your forehead down to calm the nervous system.", "child pose yoga on mat", "1) Kneel and sit back on heels.\n2) Extend arms forward.\n3) Forehead down, breathe slowly."),
+                    new YogaExercise("Seated Forward Fold", "Fold gently forward and let your jaw and shoulders soften.", "seated forward fold yoga pose", "1) Sit with legs extended.\n2) Hinge from hips, long spine.\n3) Hold ankles/shins and breathe."),
+                    new YogaExercise("Legs Up the Wall", "Lie down and raise legs on a wall for deep relaxation.", "legs up the wall yoga pose", "1) Lie near a wall.\n2) Raise both legs vertically.\n3) Relax shoulders and breathe 1-2 minutes.")
+            );
+            case "tired" -> List.of(
+                    new YogaExercise("Mountain Pose", "Stand tall, root your feet, and take steady energizing breaths.", "mountain pose yoga standing", "1) Feet hip-width apart.\n2) Lengthen spine and soften shoulders.\n3) Take 5 deep breaths."),
+                    new YogaExercise("Half Sun Flow", "Raise arms up and down with synchronized slow breathing.", "half sun flow yoga standing", "1) Inhale arms up overhead.\n2) Exhale arms down by sides.\n3) Repeat slowly for 6 cycles."),
+                    new YogaExercise("Chair Pose", "Bend knees lightly and engage your core for activation.", "chair pose yoga standing", "1) Feet together or hip-width.\n2) Bend knees, hips back.\n3) Arms up, chest lifted, hold 20s."),
+                    new YogaExercise("Standing Side Stretch", "Reach each arm overhead to wake up the body sides.", "standing side stretch yoga", "1) Stand tall.\n2) Raise one arm and lean opposite side.\n3) Hold 10s then switch."),
+                    new YogaExercise("Downward Dog", "Lengthen spine and legs, then pedal feet to refresh.", "downward dog yoga pose", "1) Hands and feet grounded.\n2) Lift hips high to inverted V.\n3) Pedal heels and breathe.")
+            );
+            case "okay" -> List.of(
+                    new YogaExercise("Neck Release", "Loosen neck tension with gentle side-to-side movement.", "neck release yoga stretch", "1) Sit tall.\n2) Tilt head left and right slowly.\n3) Keep shoulders relaxed."),
+                    new YogaExercise("Seated Twist", "Sit tall and rotate softly each side to mobilize your spine.", "seated spinal twist yoga pose", "1) Sit cross-legged.\n2) One hand behind, one hand opposite knee.\n3) Twist gently each side."),
+                    new YogaExercise("Cat-Cow Stretch", "Move with your breath to improve back mobility.", "cat cow yoga pose on mat", "1) Tabletop position.\n2) Inhale arch.\n3) Exhale round."),
+                    new YogaExercise("Child Pose", "Rest and breathe for recovery.", "child pose yoga on mat", "1) Knees wide, toes together.\n2) Hips to heels.\n3) Arms forward and relax.")
+            );
+            case "great", "good" -> List.of(
+                    new YogaExercise("Standing Side Stretch", "Lengthen each side of your torso with soft breaths.", "standing side stretch yoga", "1) Raise one arm overhead.\n2) Lean to the opposite side.\n3) Switch sides with steady breath."),
+                    new YogaExercise("Tree Pose", "Balance on one leg and focus on a steady point.", "tree pose yoga balance", "1) Stand on one leg.\n2) Place foot on inner calf/thigh.\n3) Hands at chest or overhead."),
+                    new YogaExercise("Warrior II", "Open hips and chest while keeping strong stable legs.", "warrior ii yoga pose", "1) Step feet wide.\n2) Bend front knee 90°.\n3) Extend arms wide and gaze forward."),
+                    new YogaExercise("Seated Twist", "Detox the spine with controlled twist each side.", "seated spinal twist yoga pose", "1) Sit tall.\n2) Twist from waist, not neck.\n3) Repeat both sides."),
+                    new YogaExercise("Child Pose", "Finish with calming breaths and full-body release.", "child pose yoga on mat", "1) Kneel and fold.\n2) Stretch arms long.\n3) Breathe deeply for 20s.")
+            );
+            default -> List.of(
+                    new YogaExercise("Neck Release", "Tilt head gently left and right. Keep shoulders relaxed.", "neck release yoga stretch", "1) Keep spine tall.\n2) Tilt left and right slowly.\n3) Breathe through each move."),
+                    new YogaExercise("Shoulder Rolls", "Roll shoulders forward then backward with slow breaths.", "shoulder rolls yoga warm-up", "1) Lift shoulders.\n2) Circle forward 6x.\n3) Circle backward 6x."),
+                    new YogaExercise("Seated Twist", "Sit tall and twist softly to each side, no force.", "seated spinal twist yoga pose", "1) Sit upright.\n2) Twist gently to one side.\n3) Hold and switch."),
+                    new YogaExercise("Cat-Cow Stretch", "Alternate arching and rounding your back with your breath.", "cat cow yoga pose on mat", "1) Tabletop setup.\n2) Inhale cow.\n3) Exhale cat."),
+                    new YogaExercise("Child Pose", "Kneel, stretch your arms forward, and breathe deeply.", "child pose yoga on mat", "1) Kneel and fold.\n2) Arms extended.\n3) Relax and breathe.")
+            );
+        };
+    }
+
+    private YogaAssistantProfile resolveYogaAssistantProfile() {
+        User currentUser = UserSession.getInstance().getCurrentUser();
+        String gender = currentUser == null || currentUser.getGender() == null
+                ? ""
+                : currentUser.getGender().trim().toLowerCase(Locale.ROOT);
+        boolean female = gender.startsWith("f") || gender.contains("woman") || gender.contains("femme");
+        return new YogaAssistantProfile(female ? "female" : "male");
+    }
+
+    private void loadYogaImage(
+            ImageView imageView,
+            String exerciseTitle,
+            String imagePrompt,
+            String howTo,
+            String assistantKey,
+            Label statusLabel
+    ) {
+        if (imageView == null) {
+            return;
+        }
+        if (imagePrompt == null || imagePrompt.isBlank()) {
+            imageView.setImage(null);
+            return;
+        }
+        String persona = "female".equals(assistantKey) ? "female yoga assistant coach" : "male yoga assistant coach";
+        String fullPrompt = buildProfessionalYogaPrompt(persona, exerciseTitle, imagePrompt, howTo);
+        String cacheKey = assistantKey + "|" + fullPrompt;
+        Image cached = yogaImageCache.get(cacheKey);
+        if (cached != null && !cached.isError()) {
+            imageView.setImage(cached);
+            return;
+        }
+
+        int requestId = yogaImageRequestSeq.incrementAndGet();
+        imageView.setImage(null);
+        if (statusLabel != null) {
+            statusLabel.setText("Loading pose... " + (exerciseTitle == null ? "" : exerciseTitle));
+        }
+
+        String encoded = URLEncoder.encode(fullPrompt, StandardCharsets.UTF_8).replace("+", "%20");
+        int baseSeed = Math.abs((fullPrompt).hashCode());
+        loadYogaImageAttempt(imageView, encoded, baseSeed, 0, requestId, cacheKey, statusLabel, exerciseTitle);
+    }
+
+    private void loadYogaImageAttempt(
+            ImageView imageView,
+            String encodedPrompt,
+            int baseSeed,
+            int attempt,
+            int requestId,
+            String cacheKey,
+            Label statusLabel,
+            String exerciseTitle
+    ) {
+        if (requestId != yogaImageRequestSeq.get()) {
+            return;
+        }
+        if (attempt >= YOGA_MAX_ATTEMPTS) {
+            if (statusLabel != null) {
+                statusLabel.setText("Using fallback demo image for " + exerciseTitle + ".");
+            }
+            loadYogaFallbackImage(imageView, exerciseTitle, cacheKey, statusLabel);
+            return;
+        }
+        int seed = Math.abs(baseSeed + (attempt * 7919));
+        Task<Image> downloadTask = new Task<>() {
+            @Override
+            protected Image call() {
+                DownloadedYogaImage result = downloadAiYogaImage(encodedPrompt, seed, exerciseTitle);
+                if (result == null) {
+                    return null;
+                }
+                this.updateMessage(result.hash() == null ? "" : result.hash());
+                return result.image();
+            }
+        };
+        downloadTask.setOnSucceeded(event -> {
+            if (requestId != yogaImageRequestSeq.get()) {
+                return;
+            }
+            Image aiImage = downloadTask.getValue();
+            if (aiImage == null || aiImage.isError()) {
+                scheduleYogaRetry(imageView, encodedPrompt, baseSeed, requestId, cacheKey, statusLabel, exerciseTitle, attempt + 1);
+                return;
+            }
+            String imageHash = downloadTask.getMessage() == null ? "" : downloadTask.getMessage();
+            if (isDuplicateYogaImage(exerciseTitle, imageHash)) {
+                scheduleYogaRetry(imageView, encodedPrompt, baseSeed, requestId, cacheKey, statusLabel, exerciseTitle, attempt + 1);
+                return;
+            }
+            if (!imageHash.isBlank()) {
+                yogaImageHashByExercise.put(exerciseTitle == null ? "" : exerciseTitle, imageHash);
+                lastYogaImageHash = imageHash;
+                lastYogaExerciseTitle = exerciseTitle == null ? "" : exerciseTitle;
+            }
+            yogaImageCache.put(cacheKey, aiImage);
+            imageView.setImage(aiImage);
+            if (statusLabel != null) {
+                statusLabel.setText("Exercise " + (exerciseTitle == null ? "" : exerciseTitle) + " demonstration ready.");
+            }
+        });
+        downloadTask.setOnFailed(event -> {
+            if (requestId != yogaImageRequestSeq.get()) {
+                return;
+            }
+            scheduleYogaRetry(imageView, encodedPrompt, baseSeed, requestId, cacheKey, statusLabel, exerciseTitle, attempt + 1);
+        });
+
+        Thread worker = new Thread(downloadTask, "yoga-image-" + requestId + "-" + attempt);
+        worker.setDaemon(true);
+        worker.start();
+    }
+
+    private void scheduleYogaRetry(
+            ImageView imageView,
+            String encodedPrompt,
+            int baseSeed,
+            int requestId,
+            String cacheKey,
+            Label statusLabel,
+            String exerciseTitle
+    ) {
+        scheduleYogaRetry(imageView, encodedPrompt, baseSeed, requestId, cacheKey, statusLabel, exerciseTitle, 0);
+    }
+
+    private void scheduleYogaRetry(
+            ImageView imageView,
+            String encodedPrompt,
+            int baseSeed,
+            int requestId,
+            String cacheKey,
+            Label statusLabel,
+            String exerciseTitle,
+            int attempt
+    ) {
+        Timeline retry = new Timeline(new KeyFrame(javafx.util.Duration.seconds(YOGA_RETRY_SECONDS), e ->
+                loadYogaImageAttempt(imageView, encodedPrompt, baseSeed, attempt, requestId, cacheKey, statusLabel, exerciseTitle)
+        ));
+        retry.setCycleCount(1);
+        retry.play();
+    }
+
+    private String buildProfessionalYogaPrompt(String persona, String exerciseTitle, String imagePrompt, String howTo) {
+        String title = exerciseTitle == null ? "Yoga Pose" : exerciseTitle.trim();
+        String cue = howTo == null ? "" : howTo.replace("\n", " ");
+        String poseCue = canonicalPoseCue(title);
+        String poseId = title.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", "_");
+        return persona + ", performing " + title + ", " + imagePrompt
+                + ", exact pose requirement: " + poseCue + ", pose_id: " + poseId
+                + ", instructional anatomy-accurate posture, full body centered, visible limbs and joint alignment, yoga mat visible,"
+                + " fixed camera frontal full-body shot, same navy outfit, same pink mat, clean light-gray studio background,"
+                + " realistic studio photo style, natural human anatomy, high detail, sharp focus, no text, no watermark,"
+                + " no collage, no split view, no extra people, no alternate pose."
+                + " Pose guidance: " + cue;
+    }
+
+    private DownloadedYogaImage downloadAiYogaImage(String encodedPrompt, int seed, String exerciseTitle) {
+        DownloadedYogaImage hfImage = downloadAiYogaImageFromHf(encodedPrompt, seed);
+        if (hfImage != null) {
+            return hfImage;
+        }
+        // Technical fallback only if HF is not configured/available.
+        return downloadAiYogaImageFromPollinations(encodedPrompt, seed);
+    }
+
+    private DownloadedYogaImage downloadAiYogaImageFromHf(String encodedPrompt, int seed) {
+        if (hfToken == null || hfToken.isBlank()) {
+            return null;
+        }
+        try {
+            String prompt = URLDecoder.decode(encodedPrompt, StandardCharsets.UTF_8);
+            String payload = "{"
+                    + "\"inputs\":\"" + escapeJson(prompt) + "\","
+                    + "\"parameters\":{"
+                    + "\"guidance_scale\":4.0,"
+                    + "\"num_inference_steps\":10,"
+                    + "\"seed\":" + seed + ","
+                    + "\"width\":" + YOGA_IMAGE_WIDTH + ","
+                    + "\"height\":" + YOGA_IMAGE_HEIGHT
+                    + "}"
+                    + "}";
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create("https://router.huggingface.co/hf-inference/models/black-forest-labs/FLUX.1-schnell"))
+                    .timeout(Duration.ofSeconds(18))
+                    .header("Authorization", "Bearer " + hfToken)
+                    .header("Content-Type", "application/json")
+                    .header("Accept", "image/png,image/*;q=0.9,*/*;q=0.8")
+                    .POST(HttpRequest.BodyPublishers.ofString(payload, StandardCharsets.UTF_8))
+                    .build();
+            HttpResponse<byte[]> response = yogaImageHttpClient.send(request, HttpResponse.BodyHandlers.ofByteArray());
+            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                return null;
+            }
+            byte[] body = response.body();
+            if (body == null || body.length < 1024) {
+                return null;
+            }
+            Image image = new Image(new ByteArrayInputStream(body));
+            if (image.isError()) {
+                return null;
+            }
+            return new DownloadedYogaImage(image, sha1(body));
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private DownloadedYogaImage downloadAiYogaImageFromPollinations(String encodedPrompt, int seed) {
+        try {
+            String url = "https://image.pollinations.ai/prompt/" + encodedPrompt
+                    + "?width=" + YOGA_IMAGE_WIDTH + "&height=" + YOGA_IMAGE_HEIGHT + "&seed=" + seed + "&nologo=true&model=flux-realism";
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .timeout(Duration.ofSeconds(12))
+                    .header("Accept", "image/png,image/*;q=0.9,*/*;q=0.8")
+                    .header("User-Agent", "StudyFlow-YogaCoach/1.0")
+                    .GET()
+                    .build();
+            HttpResponse<byte[]> response = yogaImageHttpClient.send(request, HttpResponse.BodyHandlers.ofByteArray());
+            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                return null;
+            }
+            byte[] body = response.body();
+            if (body == null || body.length < 1024) {
+                return null;
+            }
+            // Keep rendering robust: do not block display on remote validation.
+            // Generation quality is handled by prompt constraints + anti-duplication + retries.
+            Image image = new Image(new ByteArrayInputStream(body));
+            if (image.isError()) {
+                return null;
+            }
+            return new DownloadedYogaImage(image, sha1(body));
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private void loadYogaFallbackImage(ImageView imageView, String exerciseTitle, String cacheKey, Label statusLabel) {
+        try {
+            String safeTitle = exerciseTitle == null || exerciseTitle.isBlank() ? "yoga pose" : exerciseTitle;
+            String fallbackPrompt = URLEncoder.encode(
+                    "single person performing " + safeTitle + ", exact yoga pose, full body, clean studio, no extra person",
+                    StandardCharsets.UTF_8
+            ).replace("+", "%20");
+            int fallbackSeed = Math.abs(("fallback|" + safeTitle).hashCode());
+            String url = "https://image.pollinations.ai/prompt/" + fallbackPrompt
+                    + "?width=" + YOGA_IMAGE_WIDTH
+                    + "&height=" + YOGA_IMAGE_HEIGHT
+                    + "&seed=" + fallbackSeed
+                    + "&nologo=true&model=flux-realism";
+            Image fallback = new Image(url, false);
+            if (!fallback.isError()) {
+                imageView.setImage(fallback);
+                yogaImageCache.put(cacheKey, fallback);
+                if (statusLabel != null) {
+                    statusLabel.setText("Fallback demonstration loaded.");
+                }
+            }
+        } catch (Exception ignored) {
+            if (statusLabel != null) {
+                statusLabel.setText("Unable to load demo image right now.");
+            }
+        }
+    }
+
+    private String escapeJson(String value) {
+        String v = value == null ? "" : value;
+        return v.replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("\n", "\\n")
+                .replace("\r", "\\r")
+                .replace("\t", "\\t");
+    }
+
+    private boolean isDuplicateYogaImage(String exerciseTitle, String hash) {
+        if (hash == null || hash.isBlank()) {
+            return false;
+        }
+        String title = exerciseTitle == null ? "" : exerciseTitle;
+        if (!lastYogaImageHash.isBlank() && hash.equals(lastYogaImageHash) && !title.equalsIgnoreCase(lastYogaExerciseTitle)) {
+            return true;
+        }
+        for (Map.Entry<String, String> entry : yogaImageHashByExercise.entrySet()) {
+            if (!entry.getKey().equalsIgnoreCase(title) && hash.equals(entry.getValue())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private String canonicalPoseCue(String title) {
+        String t = title == null ? "" : title.toLowerCase(Locale.ROOT);
+        return switch (t) {
+            case "neck release" -> "head tilt left-right, shoulders relaxed";
+            case "shoulder rolls" -> "upright torso, shoulders rotating circularly";
+            case "cat-cow stretch" -> "tabletop on all fours, alternating spinal flexion/extension";
+            case "child pose" -> "kneeling fold, hips to heels, arms extended forward";
+            case "seated forward fold" -> "legs straight forward, torso folding over legs";
+            case "legs up the wall" -> "lying on back with both legs vertical against wall";
+            case "mountain pose" -> "standing tall, feet grounded, arms by sides";
+            case "half sun flow" -> "standing, arms sweep overhead and down";
+            case "chair pose" -> "standing squat, hips back, knees bent, arms up";
+            case "standing side stretch" -> "standing lateral bend with one arm overhead";
+            case "downward dog" -> "inverted V shape, hands and feet on mat";
+            case "seated twist" -> "seated spinal rotation, chest open";
+            case "tree pose" -> "one leg balance, other foot on inner leg";
+            case "warrior ii" -> "wide stance, front knee bent, arms extended horizontally";
+            default -> "single yoga pose clearly matching exercise name";
+        };
+    }
+
+    private String sha1(byte[] bytes) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-1");
+            byte[] digest = md.digest(bytes);
+            StringBuilder sb = new StringBuilder(digest.length * 2);
+            for (byte b : digest) {
+                sb.append(String.format("%02x", b));
+            }
+            return sb.toString();
+        } catch (Exception e) {
+            return "";
+        }
     }
 
     private void openJournalTool(CopingSession session) {
@@ -1708,10 +2531,10 @@ public class WellbeingController implements Initializable {
         topBanner.setPadding(new Insets(16));
         topBanner.setStyle(
                 "-fx-background-color: linear-gradient(to right, #111827, #1E293B);" +
-                        "-fx-background-radius: 16;" +
-                        "-fx-border-color: #334155;" +
-                        "-fx-border-width: 1;" +
-                        "-fx-border-radius: 16;"
+                "-fx-background-radius: 16;" +
+                "-fx-border-color: #334155;" +
+                "-fx-border-width: 1;" +
+                "-fx-border-radius: 16;"
         );
         Label focusLabel = new Label("FOCUS SESSION");
         focusLabel.setStyle("-fx-text-fill: #A78BFA; -fx-font-size: 11px; -fx-font-weight: 700;");
@@ -1734,10 +2557,10 @@ public class WellbeingController implements Initializable {
         composerCard.setPadding(new Insets(20));
         composerCard.setStyle(
                 "-fx-background-color: linear-gradient(to bottom right, #0F172A, #111827);" +
-                        "-fx-background-radius: 16;" +
-                        "-fx-border-color: #334155;" +
-                        "-fx-border-width: 1;" +
-                        "-fx-border-radius: 16;"
+                "-fx-background-radius: 16;" +
+                "-fx-border-color: #334155;" +
+                "-fx-border-width: 1;" +
+                "-fx-border-radius: 16;"
         );
         Label sectionTitle = new Label("Gratitude Journal");
         sectionTitle.setStyle("-fx-text-fill: #f8fafc; -fx-font-size: 34px; -fx-font-weight: 800;");
@@ -1750,12 +2573,12 @@ public class WellbeingController implements Initializable {
         input.setPrefRowCount(7);
         input.setStyle(
                 "-fx-control-inner-background: #1E293B;" +
-                        "-fx-text-fill: #f8fafc;" +
-                        "-fx-prompt-text-fill: #94a3b8;" +
-                        "-fx-border-color: #475569;" +
-                        "-fx-border-width: 1.8;" +
-                        "-fx-border-radius: 14;" +
-                        "-fx-background-radius: 14;"
+                "-fx-text-fill: #f8fafc;" +
+                "-fx-prompt-text-fill: #94a3b8;" +
+                "-fx-border-color: #475569;" +
+                "-fx-border-width: 1.8;" +
+                "-fx-border-radius: 14;" +
+                "-fx-background-radius: 14;"
         );
 
         ComboBox<String> languageBox = new ComboBox<>(FXCollections.observableArrayList(
@@ -1764,10 +2587,10 @@ public class WellbeingController implements Initializable {
         languageBox.setValue("Auto (AI detect)");
         languageBox.setStyle(
                 "-fx-background-color: #1E293B;" +
-                        "-fx-text-fill: #e2e8f0;" +
-                        "-fx-border-color: #475569;" +
-                        "-fx-border-radius: 10;" +
-                        "-fx-background-radius: 10;"
+                "-fx-text-fill: #e2e8f0;" +
+                "-fx-border-color: #475569;" +
+                "-fx-border-radius: 10;" +
+                "-fx-background-radius: 10;"
         );
 
         Label statusLabel = new Label("Ready");
@@ -1779,19 +2602,19 @@ public class WellbeingController implements Initializable {
         startVoiceBtn.getStyleClass().add("btn-secondary");
         startVoiceBtn.setStyle(
                 "-fx-background-color: #334155;" +
-                        "-fx-text-fill: #eff6ff;" +
-                        "-fx-background-radius: 12;" +
-                        "-fx-padding: 9 16;" +
-                        "-fx-font-weight: 700;"
+                "-fx-text-fill: #eff6ff;" +
+                "-fx-background-radius: 12;" +
+                "-fx-padding: 9 16;" +
+                "-fx-font-weight: 700;"
         );
         Button stopVoiceBtn = new Button("Stop");
         stopVoiceBtn.getStyleClass().add("btn-danger");
         stopVoiceBtn.setStyle(
                 "-fx-background-color: #dc2626;" +
-                        "-fx-text-fill: #ffffff;" +
-                        "-fx-background-radius: 12;" +
-                        "-fx-padding: 9 16;" +
-                        "-fx-font-weight: 700;"
+                "-fx-text-fill: #ffffff;" +
+                "-fx-background-radius: 12;" +
+                "-fx-padding: 9 16;" +
+                "-fx-font-weight: 700;"
         );
         stopVoiceBtn.setDisable(true);
 
@@ -1799,28 +2622,28 @@ public class WellbeingController implements Initializable {
         saveBtn.getStyleClass().add("btn-primary");
         saveBtn.setStyle(
                 "-fx-background-color: #7C3AED;" +
-                        "-fx-text-fill: #ffffff;" +
-                        "-fx-background-radius: 12;" +
-                        "-fx-padding: 9 18;" +
-                        "-fx-font-weight: 700;"
+                "-fx-text-fill: #ffffff;" +
+                "-fx-background-radius: 12;" +
+                "-fx-padding: 9 18;" +
+                "-fx-font-weight: 700;"
         );
         Button newBtn = new Button("New Journal");
         newBtn.getStyleClass().add("btn-secondary");
         newBtn.setStyle(
                 "-fx-background-color: #1E293B;" +
-                        "-fx-text-fill: #e2e8f0;" +
-                        "-fx-background-radius: 12;" +
-                        "-fx-padding: 9 16;" +
-                        "-fx-font-weight: 700;"
+                "-fx-text-fill: #e2e8f0;" +
+                "-fx-background-radius: 12;" +
+                "-fx-padding: 9 16;" +
+                "-fx-font-weight: 700;"
         );
         Button closeBtn = new Button("Back to Coping Tools");
         closeBtn.getStyleClass().add("btn-secondary");
         closeBtn.setStyle(
                 "-fx-background-color: #334155;" +
-                        "-fx-text-fill: #f1f5f9;" +
-                        "-fx-background-radius: 12;" +
-                        "-fx-padding: 9 16;" +
-                        "-fx-font-weight: 700;"
+                "-fx-text-fill: #f1f5f9;" +
+                "-fx-background-radius: 12;" +
+                "-fx-padding: 9 16;" +
+                "-fx-font-weight: 700;"
         );
 
         HBox voiceRow = new HBox(10, startVoiceBtn, stopVoiceBtn, new Label("Language"), languageBox, voiceStatusLabel);
@@ -1834,10 +2657,10 @@ public class WellbeingController implements Initializable {
         entriesCard.setPadding(new Insets(20));
         entriesCard.setStyle(
                 "-fx-background-color: linear-gradient(to bottom right, #0F172A, #111827);" +
-                        "-fx-background-radius: 16;" +
-                        "-fx-border-color: #334155;" +
-                        "-fx-border-width: 1;" +
-                        "-fx-border-radius: 16;"
+                "-fx-background-radius: 16;" +
+                "-fx-border-color: #334155;" +
+                "-fx-border-width: 1;" +
+                "-fx-border-radius: 16;"
         );
         Label entriesTitle = new Label("Recent Journal Entries");
         entriesTitle.setStyle("-fx-text-fill: #f1f5f9; -fx-font-size: 30px; -fx-font-weight: 800;");
@@ -1847,8 +2670,8 @@ public class WellbeingController implements Initializable {
         entriesPane.setPrefHeight(240);
         entriesPane.setStyle(
                 "-fx-background: transparent;" +
-                        "-fx-background-color: transparent;" +
-                        "-fx-border-color: transparent;"
+                "-fx-background-color: transparent;" +
+                "-fx-border-color: transparent;"
         );
         entriesCard.getChildren().addAll(entriesTitle, entriesPane);
 
@@ -1883,10 +2706,10 @@ public class WellbeingController implements Initializable {
                 card.setPadding(new Insets(14));
                 card.setStyle(
                         "-fx-background-color: rgba(30, 41, 59, 0.75);" +
-                                "-fx-border-color: #334155;" +
-                                "-fx-border-width: 1;" +
-                                "-fx-border-radius: 12;" +
-                                "-fx-background-radius: 12;"
+                        "-fx-border-color: #334155;" +
+                        "-fx-border-width: 1;" +
+                        "-fx-border-radius: 12;" +
+                        "-fx-background-radius: 12;"
                 );
 
                 String dateText = entry.getCreatedAt() == null
@@ -1908,10 +2731,10 @@ public class WellbeingController implements Initializable {
                 editBtn.getStyleClass().add("btn-secondary");
                 editBtn.setStyle(
                         "-fx-background-color: #334155;" +
-                                "-fx-text-fill: #E2E8F0;" +
-                                "-fx-background-radius: 10;" +
-                                "-fx-padding: 7 14;" +
-                                "-fx-font-weight: 700;"
+                        "-fx-text-fill: #E2E8F0;" +
+                        "-fx-background-radius: 10;" +
+                        "-fx-padding: 7 14;" +
+                        "-fx-font-weight: 700;"
                 );
                 editBtn.setOnAction(e -> {
                     editingId[0] = entry.getId();
@@ -1925,10 +2748,10 @@ public class WellbeingController implements Initializable {
                 deleteBtn.getStyleClass().add("btn-danger");
                 deleteBtn.setStyle(
                         "-fx-background-color: #b91c1c;" +
-                                "-fx-text-fill: #ffffff;" +
-                                "-fx-background-radius: 10;" +
-                                "-fx-padding: 7 14;" +
-                                "-fx-font-weight: 700;"
+                        "-fx-text-fill: #ffffff;" +
+                        "-fx-background-radius: 10;" +
+                        "-fx-padding: 7 14;" +
+                        "-fx-font-weight: 700;"
                 );
                 deleteBtn.setOnAction(e -> {
                     try {
@@ -2500,10 +3323,10 @@ public class WellbeingController implements Initializable {
         header.setPadding(new Insets(16));
         header.setStyle(
                 "-fx-background-color: linear-gradient(to right, #111827, #1E293B);" +
-                        "-fx-background-radius: 16;" +
-                        "-fx-border-color: #334155;" +
-                        "-fx-border-width: 1;" +
-                        "-fx-border-radius: 16;"
+                "-fx-background-radius: 16;" +
+                "-fx-border-color: #334155;" +
+                "-fx-border-width: 1;" +
+                "-fx-border-radius: 16;"
         );
         Label focusLabel = new Label("FOCUS SESSION");
         focusLabel.setStyle("-fx-text-fill: #A78BFA; -fx-font-size: 11px; -fx-font-weight: 700; -fx-letter-spacing: 1px;");
@@ -2526,11 +3349,11 @@ public class WellbeingController implements Initializable {
         messagesPane.setPrefHeight(370);
         messagesPane.setStyle(
                 "-fx-background: #111827;" +
-                        "-fx-background-color: #111827;" +
-                        "-fx-border-color: #334155;" +
-                        "-fx-border-width: 1;" +
-                        "-fx-border-radius: 14;" +
-                        "-fx-background-radius: 14;"
+                "-fx-background-color: #111827;" +
+                "-fx-border-color: #334155;" +
+                "-fx-border-width: 1;" +
+                "-fx-border-radius: 14;" +
+                "-fx-background-radius: 14;"
         );
 
         ComboBox<String> modeBox = new ComboBox<>(FXCollections.observableArrayList("General", "Supportive", "Practical"));
@@ -2545,10 +3368,10 @@ public class WellbeingController implements Initializable {
             box.setPrefWidth(170);
             box.setStyle(
                     "-fx-background-color: #1E293B;" +
-                            "-fx-text-fill: #E2E8F0;" +
-                            "-fx-border-color: #475569;" +
-                            "-fx-border-radius: 9;" +
-                            "-fx-background-radius: 9;"
+                    "-fx-text-fill: #E2E8F0;" +
+                    "-fx-border-color: #475569;" +
+                    "-fx-border-radius: 9;" +
+                    "-fx-background-radius: 9;"
             );
         }
         HBox configRow = new HBox(10, modeBox, styleBox, levelBox, languageBox);
@@ -2566,12 +3389,12 @@ public class WellbeingController implements Initializable {
         input.setPrefRowCount(3);
         input.setStyle(
                 "-fx-control-inner-background: #1E293B;" +
-                        "-fx-text-fill: #e2e8f0;" +
-                        "-fx-prompt-text-fill: #94A3B8;" +
-                        "-fx-border-color: #475569;" +
-                        "-fx-border-width: 1.4;" +
-                        "-fx-border-radius: 12;" +
-                        "-fx-background-radius: 12;"
+                "-fx-text-fill: #e2e8f0;" +
+                "-fx-prompt-text-fill: #94A3B8;" +
+                "-fx-border-color: #475569;" +
+                "-fx-border-width: 1.4;" +
+                "-fx-border-radius: 12;" +
+                "-fx-background-radius: 12;"
         );
 
         List<WellbeingAiService.ChatTurn> chatHistory = new ArrayList<>();
@@ -2689,10 +3512,10 @@ public class WellbeingController implements Initializable {
         chatCard.setPadding(new Insets(14));
         chatCard.setStyle(
                 "-fx-background-color: linear-gradient(to bottom right, #0F172A, #111827);" +
-                        "-fx-background-radius: 16;" +
-                        "-fx-border-color: #334155;" +
-                        "-fx-border-width: 1;" +
-                        "-fx-border-radius: 16;"
+                "-fx-background-radius: 16;" +
+                "-fx-border-color: #334155;" +
+                "-fx-border-width: 1;" +
+                "-fx-border-radius: 16;"
         );
 
         StackPane chatCardStack = new StackPane(chatCard, aiLoadingOverlay);
@@ -2716,13 +3539,13 @@ public class WellbeingController implements Initializable {
         Button chip = new Button(text);
         chip.setStyle(
                 "-fx-background-color: #1E293B;" +
-                        "-fx-text-fill: #CBD5E1;" +
-                        "-fx-background-radius: 100;" +
-                        "-fx-border-color: #475569;" +
-                        "-fx-border-radius: 100;" +
-                        "-fx-padding: 5 12;" +
-                        "-fx-font-size: 12px;" +
-                        "-fx-font-weight: 600;"
+                "-fx-text-fill: #CBD5E1;" +
+                "-fx-background-radius: 100;" +
+                "-fx-border-color: #475569;" +
+                "-fx-border-radius: 100;" +
+                "-fx-padding: 5 12;" +
+                "-fx-font-size: 12px;" +
+                "-fx-font-weight: 600;"
         );
         return chip;
     }
@@ -2736,18 +3559,18 @@ public class WellbeingController implements Initializable {
         if ("user".equals(role)) {
             msg.setStyle(
                     "-fx-background-color: #1E293B;" +
-                            "-fx-text-fill: #e2e8f0;" +
-                            "-fx-background-radius: 14;" +
-                            "-fx-border-color: #475569;" +
-                            "-fx-border-radius: 14;"
+                    "-fx-text-fill: #e2e8f0;" +
+                    "-fx-background-radius: 14;" +
+                    "-fx-border-color: #475569;" +
+                    "-fx-border-radius: 14;"
             );
         } else {
             msg.setStyle(
                     "-fx-background-color: rgba(124,58,237,0.25);" +
-                            "-fx-text-fill: #EDE9FE;" +
-                            "-fx-background-radius: 14;" +
-                            "-fx-border-color: #8B5CF6;" +
-                            "-fx-border-radius: 14;"
+                    "-fx-text-fill: #EDE9FE;" +
+                    "-fx-background-radius: 14;" +
+                    "-fx-border-color: #8B5CF6;" +
+                    "-fx-border-radius: 14;"
             );
         }
         Label time = new Label("just now");
@@ -2785,6 +3608,216 @@ public class WellbeingController implements Initializable {
         card.getChildren().addAll(titleLabel, subtitleLabel, loadingBar);
         overlay.getChildren().add(card);
         return overlay;
+    }
+
+    private synchronized void speakBreathingText(String text) {
+        if (text == null || text.isBlank()) {
+            return;
+        }
+        if (breathingAssistantVoicePlayer != null
+                && breathingAssistantVoicePlayer.getStatus() == MediaPlayer.Status.PLAYING) {
+            return;
+        }
+        long seq = breathingSpeechSeq.incrementAndGet();
+        stopBreathingSpeech();
+        Thread worker = new Thread(() -> {
+            try {
+                byte[] customVoice = loadCustomAssistantVoice();
+                if (customVoice != null && customVoice.length > 0) {
+                    playSpeechBytes(customVoice, seq);
+                    return;
+                }
+                byte[] wav = groqTtsService.synthesizeEnglishRelaxing(text);
+                if (Thread.currentThread().isInterrupted() || seq != breathingSpeechSeq.get()) {
+                    return;
+                }
+                playSpeechBytes(wav, seq);
+            } catch (Exception groqError) {
+                if (seq != breathingSpeechSeq.get()) {
+                    return;
+                }
+                Platform.runLater(() -> {
+                    if (breathingAssistantStatusDot != null) {
+                        breathingAssistantStatusDot.setFill(Color.web("#e05a7a"));
+                    }
+                    if (breathingAssistantStatusLabel != null) {
+                        String message = groqError.getMessage() == null ? "Unknown Groq TTS error" : groqError.getMessage();
+                        if (message.length() > 160) {
+                            message = message.substring(0, 160) + "...";
+                        }
+                        breathingAssistantStatusLabel.setStyle("-fx-text-fill: #e05a7a; -fx-font-size: 11px; -fx-font-style: italic;");
+                        breathingAssistantStatusLabel.setText("Groq voice error: " + message);
+                    }
+                });
+            }
+        }, "breathing-groq-tts");
+        worker.setDaemon(true);
+        breathingSpeechThread = worker;
+        worker.start();
+    }
+
+    private byte[] loadCustomAssistantVoice() {
+        try (java.io.InputStream in = getClass().getResourceAsStream(ASSISTANT_GROQ_VOICE_RESOURCE)) {
+            if (in == null) {
+                return null;
+            }
+            return in.readAllBytes();
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private synchronized void stopBreathingSpeech() {
+        breathingSpeechSeq.incrementAndGet();
+        try {
+            if (breathingSpeechThread != null && breathingSpeechThread.isAlive()) {
+                breathingSpeechThread.interrupt();
+            }
+            if (breathingClip != null) {
+                breathingClip.stop();
+                breathingClip.close();
+            }
+            if (breathingSpeechLine != null) {
+                breathingSpeechLine.stop();
+                breathingSpeechLine.flush();
+                breathingSpeechLine.close();
+            }
+        } catch (Exception ignored) {
+        } finally {
+            breathingSpeechThread = null;
+            breathingClip = null;
+            breathingSpeechLine = null;
+        }
+    }
+
+    private void playSpeechBytes(byte[] wav, long seq) throws Exception {
+        try (AudioInputStream sourceStream = AudioSystem.getAudioInputStream(new ByteArrayInputStream(wav))) {
+            AudioFormat baseFormat = sourceStream.getFormat();
+            AudioFormat decodedFormat = new AudioFormat(
+                    AudioFormat.Encoding.PCM_SIGNED,
+                    baseFormat.getSampleRate(),
+                    16,
+                    baseFormat.getChannels(),
+                    baseFormat.getChannels() * 2,
+                    baseFormat.getSampleRate(),
+                    false
+            );
+            try (AudioInputStream pcmStream = AudioSystem.getAudioInputStream(decodedFormat, sourceStream)) {
+                DataLine.Info info = new DataLine.Info(SourceDataLine.class, decodedFormat);
+                SourceDataLine line = (SourceDataLine) AudioSystem.getLine(info);
+                line.open(decodedFormat);
+                line.start();
+                synchronized (this) {
+                    breathingSpeechLine = line;
+                }
+                byte[] buffer = new byte[4096];
+                int read;
+                while ((read = pcmStream.read(buffer, 0, buffer.length)) != -1) {
+                    if (Thread.currentThread().isInterrupted() || seq != breathingSpeechSeq.get()) {
+                        break;
+                    }
+                    line.write(buffer, 0, read);
+                }
+                line.drain();
+                line.stop();
+                line.close();
+                synchronized (this) {
+                    if (breathingSpeechLine == line) {
+                        breathingSpeechLine = null;
+                    }
+                }
+            }
+        }
+    }
+
+    private synchronized void startBreathingBackgroundMusic() {
+        if (breathingMusicPlayer != null) {
+            breathingMusicPlayer.play();
+            return;
+        }
+        try {
+            URL audioUrl = getClass().getResource("/com/studyflow/audio/nature.mp3");
+            if (audioUrl == null) {
+                return;
+            }
+            Media media = new Media(audioUrl.toExternalForm());
+            MediaPlayer player = new MediaPlayer(media);
+            player.setCycleCount(MediaPlayer.INDEFINITE);
+            player.setVolume(0.18);
+            player.play();
+            breathingMusicPlayer = player;
+        } catch (Exception ignored) {
+        }
+    }
+
+    private synchronized void startAssistantVoiceTrack() {
+        if (breathingAssistantVoicePlayer != null) {
+            try {
+                breathingAssistantVoicePlayer.stop();
+                breathingAssistantVoicePlayer.dispose();
+            } catch (Exception ignored) {
+            } finally {
+                breathingAssistantVoicePlayer = null;
+            }
+        }
+        try {
+            URL audioUrl = getClass().getResource(ASSISTANT_GROQ_VOICE_RESOURCE);
+            if (audioUrl == null) {
+                return;
+            }
+            Media media = new Media(audioUrl.toExternalForm());
+            MediaPlayer player = new MediaPlayer(media);
+            player.setCycleCount(MediaPlayer.INDEFINITE);
+            player.setVolume(1.0);
+            player.play();
+            breathingAssistantVoicePlayer = player;
+        } catch (Exception ignored) {
+        }
+    }
+
+    private synchronized void stopAssistantVoiceTrack() {
+        try {
+            if (breathingAssistantVoicePlayer != null) {
+                breathingAssistantVoicePlayer.stop();
+                breathingAssistantVoicePlayer.dispose();
+            }
+        } catch (Exception ignored) {
+        } finally {
+            breathingAssistantVoicePlayer = null;
+        }
+    }
+
+    private synchronized void stopBreathingBackgroundMusic() {
+        try {
+            if (breathingMusicPlayer != null) {
+                breathingMusicPlayer.stop();
+                breathingMusicPlayer.dispose();
+            }
+        } catch (Exception ignored) {
+        } finally {
+            breathingMusicPlayer = null;
+        }
+    }
+
+    private void speakWithWindowsFallback(String text) {
+        String escaped = (text == null ? "" : text).replace("'", "''");
+        String script =
+                "Add-Type -AssemblyName System.Speech; " +
+                "$s = New-Object System.Speech.Synthesis.SpeechSynthesizer; " +
+                "$s.Rate = -2; $s.Volume = 100; " +
+                "try { $s.SelectVoiceByHints([System.Speech.Synthesis.VoiceGender]::Female) } catch {} " +
+                "$s.Speak('" + escaped + "');";
+        try {
+            String encoded = Base64.getEncoder().encodeToString(script.getBytes(StandardCharsets.UTF_16LE));
+            new ProcessBuilder(
+                    "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+                    "-NoProfile",
+                    "-ExecutionPolicy", "Bypass",
+                    "-EncodedCommand",
+                    encoded
+            ).start();
+        } catch (Exception ignored) {
+        }
     }
 
     private void setAiLoadingVisible(StackPane overlay, boolean visible) {
@@ -4136,14 +5169,14 @@ public class WellbeingController implements Initializable {
         quizProgressPercentLabel.setText(percent + "%");
     }
 
-    @SuppressWarnings({"unused", "all"})
-    private boolean isCurrentQuestionAnswered() {
-        if (quizQuestions.isEmpty()) {
-            return false;
-        }
-        QuestionStress question = quizQuestions.get(currentQuizIndex);
-        return quizAnswers.containsKey(question.getId());
-    }
+     @SuppressWarnings({"unused", "all"})
+     private boolean isCurrentQuestionAnswered() {
+         if (quizQuestions.isEmpty()) {
+             return false;
+         }
+         QuestionStress question = quizQuestions.get(currentQuizIndex);
+         return quizAnswers.containsKey(question.getId());
+     }
 
     private void showQuizResults(QuizStress quiz) {
         currentQuizResult = quiz;
@@ -4505,19 +5538,19 @@ public class WellbeingController implements Initializable {
         items.sort(comparator);
     }
 
-    @SuppressWarnings("SameParameterValue")
-    private Node createEmptyCard(String titleText, String subtitleText) {
-        VBox box = new VBox(8);
-        box.getStyleClass().add("wellbeing-empty-card");
-        Label title = new Label(titleText);
-        title.getStyleClass().add("text-body");
-        title.setStyle("-fx-font-weight: 600;");
-        Label subtitle = new Label(subtitleText);
-        subtitle.getStyleClass().add("text-small");
-        subtitle.setWrapText(true);
-        box.getChildren().addAll(title, subtitle);
-        return box;
-    }
+     @SuppressWarnings("SameParameterValue")
+     private Node createEmptyCard(String titleText, String subtitleText) {
+         VBox box = new VBox(8);
+         box.getStyleClass().add("wellbeing-empty-card");
+         Label title = new Label(titleText);
+         title.getStyleClass().add("text-body");
+         title.setStyle("-fx-font-weight: 600;");
+         Label subtitle = new Label(subtitleText);
+         subtitle.getStyleClass().add("text-small");
+         subtitle.setWrapText(true);
+         box.getChildren().addAll(title, subtitle);
+         return box;
+     }
 
     private boolean containsIgnoreCase(String value, String search) {
         return value != null && value.toLowerCase().contains(search);
@@ -4606,9 +5639,9 @@ public class WellbeingController implements Initializable {
         globalMessageLabel.setText(message == null ? "" : message);
         globalMessageLabel.setStyle(
                 "-fx-background-color: " + (error ? "#dc2626" : "#16a34a") + ";" +
-                        "-fx-text-fill: white;" +
-                        "-fx-padding: 10 14 10 14;" +
-                        "-fx-background-radius: 8;"
+                "-fx-text-fill: white;" +
+                "-fx-padding: 10 14 10 14;" +
+                "-fx-background-radius: 8;"
         );
         globalMessageLabel.setVisible(true);
         globalMessageLabel.setManaged(true);
@@ -4839,39 +5872,16 @@ public class WellbeingController implements Initializable {
         iconBox.setPrefSize(40, 40);
         iconBox.setStyle("-fx-background-color: " + getColorWithAlpha(mood.color()) + "; -fx-background-radius: 100;");
 
-        Node moodGraphic = buildMoodDayGraphic(mood);
-        if (moodGraphic != null) {
-            iconBox.getChildren().add(moodGraphic);
-        }
+        FontIcon icon = new FontIcon(mood.icon());
+        icon.setIconSize(20);
+        icon.setIconColor(Color.web(getColorHex(mood.color())));
+        iconBox.getChildren().add(icon);
 
         Label moodText = new Label(mood.mood());
         moodText.getStyleClass().add("wellbeing-day-mood");
 
         box.getChildren().addAll(dayText, iconBox, moodText);
         return box;
-    }
-
-    private Node buildMoodDayGraphic(MoodEntry mood) {
-        String moodKey = mood == null || mood.mood() == null
-                ? "okay"
-                : mood.mood().trim().toLowerCase(Locale.ROOT);
-
-        ImageView emojiImage = EmojiUtils.loadMoodEmojiImage(moodKey, 26);
-        if (emojiImage != null) {
-            return emojiImage;
-        }
-
-        String iconLiteral = mood == null ? null : mood.icon();
-        if (iconLiteral != null && iconLiteral.startsWith("fth-")) {
-            FontIcon icon = new FontIcon(iconLiteral);
-            icon.setIconSize(20);
-            icon.setIconColor(Color.web(getColorHex(mood.color())));
-            return icon;
-        }
-
-        Label fallbackEmoji = new Label(EmojiUtils.getMoodEmojiUnicode(moodKey));
-        fallbackEmoji.setStyle("-fx-font-size: 18px; -fx-font-family: 'Segoe UI Emoji';");
-        return fallbackEmoji;
     }
 
     private void loadHabits() {
@@ -5156,5 +6166,3 @@ public class WellbeingController implements Initializable {
         return "#EF4444";
     }
 }
-
-
