@@ -98,21 +98,15 @@ public class ProfileController implements Initializable {
     private int currentFontSizePx = 14;
     private String currentFontFamily = null; // null = default
     private double currentUiScale = 1.0;
-    private String colorBlindMode = null; // null, "deuteranopia", "protanopia", "tritanopia"
     private String currentCursorStyle = "default";
     private Button activeAccentBtn;
     private Button activeFontBtn;
     private Button activeCursorBtn;
-    private Button activeColorBlindBtn;
     private String dynamicCssPath;
 
     // New accessibility FXML fields
     @FXML private Slider uiScaleSlider;
     @FXML private Label uiScaleLabel;
-    @FXML private Button cbNoneBtn;
-    @FXML private Button cbDeutBtn;
-    @FXML private Button cbProtBtn;
-    @FXML private Button cbTritBtn;
     @FXML private Button cursorDefault;
     @FXML private Button cursorPen;
     @FXML private Button cursorStar;
@@ -203,11 +197,13 @@ public class ProfileController implements Initializable {
         activeFontBtn = fontSegoe;
         markFontActive(fontSegoe);
 
-        activeColorBlindBtn = cbNoneBtn;
-        markColorBlindActive(cbNoneBtn);
-
         activeCursorBtn = cursorDefault;
         markCursorActive(cursorDefault);
+
+        // Re-apply dynamic CSS when theme toggles so tinting adapts
+        App.setOnThemeChanged(() -> {
+            if (currentAccentHex != null) rebuildDynamicCss();
+        });
     }
 
     // ============================================
@@ -232,11 +228,6 @@ public class ProfileController implements Initializable {
             css.append(".scroll-content, .card-body, .card { -fx-scale-x: 1; -fx-scale-y: 1; }\n");
         }
 
-        // --- Color blind mode ---
-        if (colorBlindMode != null) {
-            appendColorBlindCss(css, colorBlindMode);
-        }
-
         // --- Accent color overrides (massive app-wide impact) ---
         if (currentAccentHex != null) {
             Color c = Color.web(currentAccentHex);
@@ -255,14 +246,24 @@ public class ProfileController implements Initializable {
 
             // ══════════════════════════════════════════
             // FULL APP COLOR TINTING — blend accent into
-            // every dark background, border, and surface
+            // every background, border, and surface
+            // Adapts to dark or light mode automatically
             // ══════════════════════════════════════════
-            // Tint base dark colors with a subtle amount of the accent
-            String bg0 = toHex(tint(Color.web("#020617"), c, 0.06));  // deepest body
-            String bg1 = toHex(tint(Color.web("#0F172A"), c, 0.07));  // cards, sidebar
-            String bg2 = toHex(tint(Color.web("#1E293B"), c, 0.08));  // surfaces, borders
-            String bg3 = toHex(tint(Color.web("#334155"), c, 0.09));  // hover borders
-            String bg1h = toHex(tint(Color.web("#131D32"), c, 0.07)); // card hover
+            boolean dark = App.isDarkTheme();
+            String bg0, bg1, bg2, bg3, bg1h;
+            if (dark) {
+                bg0  = toHex(tint(Color.web("#020617"), c, 0.06));
+                bg1  = toHex(tint(Color.web("#0F172A"), c, 0.07));
+                bg2  = toHex(tint(Color.web("#1E293B"), c, 0.08));
+                bg3  = toHex(tint(Color.web("#334155"), c, 0.09));
+                bg1h = toHex(tint(Color.web("#131D32"), c, 0.07));
+            } else {
+                bg0  = toHex(tint(Color.web("#F3F6FB"), c, 0.06));
+                bg1  = toHex(tint(Color.web("#FFFFFF"), c, 0.05));
+                bg2  = toHex(tint(Color.web("#D7E0EE"), c, 0.08));
+                bg3  = toHex(tint(Color.web("#B8C5D6"), c, 0.10));
+                bg1h = toHex(tint(Color.web("#F8FBFF"), c, 0.06));
+            }
 
             // Root & main backgrounds
             css.append(".root { -fx-background-color: ").append(bg0).append("; }\n");
@@ -284,8 +285,13 @@ public class ProfileController implements Initializable {
             css.append(".toggle-card:hover { -fx-border-color: ").append(bg3).append("; }\n");
 
             // Search & input backgrounds
-            css.append(".search-field { -fx-background-color: ").append(bg2).append("; -fx-border-color: ").append(bg3).append("; }\n");
-            css.append(".auth-field { -fx-background-color: ").append(bg2).append("; -fx-border-color: ").append(bg3).append("; }\n");
+            if (dark) {
+                css.append(".search-field { -fx-background-color: ").append(bg2).append("; -fx-border-color: ").append(bg3).append("; }\n");
+                css.append(".auth-field { -fx-background-color: ").append(bg2).append("; -fx-border-color: ").append(bg3).append("; }\n");
+            } else {
+                css.append(".search-field { -fx-background-color: ").append(bg0).append("; -fx-border-color: ").append(bg2).append("; }\n");
+                css.append(".auth-field { -fx-background-color: ").append(bg0).append("; -fx-border-color: ").append(bg2).append("; }\n");
+            }
 
             // Topbar button hover
             css.append(".topbar-button:hover { -fx-background-color: ").append(bg2).append("; }\n");
@@ -304,9 +310,7 @@ public class ProfileController implements Initializable {
             css.append(".font-family-btn { -fx-background-color: ").append(bg1).append("; -fx-border-color: ").append(bg2).append("; }\n");
             css.append(".font-family-btn:hover { -fx-background-color: ").append(bg2).append("; -fx-border-color: ").append(bg3).append("; }\n");
 
-            // Color blind & cursor buttons
-            css.append(".cb-mode-btn { -fx-background-color: ").append(bg1).append("; -fx-border-color: ").append(bg2).append("; }\n");
-            css.append(".cb-mode-btn:hover { -fx-background-color: ").append(bg2).append("; -fx-border-color: ").append(bg3).append("; }\n");
+            // Cursor buttons
             css.append(".cursor-btn { -fx-background-color: ").append(bg1).append("; -fx-border-color: ").append(bg2).append("; }\n");
             css.append(".cursor-btn:hover { -fx-background-color: ").append(bg2).append("; -fx-border-color: ").append(bg3).append("; }\n");
 
@@ -343,11 +347,12 @@ public class ProfileController implements Initializable {
                .append("    -fx-background-color: ").append(ddHex).append(";\n}\n");
 
             // ── Navigation ──
+            String navText = dark ? lHex : dHex;
             css.append(".nav-button.active {\n")
-               .append("    -fx-background-color: rgba(").append(rgb).append(", 0.15);\n")
-               .append("    -fx-text-fill: ").append(lHex).append(";\n}\n");
+               .append("    -fx-background-color: rgba(").append(rgb).append(", ").append(dark ? "0.15" : "0.12").append(");\n")
+               .append("    -fx-text-fill: ").append(navText).append(";\n}\n");
             css.append(".nav-button.active .ikonli-font-icon {\n")
-               .append("    -fx-icon-color: ").append(lHex).append(";\n}\n");
+               .append("    -fx-icon-color: ").append(navText).append(";\n}\n");
             css.append(".nav-button:hover {\n")
                .append("    -fx-background-color: rgba(").append(rgb).append(", 0.08);\n}\n");
             css.append(".title-bar-logo {\n")
@@ -557,9 +562,6 @@ public class ProfileController implements Initializable {
             css.append(".landing-ai-text { -fx-text-fill: ").append(lHex).append("; }\n");
 
             // ── New accessibility buttons ──
-            css.append(".cb-mode-btn.cb-active {\n")
-               .append("    -fx-background-color: rgba(").append(rgb).append(", 0.12);\n")
-               .append("    -fx-border-color: ").append(hex).append(";\n}\n");
             css.append(".cursor-btn.cursor-active {\n")
                .append("    -fx-background-color: rgba(").append(rgb).append(", 0.12);\n")
                .append("    -fx-border-color: ").append(hex).append(";\n")
@@ -579,98 +581,6 @@ public class ProfileController implements Initializable {
         double g = base.getGreen() * (1 - amount) + accent.getGreen() * amount;
         double b = base.getBlue() * (1 - amount) + accent.getBlue() * amount;
         return Color.color(Math.min(r, 1), Math.min(g, 1), Math.min(b, 1));
-    }
-
-    private void appendColorBlindCss(StringBuilder css, String mode) {
-        // Each mode remaps the 3 semantic colors: success (green), warning (amber), danger (red)
-        // to alternatives that are distinguishable for that type of color blindness
-        String successMain, successLight, dangerMain, dangerLight, warningMain, warningLight;
-
-        switch (mode) {
-            case "deuteranopia":
-                // Red-green blind: green→blue, red→orange/yellow
-                successMain = "#2563EB"; successLight = "#60A5FA";
-                dangerMain = "#F59E0B"; dangerLight = "#FBBF24";
-                warningMain = "#D946EF"; warningLight = "#E879F9";
-                break;
-            case "protanopia":
-                // Red-blind: green→cyan, red→yellow
-                successMain = "#0EA5E9"; successLight = "#38BDF8";
-                dangerMain = "#EAB308"; dangerLight = "#FDE047";
-                warningMain = "#D946EF"; warningLight = "#E879F9";
-                break;
-            case "tritanopia":
-                // Blue-yellow blind: blue→red/pink, yellow→pink
-                successMain = "#10B981"; successLight = "#34D399";
-                dangerMain = "#EC4899"; dangerLight = "#F472B6";
-                warningMain = "#F97316"; warningLight = "#FB923C";
-                break;
-            default:
-                return;
-        }
-
-        String sR = String.valueOf((int)(Color.web(successMain).getRed()*255));
-        String sG = String.valueOf((int)(Color.web(successMain).getGreen()*255));
-        String sB = String.valueOf((int)(Color.web(successMain).getBlue()*255));
-        String sRgb = sR+","+sG+","+sB;
-
-        String dR = String.valueOf((int)(Color.web(dangerMain).getRed()*255));
-        String dG = String.valueOf((int)(Color.web(dangerMain).getGreen()*255));
-        String dB = String.valueOf((int)(Color.web(dangerMain).getBlue()*255));
-        String dRgb = dR+","+dG+","+dB;
-
-        String wR = String.valueOf((int)(Color.web(warningMain).getRed()*255));
-        String wG = String.valueOf((int)(Color.web(warningMain).getGreen()*255));
-        String wB = String.valueOf((int)(Color.web(warningMain).getBlue()*255));
-        String wRgb = wR+","+wG+","+wB;
-
-        // ── Progress bars ──
-        css.append(".progress-bar.success > .bar { -fx-background-color: linear-gradient(to right, ").append(successMain).append(", ").append(successLight).append("); }\n");
-        css.append(".progress-bar.danger > .bar { -fx-background-color: linear-gradient(to right, ").append(dangerMain).append(", ").append(dangerLight).append("); }\n");
-        css.append(".progress-bar.warning > .bar { -fx-background-color: linear-gradient(to right, ").append(warningMain).append(", ").append(warningLight).append("); }\n");
-
-        // ── Stat icon boxes ──
-        css.append(".stat-icon-box.success { -fx-background-color: rgba(").append(sRgb).append(", 0.15); }\n");
-        css.append(".stat-icon-box.success .ikonli-font-icon { -fx-icon-color: ").append(successLight).append("; }\n");
-        css.append(".stat-icon-box.warning { -fx-background-color: rgba(").append(wRgb).append(", 0.15); }\n");
-        css.append(".stat-icon-box.warning .ikonli-font-icon { -fx-icon-color: ").append(warningLight).append("; }\n");
-        css.append(".stat-icon-box.danger { -fx-background-color: rgba(").append(dRgb).append(", 0.15); }\n");
-        css.append(".stat-icon-box.danger .ikonli-font-icon { -fx-icon-color: ").append(dangerLight).append("; }\n");
-
-        // ── Badges ──
-        css.append(".badge.success { -fx-background-color: rgba(").append(sRgb).append(", 0.15); }\n");
-        css.append(".badge.success .label { -fx-text-fill: ").append(successLight).append("; }\n");
-        css.append(".badge.warning { -fx-background-color: rgba(").append(wRgb).append(", 0.15); }\n");
-        css.append(".badge.warning .label { -fx-text-fill: ").append(warningLight).append("; }\n");
-        css.append(".badge.danger { -fx-background-color: rgba(").append(dRgb).append(", 0.15); }\n");
-        css.append(".badge.danger .label { -fx-text-fill: ").append(dangerLight).append("; }\n");
-
-        // ── Save status labels ──
-        css.append(".save-status-label.success { -fx-background-color: rgba(").append(sRgb).append(", 0.15); -fx-text-fill: ").append(successLight).append("; }\n");
-        css.append(".save-status-label.danger { -fx-background-color: rgba(").append(dRgb).append(", 0.15); -fx-text-fill: ").append(dangerLight).append("; }\n");
-
-        // ── Charts ──
-        css.append(".default-color1.chart-series-line { -fx-stroke: ").append(successMain).append("; }\n");
-        css.append(".default-color1.chart-line-symbol { -fx-background-color: ").append(successMain).append(", #0F172A; }\n");
-        css.append(".default-color1.chart-bar { -fx-bar-fill: ").append(successMain).append("; }\n");
-        css.append(".default-color2.chart-bar { -fx-bar-fill: ").append(warningMain).append("; }\n");
-        css.append(".default-color1.chart-pie { -fx-pie-color: ").append(successMain).append("; }\n");
-        css.append(".default-color2.chart-pie { -fx-pie-color: ").append(warningMain).append("; }\n");
-
-        // ── Board / Kanban ──
-        css.append(".board-accent-done { -fx-background-color: ").append(successMain).append("; }\n");
-
-        // ── Buttons ──
-        css.append(".btn-danger-outline { -fx-border-color: rgba(").append(dRgb).append(", 0.35); -fx-text-fill: ").append(dangerLight).append("; }\n");
-        css.append(".btn-danger-outline .ikonli-font-icon { -fx-icon-color: ").append(dangerLight).append("; }\n");
-        css.append(".btn-danger-outline:hover { -fx-background-color: rgba(").append(dRgb).append(", 0.15); -fx-border-color: ").append(dangerLight).append("; }\n");
-
-        // ── Gender icon colors (green→success, pink stays distinguishable) ──
-        css.append(".gender-male-icon { -fx-background-color: linear-gradient(to bottom right, ").append(successMain).append(", derive(").append(successMain).append(", -20%)); }\n");
-
-        // ── Landing page mini bars ──
-        css.append(".landing-mini-bar-blue { -fx-background-color: ").append(successMain).append("; }\n");
-        css.append(".landing-mini-bar-green { -fx-background-color: ").append(successMain).append("; }\n");
     }
 
     private void applyDynamicStylesheet(String css) {
@@ -775,25 +685,6 @@ public class ProfileController implements Initializable {
     private void setFontGeorgia() { applyFontFamily("Georgia", "Georgia", fontGeorgia); }
     @FXML
     private void setFontCascadia() { applyFontFamily("Cascadia Code", "Cascadia", fontCascadia); }
-
-    // ============================================
-    // COLOR BLIND MODE
-    // ============================================
-
-    private void markColorBlindActive(Button btn) {
-        if (activeColorBlindBtn != null) activeColorBlindBtn.getStyleClass().remove("cb-active");
-        activeColorBlindBtn = btn;
-        btn.getStyleClass().add("cb-active");
-    }
-
-    @FXML
-    private void setCbNone() { markColorBlindActive(cbNoneBtn); colorBlindMode = null; rebuildDynamicCss(); }
-    @FXML
-    private void setCbDeuteranopia() { markColorBlindActive(cbDeutBtn); colorBlindMode = "deuteranopia"; rebuildDynamicCss(); }
-    @FXML
-    private void setCbProtanopia() { markColorBlindActive(cbProtBtn); colorBlindMode = "protanopia"; rebuildDynamicCss(); }
-    @FXML
-    private void setCbTritanopia() { markColorBlindActive(cbTritBtn); colorBlindMode = "tritanopia"; rebuildDynamicCss(); }
 
     // ============================================
     // CUSTOM CURSORS

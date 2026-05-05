@@ -4132,42 +4132,6 @@
     -fx-padding: 3 10;
 }
 
-/* ── Color Blind Mode Buttons ──────────────────── */
-.cb-mode-btn {
-    -fx-background-color: #0F172A;
-    -fx-border-color: #1E293B;
-    -fx-border-width: 1.5;
-    -fx-border-radius: 14;
-    -fx-background-radius: 14;
-    -fx-padding: 14 8;
-    -fx-cursor: hand;
-    -fx-content-display: graphic-only;
-}
-.cb-mode-btn:hover {
-    -fx-background-color: #1E293B;
-    -fx-border-color: #334155;
-}
-.cb-mode-btn.cb-active {
-    -fx-background-color: rgba(139, 92, 246, 0.12);
-    -fx-border-color: #8B5CF6;
-}
-.cb-icon-box {
-    -fx-background-radius: 10;
-    -fx-pref-width: 36;
-    -fx-pref-height: 36;
-    -fx-min-width: 36;
-    -fx-min-height: 36;
-    -fx-alignment: center;
-}
-.cb-mode-label {
-    -fx-font-size: 11px;
-    -fx-font-weight: 600;
-    -fx-text-fill: #94A3B8;
-}
-.cb-mode-btn.cb-active .cb-mode-label {
-    -fx-text-fill: #E2E8F0;
-}
-
 /* ── Cursor Shape Buttons ─────────────────────── */
 .cursor-btn {
     -fx-background-color: #0F172A;

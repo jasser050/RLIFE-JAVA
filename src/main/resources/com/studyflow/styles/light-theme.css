@@ -2425,42 +2425,6 @@
 }
 /* End planning branch design overrides for light theme */
 
-/* ── Color Blind Mode Buttons (Light) ─────────── */
-.cb-mode-btn {
-    -fx-background-color: #FFFFFF;
-    -fx-border-color: #E2E8F0;
-    -fx-border-width: 1.5;
-    -fx-border-radius: 14;
-    -fx-background-radius: 14;
-    -fx-padding: 14 8;
-    -fx-cursor: hand;
-    -fx-content-display: graphic-only;
-}
-.cb-mode-btn:hover {
-    -fx-background-color: #F8FAFC;
-    -fx-border-color: #CBD5E1;
-}
-.cb-mode-btn.cb-active {
-    -fx-background-color: rgba(139, 92, 246, 0.08);
-    -fx-border-color: #8B5CF6;
-}
-.cb-icon-box {
-    -fx-background-radius: 10;
-    -fx-pref-width: 36;
-    -fx-pref-height: 36;
-    -fx-min-width: 36;
-    -fx-min-height: 36;
-    -fx-alignment: center;
-}
-.cb-mode-label {
-    -fx-font-size: 11px;
-    -fx-font-weight: 600;
-    -fx-text-fill: #64748B;
-}
-.cb-mode-btn.cb-active .cb-mode-label {
-    -fx-text-fill: #1E293B;
-}
-
 /* ── Cursor Shape Buttons (Light) ─────────────── */
 .cursor-btn {
     -fx-background-color: #FFFFFF;
@@ -2582,4 +2546,117 @@
     -fx-background-color: rgba(148, 163, 184, 0.1);
     -fx-background-radius: 8;
     -fx-padding: 3 10;
+}
+
+/* ── Accessibility Components (Light) ─────────── */
+
+.toggle-card {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #D7E0EE;
+    -fx-border-width: 1;
+    -fx-border-radius: 14;
+    -fx-background-radius: 14;
+    -fx-padding: 18;
+}
+.toggle-card:hover {
+    -fx-border-color: #B8C5D6;
+}
+.toggle-title {
+    -fx-text-fill: #122033;
+}
+.toggle-subtitle {
+    -fx-text-fill: #5F728A;
+}
+.toggle-switch .box {
+    -fx-background-color: #CBD5E1;
+    -fx-border-color: #B8C5D6;
+}
+.toggle-switch:selected .box {
+    -fx-background-color: #8B5CF6;
+    -fx-border-color: #A78BFA;
+}
+
+/* Font family buttons */
+.font-family-btn {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #D7E0EE;
+    -fx-border-width: 2;
+    -fx-border-radius: 14;
+    -fx-background-radius: 14;
+}
+.font-family-btn:hover {
+    -fx-background-color: #F3F6FB;
+    -fx-border-color: #B8C5D6;
+}
+.font-family-btn.font-active {
+    -fx-background-color: rgba(139, 92, 246, 0.08);
+    -fx-border-color: #8B5CF6;
+}
+.font-family-btn .label {
+    -fx-text-fill: #122033;
+}
+.font-family-name {
+    -fx-text-fill: #5F728A;
+}
+.font-family-btn.font-active .font-family-name {
+    -fx-text-fill: #7C3AED;
+}
+
+/* Font size slider */
+.font-size-slider .track {
+    -fx-background-color: #D7E0EE;
+    -fx-background-radius: 6;
+}
+.font-size-slider .thumb {
+    -fx-background-color: #8B5CF6;
+    -fx-effect: dropshadow(gaussian, rgba(139, 92, 246, 0.4), 6, 0, 0, 2);
+}
+.font-size-slider .thumb:hover {
+    -fx-background-color: #A78BFA;
+}
+.font-size-tick-label {
+    -fx-text-fill: #94A3B8;
+}
+.font-size-tick-active {
+    -fx-text-fill: #8B5CF6;
+    -fx-font-weight: bold;
+}
+.font-size-preview {
+    -fx-text-fill: #7C3AED;
+    -fx-background-color: rgba(139, 92, 246, 0.1);
+    -fx-background-radius: 8;
+    -fx-padding: 3 10;
+}
+
+/* Accent color buttons */
+.accent-color-btn {
+    -fx-background-radius: 12;
+    -fx-border-radius: 12;
+    -fx-border-width: 2;
+    -fx-cursor: hand;
+}
+.accent-default-btn {
+    -fx-background-color: #F3F6FB;
+    -fx-border-color: #B8C5D6;
+    -fx-border-style: dashed;
+}
+
+/* Card header border */
+.card-header {
+    -fx-border-color: #E8EDF5;
+}
+
+/* Auth field in light */
+.auth-field {
+    -fx-background-color: #F3F6FB;
+    -fx-border-color: #D7E0EE;
+    -fx-text-fill: #122033;
+    -fx-prompt-text-fill: #94A3B8;
+}
+.auth-field:focused {
+    -fx-border-color: #8B5CF6;
+    -fx-background-color: #FFFFFF;
+}
+.auth-field-label {
+    -fx-text-fill: #334155;
 }

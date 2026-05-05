@@ -450,61 +450,6 @@
                         </HBox>
                     </VBox>
 
-                    <!-- Color Blind Mode -->
-                    <VBox spacing="14">
-                        <HBox alignment="CENTER_LEFT">
-                            <Label text="Color Vision" styleClass="auth-field-label"/>
-                            <Region HBox.hgrow="ALWAYS"/>
-                            <Label text="Adjust colors for color blindness" styleClass="toggle-subtitle"/>
-                        </HBox>
-                        <HBox spacing="10">
-                            <Button fx:id="cbNoneBtn" styleClass="cb-mode-btn" onAction="#setCbNone"
-                                    maxWidth="Infinity" HBox.hgrow="ALWAYS">
-                                <graphic>
-                                    <VBox alignment="CENTER" spacing="6">
-                                        <StackPane styleClass="cb-icon-box" style="-fx-background-color: linear-gradient(to bottom right, #3B82F6, #10B981, #EF4444);">
-                                            <FontIcon iconLiteral="fth-eye" iconSize="16" iconColor="white"/>
-                                        </StackPane>
-                                        <Label text="Normal" styleClass="cb-mode-label"/>
-                                    </VBox>
-                                </graphic>
-                            </Button>
-                            <Button fx:id="cbDeutBtn" styleClass="cb-mode-btn" onAction="#setCbDeuteranopia"
-                                    maxWidth="Infinity" HBox.hgrow="ALWAYS">
-                                <graphic>
-                                    <VBox alignment="CENTER" spacing="6">
-                                        <StackPane styleClass="cb-icon-box" style="-fx-background-color: linear-gradient(to bottom right, #2563EB, #F59E0B);">
-                                            <FontIcon iconLiteral="fth-eye" iconSize="16" iconColor="white"/>
-                                        </StackPane>
-                                        <Label text="Deuter." styleClass="cb-mode-label"/>
-                                    </VBox>
-                                </graphic>
-                            </Button>
-                            <Button fx:id="cbProtBtn" styleClass="cb-mode-btn" onAction="#setCbProtanopia"
-                                    maxWidth="Infinity" HBox.hgrow="ALWAYS">
-                                <graphic>
-                                    <VBox alignment="CENTER" spacing="6">
-                                        <StackPane styleClass="cb-icon-box" style="-fx-background-color: linear-gradient(to bottom right, #0EA5E9, #EAB308);">
-                                            <FontIcon iconLiteral="fth-eye" iconSize="16" iconColor="white"/>
-                                        </StackPane>
-                                        <Label text="Protan." styleClass="cb-mode-label"/>
-                                    </VBox>
-                                </graphic>
-                            </Button>
-                            <Button fx:id="cbTritBtn" styleClass="cb-mode-btn" onAction="#setCbTritanopia"
-                                    maxWidth="Infinity" HBox.hgrow="ALWAYS">
-                                <graphic>
-                                    <VBox alignment="CENTER" spacing="6">
-                                        <StackPane styleClass="cb-icon-box" style="-fx-background-color: linear-gradient(to bottom right, #EC4899, #10B981);">
-                                            <FontIcon iconLiteral="fth-eye" iconSize="16" iconColor="white"/>
-                                        </StackPane>
-                                        <Label text="Tritan." styleClass="cb-mode-label"/>
-                                    </VBox>
-                                </graphic>
-                            </Button>
-                        </HBox>
-                    </VBox>
-
                     <!-- Custom Cursor Shapes -->
                     <VBox spacing="14">
                         <HBox alignment="CENTER_LEFT">

@@ -23,6 +23,7 @@ public class App extends Application {
     private static Scene scene;
     private static Stage primaryStage;
     private static boolean darkTheme = true;
+    private static Runnable onThemeChanged;
 
     public enum Theme {
         DARK,
@@ -82,6 +83,11 @@ public class App extends Application {
     public static void toggleTheme() {
         darkTheme = !darkTheme;
         applyTheme();
+        if (onThemeChanged != null) onThemeChanged.run();
+    }
+
+    public static void setOnThemeChanged(Runnable callback) {
+        onThemeChanged = callback;
     }
 
     public static boolean isDarkTheme() {
