@@ -450,6 +450,61 @@
                         </HBox>
                     </VBox>
 
+                    <!-- Border Radius Style -->
+                    <VBox spacing="14">
+                        <HBox alignment="CENTER_LEFT">
+                            <Label text="Border Radius" styleClass="auth-field-label"/>
+                            <Region HBox.hgrow="ALWAYS"/>
+                            <Label fx:id="borderRadiusLabel" text="Soft" styleClass="font-size-preview"/>
+                        </HBox>
+                        <HBox spacing="10">
+                            <Button fx:id="radiusSharp" styleClass="radius-style-btn" onAction="#setRadiusSharp"
+                                    maxWidth="Infinity" HBox.hgrow="ALWAYS">
+                                <graphic>
+                                    <VBox alignment="CENTER" spacing="6">
+                                        <StackPane styleClass="radius-preview-box" style="-fx-background-radius: 0; -fx-border-radius: 0;">
+                                            <FontIcon iconLiteral="fth-square" iconSize="18" iconColor="#94A3B8"/>
+                                        </StackPane>
+                                        <Label text="Sharp" styleClass="radius-style-label"/>
+                                    </VBox>
+                                </graphic>
+                            </Button>
+                            <Button fx:id="radiusSoft" styleClass="radius-style-btn" onAction="#setRadiusSoft"
+                                    maxWidth="Infinity" HBox.hgrow="ALWAYS">
+                                <graphic>
+                                    <VBox alignment="CENTER" spacing="6">
+                                        <StackPane styleClass="radius-preview-box" style="-fx-background-radius: 10; -fx-border-radius: 10;">
+                                            <FontIcon iconLiteral="fth-square" iconSize="18" iconColor="#94A3B8"/>
+                                        </StackPane>
+                                        <Label text="Soft" styleClass="radius-style-label"/>
+                                    </VBox>
+                                </graphic>
+                            </Button>
+                            <Button fx:id="radiusRound" styleClass="radius-style-btn" onAction="#setRadiusRound"
+                                    maxWidth="Infinity" HBox.hgrow="ALWAYS">
+                                <graphic>
+                                    <VBox alignment="CENTER" spacing="6">
+                                        <StackPane styleClass="radius-preview-box" style="-fx-background-radius: 20; -fx-border-radius: 20;">
+                                            <FontIcon iconLiteral="fth-square" iconSize="18" iconColor="#94A3B8"/>
+                                        </StackPane>
+                                        <Label text="Round" styleClass="radius-style-label"/>
+                                    </VBox>
+                                </graphic>
+                            </Button>
+                            <Button fx:id="radiusPill" styleClass="radius-style-btn" onAction="#setRadiusPill"
+                                    maxWidth="Infinity" HBox.hgrow="ALWAYS">
+                                <graphic>
+                                    <VBox alignment="CENTER" spacing="6">
+                                        <StackPane styleClass="radius-preview-box" style="-fx-background-radius: 50; -fx-border-radius: 50;">
+                                            <FontIcon iconLiteral="fth-circle" iconSize="18" iconColor="#94A3B8"/>
+                                        </StackPane>
+                                        <Label text="Pill" styleClass="radius-style-label"/>
+                                    </VBox>
+                                </graphic>
+                            </Button>
+                        </HBox>
+                    </VBox>
+
                     <!-- Custom Cursor Shapes -->
                     <VBox spacing="14">
                         <HBox alignment="CENTER_LEFT">

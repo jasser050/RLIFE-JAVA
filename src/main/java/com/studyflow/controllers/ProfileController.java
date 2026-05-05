@@ -99,14 +99,23 @@ public class ProfileController implements Initializable {
     private String currentFontFamily = null; // null = default
     private double currentUiScale = 1.0;
     private String currentCursorStyle = "default";
+    private String currentBorderRadius = "soft"; // sharp, soft, round, pill
     private Button activeAccentBtn;
     private Button activeFontBtn;
     private Button activeCursorBtn;
+    private Button activeRadiusBtn;
     private String dynamicCssPath;
 
     // New accessibility FXML fields
     @FXML private Slider uiScaleSlider;
     @FXML private Label uiScaleLabel;
+    // Border radius buttons
+    @FXML private Button radiusSharp;
+    @FXML private Button radiusSoft;
+    @FXML private Button radiusRound;
+    @FXML private Button radiusPill;
+    @FXML private Label borderRadiusLabel;
+
     @FXML private Button cursorDefault;
     @FXML private Button cursorPen;
     @FXML private Button cursorStar;
@@ -197,12 +206,15 @@ public class ProfileController implements Initializable {
         activeFontBtn = fontSegoe;
         markFontActive(fontSegoe);
 
+        activeRadiusBtn = radiusSoft;
+        markRadiusActive(radiusSoft);
+
         activeCursorBtn = cursorDefault;
         markCursorActive(cursorDefault);
 
         // Re-apply dynamic CSS when theme toggles so tinting adapts
         App.setOnThemeChanged(() -> {
-            if (currentAccentHex != null) rebuildDynamicCss();
+            if (currentAccentHex != null || !"soft".equals(currentBorderRadius)) rebuildDynamicCss();
         });
     }
 
@@ -226,6 +238,57 @@ public class ProfileController implements Initializable {
         // --- UI Scale ---
         if (currentUiScale != 1.0) {
             css.append(".scroll-content, .card-body, .card { -fx-scale-x: 1; -fx-scale-y: 1; }\n");
+        }
+
+        // --- Border Radius ---
+        if (!"soft".equals(currentBorderRadius)) {
+            String cardR, btnR, fieldR, pillR, smallR;
+            switch (currentBorderRadius) {
+                case "sharp":
+                    cardR = "0"; btnR = "0"; fieldR = "0"; pillR = "0"; smallR = "0";
+                    break;
+                case "round":
+                    cardR = "24"; btnR = "16"; fieldR = "16"; pillR = "24"; smallR = "12";
+                    break;
+                case "pill":
+                    cardR = "32"; btnR = "50"; fieldR = "50"; pillR = "50"; smallR = "50";
+                    break;
+                default:
+                    cardR = "16"; btnR = "10"; fieldR = "10"; pillR = "16"; smallR = "8";
+            }
+            css.append(".card { -fx-background-radius: ").append(cardR).append("; -fx-border-radius: ").append(cardR).append("; }\n");
+            css.append(".toggle-card { -fx-background-radius: ").append(cardR).append("; -fx-border-radius: ").append(cardR).append("; }\n");
+            css.append(".auth-field { -fx-background-radius: ").append(fieldR).append("; -fx-border-radius: ").append(fieldR).append("; }\n");
+            css.append(".auth-btn-primary, .auth-btn-primary-sm { -fx-background-radius: ").append(btnR).append("; }\n");
+            css.append(".btn-primary { -fx-background-radius: ").append(btnR).append("; }\n");
+            css.append(".btn-danger-outline { -fx-background-radius: ").append(btnR).append("; -fx-border-radius: ").append(btnR).append("; }\n");
+            css.append(".btn-ghost { -fx-background-radius: ").append(btnR).append("; }\n");
+            css.append(".search-field { -fx-background-radius: ").append(fieldR).append("; -fx-border-radius: ").append(fieldR).append("; }\n");
+            css.append(".badge { -fx-background-radius: ").append(pillR).append("; }\n");
+            css.append(".nav-button { -fx-background-radius: ").append(btnR).append("; }\n");
+            css.append(".topbar-button { -fx-background-radius: ").append(btnR).append("; }\n");
+            css.append(".gender-card { -fx-background-radius: ").append(cardR).append("; -fx-border-radius: ").append(cardR).append("; }\n");
+            css.append(".bio-container { -fx-background-radius: ").append(cardR).append("; -fx-border-radius: ").append(cardR).append("; }\n");
+            css.append(".font-family-btn { -fx-background-radius: ").append(smallR).append("; -fx-border-radius: ").append(smallR).append("; }\n");
+            css.append(".cursor-btn { -fx-background-radius: ").append(smallR).append("; -fx-border-radius: ").append(smallR).append("; }\n");
+            css.append(".radius-style-btn { -fx-background-radius: ").append(smallR).append("; -fx-border-radius: ").append(smallR).append("; }\n");
+            css.append(".pattern-btn { -fx-background-radius: ").append(smallR).append("; -fx-border-radius: ").append(smallR).append("; }\n");
+            css.append(".accent-color-btn { -fx-background-radius: ").append(smallR).append("; -fx-border-radius: ").append(smallR).append("; }\n");
+            css.append(".accent-default-btn { -fx-background-radius: ").append(smallR).append("; -fx-border-radius: ").append(smallR).append("; }\n");
+            css.append(".font-size-preview { -fx-background-radius: ").append(pillR).append("; }\n");
+            css.append(".font-size-slider .thumb { -fx-background-radius: ").append(pillR).append("; }\n");
+            css.append(".profile-hero-banner { -fx-background-radius: ").append(cardR).append("; -fx-border-radius: ").append(cardR).append("; }\n");
+            css.append(".profile-info-pill { -fx-background-radius: ").append(pillR).append("; }\n");
+            css.append(".stat-icon-box { -fx-background-radius: ").append(smallR).append("; }\n");
+            css.append(".toggle-icon, .toggle-icon-contrast { -fx-background-radius: ").append(smallR).append("; }\n");
+            css.append(".profile-grad-card { -fx-background-radius: ").append(cardR).append("; }\n");
+            css.append(".profile-grad-icon { -fx-background-radius: ").append(smallR).append("; }\n");
+            css.append(".admin-input, .admin-textarea { -fx-background-radius: ").append(fieldR).append("; -fx-border-radius: ").append(fieldR).append("; }\n");
+            css.append(".chat-bubble-user, .chat-bubble-ai { -fx-background-radius: ").append(cardR).append("; }\n");
+            css.append(".chat-send-btn { -fx-background-radius: ").append(btnR).append("; }\n");
+            css.append(".chat-input-area { -fx-background-radius: ").append(cardR).append("; -fx-border-radius: ").append(cardR).append("; }\n");
+            css.append(".scroll-bar .thumb { -fx-background-radius: ").append(pillR).append("; }\n");
+            css.append(".scroll-bar .track { -fx-background-radius: ").append(pillR).append("; }\n");
         }
 
         // --- Accent color overrides (massive app-wide impact) ---
@@ -310,9 +373,11 @@ public class ProfileController implements Initializable {
             css.append(".font-family-btn { -fx-background-color: ").append(bg1).append("; -fx-border-color: ").append(bg2).append("; }\n");
             css.append(".font-family-btn:hover { -fx-background-color: ").append(bg2).append("; -fx-border-color: ").append(bg3).append("; }\n");
 
-            // Cursor buttons
+            // Cursor, radius & pattern buttons
             css.append(".cursor-btn { -fx-background-color: ").append(bg1).append("; -fx-border-color: ").append(bg2).append("; }\n");
             css.append(".cursor-btn:hover { -fx-background-color: ").append(bg2).append("; -fx-border-color: ").append(bg3).append("; }\n");
+            css.append(".radius-style-btn { -fx-background-color: ").append(bg1).append("; -fx-border-color: ").append(bg2).append("; }\n");
+            css.append(".radius-style-btn:hover { -fx-background-color: ").append(bg2).append("; -fx-border-color: ").append(bg3).append("; }\n");
 
             // Accent color buttons background
             css.append(".accent-default-btn { -fx-background-color: ").append(bg2).append("; -fx-border-color: ").append(bg3).append("; }\n");
@@ -562,6 +627,9 @@ public class ProfileController implements Initializable {
             css.append(".landing-ai-text { -fx-text-fill: ").append(lHex).append("; }\n");
 
             // ── New accessibility buttons ──
+            css.append(".radius-style-btn.radius-active {\n")
+               .append("    -fx-background-color: rgba(").append(rgb).append(", 0.12);\n")
+               .append("    -fx-border-color: ").append(hex).append(";\n}\n");
             css.append(".cursor-btn.cursor-active {\n")
                .append("    -fx-background-color: rgba(").append(rgb).append(", 0.12);\n")
                .append("    -fx-border-color: ").append(hex).append(";\n")
@@ -685,6 +753,25 @@ public class ProfileController implements Initializable {
     private void setFontGeorgia() { applyFontFamily("Georgia", "Georgia", fontGeorgia); }
     @FXML
     private void setFontCascadia() { applyFontFamily("Cascadia Code", "Cascadia", fontCascadia); }
+
+    // ============================================
+    // BORDER RADIUS
+    // ============================================
+
+    private void markRadiusActive(Button btn) {
+        if (activeRadiusBtn != null) activeRadiusBtn.getStyleClass().remove("radius-active");
+        activeRadiusBtn = btn;
+        btn.getStyleClass().add("radius-active");
+    }
+
+    @FXML private void setRadiusSharp() { markRadiusActive(radiusSharp); currentBorderRadius = "sharp"; borderRadiusLabel.setText("Sharp"); rebuildDynamicCss(); }
+    @FXML private void setRadiusSoft() { markRadiusActive(radiusSoft); currentBorderRadius = "soft"; borderRadiusLabel.setText("Soft"); rebuildDynamicCss(); }
+    @FXML private void setRadiusRound() { markRadiusActive(radiusRound); currentBorderRadius = "round"; borderRadiusLabel.setText("Round"); rebuildDynamicCss(); }
+    @FXML private void setRadiusPill() { markRadiusActive(radiusPill); currentBorderRadius = "pill"; borderRadiusLabel.setText("Pill"); rebuildDynamicCss(); }
+
+    // ============================================
+    // BACKGROUND PATTERN
+    // ============================================
 
     // ============================================
     // CUSTOM CURSORS

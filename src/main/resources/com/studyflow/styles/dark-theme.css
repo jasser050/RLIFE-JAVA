@@ -4132,6 +4132,84 @@
     -fx-padding: 3 10;
 }
 
+/* ── Border Radius Style Buttons ─────────────── */
+.radius-style-btn {
+    -fx-background-color: #0F172A;
+    -fx-border-color: #1E293B;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 14;
+    -fx-background-radius: 14;
+    -fx-padding: 14 8;
+    -fx-cursor: hand;
+    -fx-content-display: graphic-only;
+}
+.radius-style-btn:hover {
+    -fx-background-color: #1E293B;
+    -fx-border-color: #334155;
+}
+.radius-style-btn.radius-active {
+    -fx-background-color: rgba(139, 92, 246, 0.12);
+    -fx-border-color: #8B5CF6;
+}
+.radius-preview-box {
+    -fx-background-color: #1E293B;
+    -fx-border-color: #334155;
+    -fx-border-width: 1.5;
+    -fx-pref-width: 40;
+    -fx-pref-height: 36;
+    -fx-min-width: 40;
+    -fx-min-height: 36;
+    -fx-alignment: center;
+}
+.radius-style-label {
+    -fx-font-size: 11px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #94A3B8;
+}
+.radius-style-btn.radius-active .radius-style-label {
+    -fx-text-fill: #E2E8F0;
+}
+
+/* ── Background Pattern Buttons ──────────────── */
+.pattern-btn {
+    -fx-background-color: #0F172A;
+    -fx-border-color: #1E293B;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 14;
+    -fx-background-radius: 14;
+    -fx-padding: 14 8;
+    -fx-cursor: hand;
+    -fx-content-display: graphic-only;
+}
+.pattern-btn:hover {
+    -fx-background-color: #1E293B;
+    -fx-border-color: #334155;
+}
+.pattern-btn.pattern-active {
+    -fx-background-color: rgba(139, 92, 246, 0.12);
+    -fx-border-color: #8B5CF6;
+}
+.pattern-preview-box {
+    -fx-background-color: #1E293B;
+    -fx-border-color: #334155;
+    -fx-border-width: 1;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-pref-width: 40;
+    -fx-pref-height: 36;
+    -fx-min-width: 40;
+    -fx-min-height: 36;
+    -fx-alignment: center;
+}
+.pattern-label {
+    -fx-font-size: 11px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #94A3B8;
+}
+.pattern-btn.pattern-active .pattern-label {
+    -fx-text-fill: #E2E8F0;
+}
+
 /* ── Cursor Shape Buttons ─────────────────────── */
 .cursor-btn {
     -fx-background-color: #0F172A;
