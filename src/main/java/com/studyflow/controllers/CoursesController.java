@@ -13,6 +13,7 @@ import com.studyflow.services.AntiFraudEngine;
 import com.studyflow.services.FraudEvent;
 import com.studyflow.services.VoiceAssistantService;
 import javafx.animation.KeyFrame;
+import javafx.animation.PauseTransition;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
@@ -29,6 +30,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.*;
 import javafx.util.Duration;
 import org.kordamp.ikonli.javafx.FontIcon;
 import javafx.scene.control.Tooltip;
@@ -41,6 +43,7 @@ import com.studyflow.utils.PdfExporter;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.scene.chart.*;
+import javafx.scene.web.WebView;
 
 public class CoursesController implements Initializable {
 
@@ -53,6 +56,17 @@ public class CoursesController implements Initializable {
     @FXML private Label statMeilleur;
     @FXML private HBox  statCards;
     @FXML private VBox  smartQuizCard;
+    @FXML private HBox  flamyBookCard;
+    @FXML private StackPane flameMascotPane;
+    @FXML private Label flamyTitleLabel;
+    @FXML private Label flamyMoodLabel;
+    @FXML private Label flamyLevelLabel;
+    @FXML private Label flamyMessageLabel;
+    @FXML private Label flamyProgressLabel;
+    @FXML private Label flamyCoinsLabel;
+    @FXML private ProgressBar flamyProgressBar;
+    @FXML private HBox flameEffectsRow;
+    @FXML private FlowPane themeShopFlow;
 
     // ── Header ─────────────────────────────────────────────────
     @FXML private Label            pageTitle;
@@ -62,14 +76,24 @@ public class CoursesController implements Initializable {
     @FXML private Button           btnHeaderAction;
     @FXML private FontIcon         btnHeaderIcon;
     @FXML private Button           btnVoiceAssistant;
+    @FXML private ComboBox<String> cmbLanguage;
 
     // ── Voice Assistant UI ─────────────────────────────────────
     @FXML private VBox              voiceBar;
     @FXML private Label             voiceStatusLabel;
     @FXML private Label             voiceTranscriptionLabel;
-    @FXML private Label             voiceResponseLabel;
+    @FXML private TextArea          voiceResponseLabel;
     @FXML private ProgressIndicator voiceProgress;
+    @FXML private Button            btnVoiceMic;
     @FXML private Button            btnVoiceCancel;
+    @FXML private Button            btnVoiceStopAudio;
+    @FXML private Button            btnVoicePlayAudio;
+    @FXML private CheckBox          voiceReadAloudToggle;
+    @FXML private Label             voiceVideoQuestionLabel;
+    @FXML private Label             voiceVideoStoryboardLabel;
+    @FXML private Button            btnGenerateVoiceVideo;
+    @FXML private ProgressIndicator voiceVideoProgress;
+    @FXML private WebView           voiceVideoWebView;
 
     // ── Vues ───────────────────────────────────────────────────
     @FXML private VBox     listView;
@@ -148,6 +172,7 @@ public class CoursesController implements Initializable {
     //  CITY GAME — controller reference
     // ════════════════════════════════════════════════════════════
     private CityViewController cityViewController;
+    private boolean cityViewLoading = false;
 
     // ════════════════════════════════════════════════════════════
     //  ANTI-FRAUD ENGINE
@@ -179,6 +204,23 @@ public class CoursesController implements Initializable {
     private static final PseudoClass SELECTED   = PseudoClass.getPseudoClass("selected");
 
     private boolean isRecordingVoice = false;
+    private String lastVoiceQuestion = "";
+    private String lastVoiceResponse = "";
+    private String selectedFlamyTheme = "Cozy Desk";
+    private long currentFlamyTodayCount = 0;
+    private int currentFlamyLevel = 1;
+    private int currentFlamyStreak = 0;
+    private String previewFlamyEffect = "";
+    private static final List<FlamyTheme> FLAMY_THEMES = List.of(
+            new FlamyTheme("Cozy Desk", 0, "#1F1306", "#3B1D08", "#FB923C", "Warm desk"),
+            new FlamyTheme("Magic Library", 90, "#20123B", "#4C1D95", "#A78BFA", "Floating books"),
+            new FlamyTheme("Night Study", 140, "#07111F", "#0F3460", "#38BDF8", "Quiet stars"),
+            new FlamyTheme("Candy Notes", 190, "#351526", "#9D174D", "#F9A8D4", "Pastel glow"),
+            new FlamyTheme("Fire Academy", 240, "#2D0A0A", "#7C2D12", "#F97316", "Big flame"),
+            new FlamyTheme("Forest Focus", 300, "#071A12", "#14532D", "#34D399", "Calm leaves")
+    );
+
+    private record FlamyTheme(String name, int price, String from, String to, String accent, String perk) {}
 
     // ════════════════════════════════════════════════════════════
     //  QUIZ MODEL
@@ -246,7 +288,10 @@ public class CoursesController implements Initializable {
         } catch (Exception e) { e.printStackTrace(); }
 
         setupVoiceAssistant();
+        setupVoiceLanguageSelector();
+        setupVoiceAudioControls();
         setupAntiFraud();
+        setupFlamyThemeShop();
 
         showView("list");
         loadData();
@@ -258,11 +303,35 @@ public class CoursesController implements Initializable {
     @FXML
     public void handleShowCity() {
         try {
-            loadCityView();
+            if (cityViewController == null) {
+                showCityLoadingPlaceholder();
+            }
             showView("city");
+
             if (cityViewController != null) {
                 Platform.runLater(cityViewController::refresh);
+                return;
             }
+
+            if (cityViewLoading) return;
+            cityViewLoading = true;
+
+            PauseTransition delay = new PauseTransition(Duration.millis(120));
+            delay.setOnFinished(e -> {
+                try {
+                    loadCityView();
+                    cityViewLoading = false;
+                    if (cityViewController != null) {
+                        cityViewController.refresh();
+                    }
+                } catch (Exception ex) {
+                    cityViewLoading = false;
+                    ex.printStackTrace();
+                    System.err.println("[CityGame] Erreur: " + ex.getMessage());
+                    showCityErrorAlert(ex.getMessage());
+                }
+            });
+            delay.play();
         } catch (Exception e) {
             e.printStackTrace();
             System.err.println("[CityGame] Erreur: " + e.getMessage());
@@ -288,6 +357,28 @@ public class CoursesController implements Initializable {
             cityView.getChildren().setAll(cityRoot);
         }
 
+    }
+
+    private void showCityLoadingPlaceholder() {
+        if (cityView == null || cityViewLoading || cityViewController != null) return;
+
+        VBox placeholder = new VBox(10);
+        placeholder.setAlignment(Pos.CENTER);
+        placeholder.setMinHeight(520);
+        placeholder.setStyle("-fx-background-color:#060D1A;-fx-padding:36;");
+
+        Label title = new Label("Loading My City...");
+        title.setStyle("-fx-text-fill:#F8FAFC;-fx-font-size:22px;-fx-font-weight:800;");
+
+        Label subtitle = new Label("Preparing the game map");
+        subtitle.setStyle("-fx-text-fill:#64748B;-fx-font-size:13px;");
+
+        ProgressIndicator progress = new ProgressIndicator();
+        progress.setPrefSize(42, 42);
+        progress.setStyle("-fx-accent:#7C3AED;");
+
+        placeholder.getChildren().setAll(progress, title, subtitle);
+        cityView.getChildren().setAll(placeholder);
     }
 
     private void showCityErrorAlert(String error) {
@@ -331,26 +422,28 @@ public class CoursesController implements Initializable {
     // ════════════════════════════════════════════════════════════
     private void setupVoiceAssistant() {
         if (!voiceService.hasApiKey()) {
-            btnVoiceAssistant.setDisable(true);
-            btnVoiceAssistant.setStyle("-fx-background-color:#3B0764;-fx-text-fill:#64748B;");
-            btnVoiceAssistant.setText("🔑 Missing API Key");
             Platform.runLater(() -> {
-                voiceStatusLabel.setText("⚠ OPENROUTER_API_KEY not set in environment");
-                voiceBar.setVisible(true);
-                voiceBar.setManaged(true);
+                voiceStatusLabel.setText("Click Start Speaking to configure your Groq API key");
+                voiceProgress.setVisible(false);
             });
-            return;
         }
 
         voiceService.onTranscription = text -> Platform.runLater(() -> {
+            lastVoiceQuestion = text == null ? "" : text;
+            updateExplainerVideoState();
             voiceTranscriptionLabel.setText("🎤 You said: " + text);
             voiceStatusLabel.setText("✍️ Transcribed: "
                     + (text.length() > 40 ? text.substring(0, 40) + "…" : text));
         });
 
         voiceService.onAIResponse = response -> Platform.runLater(() -> {
+            lastVoiceResponse = response == null ? "" : response;
             voiceResponseLabel.setText("🤖 Assistant: " + response);
             voiceStatusLabel.setText("💬 Assistant responded");
+            if (btnVoicePlayAudio != null) {
+                btnVoicePlayAudio.setDisable(lastVoiceResponse.isBlank());
+            }
+            updateExplainerVideoState();
         });
 
         voiceService.onStatus = status -> Platform.runLater(() -> {
@@ -366,47 +459,160 @@ public class CoursesController implements Initializable {
             voiceTranscriptionLabel.setText("");
             voiceResponseLabel.setText("");
             voiceProgress.setVisible(false);
-            btnVoiceAssistant.setDisable(false);
-            btnVoiceAssistant.setText("🎤  Voice");
-            btnVoiceAssistant.setStyle("");
+            btnVoiceMic.setDisable(false);
+            btnVoiceMic.setText("Start Speaking");
+            btnVoiceMic.setStyle("-fx-background-color:#7C3AED;-fx-text-fill:white;-fx-border-radius:12;-fx-background-radius:12;-fx-padding:12 24;-fx-font-size:14px;-fx-font-weight:900;-fx-cursor:hand;");
             isRecordingVoice = false;
         });
 
         voiceService.onAudioStart = () -> Platform.runLater(() -> {
             voiceStatusLabel.setText("🔊 Speaking…");
             voiceProgress.setVisible(true);
+            if (btnVoiceStopAudio != null) {
+                btnVoiceStopAudio.setDisable(false);
+            }
+            updateExplainerVideoState();
         });
 
         voiceService.onAudioDone = () -> Platform.runLater(() -> {
             voiceStatusLabel.setText("🎤 Ready — click mic to ask");
-            btnVoiceAssistant.setDisable(false);
-            btnVoiceAssistant.setText("🎤  Voice");
-            btnVoiceAssistant.setStyle("");
+            btnVoiceMic.setDisable(false);
+            btnVoiceMic.setText("Start Speaking");
+            btnVoiceMic.setStyle("-fx-background-color:#7C3AED;-fx-text-fill:white;-fx-border-radius:12;-fx-background-radius:12;-fx-padding:12 24;-fx-font-size:14px;-fx-font-weight:900;-fx-cursor:hand;");
             voiceProgress.setVisible(false);
+            if (btnVoiceStopAudio != null) {
+                btnVoiceStopAudio.setDisable(true);
+            }
             isRecordingVoice = false;
         });
     }
 
     @FXML
-    private void handleVoiceAssistant() {
+    private void handleShowVoicePage() {
+        showView("voice");
         if (!voiceService.hasApiKey()) {
-            showVoiceError("OPENROUTER_API_KEY not configured in environment variables");
+            voiceStatusLabel.setText("Click Start Speaking to configure your Groq API key");
+            voiceProgress.setVisible(false);
+        } else if (!isRecordingVoice) {
+            voiceStatusLabel.setText("Ready with " + voiceService.getConfiguredProviderLabel() + " - click Start Speaking");
+            voiceProgress.setVisible(false);
+        }
+    }
+
+    @FXML
+    private void handleVoiceAssistant() {
+        if (!ensureGroqConfigured()) {
             return;
         }
         if (isRecordingVoice) stopVoiceRecording();
         else startVoiceRecording();
     }
 
+    private void setupVoiceLanguageSelector() {
+        if (cmbLanguage == null) return;
+        cmbLanguage.setItems(FXCollections.observableArrayList(
+                "Auto", "Francais", "English", "Arabic", "Spanish", "German",
+                "Italian", "Portuguese", "Turkish"
+        ));
+        cmbLanguage.getSelectionModel().select("Auto");
+        voiceService.setLanguage("auto");
+        cmbLanguage.setOnAction(event -> {
+            String selected = cmbLanguage.getValue();
+            voiceService.setLanguage(selected);
+            if (voiceStatusLabel != null && voiceBar != null && voiceBar.isVisible() && !isRecordingVoice) {
+                voiceStatusLabel.setText("Language set to " + selected);
+            }
+        });
+    }
+
+    private void setupVoiceAudioControls() {
+        if (voiceReadAloudToggle != null) {
+            voiceReadAloudToggle.setSelected(true);
+            voiceService.setSpeakResponses(true);
+            voiceReadAloudToggle.selectedProperty().addListener((obs, oldValue, selected) ->
+                    voiceService.setSpeakResponses(selected));
+        }
+        if (btnVoiceStopAudio != null) {
+            btnVoiceStopAudio.setDisable(true);
+        }
+        if (btnVoicePlayAudio != null) {
+            btnVoicePlayAudio.setDisable(true);
+        }
+        resetExplainerVideoPanel();
+    }
+
+    private void updateExplainerVideoState() {
+        boolean hasQuestion = lastVoiceQuestion != null && !lastVoiceQuestion.isBlank();
+        boolean hasAnswer = lastVoiceResponse != null && !lastVoiceResponse.isBlank();
+        if (btnGenerateVoiceVideo != null) {
+            btnGenerateVoiceVideo.setDisable(!hasQuestion && !hasAnswer);
+        }
+        if (voiceVideoQuestionLabel != null) {
+            voiceVideoQuestionLabel.setText(hasQuestion
+                    ? lastVoiceQuestion
+                    : "Ask a question first, then generate a visual explainer.");
+        }
+    }
+
+    private void resetExplainerVideoPanel() {
+        if (btnGenerateVoiceVideo != null) {
+            btnGenerateVoiceVideo.setDisable(true);
+        }
+        if (voiceVideoProgress != null) {
+            voiceVideoProgress.setVisible(false);
+        }
+        if (voiceVideoQuestionLabel != null) {
+            voiceVideoQuestionLabel.setText("Ask a question first, then generate a visual explainer.");
+        }
+        if (voiceVideoStoryboardLabel != null) {
+            voiceVideoStoryboardLabel.setText("The generated video will appear above.");
+        }
+        if (voiceVideoWebView != null) {
+            voiceVideoWebView.getEngine().loadContent(buildEmptyExplainerVideoHtml());
+        }
+    }
+
+    private boolean ensureGroqConfigured() {
+        if (voiceService.hasApiKey()) {
+            return true;
+        }
+
+        TextInputDialog dialog = new TextInputDialog();
+        dialog.setTitle("Groq API Key");
+        dialog.setHeaderText("Configure Groq for the voice assistant");
+        dialog.setContentText("GROQ_API_KEY:");
+        Optional<String> result = dialog.showAndWait();
+        if (result.isEmpty() || result.get().trim().isBlank()) {
+            showVoiceError("Groq API key is required before recording");
+            return false;
+        }
+
+        if (!voiceService.configureGroqApiKey(result.get(), true)) {
+            showVoiceError("Invalid Groq API key");
+            return false;
+        }
+
+        voiceStatusLabel.setText("Groq configured - click Start Speaking");
+        voiceProgress.setVisible(false);
+        return true;
+    }
+
     private void startVoiceRecording() {
         try {
             voiceService.startRecording();
             isRecordingVoice = true;
-            btnVoiceAssistant.setText("⏹️  Stop");
-            btnVoiceAssistant.setStyle("-fx-background-color:#EF4444;-fx-text-fill:white;");
+            btnVoiceMic.setText("Stop Recording");
+            btnVoiceMic.setStyle("-fx-background-color:#EF4444;-fx-text-fill:white;-fx-border-radius:12;-fx-background-radius:12;-fx-padding:12 24;-fx-font-size:14px;-fx-font-weight:900;-fx-cursor:hand;");
             showVoiceBar(true);
             voiceStatusLabel.setText("🎙️ Recording… click Stop when done");
             voiceTranscriptionLabel.setText("");
             voiceResponseLabel.setText("");
+            lastVoiceQuestion = "";
+            lastVoiceResponse = "";
+            resetExplainerVideoPanel();
+            if (btnVoicePlayAudio != null) {
+                btnVoicePlayAudio.setDisable(true);
+            }
             voiceProgress.setVisible(true);
             new Thread(() -> {
                 try { Thread.sleep(30_000); } catch (InterruptedException ignored) {}
@@ -415,16 +621,16 @@ public class CoursesController implements Initializable {
         } catch (Exception e) {
             showVoiceError("Microphone error: " + e.getMessage());
             isRecordingVoice = false;
-            btnVoiceAssistant.setText("🎤  Voice");
-            btnVoiceAssistant.setStyle("");
+            btnVoiceMic.setText("Start Speaking");
+            btnVoiceMic.setStyle("-fx-background-color:#7C3AED;-fx-text-fill:white;-fx-border-radius:12;-fx-background-radius:12;-fx-padding:12 24;-fx-font-size:14px;-fx-font-weight:900;-fx-cursor:hand;");
         }
     }
 
     private void stopVoiceRecording() {
         if (!isRecordingVoice) return;
         isRecordingVoice = false;
-        btnVoiceAssistant.setDisable(true);
-        btnVoiceAssistant.setText("⏳ Processing…");
+        btnVoiceMic.setDisable(true);
+        btnVoiceMic.setText("Processing...");
         voiceStatusLabel.setText("⏳ Processing your request…");
         voiceProgress.setVisible(true);
         voiceService.stopAndProcess();
@@ -436,16 +642,376 @@ public class CoursesController implements Initializable {
             voiceService.cancel();
             isRecordingVoice = false;
         }
-        showVoiceBar(false);
-        btnVoiceAssistant.setDisable(false);
-        btnVoiceAssistant.setText("🎤  Voice");
-        btnVoiceAssistant.setStyle("");
+        showView("voice");
+        btnVoiceMic.setDisable(false);
+        btnVoiceMic.setText("Start Speaking");
+        btnVoiceMic.setStyle("-fx-background-color:#7C3AED;-fx-text-fill:white;-fx-border-radius:12;-fx-background-radius:12;-fx-padding:12 24;-fx-font-size:14px;-fx-font-weight:900;-fx-cursor:hand;");
         voiceStatusLabel.setText("🎤 Voice assistant ready");
     }
 
+    @FXML
+    private void handleStopVoiceReading() {
+        voiceService.stopSpeaking();
+        if (btnVoiceStopAudio != null) {
+            btnVoiceStopAudio.setDisable(true);
+        }
+        voiceProgress.setVisible(false);
+        voiceStatusLabel.setText("Audio stopped");
+    }
+
+    @FXML
+    private void handlePlayVoiceResponse() {
+        if (lastVoiceResponse == null || lastVoiceResponse.isBlank()) {
+            showVoiceError("No assistant answer to read yet");
+            return;
+        }
+        voiceService.speakAsync(lastVoiceResponse);
+    }
+
+    @FXML
+    private void handleGenerateVoiceVideo() {
+        boolean hasQuestion = lastVoiceQuestion != null && !lastVoiceQuestion.isBlank();
+        boolean hasAnswer = lastVoiceResponse != null && !lastVoiceResponse.isBlank();
+        if (!hasQuestion && !hasAnswer) {
+            showVoiceError("Ask a voice question before generating an explainer video");
+            return;
+        }
+
+        if (btnGenerateVoiceVideo != null) {
+            btnGenerateVoiceVideo.setDisable(true);
+            btnGenerateVoiceVideo.setText("Generating...");
+        }
+        if (voiceVideoProgress != null) {
+            voiceVideoProgress.setVisible(true);
+        }
+        if (voiceVideoStoryboardLabel != null) {
+            voiceVideoStoryboardLabel.setText("Generating animated explainer video...");
+        }
+        if (voiceVideoWebView != null) {
+            voiceVideoWebView.getEngine().loadContent(buildLoadingExplainerVideoHtml());
+        }
+
+        String sourceQuestion = lastVoiceQuestion;
+        String sourceContent = buildOfflineExplainerContent(sourceQuestion, lastVoiceResponse);
+        PauseTransition renderDelay = new PauseTransition(Duration.millis(450));
+        renderDelay.setOnFinished(event -> {
+            try {
+                if (voiceVideoWebView != null) {
+                    voiceVideoWebView.getEngine().loadContent(buildExplainerVideoHtml(sourceQuestion, sourceContent));
+                }
+                if (voiceVideoStoryboardLabel != null) {
+                    voiceVideoStoryboardLabel.setText("Video generated from your question. Use the player controls above.");
+                }
+                if (voiceStatusLabel != null) {
+                    voiceStatusLabel.setText("Explainer video ready");
+                }
+            } catch (Exception ex) {
+                if (voiceVideoStoryboardLabel != null) {
+                    voiceVideoStoryboardLabel.setText("Unable to render the video: " + ex.getMessage());
+                }
+            } finally {
+                if (voiceVideoProgress != null) {
+                    voiceVideoProgress.setVisible(false);
+                }
+                if (voiceProgress != null) {
+                    voiceProgress.setVisible(false);
+                }
+                if (btnGenerateVoiceVideo != null) {
+                    btnGenerateVoiceVideo.setDisable(false);
+                    btnGenerateVoiceVideo.setText("Generate Explainer Video");
+                }
+            }
+        });
+        renderDelay.playFromStart();
+    }
+
+    private String buildOfflineExplainerContent(String question, String answer) {
+        String q = question == null || question.isBlank() ? "the student's question" : question.trim();
+        String a = answer == null || answer.isBlank()
+                ? "This topic can be explained by breaking it into a simple definition, a concrete example, the key steps, and a final memory hook."
+                : answer.trim();
+        return """
+                Scene 1 - Hook
+                Question: %s
+                The video starts with the question on screen, then highlights the main keyword so the learner knows exactly what will be explained.
+
+                Scene 2 - Simple definition
+                %s
+
+                Scene 3 - Visual example
+                The idea is transformed into a concrete visual example with moving blocks, arrows, and labels. Each element appears one by one so the concept feels easy to follow.
+
+                Scene 4 - How it works
+                The explanation is split into small steps. The video shows cause, action, and result, with a progress path that connects the parts together.
+
+                Scene 5 - Final recap
+                The video ends with a short recap, one key sentence to remember, and a quick question so the student can verify understanding.
+                """.formatted(q, a);
+    }
+
+    private String buildEmptyExplainerVideoHtml() {
+        return """
+                <html><body style="margin:0;background:#020617;color:#94a3b8;font-family:Segoe UI,Arial;display:grid;place-items:center;height:100vh;">
+                <div style="text-align:center;max-width:520px;padding:28px;">
+                <div style="font-size:42px;margin-bottom:10px;">VIDEO</div>
+                <div style="font-size:20px;font-weight:800;color:#e2e8f0;">No explainer video yet</div>
+                <div style="font-size:14px;margin-top:8px;line-height:1.5;">Ask a voice question, then click Generate Explainer Video.</div>
+                </div></body></html>
+                """;
+    }
+
+    private String buildLoadingExplainerVideoHtml() {
+        return """
+                <html><head><style>
+                @keyframes pulse{0%,100%{transform:scale(.96);opacity:.55}50%{transform:scale(1.04);opacity:1}}
+                body{margin:0;background:radial-gradient(circle at 30% 20%,#0ea5e9 0,#0f172a 34%,#020617 100%);color:white;font-family:Segoe UI,Arial;height:100vh;display:grid;place-items:center;overflow:hidden}
+                .core{width:150px;height:150px;border-radius:50%;background:#38bdf8;box-shadow:0 0 80px #38bdf8;animation:pulse 1.4s infinite}
+                .txt{text-align:center;margin-top:28px;font-size:22px;font-weight:900}
+                .sub{text-align:center;margin-top:8px;color:#bfdbfe;font-size:14px}
+                </style></head><body><div><div class="core"></div><div class="txt">Generating your explainer video</div><div class="sub">Designing scenes, narration and animations...</div></div></body></html>
+                """;
+    }
+
+    private String buildExplainerVideoHtml(String question, String generatedContent) {
+        List<String> scenes = splitGeneratedContentIntoScenes(generatedContent);
+        List<String> keywords = extractVisualKeywords(question + " " + generatedContent);
+        StringBuilder slides = new StringBuilder();
+        for (int i = 0; i < scenes.size(); i++) {
+            slides.append("<section class='slide").append(i == 0 ? " active" : "").append("'>")
+                    .append("<div class='sceneText'>")
+                    .append("<div class='sceneNo'>Scene ").append(i + 1).append(" / ").append(scenes.size()).append("</div>")
+                    .append("<h1>").append(escapeHtml(i == 0 ? titleFromQuestion(question) : sceneTitle(scenes.get(i), i))).append("</h1>")
+                    .append("<p>").append(escapeHtml(shortenSceneText(scenes.get(i)))).append("</p>")
+                    .append("</div>")
+                    .append(buildVisualImage(question, scenes.get(i), keywords, i))
+                    .append("</section>");
+        }
+        return """
+                <html>
+                <head>
+                <style>
+                *{box-sizing:border-box} body{margin:0;background:#020617;color:#e5f2ff;font-family:Segoe UI,Arial;height:100vh;overflow:hidden}
+                .player{position:relative;height:100vh;background:linear-gradient(135deg,#03111f 0%,#082f49 45%,#020617 100%);overflow:hidden}
+                .slide{position:absolute;inset:0;padding:34px 42px 86px 42px;opacity:0;transform:translateX(42px) scale(.98);transition:opacity .55s ease,transform .55s ease;display:grid;grid-template-columns:.9fr 1.1fr;gap:28px;align-items:center}
+                .slide.active{opacity:1;transform:translateX(0) scale(1)}
+                .sceneText{align-self:center}
+                .sceneNo{color:#7dd3fc;font-size:12px;font-weight:900;letter-spacing:.08em;margin-bottom:14px}
+                h1{font-size:32px;line-height:1.08;margin:0 0 18px 0;color:white}
+                p{font-size:17px;line-height:1.5;margin:0;color:#dbeafe;white-space:pre-wrap;max-height:330px;overflow:hidden}
+                .visual{height:344px;border-radius:28px;background:linear-gradient(135deg,#07111f,#0f2f4a 42%,#020617);position:relative;box-shadow:0 28px 70px rgba(14,165,233,.28);overflow:hidden;border:1px solid rgba(125,211,252,.25)}
+                .visual:before{content:'';position:absolute;inset:-80px;background:radial-gradient(circle at 32% 26%,rgba(56,189,248,.45),transparent 35%),radial-gradient(circle at 78% 80%,rgba(167,139,250,.32),transparent 34%)}
+                .vtitle{position:absolute;top:20px;left:22px;right:22px;color:#e0f2fe;font-size:13px;font-weight:900;letter-spacing:.06em;text-transform:uppercase}
+                .chip{position:absolute;background:rgba(2,6,23,.78);border:1px solid rgba(125,211,252,.45);border-radius:999px;padding:9px 13px;color:#bae6fd;font-size:12px;font-weight:900;box-shadow:0 12px 35px rgba(0,0,0,.25)}
+                .chip.a{left:30px;top:82px}.chip.b{right:42px;top:108px}.chip.c{left:58px;bottom:50px}.chip.d{right:40px;bottom:66px}
+                .heroIcon{position:absolute;left:50%;top:50%;transform:translate(-50%,-48%);width:132px;height:132px;border-radius:34px;background:linear-gradient(135deg,#38bdf8,#2563eb);display:grid;place-items:center;color:white;font-size:56px;font-weight:900;box-shadow:0 0 80px rgba(56,189,248,.55);animation:pop 2.8s infinite ease-in-out}
+                .arrow{position:absolute;height:8px;border-radius:999px;background:linear-gradient(90deg,#22c55e,#38bdf8);box-shadow:0 0 22px rgba(56,189,248,.5);animation:grow 4.8s infinite linear}
+                .arrow.one{left:34px;right:54%;top:178px}.arrow.two{left:55%;right:34px;top:178px}.arrow.three{left:28%;right:28%;bottom:104px}
+                .bars{position:absolute;left:46px;right:46px;bottom:48px;display:flex;gap:14px;align-items:end;height:112px}.barItem{flex:1;border-radius:14px 14px 8px 8px;background:linear-gradient(#facc15,#fb923c);box-shadow:0 0 32px rgba(251,146,60,.32);animation:rise 3s infinite ease-in-out}.barItem:nth-child(2){height:82%;background:linear-gradient(#38bdf8,#2563eb);animation-delay:.3s}.barItem:nth-child(3){height:58%;background:linear-gradient(#34d399,#059669);animation-delay:.6s}.barItem:nth-child(4){height:92%;background:linear-gradient(#c084fc,#7c3aed);animation-delay:.9s}
+                .timeline{position:absolute;left:42px;right:42px;top:178px;height:10px;border-radius:999px;background:rgba(148,163,184,.28)}.dot{position:absolute;top:157px;width:50px;height:50px;border-radius:50%;background:#0ea5e9;display:grid;place-items:center;color:white;font-weight:900;box-shadow:0 0 32px rgba(14,165,233,.55);animation:pulse 2.2s infinite}.dot.one{left:44px}.dot.two{left:37%}.dot.three{right:37%}.dot.four{right:44px}
+                .cardImg{position:absolute;left:44px;right:44px;top:82px;bottom:48px;border-radius:22px;background:rgba(15,23,42,.82);border:1px solid rgba(125,211,252,.25);padding:24px;display:grid;grid-template-columns:1fr 1fr;gap:16px}.mini{border-radius:16px;background:rgba(14,165,233,.18);border:1px solid rgba(125,211,252,.2);display:grid;place-items:center;color:#dbeafe;font-size:15px;font-weight:900;text-align:center;padding:10px}
+                .bar{position:absolute;left:28px;right:28px;bottom:58px;height:8px;background:rgba(148,163,184,.25);border-radius:999px;overflow:hidden}
+                .fill{height:100%;width:0;background:#38bdf8;border-radius:999px;transition:width .25s linear}
+                .controls{position:absolute;left:28px;right:28px;bottom:16px;display:flex;gap:10px;align-items:center}
+                button{background:#0ea5e9;color:white;border:0;border-radius:10px;padding:10px 14px;font-weight:900;cursor:pointer}
+                button.secondary{background:#1e293b;color:#cbd5e1;border:1px solid #334155}
+                .caption{margin-left:auto;color:#bfdbfe;font-size:12px;font-weight:700}
+                @keyframes pop{0%,100%{transform:translate(-50%,-48%) scale(.96) rotate(-1deg)}50%{transform:translate(-50%,-52%) scale(1.05) rotate(2deg)}}
+                @keyframes grow{0%{transform:scaleX(.1);transform-origin:left}100%{transform:scaleX(1);transform-origin:left}}
+                @keyframes rise{0%,100%{height:32%}50%{height:100%}}
+                @keyframes pulse{0%,100%{transform:scale(.9)}50%{transform:scale(1.08)}}
+                </style>
+                </head>
+                <body>
+                <main class="player">
+                __SLIDES__
+                <div class="bar"><div id="fill" class="fill"></div></div>
+                <div class="controls"><button onclick="togglePlay()" id="playBtn">Pause</button><button class="secondary" onclick="prev()">Previous</button><button class="secondary" onclick="next()">Next</button><button class="secondary" onclick="restart()">Replay</button><div class="caption">Animated explainer generated from your voice question</div></div>
+                </main>
+                <script>
+                const slides=[...document.querySelectorAll('.slide')]; let i=0,playing=true,t=0,duration=7000;
+                function show(n){slides[i].classList.remove('active');i=(n+slides.length)%slides.length;slides[i].classList.add('active');t=0;update();}
+                function update(){document.getElementById('fill').style.width=((t/duration)*100)+'%'}
+                function tick(){if(playing){t+=250;if(t>=duration)show(i+1);update()}setTimeout(tick,250)}
+                function next(){show(i+1)} function prev(){show(i-1)} function restart(){show(0);playing=true;document.getElementById('playBtn').innerText='Pause'}
+                function togglePlay(){playing=!playing;document.getElementById('playBtn').innerText=playing?'Pause':'Play'}
+                tick();
+                </script>
+                </body></html>
+                """.replace("__SLIDES__", slides.toString());
+    }
+
+    private List<String> splitGeneratedContentIntoScenes(String content) {
+        String cleaned = content == null ? "" : content.replace("\r", "").trim();
+        if (cleaned.isBlank()) {
+            cleaned = "This explainer introduces the topic, shows the key idea visually, breaks it into simple steps, checks understanding, and gives the learner a next action.";
+        }
+        String[] parts = cleaned.split("(?i)(?=\\bscene\\s*\\d+\\b|\\bscene\\s*:|\\betape\\s*\\d+\\b|\\bsc[eè]ne\\s*\\d+\\b)");
+        List<String> scenes = Arrays.stream(parts)
+                .map(String::trim)
+                .filter(s -> s.length() > 30)
+                .limit(6)
+                .collect(Collectors.toCollection(ArrayList::new));
+        if (scenes.size() < 3) {
+            scenes.clear();
+            String[] paragraphs = cleaned.split("\\n\\s*\\n|(?<=[.!?])\\s+(?=[A-ZÀ-Ü])");
+            StringBuilder chunk = new StringBuilder();
+            for (String paragraph : paragraphs) {
+                if (chunk.length() + paragraph.length() > 520 && chunk.length() > 0) {
+                    scenes.add(chunk.toString().trim());
+                    chunk.setLength(0);
+                }
+                if (!paragraph.isBlank()) {
+                    if (chunk.length() > 0) chunk.append(' ');
+                    chunk.append(paragraph.trim());
+                }
+                if (scenes.size() == 5) break;
+            }
+            if (chunk.length() > 0 && scenes.size() < 6) scenes.add(chunk.toString().trim());
+        }
+        while (scenes.size() < 3) {
+            scenes.add("Visual recap: connect the main idea to a concrete example, then show the final takeaway in one simple sentence.");
+        }
+        return scenes;
+    }
+
+    private String buildVisualImage(String question, String scene, List<String> keywords, int index) {
+        String topic = visualTopic(question, keywords);
+        String k1 = keywordAt(keywords, 0, "Concept");
+        String k2 = keywordAt(keywords, 1, "Example");
+        String k3 = keywordAt(keywords, 2, "Steps");
+        String k4 = keywordAt(keywords, 3, "Result");
+        String icon = visualIcon(question + " " + scene);
+        int variant = index % 5;
+        String title = switch (variant) {
+            case 0 -> "Image conceptuelle - " + topic;
+            case 1 -> "Definition visuelle";
+            case 2 -> "Exemple anime";
+            case 3 -> "Processus etapes";
+            default -> "Resume visuel";
+        };
+
+        if (variant == 1) {
+            return "<div class='visual'><div class='vtitle'>" + escapeHtml(title) + "</div>"
+                    + "<div class='heroIcon'>" + escapeHtml(icon) + "</div>"
+                    + "<div class='chip a'>" + escapeHtml(k1) + "</div>"
+                    + "<div class='chip b'>" + escapeHtml(k2) + "</div>"
+                    + "<div class='chip c'>" + escapeHtml(k3) + "</div>"
+                    + "<div class='chip d'>" + escapeHtml(k4) + "</div></div>";
+        }
+        if (variant == 2) {
+            return "<div class='visual'><div class='vtitle'>" + escapeHtml(title) + "</div>"
+                    + "<div class='bars'><div class='barItem' style='height:42%'></div><div class='barItem'></div><div class='barItem'></div><div class='barItem'></div></div>"
+                    + "<div class='chip a'>" + escapeHtml(k1) + "</div><div class='chip b'>" + escapeHtml(k2) + "</div>"
+                    + "<div class='heroIcon'>" + escapeHtml(icon) + "</div></div>";
+        }
+        if (variant == 3) {
+            return "<div class='visual'><div class='vtitle'>" + escapeHtml(title) + "</div>"
+                    + "<div class='timeline'></div><div class='dot one'>1</div><div class='dot two'>2</div><div class='dot three'>3</div><div class='dot four'>4</div>"
+                    + "<div class='chip c'>" + escapeHtml(k3) + "</div><div class='chip d'>" + escapeHtml(k4) + "</div></div>";
+        }
+        if (variant == 4) {
+            return "<div class='visual'><div class='vtitle'>" + escapeHtml(title) + "</div>"
+                    + "<div class='cardImg'><div class='mini'>" + escapeHtml(k1) + "</div><div class='mini'>" + escapeHtml(k2)
+                    + "</div><div class='mini'>" + escapeHtml(k3) + "</div><div class='mini'>" + escapeHtml(k4)
+                    + "</div></div></div>";
+        }
+        return "<div class='visual'><div class='vtitle'>" + escapeHtml(title) + "</div>"
+                + "<div class='chip a'>" + escapeHtml(k1) + "</div><div class='arrow one'></div>"
+                + "<div class='heroIcon'>" + escapeHtml(icon) + "</div><div class='arrow two'></div>"
+                + "<div class='chip b'>" + escapeHtml(k2) + "</div><div class='arrow three'></div>"
+                + "<div class='chip c'>" + escapeHtml(k3) + "</div><div class='chip d'>" + escapeHtml(k4) + "</div></div>";
+    }
+
+    private List<String> extractVisualKeywords(String value) {
+        if (value == null) return List.of();
+        Set<String> stopWords = Set.of(
+                "cest", "quoi", "comment", "pourquoi", "avec", "dans", "pour", "une", "des", "les", "est",
+                "sont", "that", "this", "with", "from", "your", "question", "scene", "video", "the", "and",
+                "java", "php"
+        );
+        List<String> extracted = Arrays.stream(value.toLowerCase(Locale.ROOT)
+                        .replaceAll("[^a-zA-Z0-9À-ÿ ]", " ")
+                        .split("\\s+"))
+                .map(String::trim)
+                .filter(s -> s.length() >= 4)
+                .filter(s -> !stopWords.contains(s))
+                .distinct()
+                .limit(8)
+                .map(this::capitalizeWord)
+                .collect(Collectors.toCollection(ArrayList::new));
+        String lower = value.toLowerCase(Locale.ROOT);
+        if (lower.contains("java")) extracted.add(0, "Java");
+        if (lower.contains("php")) extracted.add(0, "PHP");
+        if (lower.contains("base") || lower.contains("mysql") || lower.contains("database")) extracted.add("Database");
+        if (lower.contains("web")) extracted.add("Web");
+        return extracted.stream().distinct().limit(8).toList();
+    }
+
+    private String visualTopic(String question, List<String> keywords) {
+        if (question != null && !question.isBlank()) {
+            String cleaned = question.replace("?", "").trim();
+            return cleaned.length() > 32 ? cleaned.substring(0, 32) + "..." : cleaned;
+        }
+        return keywordAt(keywords, 0, "Sujet");
+    }
+
+    private String keywordAt(List<String> keywords, int index, String fallback) {
+        return keywords != null && keywords.size() > index ? keywords.get(index) : fallback;
+    }
+
+    private String visualIcon(String value) {
+        String lower = value == null ? "" : value.toLowerCase(Locale.ROOT);
+        if (lower.contains("java")) return "J";
+        if (lower.contains("php")) return "PHP";
+        if (lower.contains("database") || lower.contains("mysql") || lower.contains("base")) return "DB";
+        if (lower.contains("web") || lower.contains("html")) return "</>";
+        if (lower.contains("ai") || lower.contains("intelligence")) return "AI";
+        if (lower.contains("math")) return "fx";
+        return "RL";
+    }
+
+    private String shortenSceneText(String scene) {
+        if (scene == null) return "";
+        String cleaned = scene.replaceAll("\\s+", " ").trim();
+        return cleaned.length() > 520 ? cleaned.substring(0, 520) + "..." : cleaned;
+    }
+
+    private String capitalizeWord(String value) {
+        if (value == null || value.isBlank()) return "";
+        return Character.toUpperCase(value.charAt(0)) + value.substring(1);
+    }
+
+    private String titleFromQuestion(String question) {
+        String q = question == null || question.isBlank() ? "Explainer video" : question.trim();
+        return q.length() > 72 ? q.substring(0, 72) + "..." : q;
+    }
+
+    private String sceneTitle(String scene, int index) {
+        String[] lines = scene.split("\\R");
+        String first = lines.length == 0 ? "" : lines[0].replaceAll("[:\\-]+$", "").trim();
+        if (first.length() < 8 || first.length() > 80) {
+            return switch (index) {
+                case 1 -> "Understand the core idea";
+                case 2 -> "See it step by step";
+                case 3 -> "Make it visual";
+                case 4 -> "Check your understanding";
+                default -> "Final takeaway";
+            };
+        }
+        return first;
+    }
+
+    private String escapeHtml(String value) {
+        if (value == null) return "";
+        return value.replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("'", "&#39;");
+    }
+
     private void showVoiceBar(boolean show) {
-        voiceBar.setVisible(show);
-        voiceBar.setManaged(show);
+        if (show) showView("voice");
     }
 
     private void showVoiceError(String message) {
@@ -456,9 +1022,9 @@ public class CoursesController implements Initializable {
             voiceBar.setVisible(true);
             voiceBar.setManaged(true);
             voiceProgress.setVisible(false);
-            btnVoiceAssistant.setDisable(false);
-            btnVoiceAssistant.setText("🎤  Voice");
-            btnVoiceAssistant.setStyle("");
+            btnVoiceMic.setDisable(false);
+            btnVoiceMic.setText("Start Speaking");
+            btnVoiceMic.setStyle("-fx-background-color:#7C3AED;-fx-text-fill:white;-fx-border-radius:12;-fx-background-radius:12;-fx-padding:12 24;-fx-font-size:14px;-fx-font-weight:900;-fx-cursor:hand;");
             isRecordingVoice = false;
         });
     }
@@ -560,11 +1126,16 @@ public class CoursesController implements Initializable {
         boolean isStats = "stats".equals(view);
         boolean isQuiz  = "quiz".equals(view);
         boolean isCity  = "city".equals(view);
+        boolean isVoice = "voice".equals(view);
 
         listView.setVisible(isList);     listView.setManaged(isList);
         formPanel.setVisible(isForm);    formPanel.setManaged(isForm);
         statsView.setVisible(isStats);   statsView.setManaged(isStats);
         quizMainView.setVisible(isQuiz); quizMainView.setManaged(isQuiz);
+        if (voiceBar != null) {
+            voiceBar.setVisible(isVoice);
+            voiceBar.setManaged(isVoice);
+        }
         if (cityView != null) {
             cityView.setVisible(isCity);
             cityView.setManaged(isCity);
@@ -572,6 +1143,10 @@ public class CoursesController implements Initializable {
 
         boolean showCards = isList || isStats;
         statCards.setVisible(showCards); statCards.setManaged(showCards);
+        if (flamyBookCard != null) {
+            flamyBookCard.setVisible(isList);
+            flamyBookCard.setManaged(isList);
+        }
         if (smartQuizCard != null) { smartQuizCard.setVisible(isList); smartQuizCard.setManaged(isList); }
         sortCombo.setVisible(isList);   sortCombo.setManaged(isList);
         searchField.setVisible(isList); searchField.setManaged(isList);
@@ -607,6 +1182,11 @@ public class CoursesController implements Initializable {
             if (btnHeaderIcon != null) btnHeaderIcon.setIconLiteral("fth-arrow-left");
             pageTitle.setText("My City 🏙️");
             pageSubtitle.setText("Your academic progress as a growing city");
+        } else if (isVoice) {
+            btnHeaderAction.setText("Back");
+            if (btnHeaderIcon != null) btnHeaderIcon.setIconLiteral("fth-arrow-left");
+            pageTitle.setText("Voice Assistant");
+            pageSubtitle.setText("Speech to text assistant for study questions");
         }
     }
 
@@ -628,16 +1208,327 @@ public class CoursesController implements Initializable {
     private void loadData() {
         User u = UserSession.getInstance().getCurrentUser();
         if (u == null) {
+            allEvals.clear();
             courseGrid.getChildren().clear();
             statTotal.setText("0"); statMoyenne.setText("0");
             statLacunes.setText("0"); statMeilleur.setText("0");
+            updateFlamyBook();
             return;
         }
         try {
             allEvals.setAll(evalService.findByUser(u.getId()));
             updateStats();
+            updateFlamyBook();
             renderCards(allEvals);
         } catch (Exception e) { e.printStackTrace(); }
+    }
+
+    private void updateFlamyBook() {
+        if (flamyBookCard == null) {
+            return;
+        }
+
+        LocalDate today = LocalDate.now();
+        long todayCount = allEvals.stream()
+                .filter(e -> today.equals(e.getDateEvaluation()))
+                .count();
+        double todayAvg = allEvals.stream()
+                .filter(e -> today.equals(e.getDateEvaluation()))
+                .mapToDouble(EvaluationMatiere::getScoreEval)
+                .average()
+                .orElse(0);
+        int streak = computeEvaluationStreak();
+        int total = allEvals.size();
+        int level = Math.max(1, Math.min(20, 1 + total / 3 + streak / 4));
+        int flameCoins = total * 35 + streak * 20 + (int) todayCount * 15;
+        double dailyProgress = Math.min(1.0, todayCount / 4.0);
+        currentFlamyTodayCount = todayCount;
+        currentFlamyLevel = level;
+        currentFlamyStreak = streak;
+
+        if (FLAMY_THEMES.stream().filter(t -> t.name().equals(selectedFlamyTheme)).findFirst().map(FlamyTheme::price).orElse(0) > flameCoins) {
+            selectedFlamyTheme = "Cozy Desk";
+        }
+
+        String mood;
+        String message;
+        if (todayCount == 0) {
+            mood = "Sad little flame";
+            message = "Flamy is quiet today. Add one assessment to relight the face and warm up the camp logs.";
+        } else if (todayAvg > 0 && todayAvg < 10) {
+            mood = "Worried but brave";
+            message = "One tough result still gives energy. Review the weak subject and Flamy will keep glowing.";
+        } else if (todayCount == 1) {
+            mood = "Awake sparkle";
+            message = "Nice start. One more assessment today will unlock a stronger flame effect.";
+        } else if (todayCount < 4) {
+            mood = "Happy study flame";
+            message = "The pages are open and the flame is growing. Keep the daily streak alive.";
+        } else {
+            mood = "Radiant level rush";
+            message = "Full daily flame. Garland lights, runner sparks, and star glow are active.";
+        }
+
+        flamyTitleLabel.setText("FlamyBook");
+        flamyMoodLabel.setText(mood + " | " + streak + "-day streak");
+        flamyLevelLabel.setText("Level " + level);
+        flamyMessageLabel.setText(message);
+        flamyProgressLabel.setText(todayCount + " / 4 today");
+        flamyProgressBar.setProgress(dailyProgress);
+        flamyCoinsLabel.setText(flameCoins + " flame coins");
+
+        renderFlamyMascot(todayCount, level);
+        renderFlamyEffects(todayCount, streak, level);
+        renderThemeShop(flameCoins);
+        applyFlamyTheme(selectedFlamyTheme);
+    }
+
+    private int computeEvaluationStreak() {
+        Set<LocalDate> days = allEvals.stream()
+                .map(EvaluationMatiere::getDateEvaluation)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        int streak = 0;
+        LocalDate cursor = LocalDate.now();
+        while (days.contains(cursor)) {
+            streak++;
+            cursor = cursor.minusDays(1);
+        }
+        return streak;
+    }
+
+    private void setupFlamyThemeShop() {
+        renderThemeShop(0);
+        applyFlamyTheme(selectedFlamyTheme);
+        renderFlamyMascot(0, 1);
+    }
+
+    private void renderThemeShop(int flameCoins) {
+        if (themeShopFlow == null) {
+            return;
+        }
+        themeShopFlow.getChildren().clear();
+        for (FlamyTheme theme : FLAMY_THEMES) {
+            boolean selected = theme.name().equals(selectedFlamyTheme);
+            boolean unlocked = flameCoins >= theme.price();
+            Button button = new Button((selected ? "Selected " : unlocked ? "Use " : "Locked ") + theme.name());
+            button.setTooltip(new Tooltip(theme.perk() + " | " + theme.price() + " coins"));
+            button.setDisable(!unlocked);
+            button.setStyle("-fx-background-color:" + (selected ? theme.accent() : "rgba(255,255,255,0.07)") + ";"
+                    + "-fx-text-fill:" + (selected ? "#111827" : theme.accent()) + ";"
+                    + "-fx-border-color:" + theme.accent() + ";"
+                    + "-fx-border-width:1; -fx-border-radius:10; -fx-background-radius:10;"
+                    + "-fx-padding:7 10; -fx-font-size:11px; -fx-font-weight:800; -fx-cursor:hand;");
+            button.setOnAction(e -> {
+                selectedFlamyTheme = theme.name();
+                applyFlamyTheme(theme.name());
+                renderThemeShop(flameCoins);
+            });
+            themeShopFlow.getChildren().add(button);
+        }
+    }
+
+    private void applyFlamyTheme(String themeName) {
+        if (flamyBookCard == null) {
+            return;
+        }
+        FlamyTheme theme = FLAMY_THEMES.stream()
+                .filter(t -> t.name().equals(themeName))
+                .findFirst()
+                .orElse(FLAMY_THEMES.get(0));
+        flamyBookCard.setStyle("-fx-background-color:linear-gradient(to right," + theme.from() + "," + theme.to() + ");"
+                + "-fx-border-color:" + theme.accent() + "; -fx-border-width:1.2;"
+                + "-fx-border-radius:18; -fx-background-radius:18; -fx-padding:18 20;"
+                + "-fx-effect:dropshadow(gaussian," + toRgba(theme.accent(), 0.28) + ",18,0,0,5);");
+        flamyProgressBar.setStyle("-fx-accent:" + theme.accent() + "; -fx-background-color:rgba(0,0,0,0.25);"
+                + "-fx-background-radius:999; -fx-border-radius:999;");
+    }
+
+    private void renderFlamyEffects(long todayCount, int streak, int level) {
+        if (flameEffectsRow == null) {
+            return;
+        }
+        flameEffectsRow.getChildren().clear();
+        addEffectChip("Garland", "garland", streak >= 3, "needs 3-day streak", "#FBBF24");
+        addEffectChip("Runner sparks", "runner", todayCount >= 2, "needs 2 assessments today", "#38BDF8");
+        addEffectChip("Star glow", "star", level >= 5, "needs level 5", "#A78BFA");
+    }
+
+    private void addEffectChip(String text, String effect, boolean active, String lockedReason, String color) {
+        Button chip = new Button((active ? "Play " : "Locked ") + text);
+        chip.setTooltip(new Tooltip(active ? "Click to preview " + text : lockedReason));
+        chip.setStyle("-fx-text-fill:" + (active ? color : "#64748B") + ";"
+                + "-fx-background-color:" + (active ? toRgba(color, 0.16) : "rgba(100,116,139,0.12)") + ";"
+                + "-fx-border-color:" + (active ? color : "#334155") + ";"
+                + "-fx-border-width:1; -fx-background-radius:999; -fx-border-radius:999;"
+                + "-fx-padding:4 9; -fx-font-size:10px; -fx-font-weight:800; -fx-cursor:hand;");
+        chip.setOnAction(e -> {
+            if (!active) {
+                flamyMessageLabel.setText(text + " is locked: " + lockedReason + ".");
+                renderFlamyMascot(currentFlamyTodayCount, currentFlamyLevel);
+                return;
+            }
+            playFlamyEffect(effect, text);
+        });
+        flameEffectsRow.getChildren().add(chip);
+    }
+
+    private void playFlamyEffect(String effect, String label) {
+        previewFlamyEffect = effect;
+        flamyMessageLabel.setText(label + " effect preview is playing.");
+        renderFlamyMascot(currentFlamyTodayCount, currentFlamyLevel);
+        PauseTransition reset = new PauseTransition(Duration.seconds(1.8));
+        reset.setOnFinished(e -> {
+            previewFlamyEffect = "";
+            updateFlamyBook();
+        });
+        reset.play();
+    }
+
+    private void renderFlamyMascot(long todayCount, int level) {
+        if (flameMascotPane == null) {
+            return;
+        }
+        Pane art = new Pane();
+        art.setPrefSize(150, 136);
+
+        boolean garlandActive = currentFlamyStreak >= 3 || "garland".equals(previewFlamyEffect);
+        boolean runnerActive = todayCount >= 2 || "runner".equals(previewFlamyEffect);
+        boolean starActive = level >= 5 || "star".equals(previewFlamyEffect);
+
+        if (starActive) {
+            Circle aura = new Circle(75, 62, "star".equals(previewFlamyEffect) ? 61 : 50, Color.web("#FDE68A", 0.11));
+            aura.setStroke(Color.web("#FBBF24", 0.34));
+            aura.setStrokeWidth(2);
+            art.getChildren().add(aura);
+            addStar(20, 31, 5, "#FDE68A", art);
+            addStar(132, 39, 4, "#FDE68A", art);
+            addStar(116, 16, 3.5, "#FDE68A", art);
+        }
+
+        if (garlandActive) {
+            QuadCurve cord = new QuadCurve(12, 20, 75, "garland".equals(previewFlamyEffect) ? 42 : 31, 138, 20);
+            cord.setFill(Color.TRANSPARENT);
+            cord.setStroke(Color.web("#FBBF24"));
+            cord.setStrokeWidth(1.5);
+            art.getChildren().add(cord);
+            for (int i = 0; i < 6; i++) {
+                double x = 19 + i * 22;
+                double y = 24 + Math.sin(i * 0.95) * 7;
+                Circle bulb = new Circle(x, y, "garland".equals(previewFlamyEffect) ? 4.5 : 3.4,
+                        Color.web(i % 2 == 0 ? "#FDE68A" : "#FB923C"));
+                bulb.setStroke(Color.web("#7C2D12"));
+                bulb.setStrokeWidth(1);
+                art.getChildren().add(bulb);
+            }
+        }
+
+        SVGPath outerFlame = new SVGPath();
+        outerFlame.setContent("M75 5 C95 30 85 42 101 58 C111 35 128 55 119 78 C136 69 139 101 113 113 C92 124 59 124 38 113 C13 99 22 70 35 77 C29 54 45 35 52 57 C53 37 61 21 75 5 Z");
+        outerFlame.setFill(Color.web(todayCount == 0 ? "#F59E0B" : "#F97316"));
+        outerFlame.setStroke(Color.web("#B45309"));
+        outerFlame.setStrokeWidth(2.4);
+
+        SVGPath midFlame = new SVGPath();
+        midFlame.setContent("M76 26 C90 45 82 57 94 70 C101 56 110 70 104 88 C115 89 108 106 91 112 C78 117 58 114 49 103 C37 88 47 72 55 84 C54 66 64 45 76 26 Z");
+        midFlame.setFill(Color.web(todayCount >= 4 ? "#FEF3C7" : "#FBBF24"));
+        midFlame.setOpacity(todayCount == 0 ? 0.62 : 1);
+
+        SVGPath innerFlame = new SVGPath();
+        innerFlame.setContent("M77 43 C86 58 78 69 88 80 C94 72 99 85 94 96 C88 106 68 109 59 96 C51 84 62 76 66 84 C65 68 70 54 77 43 Z");
+        innerFlame.setFill(Color.web(todayCount >= 4 ? "#FFFFFF" : "#FDBA74"));
+        innerFlame.setOpacity(todayCount == 0 ? 0.35 : 0.78);
+
+        art.getChildren().addAll(outerFlame, midFlame, innerFlame);
+
+        Circle leftEye = new Circle(58, 80, todayCount == 0 ? 5 : 7, Color.web("#3B1F16"));
+        Circle rightEye = new Circle(91, 80, todayCount == 0 ? 5 : 7, Color.web("#3B1F16"));
+        Circle leftEyeSpark = new Circle(55, 77, 2.1, Color.WHITE);
+        Circle rightEyeSpark = new Circle(88, 77, 2.1, Color.WHITE);
+        Circle blushL = new Circle(48, 91, 5.2, Color.web("#FB7185", 0.72));
+        Circle blushR = new Circle(102, 91, 5.2, Color.web("#FB7185", 0.72));
+
+        Arc mouth = new Arc(75, todayCount == 0 ? 96 : 91, todayCount == 0 ? 8 : 7, 5,
+                todayCount == 0 ? 20 : 200, 140);
+        mouth.setType(ArcType.OPEN);
+        mouth.setFill(Color.TRANSPARENT);
+        mouth.setStroke(Color.web("#3B1F16"));
+        mouth.setStrokeWidth(2);
+
+        Line browL = new Line(52, 69, 61, todayCount == 0 ? 67 : 68);
+        Line browR = new Line(88, todayCount == 0 ? 67 : 68, 98, 69);
+        browL.setStroke(Color.web("#3B1F16"));
+        browR.setStroke(Color.web("#3B1F16"));
+        browL.setStrokeWidth(2);
+        browR.setStrokeWidth(2);
+        browL.setStrokeLineCap(StrokeLineCap.ROUND);
+        browR.setStrokeLineCap(StrokeLineCap.ROUND);
+
+        art.getChildren().addAll(blushL, blushR, leftEye, rightEye, leftEyeSpark, rightEyeSpark, browL, browR, mouth);
+
+        if (todayCount == 0) {
+            Circle tear = new Circle(98, 86, 3, Color.web("#38BDF8"));
+            art.getChildren().add(tear);
+        }
+
+        addLog(34, 112, -16, art);
+        addLog(75, 116, 0, art);
+        addLog(116, 112, 16, art);
+
+        if (runnerActive) {
+            for (int i = 0; i < ("runner".equals(previewFlamyEffect) ? 7 : 4); i++) {
+                double x = 18 + i * 16;
+                double y = 122 - (i % 2) * 10;
+                Polygon spark = new Polygon(x, y - 7, x + 5, y, x, y + 7, x - 5, y);
+                spark.setFill(Color.web(i % 2 == 0 ? "#FDBA74" : "#38BDF8"));
+                spark.setStroke(Color.web("#7C2D12", 0.5));
+                spark.setStrokeWidth(0.8);
+                art.getChildren().add(spark);
+            }
+        }
+
+        flameMascotPane.getChildren().setAll(art);
+    }
+
+    private void addLog(double x, double y, double rotate, Pane art) {
+        Rectangle log = new Rectangle(x - 19, y - 6, 38, 12);
+        log.setArcWidth(10);
+        log.setArcHeight(10);
+        log.setFill(Color.web("#8B4513"));
+        log.setStroke(Color.web("#4A250B"));
+        log.setStrokeWidth(2);
+        log.setRotate(rotate);
+        Circle ring = new Circle(x + 13, y, 5, Color.web("#A16207"));
+        ring.setStroke(Color.web("#4A250B"));
+        ring.setStrokeWidth(1.5);
+        ring.setRotate(rotate);
+        art.getChildren().addAll(log, ring);
+    }
+
+    private void addStar(double x, double y, double size, String color, Pane art) {
+        Polygon star = new Polygon(
+                x, y - size,
+                x + size * 0.35, y - size * 0.35,
+                x + size, y,
+                x + size * 0.35, y + size * 0.35,
+                x, y + size,
+                x - size * 0.35, y + size * 0.35,
+                x - size, y,
+                x - size * 0.35, y - size * 0.35
+        );
+        star.setFill(Color.web(color));
+        star.setStroke(Color.web("#7C2D12", 0.45));
+        star.setStrokeWidth(0.8);
+        art.getChildren().add(star);
+    }
+
+    private String toRgba(String hex, double alpha) {
+        Color color = Color.web(hex);
+        return String.format(Locale.US, "rgba(%d,%d,%d,%.2f)",
+                (int) Math.round(color.getRed() * 255),
+                (int) Math.round(color.getGreen() * 255),
+                (int) Math.round(color.getBlue() * 255),
+                alpha);
     }
 
     private void updateStats() {
@@ -778,7 +1669,8 @@ public class CoursesController implements Initializable {
     // ════════════════════════════════════════════════════════════
     @FXML private void handleHeaderAction() {
         if (formPanel.isVisible() || statsView.isVisible() || quizMainView.isVisible()
-                || (cityView != null && cityView.isVisible())) {
+                || (cityView != null && cityView.isVisible())
+                || (voiceBar != null && voiceBar.isVisible())) {
             stopQuizTimer();
             antiFraud.stopMonitoring();
             showView("list");
