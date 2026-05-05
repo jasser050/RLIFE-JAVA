@@ -43,6 +43,7 @@ import com.studyflow.utils.PdfExporter;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.scene.chart.*;
+import javafx.scene.web.WebView;
 
 public class CoursesController implements Initializable {
 
@@ -81,13 +82,18 @@ public class CoursesController implements Initializable {
     @FXML private VBox              voiceBar;
     @FXML private Label             voiceStatusLabel;
     @FXML private Label             voiceTranscriptionLabel;
-    @FXML private Label             voiceResponseLabel;
+    @FXML private TextArea          voiceResponseLabel;
     @FXML private ProgressIndicator voiceProgress;
     @FXML private Button            btnVoiceMic;
     @FXML private Button            btnVoiceCancel;
     @FXML private Button            btnVoiceStopAudio;
     @FXML private Button            btnVoicePlayAudio;
     @FXML private CheckBox          voiceReadAloudToggle;
+    @FXML private Label             voiceVideoQuestionLabel;
+    @FXML private Label             voiceVideoStoryboardLabel;
+    @FXML private Button            btnGenerateVoiceVideo;
+    @FXML private ProgressIndicator voiceVideoProgress;
+    @FXML private WebView           voiceVideoWebView;
 
     // ── Vues ───────────────────────────────────────────────────
     @FXML private VBox     listView;
@@ -198,6 +204,7 @@ public class CoursesController implements Initializable {
     private static final PseudoClass SELECTED   = PseudoClass.getPseudoClass("selected");
 
     private boolean isRecordingVoice = false;
+    private String lastVoiceQuestion = "";
     private String lastVoiceResponse = "";
     private String selectedFlamyTheme = "Cozy Desk";
     private long currentFlamyTodayCount = 0;
@@ -422,6 +429,8 @@ public class CoursesController implements Initializable {
         }
 
         voiceService.onTranscription = text -> Platform.runLater(() -> {
+            lastVoiceQuestion = text == null ? "" : text;
+            updateExplainerVideoState();
             voiceTranscriptionLabel.setText("🎤 You said: " + text);
             voiceStatusLabel.setText("✍️ Transcribed: "
                     + (text.length() > 40 ? text.substring(0, 40) + "…" : text));
@@ -434,6 +443,7 @@ public class CoursesController implements Initializable {
             if (btnVoicePlayAudio != null) {
                 btnVoicePlayAudio.setDisable(lastVoiceResponse.isBlank());
             }
+            updateExplainerVideoState();
         });
 
         voiceService.onStatus = status -> Platform.runLater(() -> {
@@ -461,6 +471,7 @@ public class CoursesController implements Initializable {
             if (btnVoiceStopAudio != null) {
                 btnVoiceStopAudio.setDisable(false);
             }
+            updateExplainerVideoState();
         });
 
         voiceService.onAudioDone = () -> Platform.runLater(() -> {
@@ -527,6 +538,38 @@ public class CoursesController implements Initializable {
         if (btnVoicePlayAudio != null) {
             btnVoicePlayAudio.setDisable(true);
         }
+        resetExplainerVideoPanel();
+    }
+
+    private void updateExplainerVideoState() {
+        boolean hasQuestion = lastVoiceQuestion != null && !lastVoiceQuestion.isBlank();
+        boolean hasAnswer = lastVoiceResponse != null && !lastVoiceResponse.isBlank();
+        if (btnGenerateVoiceVideo != null) {
+            btnGenerateVoiceVideo.setDisable(!hasQuestion && !hasAnswer);
+        }
+        if (voiceVideoQuestionLabel != null) {
+            voiceVideoQuestionLabel.setText(hasQuestion
+                    ? lastVoiceQuestion
+                    : "Ask a question first, then generate a visual explainer.");
+        }
+    }
+
+    private void resetExplainerVideoPanel() {
+        if (btnGenerateVoiceVideo != null) {
+            btnGenerateVoiceVideo.setDisable(true);
+        }
+        if (voiceVideoProgress != null) {
+            voiceVideoProgress.setVisible(false);
+        }
+        if (voiceVideoQuestionLabel != null) {
+            voiceVideoQuestionLabel.setText("Ask a question first, then generate a visual explainer.");
+        }
+        if (voiceVideoStoryboardLabel != null) {
+            voiceVideoStoryboardLabel.setText("The generated video will appear above.");
+        }
+        if (voiceVideoWebView != null) {
+            voiceVideoWebView.getEngine().loadContent(buildEmptyExplainerVideoHtml());
+        }
     }
 
     private boolean ensureGroqConfigured() {
@@ -564,7 +607,9 @@ public class CoursesController implements Initializable {
             voiceStatusLabel.setText("🎙️ Recording… click Stop when done");
             voiceTranscriptionLabel.setText("");
             voiceResponseLabel.setText("");
+            lastVoiceQuestion = "";
             lastVoiceResponse = "";
+            resetExplainerVideoPanel();
             if (btnVoicePlayAudio != null) {
                 btnVoicePlayAudio.setDisable(true);
             }
@@ -621,6 +666,348 @@ public class CoursesController implements Initializable {
             return;
         }
         voiceService.speakAsync(lastVoiceResponse);
+    }
+
+    @FXML
+    private void handleGenerateVoiceVideo() {
+        boolean hasQuestion = lastVoiceQuestion != null && !lastVoiceQuestion.isBlank();
+        boolean hasAnswer = lastVoiceResponse != null && !lastVoiceResponse.isBlank();
+        if (!hasQuestion && !hasAnswer) {
+            showVoiceError("Ask a voice question before generating an explainer video");
+            return;
+        }
+
+        if (btnGenerateVoiceVideo != null) {
+            btnGenerateVoiceVideo.setDisable(true);
+            btnGenerateVoiceVideo.setText("Generating...");
+        }
+        if (voiceVideoProgress != null) {
+            voiceVideoProgress.setVisible(true);
+        }
+        if (voiceVideoStoryboardLabel != null) {
+            voiceVideoStoryboardLabel.setText("Generating animated explainer video...");
+        }
+        if (voiceVideoWebView != null) {
+            voiceVideoWebView.getEngine().loadContent(buildLoadingExplainerVideoHtml());
+        }
+
+        String sourceQuestion = lastVoiceQuestion;
+        String sourceContent = buildOfflineExplainerContent(sourceQuestion, lastVoiceResponse);
+        PauseTransition renderDelay = new PauseTransition(Duration.millis(450));
+        renderDelay.setOnFinished(event -> {
+            try {
+                if (voiceVideoWebView != null) {
+                    voiceVideoWebView.getEngine().loadContent(buildExplainerVideoHtml(sourceQuestion, sourceContent));
+                }
+                if (voiceVideoStoryboardLabel != null) {
+                    voiceVideoStoryboardLabel.setText("Video generated from your question. Use the player controls above.");
+                }
+                if (voiceStatusLabel != null) {
+                    voiceStatusLabel.setText("Explainer video ready");
+                }
+            } catch (Exception ex) {
+                if (voiceVideoStoryboardLabel != null) {
+                    voiceVideoStoryboardLabel.setText("Unable to render the video: " + ex.getMessage());
+                }
+            } finally {
+                if (voiceVideoProgress != null) {
+                    voiceVideoProgress.setVisible(false);
+                }
+                if (voiceProgress != null) {
+                    voiceProgress.setVisible(false);
+                }
+                if (btnGenerateVoiceVideo != null) {
+                    btnGenerateVoiceVideo.setDisable(false);
+                    btnGenerateVoiceVideo.setText("Generate Explainer Video");
+                }
+            }
+        });
+        renderDelay.playFromStart();
+    }
+
+    private String buildOfflineExplainerContent(String question, String answer) {
+        String q = question == null || question.isBlank() ? "the student's question" : question.trim();
+        String a = answer == null || answer.isBlank()
+                ? "This topic can be explained by breaking it into a simple definition, a concrete example, the key steps, and a final memory hook."
+                : answer.trim();
+        return """
+                Scene 1 - Hook
+                Question: %s
+                The video starts with the question on screen, then highlights the main keyword so the learner knows exactly what will be explained.
+
+                Scene 2 - Simple definition
+                %s
+
+                Scene 3 - Visual example
+                The idea is transformed into a concrete visual example with moving blocks, arrows, and labels. Each element appears one by one so the concept feels easy to follow.
+
+                Scene 4 - How it works
+                The explanation is split into small steps. The video shows cause, action, and result, with a progress path that connects the parts together.
+
+                Scene 5 - Final recap
+                The video ends with a short recap, one key sentence to remember, and a quick question so the student can verify understanding.
+                """.formatted(q, a);
+    }
+
+    private String buildEmptyExplainerVideoHtml() {
+        return """
+                <html><body style="margin:0;background:#020617;color:#94a3b8;font-family:Segoe UI,Arial;display:grid;place-items:center;height:100vh;">
+                <div style="text-align:center;max-width:520px;padding:28px;">
+                <div style="font-size:42px;margin-bottom:10px;">VIDEO</div>
+                <div style="font-size:20px;font-weight:800;color:#e2e8f0;">No explainer video yet</div>
+                <div style="font-size:14px;margin-top:8px;line-height:1.5;">Ask a voice question, then click Generate Explainer Video.</div>
+                </div></body></html>
+                """;
+    }
+
+    private String buildLoadingExplainerVideoHtml() {
+        return """
+                <html><head><style>
+                @keyframes pulse{0%,100%{transform:scale(.96);opacity:.55}50%{transform:scale(1.04);opacity:1}}
+                body{margin:0;background:radial-gradient(circle at 30% 20%,#0ea5e9 0,#0f172a 34%,#020617 100%);color:white;font-family:Segoe UI,Arial;height:100vh;display:grid;place-items:center;overflow:hidden}
+                .core{width:150px;height:150px;border-radius:50%;background:#38bdf8;box-shadow:0 0 80px #38bdf8;animation:pulse 1.4s infinite}
+                .txt{text-align:center;margin-top:28px;font-size:22px;font-weight:900}
+                .sub{text-align:center;margin-top:8px;color:#bfdbfe;font-size:14px}
+                </style></head><body><div><div class="core"></div><div class="txt">Generating your explainer video</div><div class="sub">Designing scenes, narration and animations...</div></div></body></html>
+                """;
+    }
+
+    private String buildExplainerVideoHtml(String question, String generatedContent) {
+        List<String> scenes = splitGeneratedContentIntoScenes(generatedContent);
+        List<String> keywords = extractVisualKeywords(question + " " + generatedContent);
+        StringBuilder slides = new StringBuilder();
+        for (int i = 0; i < scenes.size(); i++) {
+            slides.append("<section class='slide").append(i == 0 ? " active" : "").append("'>")
+                    .append("<div class='sceneText'>")
+                    .append("<div class='sceneNo'>Scene ").append(i + 1).append(" / ").append(scenes.size()).append("</div>")
+                    .append("<h1>").append(escapeHtml(i == 0 ? titleFromQuestion(question) : sceneTitle(scenes.get(i), i))).append("</h1>")
+                    .append("<p>").append(escapeHtml(shortenSceneText(scenes.get(i)))).append("</p>")
+                    .append("</div>")
+                    .append(buildVisualImage(question, scenes.get(i), keywords, i))
+                    .append("</section>");
+        }
+        return """
+                <html>
+                <head>
+                <style>
+                *{box-sizing:border-box} body{margin:0;background:#020617;color:#e5f2ff;font-family:Segoe UI,Arial;height:100vh;overflow:hidden}
+                .player{position:relative;height:100vh;background:linear-gradient(135deg,#03111f 0%,#082f49 45%,#020617 100%);overflow:hidden}
+                .slide{position:absolute;inset:0;padding:34px 42px 86px 42px;opacity:0;transform:translateX(42px) scale(.98);transition:opacity .55s ease,transform .55s ease;display:grid;grid-template-columns:.9fr 1.1fr;gap:28px;align-items:center}
+                .slide.active{opacity:1;transform:translateX(0) scale(1)}
+                .sceneText{align-self:center}
+                .sceneNo{color:#7dd3fc;font-size:12px;font-weight:900;letter-spacing:.08em;margin-bottom:14px}
+                h1{font-size:32px;line-height:1.08;margin:0 0 18px 0;color:white}
+                p{font-size:17px;line-height:1.5;margin:0;color:#dbeafe;white-space:pre-wrap;max-height:330px;overflow:hidden}
+                .visual{height:344px;border-radius:28px;background:linear-gradient(135deg,#07111f,#0f2f4a 42%,#020617);position:relative;box-shadow:0 28px 70px rgba(14,165,233,.28);overflow:hidden;border:1px solid rgba(125,211,252,.25)}
+                .visual:before{content:'';position:absolute;inset:-80px;background:radial-gradient(circle at 32% 26%,rgba(56,189,248,.45),transparent 35%),radial-gradient(circle at 78% 80%,rgba(167,139,250,.32),transparent 34%)}
+                .vtitle{position:absolute;top:20px;left:22px;right:22px;color:#e0f2fe;font-size:13px;font-weight:900;letter-spacing:.06em;text-transform:uppercase}
+                .chip{position:absolute;background:rgba(2,6,23,.78);border:1px solid rgba(125,211,252,.45);border-radius:999px;padding:9px 13px;color:#bae6fd;font-size:12px;font-weight:900;box-shadow:0 12px 35px rgba(0,0,0,.25)}
+                .chip.a{left:30px;top:82px}.chip.b{right:42px;top:108px}.chip.c{left:58px;bottom:50px}.chip.d{right:40px;bottom:66px}
+                .heroIcon{position:absolute;left:50%;top:50%;transform:translate(-50%,-48%);width:132px;height:132px;border-radius:34px;background:linear-gradient(135deg,#38bdf8,#2563eb);display:grid;place-items:center;color:white;font-size:56px;font-weight:900;box-shadow:0 0 80px rgba(56,189,248,.55);animation:pop 2.8s infinite ease-in-out}
+                .arrow{position:absolute;height:8px;border-radius:999px;background:linear-gradient(90deg,#22c55e,#38bdf8);box-shadow:0 0 22px rgba(56,189,248,.5);animation:grow 4.8s infinite linear}
+                .arrow.one{left:34px;right:54%;top:178px}.arrow.two{left:55%;right:34px;top:178px}.arrow.three{left:28%;right:28%;bottom:104px}
+                .bars{position:absolute;left:46px;right:46px;bottom:48px;display:flex;gap:14px;align-items:end;height:112px}.barItem{flex:1;border-radius:14px 14px 8px 8px;background:linear-gradient(#facc15,#fb923c);box-shadow:0 0 32px rgba(251,146,60,.32);animation:rise 3s infinite ease-in-out}.barItem:nth-child(2){height:82%;background:linear-gradient(#38bdf8,#2563eb);animation-delay:.3s}.barItem:nth-child(3){height:58%;background:linear-gradient(#34d399,#059669);animation-delay:.6s}.barItem:nth-child(4){height:92%;background:linear-gradient(#c084fc,#7c3aed);animation-delay:.9s}
+                .timeline{position:absolute;left:42px;right:42px;top:178px;height:10px;border-radius:999px;background:rgba(148,163,184,.28)}.dot{position:absolute;top:157px;width:50px;height:50px;border-radius:50%;background:#0ea5e9;display:grid;place-items:center;color:white;font-weight:900;box-shadow:0 0 32px rgba(14,165,233,.55);animation:pulse 2.2s infinite}.dot.one{left:44px}.dot.two{left:37%}.dot.three{right:37%}.dot.four{right:44px}
+                .cardImg{position:absolute;left:44px;right:44px;top:82px;bottom:48px;border-radius:22px;background:rgba(15,23,42,.82);border:1px solid rgba(125,211,252,.25);padding:24px;display:grid;grid-template-columns:1fr 1fr;gap:16px}.mini{border-radius:16px;background:rgba(14,165,233,.18);border:1px solid rgba(125,211,252,.2);display:grid;place-items:center;color:#dbeafe;font-size:15px;font-weight:900;text-align:center;padding:10px}
+                .bar{position:absolute;left:28px;right:28px;bottom:58px;height:8px;background:rgba(148,163,184,.25);border-radius:999px;overflow:hidden}
+                .fill{height:100%;width:0;background:#38bdf8;border-radius:999px;transition:width .25s linear}
+                .controls{position:absolute;left:28px;right:28px;bottom:16px;display:flex;gap:10px;align-items:center}
+                button{background:#0ea5e9;color:white;border:0;border-radius:10px;padding:10px 14px;font-weight:900;cursor:pointer}
+                button.secondary{background:#1e293b;color:#cbd5e1;border:1px solid #334155}
+                .caption{margin-left:auto;color:#bfdbfe;font-size:12px;font-weight:700}
+                @keyframes pop{0%,100%{transform:translate(-50%,-48%) scale(.96) rotate(-1deg)}50%{transform:translate(-50%,-52%) scale(1.05) rotate(2deg)}}
+                @keyframes grow{0%{transform:scaleX(.1);transform-origin:left}100%{transform:scaleX(1);transform-origin:left}}
+                @keyframes rise{0%,100%{height:32%}50%{height:100%}}
+                @keyframes pulse{0%,100%{transform:scale(.9)}50%{transform:scale(1.08)}}
+                </style>
+                </head>
+                <body>
+                <main class="player">
+                __SLIDES__
+                <div class="bar"><div id="fill" class="fill"></div></div>
+                <div class="controls"><button onclick="togglePlay()" id="playBtn">Pause</button><button class="secondary" onclick="prev()">Previous</button><button class="secondary" onclick="next()">Next</button><button class="secondary" onclick="restart()">Replay</button><div class="caption">Animated explainer generated from your voice question</div></div>
+                </main>
+                <script>
+                const slides=[...document.querySelectorAll('.slide')]; let i=0,playing=true,t=0,duration=7000;
+                function show(n){slides[i].classList.remove('active');i=(n+slides.length)%slides.length;slides[i].classList.add('active');t=0;update();}
+                function update(){document.getElementById('fill').style.width=((t/duration)*100)+'%'}
+                function tick(){if(playing){t+=250;if(t>=duration)show(i+1);update()}setTimeout(tick,250)}
+                function next(){show(i+1)} function prev(){show(i-1)} function restart(){show(0);playing=true;document.getElementById('playBtn').innerText='Pause'}
+                function togglePlay(){playing=!playing;document.getElementById('playBtn').innerText=playing?'Pause':'Play'}
+                tick();
+                </script>
+                </body></html>
+                """.replace("__SLIDES__", slides.toString());
+    }
+
+    private List<String> splitGeneratedContentIntoScenes(String content) {
+        String cleaned = content == null ? "" : content.replace("\r", "").trim();
+        if (cleaned.isBlank()) {
+            cleaned = "This explainer introduces the topic, shows the key idea visually, breaks it into simple steps, checks understanding, and gives the learner a next action.";
+        }
+        String[] parts = cleaned.split("(?i)(?=\\bscene\\s*\\d+\\b|\\bscene\\s*:|\\betape\\s*\\d+\\b|\\bsc[eè]ne\\s*\\d+\\b)");
+        List<String> scenes = Arrays.stream(parts)
+                .map(String::trim)
+                .filter(s -> s.length() > 30)
+                .limit(6)
+                .collect(Collectors.toCollection(ArrayList::new));
+        if (scenes.size() < 3) {
+            scenes.clear();
+            String[] paragraphs = cleaned.split("\\n\\s*\\n|(?<=[.!?])\\s+(?=[A-ZÀ-Ü])");
+            StringBuilder chunk = new StringBuilder();
+            for (String paragraph : paragraphs) {
+                if (chunk.length() + paragraph.length() > 520 && chunk.length() > 0) {
+                    scenes.add(chunk.toString().trim());
+                    chunk.setLength(0);
+                }
+                if (!paragraph.isBlank()) {
+                    if (chunk.length() > 0) chunk.append(' ');
+                    chunk.append(paragraph.trim());
+                }
+                if (scenes.size() == 5) break;
+            }
+            if (chunk.length() > 0 && scenes.size() < 6) scenes.add(chunk.toString().trim());
+        }
+        while (scenes.size() < 3) {
+            scenes.add("Visual recap: connect the main idea to a concrete example, then show the final takeaway in one simple sentence.");
+        }
+        return scenes;
+    }
+
+    private String buildVisualImage(String question, String scene, List<String> keywords, int index) {
+        String topic = visualTopic(question, keywords);
+        String k1 = keywordAt(keywords, 0, "Concept");
+        String k2 = keywordAt(keywords, 1, "Example");
+        String k3 = keywordAt(keywords, 2, "Steps");
+        String k4 = keywordAt(keywords, 3, "Result");
+        String icon = visualIcon(question + " " + scene);
+        int variant = index % 5;
+        String title = switch (variant) {
+            case 0 -> "Image conceptuelle - " + topic;
+            case 1 -> "Definition visuelle";
+            case 2 -> "Exemple anime";
+            case 3 -> "Processus etapes";
+            default -> "Resume visuel";
+        };
+
+        if (variant == 1) {
+            return "<div class='visual'><div class='vtitle'>" + escapeHtml(title) + "</div>"
+                    + "<div class='heroIcon'>" + escapeHtml(icon) + "</div>"
+                    + "<div class='chip a'>" + escapeHtml(k1) + "</div>"
+                    + "<div class='chip b'>" + escapeHtml(k2) + "</div>"
+                    + "<div class='chip c'>" + escapeHtml(k3) + "</div>"
+                    + "<div class='chip d'>" + escapeHtml(k4) + "</div></div>";
+        }
+        if (variant == 2) {
+            return "<div class='visual'><div class='vtitle'>" + escapeHtml(title) + "</div>"
+                    + "<div class='bars'><div class='barItem' style='height:42%'></div><div class='barItem'></div><div class='barItem'></div><div class='barItem'></div></div>"
+                    + "<div class='chip a'>" + escapeHtml(k1) + "</div><div class='chip b'>" + escapeHtml(k2) + "</div>"
+                    + "<div class='heroIcon'>" + escapeHtml(icon) + "</div></div>";
+        }
+        if (variant == 3) {
+            return "<div class='visual'><div class='vtitle'>" + escapeHtml(title) + "</div>"
+                    + "<div class='timeline'></div><div class='dot one'>1</div><div class='dot two'>2</div><div class='dot three'>3</div><div class='dot four'>4</div>"
+                    + "<div class='chip c'>" + escapeHtml(k3) + "</div><div class='chip d'>" + escapeHtml(k4) + "</div></div>";
+        }
+        if (variant == 4) {
+            return "<div class='visual'><div class='vtitle'>" + escapeHtml(title) + "</div>"
+                    + "<div class='cardImg'><div class='mini'>" + escapeHtml(k1) + "</div><div class='mini'>" + escapeHtml(k2)
+                    + "</div><div class='mini'>" + escapeHtml(k3) + "</div><div class='mini'>" + escapeHtml(k4)
+                    + "</div></div></div>";
+        }
+        return "<div class='visual'><div class='vtitle'>" + escapeHtml(title) + "</div>"
+                + "<div class='chip a'>" + escapeHtml(k1) + "</div><div class='arrow one'></div>"
+                + "<div class='heroIcon'>" + escapeHtml(icon) + "</div><div class='arrow two'></div>"
+                + "<div class='chip b'>" + escapeHtml(k2) + "</div><div class='arrow three'></div>"
+                + "<div class='chip c'>" + escapeHtml(k3) + "</div><div class='chip d'>" + escapeHtml(k4) + "</div></div>";
+    }
+
+    private List<String> extractVisualKeywords(String value) {
+        if (value == null) return List.of();
+        Set<String> stopWords = Set.of(
+                "cest", "quoi", "comment", "pourquoi", "avec", "dans", "pour", "une", "des", "les", "est",
+                "sont", "that", "this", "with", "from", "your", "question", "scene", "video", "the", "and",
+                "java", "php"
+        );
+        List<String> extracted = Arrays.stream(value.toLowerCase(Locale.ROOT)
+                        .replaceAll("[^a-zA-Z0-9À-ÿ ]", " ")
+                        .split("\\s+"))
+                .map(String::trim)
+                .filter(s -> s.length() >= 4)
+                .filter(s -> !stopWords.contains(s))
+                .distinct()
+                .limit(8)
+                .map(this::capitalizeWord)
+                .collect(Collectors.toCollection(ArrayList::new));
+        String lower = value.toLowerCase(Locale.ROOT);
+        if (lower.contains("java")) extracted.add(0, "Java");
+        if (lower.contains("php")) extracted.add(0, "PHP");
+        if (lower.contains("base") || lower.contains("mysql") || lower.contains("database")) extracted.add("Database");
+        if (lower.contains("web")) extracted.add("Web");
+        return extracted.stream().distinct().limit(8).toList();
+    }
+
+    private String visualTopic(String question, List<String> keywords) {
+        if (question != null && !question.isBlank()) {
+            String cleaned = question.replace("?", "").trim();
+            return cleaned.length() > 32 ? cleaned.substring(0, 32) + "..." : cleaned;
+        }
+        return keywordAt(keywords, 0, "Sujet");
+    }
+
+    private String keywordAt(List<String> keywords, int index, String fallback) {
+        return keywords != null && keywords.size() > index ? keywords.get(index) : fallback;
+    }
+
+    private String visualIcon(String value) {
+        String lower = value == null ? "" : value.toLowerCase(Locale.ROOT);
+        if (lower.contains("java")) return "J";
+        if (lower.contains("php")) return "PHP";
+        if (lower.contains("database") || lower.contains("mysql") || lower.contains("base")) return "DB";
+        if (lower.contains("web") || lower.contains("html")) return "</>";
+        if (lower.contains("ai") || lower.contains("intelligence")) return "AI";
+        if (lower.contains("math")) return "fx";
+        return "RL";
+    }
+
+    private String shortenSceneText(String scene) {
+        if (scene == null) return "";
+        String cleaned = scene.replaceAll("\\s+", " ").trim();
+        return cleaned.length() > 520 ? cleaned.substring(0, 520) + "..." : cleaned;
+    }
+
+    private String capitalizeWord(String value) {
+        if (value == null || value.isBlank()) return "";
+        return Character.toUpperCase(value.charAt(0)) + value.substring(1);
+    }
+
+    private String titleFromQuestion(String question) {
+        String q = question == null || question.isBlank() ? "Explainer video" : question.trim();
+        return q.length() > 72 ? q.substring(0, 72) + "..." : q;
+    }
+
+    private String sceneTitle(String scene, int index) {
+        String[] lines = scene.split("\\R");
+        String first = lines.length == 0 ? "" : lines[0].replaceAll("[:\\-]+$", "").trim();
+        if (first.length() < 8 || first.length() > 80) {
+            return switch (index) {
+                case 1 -> "Understand the core idea";
+                case 2 -> "See it step by step";
+                case 3 -> "Make it visual";
+                case 4 -> "Check your understanding";
+                default -> "Final takeaway";
+            };
+        }
+        return first;
+    }
+
+    private String escapeHtml(String value) {
+        if (value == null) return "";
+        return value.replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("'", "&#39;");
     }
 
     private void showVoiceBar(boolean show) {

@@ -357,6 +357,35 @@ public class VoiceAssistantService {
         });
     }
 
+    public void generateExplainerVideoPlan(String question, String assistantAnswer,
+                                           Consumer<String> onSuccess,
+                                           Consumer<String> onFailure) {
+        if (!isNonBlank(question) && !isNonBlank(assistantAnswer)) {
+            if (onFailure != null) notifyOnMain(onFailure, "Aucune question disponible pour generer la video.");
+            return;
+        }
+        if (!hasChatProvider()) {
+            if (onFailure != null) notifyOnMain(onFailure, "Cle GROQ_API_KEY introuvable.");
+            return;
+        }
+
+        executor.submit(() -> {
+            try {
+                notifyStatus("Generation de la video explicative...");
+                String prompt = explainerVideoPrompt(question, assistantAnswer);
+                String result = chatWithGroq(videoSystemPrompt(), prompt);
+                result = normalizeVideoPlan(result);
+                if (!isNonBlank(result)) {
+                    throw new IOException("Plan video vide.");
+                }
+                notifyOnMain(onSuccess, result);
+                notifyStatus("Video explicative prete");
+            } catch (Exception e) {
+                notifyOnMain(onFailure, "Erreur generation video: " + e.getMessage());
+            }
+        });
+    }
+
     public void stopSpeaking() {
         speechCancelled = true;
         CountDownLatch latch = currentPlaybackLatch;
@@ -554,6 +583,54 @@ public class VoiceAssistantService {
             case "tr" -> "You are RLife's voice assistant for students. Answer clearly and helpfully in Turkish." + formatRule;
             default -> "Tu es l'assistant vocal RLife pour les etudiants. Reponds clairement et utilement en francais. N'utilise pas Markdown, listes, numeros, asterisques, titres ou symboles. Reponds en un seul paragraphe complet et detaille avec assez d'explication pour etre utile.";
         };
+    }
+
+    private String videoSystemPrompt() {
+        return switch (selectedLanguage) {
+            case "en" -> "You are RLife's creative educational video director. Create an innovative, clear explainer video blueprint for students. Use plain text, short sections, no Markdown tables.";
+            case "ar" -> "You are RLife's creative educational video director. Create an innovative, clear explainer video blueprint for students in Arabic when possible. Use plain text, short sections, no Markdown tables.";
+            default -> "Tu es le realisateur pedagogique creatif de RLife. Cree un blueprint de video explicative innovant, clair et directement utilisable par un etudiant. Utilise du texte simple, des sections courtes, sans tableau Markdown.";
+        };
+    }
+
+    private String explainerVideoPrompt(String question, String assistantAnswer) {
+        String languageInstruction = switch (selectedLanguage) {
+            case "en" -> "Write in English.";
+            case "ar" -> "Write in Arabic if the question is Arabic, otherwise keep the user's language.";
+            case "auto" -> "Detect the user's language and write in that same language.";
+            default -> "Ecris en francais simple.";
+        };
+        return """
+                %s
+
+                Question de l'utilisateur:
+                %s
+
+                Reponse deja donnee par l'assistant:
+                %s
+
+                Genere une video explicative courte de 60 a 90 secondes. Le resultat doit contenir:
+                Titre video
+                Objectif pedagogique
+                Hook des 5 premieres secondes
+                Storyboard en 5 scenes avec pour chaque scene: duree, narration voix off, element visuel, animation suggeree
+                Analogie creative pour simplifier le concept
+                Mini quiz final de 2 questions
+                Prompt image/video pour generer les visuels
+                Call to action d'apprentissage
+
+                Rends le contenu pret a utiliser dans une interface video, clair, visuel et innovant.
+                """.formatted(languageInstruction, safePromptText(question), safePromptText(assistantAnswer));
+    }
+
+    private String normalizeVideoPlan(String raw) {
+        if (raw == null) return "";
+        return raw
+                .replace("**", "")
+                .replace("*", "")
+                .replace("\r", "")
+                .replaceAll("\\n{3,}", "\n\n")
+                .trim();
     }
 
     private String whisperLanguageCode() {
@@ -781,6 +858,12 @@ public class VoiceAssistantService {
         if (!isNonBlank(value)) return "(empty response)";
         String normalized = value.replace('\n', ' ').replace('\r', ' ').trim();
         return normalized.length() > 220 ? normalized.substring(0, 220) + "..." : normalized;
+    }
+
+    private static String safePromptText(String value) {
+        if (!isNonBlank(value)) return "(non fourni)";
+        String normalized = value.replace('\r', ' ').trim();
+        return normalized.length() > 2500 ? normalized.substring(0, 2500) : normalized;
     }
 
     private record ProviderAttempt(String name, String endpoint, String apiKey, List<String> models) {

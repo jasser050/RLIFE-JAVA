@@ -5,6 +5,7 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.*?>
+<?import javafx.scene.web.*?>
 <?import org.kordamp.ikonli.javafx.*?>
 
 <VBox spacing="24" styleClass="courses-page"
@@ -947,9 +948,51 @@
         <!-- Réponse IA -->
         <Label text="ASSISTANT ANSWER"
                style="-fx-text-fill:#334155;-fx-font-size:10px;-fx-font-weight:900;"/>
-        <Label fx:id="voiceResponseLabel"
-               style="-fx-background-color:#0F172A;-fx-border-color:#1E293B;-fx-border-width:1;-fx-border-radius:16;-fx-background-radius:16;-fx-padding:18 20;-fx-text-fill:#34D399;-fx-font-size:15px;-fx-line-spacing:3;-fx-font-weight:600;"
-               wrapText="true" text="The assistant response will appear here."/>
+        <TextArea fx:id="voiceResponseLabel"
+                  editable="false" wrapText="true" prefRowCount="10" minHeight="230"
+                  style="-fx-control-inner-background:#0F172A;-fx-background-color:#0F172A;-fx-border-color:#1E293B;-fx-border-width:1;-fx-border-radius:16;-fx-background-radius:16;-fx-padding:12 14;-fx-text-fill:#34D399;-fx-font-size:15px;-fx-font-weight:600;"
+                  text="The assistant response will appear here."/>
+
+        <VBox spacing="14"
+              style="-fx-background-color:#081426;-fx-border-color:#2563EB;-fx-border-width:1.2;-fx-border-radius:18;-fx-background-radius:18;-fx-padding:18 20;">
+            <HBox alignment="CENTER_LEFT" spacing="12">
+                <StackPane style="-fx-background-color:#0EA5E9;-fx-background-radius:14;-fx-min-width:44;-fx-min-height:44;">
+                    <FontIcon iconLiteral="fth-video" iconSize="20" iconColor="white"/>
+                </StackPane>
+                <VBox spacing="2" HBox.hgrow="ALWAYS">
+                    <Label text="AI EXPLAINER VIDEO"
+                           style="-fx-text-fill:#7DD3FC;-fx-font-size:11px;-fx-font-weight:900;"/>
+                    <Label text="Generate a real animated explainer video from the question you asked."
+                           style="-fx-text-fill:#CBD5E1;-fx-font-size:13px;-fx-font-weight:700;"/>
+                </VBox>
+                <ProgressIndicator fx:id="voiceVideoProgress" prefHeight="20" prefWidth="20" visible="false"
+                                   style="-fx-accent:#0EA5E9;"/>
+                <Button fx:id="btnGenerateVoiceVideo" onAction="#handleGenerateVoiceVideo"
+                        disable="true"
+                        style="-fx-background-color:#0EA5E9;-fx-text-fill:white;-fx-border-radius:10;-fx-background-radius:10;-fx-padding:10 16;-fx-font-size:12px;-fx-font-weight:900;-fx-cursor:hand;"
+                        text="Generate Explainer Video"/>
+            </HBox>
+
+            <HBox spacing="12">
+                <VBox spacing="8" prefWidth="280" minWidth="240">
+                    <Label text="QUESTION SOURCE"
+                           style="-fx-text-fill:#475569;-fx-font-size:10px;-fx-font-weight:900;"/>
+                    <Label fx:id="voiceVideoQuestionLabel"
+                           style="-fx-background-color:#0F172A;-fx-border-color:#1E293B;-fx-border-width:1;-fx-border-radius:12;-fx-background-radius:12;-fx-padding:14 16;-fx-text-fill:#E2E8F0;-fx-font-size:13px;"
+                           wrapText="true"
+                           text="Ask a question first, then generate a visual explainer."/>
+                </VBox>
+                <VBox spacing="8" HBox.hgrow="ALWAYS">
+                    <Label text="VIDEO PLAYER"
+                           style="-fx-text-fill:#475569;-fx-font-size:10px;-fx-font-weight:900;"/>
+                    <WebView fx:id="voiceVideoWebView" prefHeight="420" minHeight="360"/>
+                    <Label fx:id="voiceVideoStoryboardLabel"
+                           style="-fx-background-color:#020617;-fx-border-color:#1E3A8A;-fx-border-width:1;-fx-border-radius:12;-fx-background-radius:12;-fx-padding:10 12;-fx-text-fill:#BFDBFE;-fx-font-size:12px;-fx-line-spacing:2;"
+                           wrapText="true"
+                           text="The generated video will appear above."/>
+                </VBox>
+            </HBox>
+        </VBox>
 
     </VBox>
 
