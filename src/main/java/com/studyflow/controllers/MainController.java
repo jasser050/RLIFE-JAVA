@@ -50,6 +50,7 @@ import javafx.stage.Stage;
 import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.io.IOException;
+import java.net.URI;
 import java.net.URL;
 import java.util.List;
 import java.util.Locale;
@@ -93,10 +94,12 @@ public class MainController implements Initializable {
     @FXML private Button notificationsButton;
     @FXML private Button themeToggleButton;
     @FXML private FontIcon themeToggleIcon;
-    @FXML private StackPane globalQuoteCard;
+    @FXML private VBox globalQuoteCard;
     @FXML private Label globalQuoteTextLabel;
     @FXML private Label globalQuoteMetaLabel;
     @FXML private Pane quoteOverlayPane;
+    @FXML private StackPane spotifyFloatingButton;
+    @FXML private VBox spotifyPanel;
     @FXML private StackPane globalQuotePetBadge;
     @FXML private StackPane globalQuotePetPreviewPane;
 
@@ -116,6 +119,9 @@ public class MainController implements Initializable {
     private static final String PREF_QUOTE_DISMISSED_UNTIL = "global.quote.dismissed.until";
     private static final String PREF_QUOTE_POS_X = "global.quote.position.x";
     private static final String PREF_QUOTE_POS_Y = "global.quote.position.y";
+    private static final String PREF_SPOTIFY_POS_X = "global.spotify.position.x";
+    private static final String PREF_SPOTIFY_POS_Y = "global.spotify.position.y";
+    private static final double SPOTIFY_MARGIN = 16.0;
     private static final long QUOTE_DISMISS_MILLIS = 60_000L;
     private static final int QUOTE_ROTATION_SECONDS = 20;
     private static final double QUOTE_MARGIN = 16.0;
@@ -123,6 +129,11 @@ public class MainController implements Initializable {
     private double quoteDragStartY;
     private double quoteStartLayoutX;
     private double quoteStartLayoutY;
+    private double spotifyDragStartX;
+    private double spotifyDragStartY;
+    private double spotifyStartLayoutX;
+    private double spotifyStartLayoutY;
+    private boolean spotifyDragging;
     private Timeline usageCoinTimeline;
     private long lastActivityAtMillis = System.currentTimeMillis();
     private long lastUsageTickAtMillis = System.currentTimeMillis();
@@ -672,6 +683,74 @@ public class MainController implements Initializable {
         quoteOverlayPane.widthProperty().addListener((obs, oldVal, newVal) -> clampQuoteCardToOverlay());
         quoteOverlayPane.heightProperty().addListener((obs, oldVal, newVal) -> clampQuoteCardToOverlay());
         Platform.runLater(this::applySavedQuotePosition);
+    }
+
+    @FXML
+    private void onSpotifyWidgetPressed(MouseEvent event) {
+        if (spotifyFloatingButton == null) return;
+        spotifyDragStartX = event.getScreenX();
+        spotifyDragStartY = event.getScreenY();
+        spotifyStartLayoutX = spotifyFloatingButton.getLayoutX();
+        spotifyStartLayoutY = spotifyFloatingButton.getLayoutY();
+        spotifyDragging = false;
+        event.consume();
+    }
+
+    @FXML
+    private void onSpotifyWidgetDragged(MouseEvent event) {
+        if (spotifyFloatingButton == null || quoteOverlayPane == null) return;
+        double dx = event.getScreenX() - spotifyDragStartX;
+        double dy = event.getScreenY() - spotifyDragStartY;
+        if (Math.abs(dx) > 2 || Math.abs(dy) > 2) {
+            spotifyDragging = true;
+        }
+
+        double targetX = spotifyStartLayoutX + dx;
+        double targetY = spotifyStartLayoutY + dy;
+
+        double nodeW = spotifyFloatingButton.prefWidth(-1);
+        double nodeH = spotifyFloatingButton.prefHeight(-1);
+        double maxX = Math.max(SPOTIFY_MARGIN, quoteOverlayPane.getWidth() - nodeW - SPOTIFY_MARGIN);
+        double maxY = Math.max(SPOTIFY_MARGIN, quoteOverlayPane.getHeight() - nodeH - SPOTIFY_MARGIN);
+
+        spotifyFloatingButton.setLayoutX(Math.max(SPOTIFY_MARGIN, Math.min(targetX, maxX)));
+        spotifyFloatingButton.setLayoutY(Math.max(SPOTIFY_MARGIN, Math.min(targetY, maxY)));
+        if (spotifyPanel != null) {
+            spotifyPanel.setLayoutX(spotifyFloatingButton.getLayoutX());
+            spotifyPanel.setLayoutY(spotifyFloatingButton.getLayoutY() + 66);
+        }
+        event.consume();
+    }
+
+    @FXML
+    private void onSpotifyWidgetReleased(MouseEvent event) {
+        if (spotifyFloatingButton != null) {
+            preferences.putDouble(PREF_SPOTIFY_POS_X, spotifyFloatingButton.getLayoutX());
+            preferences.putDouble(PREF_SPOTIFY_POS_Y, spotifyFloatingButton.getLayoutY());
+        }
+        event.consume();
+    }
+
+    @FXML
+    private void openSpotifyPlayer(MouseEvent event) {
+        if (spotifyDragging) {
+            spotifyDragging = false;
+            event.consume();
+            return;
+        }
+
+        if (spotifyPanel != null) {
+            boolean show = !spotifyPanel.isVisible();
+            spotifyPanel.setVisible(show);
+            spotifyPanel.setManaged(show);
+        }
+
+        try {
+            java.awt.Desktop.getDesktop().browse(URI.create("https://open.spotify.com/"));
+        } catch (Exception ignored) {
+            // Keep UI usable even when Desktop browse is not available.
+        }
+        event.consume();
     }
 
     private void applySavedQuotePosition() {
